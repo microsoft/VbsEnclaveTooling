@@ -1,0 +1,45 @@
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+    <PropertyGroup>
+        <VbsEnclaveNugetSpecFilePath>$(ProjectDir)Nuget\Microsoft.Windows.VbsEnclaveTooling.nuspec</VbsEnclaveNugetSpecFilePath>
+        <VbsEnclaveNugetPackVersionNumber>$([System.DateTime]::Now.ToString('MM.dd.yyyy.HHmmss'))</VbsEnclaveNugetPackVersionNumber>
+
+        <!-- Property value should match the "ToolingExecutable" projects 'target name' property  -->
+        <VbsEnclaveNugetPackExePath>$(OutDir)vbsenclavetooling.exe</VbsEnclaveNugetPackExePath>
+        <VbsEnclaveNugetPackProperties>target_version=$(VbsEnclaveNugetPackVersionNumber);vbsenclavetooling_$(Platform)_exe=$(VbsEnclaveNugetPackExePath)</VbsEnclaveNugetPackProperties>
+        <VbsEnclaveNugetPackOutputDirectory>$(SolutionDir)_build</VbsEnclaveNugetPackOutputDirectory>
+        <VbsEnclaveNugetPackScriptFile>$(SolutionDir)buildScripts\PackageNuget.ps1</VbsEnclaveNugetPackScriptFile>
+    </PropertyGroup>
+    
+    <!-- 
+        Targets in this file should only run when building in visual studio and should not be ran when building
+        the solution using the <repo path>\buildScripts\build.ps1 file on the commandline. That file handles
+        creating the nuget package outside of visual studio.
+    -->
+
+    <!-- 
+        Package the nuget in a file based on configuration and platform. For errors associated
+        with this target. Check that PackageNuget.ps1 in the buildScripts folder can still run
+        successfully in a visual studio developer powershell window.
+    -->
+    <Target 
+        Name="PackVbsEnclaveToolingNuget" 
+        AfterTargets="Build"
+        Condition="'$(BuildingInsideVisualStudio)' == 'True'">
+        <Message Text="Generating vbs enclave nuget package (.nupkg) for with configuration '$(Configuration)' and platform: '$(Platform)'" Importance="high" />
+
+        <!-- Generate .nupkg file-->
+        <PropertyGroup> 
+            <VbsEnclaveToolingNugetPackExecutionCommand>
+                &quot;$(VbsEnclaveNugetPackScriptFile)&quot; -NugetSpecFilePath &quot;$(VbsEnclaveNugetSpecFilePath)&quot; -NugetPackProperties &quot;$(VbsEnclaveNugetPackProperties)&quot; -OutputDirectory &quot;$(VbsEnclaveNugetPackOutputDirectory)&quot;
+            </VbsEnclaveToolingNugetPackExecutionCommand>
+        </PropertyGroup>
+
+        <Exec 
+            Command="powershell.exe -ExecutionPolicy Bypass -File &quot;$(VbsEnclaveNugetPackScriptFile)&quot; -NugetSpecFilePath &quot;$(VbsEnclaveNugetSpecFilePath)&quot; -NugetPackProperties &quot;$(VbsEnclaveNugetPackProperties)&quot; -OutputDirectory &quot;$(VbsEnclaveNugetPackOutputDirectory)&quot;" 
+            ContinueOnError="false" >
+            <Output TaskParameter="ExitCode" PropertyName="ExecExitCode" />
+        </Exec>
+        
+        <Error Text="$(VbsEnclaveNugetPackScriptFile) script failed with exit code $(ExecExitCode)." Condition="'$(ExecExitCode)' != '0'" />
+    </Target>
+</Project>
