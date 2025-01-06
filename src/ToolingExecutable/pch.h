@@ -10,4 +10,6 @@
 #include <winerror.h>
 #include <filesystem>
 #include <format>
+#include <unordered_map>
+
 #endif //PCH_H

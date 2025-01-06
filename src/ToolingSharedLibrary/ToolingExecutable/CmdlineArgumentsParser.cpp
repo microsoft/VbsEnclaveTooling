@@ -7,6 +7,11 @@
 using namespace ErrorHelpers;
 using namespace CmdlineParsingHelpers;
 
+#define CHECK_SUCCESS(result)  \
+    if ((result) != ErrorIds::Success) { \
+        return false; \
+    }
+
 CmdlineArgumentsParser::CmdlineArgumentsParser(int argc, char* argv[])
 {
     m_parse_successful = ParseArguments(argc, argv);
@@ -23,7 +28,6 @@ bool CmdlineArgumentsParser::ParseArguments(int argc, char* argv[])
         return false;
     }
 
-    bool argument_parse_result = false;
     uint32_t non_help_args_found = 0U;
     for(int i = 1; i < argc; ++i)
     {
@@ -37,33 +41,28 @@ bool CmdlineArgumentsParser::ParseArguments(int argc, char* argv[])
         }
         else if (arg == "--Language")
         {
-            argument_parse_result = GetSupportedLanguageForCodeGen(++i, argv, argc, m_supported_language);
+            CHECK_SUCCESS(GetSupportedLanguageForCodeGen(++i, argv, argc, m_supported_language));
             non_help_args_found++;
         }
         else if (arg == "--EdlPath")
         {
-            argument_parse_result = GetEdlPathFromArgs(++i, argv, argc, m_edl_path);
+            CHECK_SUCCESS(GetEdlPathFromArgs(++i, argv, argc, m_edl_path));
             non_help_args_found++;
         }
         else if (arg == "--OutputDirectory")
         {
-            GetPathToOutputDirectoryFromArgs(++i, argv, argc, m_out_directory);
+            CHECK_SUCCESS(GetPathToOutputDirectoryFromArgs(++i, argv, argc, m_out_directory));
             non_help_args_found++;
         }
         else if (arg == "--ErrorHandling")
         {
-            argument_parse_result = GetErrorHandlingFromArg(++i, argv, argc, m_error_handling_kind);
+            CHECK_SUCCESS(GetErrorHandlingFromArg(++i, argv, argc, m_error_handling_kind));
             non_help_args_found++;
         }
         else
         {
-            argument_parse_result = false;
             PrintError(ErrorIds::InvalidArgument, arg);
-        }
-
-        if (!argument_parse_result)
-        {
-            return argument_parse_result;
+            return false;
         }
     }
 

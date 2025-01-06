@@ -38,6 +38,7 @@ namespace VbsEnclaveToolingTests
     TEST_CLASS(PrintErrorUnitTests)
     {
     private:
+        std::string m_error_prefix = "Error: ";
         std::string m_invalid_lang = "java";
         std::string m_edl_invalid_path = "C:\\bad\\path\\to\\edl.edl";
         std::string m_edl_invalid_file = "test.txt";
@@ -47,6 +48,7 @@ namespace VbsEnclaveToolingTests
         uint32_t m_out_dir_error_code = 2;
         uint32_t m_max_args = 5;
         uint32_t m_invalid_arg_amount = 3;
+
     public:
         // Make sure you add a new line character at the end.
         std::unordered_map<ErrorIds, std::string, ErrorIdsHash> m_test_error_messages =
@@ -68,7 +70,7 @@ namespace VbsEnclaveToolingTests
         TEST_METHOD(TestPrintLanguageNoMoreArgs)
         {
             RedirectCerr redirect_cerr;
-            std::string expected_msg = m_test_error_messages.at(ErrorIds::LanguageNoMoreArgs);
+            std::string expected_msg = m_error_prefix + m_test_error_messages.at(ErrorIds::LanguageNoMoreArgs);
             PrintError(ErrorIds::LanguageNoMoreArgs);
             Assert::AreEqual(expected_msg, redirect_cerr.GetString());
         }
@@ -76,7 +78,7 @@ namespace VbsEnclaveToolingTests
         TEST_METHOD(TestPrintUnsupportedLanguage)
         {
             RedirectCerr redirect_cerr;
-            std::string expected_msg = m_test_error_messages.at(ErrorIds::UnsupportedLanguage);
+            std::string expected_msg = m_error_prefix + m_test_error_messages.at(ErrorIds::UnsupportedLanguage);
             expected_msg = std::vformat(expected_msg, std::make_format_args(m_invalid_lang));
             PrintError(ErrorIds::UnsupportedLanguage, m_invalid_lang);
             Assert::AreEqual(expected_msg, redirect_cerr.GetString());
@@ -85,7 +87,7 @@ namespace VbsEnclaveToolingTests
         TEST_METHOD(TestPrintEdlNoMoreArgs)
         {
             RedirectCerr redirect_cerr;
-            std::string expected_msg = m_test_error_messages.at(ErrorIds::EdlNoMoreArgs);
+            std::string expected_msg = m_error_prefix + m_test_error_messages.at(ErrorIds::EdlNoMoreArgs);
             PrintError(ErrorIds::EdlNoMoreArgs);
             Assert::AreEqual(expected_msg, redirect_cerr.GetString());
         }
@@ -93,7 +95,7 @@ namespace VbsEnclaveToolingTests
         TEST_METHOD(TestPrintEdlDoesNotExist)
         {
             RedirectCerr redirect_cerr;
-            std::string expected_msg = m_test_error_messages.at(ErrorIds::EdlDoesNotExist);
+            std::string expected_msg = m_error_prefix + m_test_error_messages.at(ErrorIds::EdlDoesNotExist);
             expected_msg = std::vformat(expected_msg, std::make_format_args(m_edl_invalid_path));
             PrintError(ErrorIds::EdlDoesNotExist, m_edl_invalid_path);
             Assert::AreEqual(expected_msg, redirect_cerr.GetString());
@@ -102,7 +104,7 @@ namespace VbsEnclaveToolingTests
         TEST_METHOD(TestPrintNotAnEdlFile)
         {
             RedirectCerr redirect_cerr;
-            std::string expected_msg = m_test_error_messages.at(ErrorIds::NotAnEdlFile);
+            std::string expected_msg = m_error_prefix + m_test_error_messages.at(ErrorIds::NotAnEdlFile);
             expected_msg = std::vformat(expected_msg, std::make_format_args(m_edl_invalid_file));
             PrintError(ErrorIds::NotAnEdlFile, m_edl_invalid_file);
             Assert::AreEqual(expected_msg, redirect_cerr.GetString());
@@ -111,7 +113,7 @@ namespace VbsEnclaveToolingTests
         TEST_METHOD(TestPrintOutputDirNoMoreArgs)
         {
             RedirectCerr redirect_cerr;
-            std::string expected_msg = m_test_error_messages.at(ErrorIds::OutputDirNoMoreArgs);
+            std::string expected_msg = m_error_prefix + m_test_error_messages.at(ErrorIds::OutputDirNoMoreArgs);
             PrintError(ErrorIds::OutputDirNoMoreArgs);
             Assert::AreEqual(expected_msg, redirect_cerr.GetString());
         }
@@ -119,7 +121,7 @@ namespace VbsEnclaveToolingTests
         TEST_METHOD(TestPrintOutputDirNotADirectory)
         {
             RedirectCerr redirect_cerr;
-            std::string expected_msg = m_test_error_messages.at(ErrorIds::OutputDirNotADirectory);
+            std::string expected_msg = m_error_prefix + m_test_error_messages.at(ErrorIds::OutputDirNotADirectory);
             expected_msg = std::vformat(expected_msg, std::make_format_args(m_out_dir_invalid_path, m_out_dir_error_code));
             PrintError(ErrorIds::OutputDirNotADirectory, m_out_dir_invalid_path, m_out_dir_error_code);
             Assert::AreEqual(expected_msg, redirect_cerr.GetString());
@@ -128,7 +130,7 @@ namespace VbsEnclaveToolingTests
         TEST_METHOD(TestPrintErrorHandlingNoMoreArgs)
         {
             RedirectCerr redirect_cerr;
-            std::string expected_msg = m_test_error_messages.at(ErrorIds::ErrorHandlingNoMoreArgs);
+            std::string expected_msg = m_error_prefix + m_test_error_messages.at(ErrorIds::ErrorHandlingNoMoreArgs);
             PrintError(ErrorIds::ErrorHandlingNoMoreArgs);
             Assert::AreEqual(expected_msg, redirect_cerr.GetString());
         }
@@ -136,7 +138,7 @@ namespace VbsEnclaveToolingTests
         TEST_METHOD(TestPrintErrorHandlingInvalidType)
         {
             RedirectCerr redirect_cerr;
-            std::string expected_msg = m_test_error_messages.at(ErrorIds::ErrorHandlingInvalidType);
+            std::string expected_msg = m_error_prefix + m_test_error_messages.at(ErrorIds::ErrorHandlingInvalidType);
             expected_msg = std::vformat(expected_msg, std::make_format_args(m_error_handling_invalid));
             PrintError(ErrorIds::ErrorHandlingInvalidType, m_error_handling_invalid);
             Assert::AreEqual(expected_msg, redirect_cerr.GetString());
@@ -145,7 +147,7 @@ namespace VbsEnclaveToolingTests
         TEST_METHOD(TestPrintInvalidArgument)
         {
             RedirectCerr redirect_cerr;
-            std::string expected_msg = m_test_error_messages.at(ErrorIds::InvalidArgument);
+            std::string expected_msg = m_error_prefix + m_test_error_messages.at(ErrorIds::InvalidArgument);
             expected_msg = std::vformat(expected_msg, std::make_format_args(m_invalid_arg));
             PrintError(ErrorIds::InvalidArgument, m_invalid_arg);
             Assert::AreEqual(expected_msg, redirect_cerr.GetString());
@@ -154,7 +156,7 @@ namespace VbsEnclaveToolingTests
         TEST_METHOD(TestPrintIncorrectNonHelpArgsProvided)
         {
             RedirectCerr redirect_cerr;
-            std::string expected_msg = m_test_error_messages.at(ErrorIds::IncorrectNonHelpArgsProvided);
+            std::string expected_msg = m_error_prefix + m_test_error_messages.at(ErrorIds::IncorrectNonHelpArgsProvided);
             expected_msg = std::vformat(expected_msg, std::make_format_args(m_max_args, m_invalid_arg_amount));
             PrintError(ErrorIds::IncorrectNonHelpArgsProvided, m_max_args, m_invalid_arg_amount);
             Assert::AreEqual(expected_msg, redirect_cerr.GetString());
@@ -163,7 +165,7 @@ namespace VbsEnclaveToolingTests
         TEST_METHOD(TestPrintMissingArgument)
         {
             RedirectCerr redirect_cerr;
-            std::string expected_msg = m_test_error_messages.at(ErrorIds::MissingArgument);
+            std::string expected_msg = m_error_prefix + m_test_error_messages.at(ErrorIds::MissingArgument);
             PrintError(ErrorIds::MissingArgument);
             Assert::AreEqual(expected_msg, redirect_cerr.GetString());
         }

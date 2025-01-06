@@ -2,10 +2,14 @@
 // Licensed under the MIT License.
 
 #pragma once
-#include "..\pch.h"
+#include <pch.h>
 #include "ErrorHelpers.h"
 
 using namespace ErrorHelpers;
+
+#define PRINT_AND_RETURN_ERROR(id, ...)  \
+    PrintError(id, __VA_ARGS__);          \
+    return id;
 
 namespace CmdlineParsingHelpers
 {   
@@ -16,7 +20,7 @@ namespace CmdlineParsingHelpers
             << "--OutputDirectory <DirectoryPath>\n"
             << "Mandatory arguments:\n"
             << "  --Language [cpp]                          The progamming language that will be used in the generated code\n"
-            << "  --EdlPath <filePath.edl  >                Absolute path to .edl file to use to generate code in language outlined in --language\n"
+            << "  --EdlPath <filePath.edl>                  Absolute path to the .edl file that we should use to generate code in the language outlined in '--language'\n"
             << "  --ErrorHandling [ErrorCode | Exception]   The error handling the generated code should use\n"
             << "  --OutputDirectory <DirectoryPath>         Absolute path to directory where all generated files should be placed.\n"
             << "\n"
@@ -38,7 +42,7 @@ namespace CmdlineParsingHelpers
         Cpp,
     };
 
-    static bool inline GetSupportedLanguageForCodeGen(
+    static ErrorIds inline GetSupportedLanguageForCodeGen(
         std::uint32_t index,
         char* args[],
         std::uint32_t args_size,
@@ -47,22 +51,21 @@ namespace CmdlineParsingHelpers
         supported_language = SupportedLanguageKind::Unknown;
         if (index >= args_size)
         {
-            PrintError(ErrorIds::LanguageNoMoreArgs);
-            return false;
+            PRINT_AND_RETURN_ERROR(ErrorIds::LanguageNoMoreArgs);
         }
 
         std::string language{args[index]};
         if (language == "c++" || language == "C++")
         {
             supported_language = SupportedLanguageKind::Cpp;
-            return true;
+            return ErrorIds::Success;
         }
         
         PrintError(ErrorIds::UnsupportedLanguage, language);
-        return false;
+        PRINT_AND_RETURN_ERROR(ErrorIds::UnsupportedLanguage, language);
     }
 
-    static bool inline GetEdlPathFromArgs(
+    static ErrorIds inline GetEdlPathFromArgs(
         std::uint32_t index,
         char* args[],
         std::uint32_t args_size,
@@ -71,8 +74,7 @@ namespace CmdlineParsingHelpers
         edl_path = "";
         if (index >= args_size)
         {
-            PrintError(ErrorIds::EdlNoMoreArgs);
-            return false;
+            PRINT_AND_RETURN_ERROR(ErrorIds::EdlNoMoreArgs);
         }
 
         std::filesystem::path item_path(args[index]);
@@ -80,23 +82,21 @@ namespace CmdlineParsingHelpers
         // Check if the item exists
         if (!std::filesystem::exists(item_path))
         {
-            PrintError(ErrorIds::EdlDoesNotExist, item_path.generic_string());
-            return false;
+            PRINT_AND_RETURN_ERROR(ErrorIds::EdlDoesNotExist, item_path.generic_string());
         }
 
         // Check if the file is a regular file (not a directory)
         auto extension = item_path.extension();
         if (!std::filesystem::is_regular_file(item_path) || extension != L".edl")
         {
-            PrintError(ErrorIds::NotAnEdlFile, item_path.generic_string());
-            return false;
+            PRINT_AND_RETURN_ERROR(ErrorIds::NotAnEdlFile, item_path.generic_string());
         }
 
         edl_path = args[index];
-        return true;
+        return ErrorIds::Success;
     }
 
-    static bool inline GetPathToOutputDirectoryFromArgs(
+    static ErrorIds inline GetPathToOutputDirectoryFromArgs(
         std::uint32_t index,
         char* args[],
         std::uint32_t args_size,
@@ -105,23 +105,21 @@ namespace CmdlineParsingHelpers
         directory = "";
         if (index >= args_size)
         {
-            PrintError(ErrorIds::OutputDirNoMoreArgs);
-            return false;
+            PRINT_AND_RETURN_ERROR(ErrorIds::OutputDirNoMoreArgs);
         }
 
         std::filesystem::path item_path(args[index]);
         std::error_code error_code{};
         if (!std::filesystem::is_directory(item_path, error_code))
         {
-            PrintError(ErrorIds::OutputDirNotADirectory, item_path.generic_string(), error_code.value());
-            return false;
+            PRINT_AND_RETURN_ERROR(ErrorIds::OutputDirNotADirectory, item_path.generic_string(), error_code.value());
         }
 
         directory = args[index];
-        return true;
+        return ErrorIds::Success;
     }
 
-    static bool inline GetErrorHandlingFromArg(
+    static ErrorIds inline GetErrorHandlingFromArg(
         std::uint32_t index,
         char* args[],
         std::uint32_t args_size,
@@ -130,8 +128,7 @@ namespace CmdlineParsingHelpers
         errorKind = ErrorHandlingKind::Unknown;
         if (index >= args_size)
         {
-            PrintError(ErrorIds::ErrorHandlingNoMoreArgs);
-            return false;
+            PRINT_AND_RETURN_ERROR(ErrorIds::ErrorHandlingNoMoreArgs);
         }
 
         std::string error_handling(args[index]);
@@ -139,15 +136,14 @@ namespace CmdlineParsingHelpers
         if(error_handling == "ErrorCode")
         {
             errorKind = ErrorHandlingKind::ErrorCode;
-            return true;
+            return ErrorIds::Success;
         }
         else if (error_handling == "Exception")
         {
             errorKind = ErrorHandlingKind::Exception;
-            return true;
+            return ErrorIds::Success;
         }
         
-        PrintError(ErrorIds::ErrorHandlingInvalidType, error_handling);
-        return false;
+        PRINT_AND_RETURN_ERROR(ErrorIds::ErrorHandlingInvalidType, error_handling);
     }
 }

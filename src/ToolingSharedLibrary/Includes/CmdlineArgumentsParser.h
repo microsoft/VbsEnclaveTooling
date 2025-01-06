@@ -2,7 +2,7 @@
 // Licensed under the MIT License.
 
 #pragma once
-#include "..\pch.h"
+#include <pch.h>
 #include "CmdlineParsingHelpers.h"
 
 namespace CmdlineParsingHelpers
