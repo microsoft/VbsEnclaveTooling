@@ -1,4 +1,4 @@
-*		text=auto
-*		text eol=clrf
+*       text=auto
+*       text eol=crlf
 *.png   -text
 *.exe   -text
