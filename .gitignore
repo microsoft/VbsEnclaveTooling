@@ -396,3 +396,30 @@ FodyWeavers.xsd
 
 # JetBrains Rider
 *.sln.iml
+
+# Specific to vbs enclave tooling projects
+/x64
+/ARM64
+/x86
+/ARM
+/*/x64
+/*/ARM64
+/*/x86
+/packages
+.vs
+.nuget
+.vscode
+*.user
+*.nupkg
+test*.xml
+test*_results.txt
+test_failures.txt
+build
+Debug
+Release
+Generated Files
+obj
+vsix/LICENSE
+*.binlog
+temp
+_build

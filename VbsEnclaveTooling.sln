@@ -1,0 +1,91 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.9.34902.65
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ToolingNuget", "src\ToolingNuget\ToolingNuget.vcxproj", "{0900AF8B-EE9B-4208-97A5-225BDBAD01BA}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{1542CC01-B383-491A-96C3-36FCAB8791A2}"
+	ProjectSection(SolutionItems) = preProject
+		.editorconfig = .editorconfig
+		.gitattributes = .gitattributes
+		.gitignore = .gitignore
+		Directory.Build.props = Directory.Build.props
+		Directory.Build.targets = Directory.Build.targets
+		LICENSE.txt = LICENSE.txt
+		nuget.config = nuget.config
+		README.md = README.md
+	EndProjectSection
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ToolingExecutable", "src\ToolingExecutable\ToolingExecutable.vcxproj", "{8068FE68-F1DC-4A82-B2A8-97AE1A48D571}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "BuildScripts", "BuildScripts", "{E2DFF69F-9D18-460B-AB88-FB7A55A28EBC}"
+	ProjectSection(SolutionItems) = preProject
+		buildScripts\build.cmd = buildScripts\build.cmd
+		buildScripts\build.ps1 = buildScripts\build.ps1
+		buildScripts\NugetExeDownloader.ps1 = buildScripts\NugetExeDownloader.ps1
+		buildScripts\PackageNuget.ps1 = buildScripts\PackageNuget.ps1
+	EndProjectSection
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "UnitTests", "tests\UnitTests\UnitTests.vcxproj", "{4FA028C0-329C-4B6B-BC9F-FFC23B409EC1}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ToolingSharedLibrary", "src\ToolingSharedLibrary\ToolingSharedLibrary.vcxproj", "{27C99E39-8373-4559-83D7-F21B5134EB83}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "VbsEnclaveSDK", "src\VbsEnclaveSDK\VbsEnclaveSDK.vcxproj", "{162FC354-7650-4000-B7F2-EC8FC46D10F6}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|ARM64 = Debug|ARM64
+		Debug|x64 = Debug|x64
+		Release|ARM64 = Release|ARM64
+		Release|x64 = Release|x64
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{0900AF8B-EE9B-4208-97A5-225BDBAD01BA}.Debug|ARM64.ActiveCfg = Debug|ARM64
+		{0900AF8B-EE9B-4208-97A5-225BDBAD01BA}.Debug|ARM64.Build.0 = Debug|ARM64
+		{0900AF8B-EE9B-4208-97A5-225BDBAD01BA}.Debug|x64.ActiveCfg = Debug|x64
+		{0900AF8B-EE9B-4208-97A5-225BDBAD01BA}.Debug|x64.Build.0 = Debug|x64
+		{0900AF8B-EE9B-4208-97A5-225BDBAD01BA}.Release|ARM64.ActiveCfg = Release|ARM64
+		{0900AF8B-EE9B-4208-97A5-225BDBAD01BA}.Release|ARM64.Build.0 = Release|ARM64
+		{0900AF8B-EE9B-4208-97A5-225BDBAD01BA}.Release|x64.ActiveCfg = Release|x64
+		{0900AF8B-EE9B-4208-97A5-225BDBAD01BA}.Release|x64.Build.0 = Release|x64
+		{8068FE68-F1DC-4A82-B2A8-97AE1A48D571}.Debug|ARM64.ActiveCfg = Debug|ARM64
+		{8068FE68-F1DC-4A82-B2A8-97AE1A48D571}.Debug|ARM64.Build.0 = Debug|ARM64
+		{8068FE68-F1DC-4A82-B2A8-97AE1A48D571}.Debug|x64.ActiveCfg = Debug|x64
+		{8068FE68-F1DC-4A82-B2A8-97AE1A48D571}.Debug|x64.Build.0 = Debug|x64
+		{8068FE68-F1DC-4A82-B2A8-97AE1A48D571}.Release|ARM64.ActiveCfg = Release|ARM64
+		{8068FE68-F1DC-4A82-B2A8-97AE1A48D571}.Release|ARM64.Build.0 = Release|ARM64
+		{8068FE68-F1DC-4A82-B2A8-97AE1A48D571}.Release|x64.ActiveCfg = Release|x64
+		{8068FE68-F1DC-4A82-B2A8-97AE1A48D571}.Release|x64.Build.0 = Release|x64
+		{4FA028C0-329C-4B6B-BC9F-FFC23B409EC1}.Debug|ARM64.ActiveCfg = Debug|ARM64
+		{4FA028C0-329C-4B6B-BC9F-FFC23B409EC1}.Debug|ARM64.Build.0 = Debug|ARM64
+		{4FA028C0-329C-4B6B-BC9F-FFC23B409EC1}.Debug|x64.ActiveCfg = Debug|x64
+		{4FA028C0-329C-4B6B-BC9F-FFC23B409EC1}.Debug|x64.Build.0 = Debug|x64
+		{4FA028C0-329C-4B6B-BC9F-FFC23B409EC1}.Release|ARM64.ActiveCfg = Release|ARM64
+		{4FA028C0-329C-4B6B-BC9F-FFC23B409EC1}.Release|ARM64.Build.0 = Release|ARM64
+		{4FA028C0-329C-4B6B-BC9F-FFC23B409EC1}.Release|x64.ActiveCfg = Release|x64
+		{4FA028C0-329C-4B6B-BC9F-FFC23B409EC1}.Release|x64.Build.0 = Release|x64
+		{27C99E39-8373-4559-83D7-F21B5134EB83}.Debug|ARM64.ActiveCfg = Debug|ARM64
+		{27C99E39-8373-4559-83D7-F21B5134EB83}.Debug|ARM64.Build.0 = Debug|ARM64
+		{27C99E39-8373-4559-83D7-F21B5134EB83}.Debug|x64.ActiveCfg = Debug|x64
+		{27C99E39-8373-4559-83D7-F21B5134EB83}.Debug|x64.Build.0 = Debug|x64
+		{27C99E39-8373-4559-83D7-F21B5134EB83}.Release|ARM64.ActiveCfg = Release|ARM64
+		{27C99E39-8373-4559-83D7-F21B5134EB83}.Release|ARM64.Build.0 = Release|ARM64
+		{27C99E39-8373-4559-83D7-F21B5134EB83}.Release|x64.ActiveCfg = Release|x64
+		{27C99E39-8373-4559-83D7-F21B5134EB83}.Release|x64.Build.0 = Release|x64
+		{162FC354-7650-4000-B7F2-EC8FC46D10F6}.Debug|ARM64.ActiveCfg = Debug|ARM64
+		{162FC354-7650-4000-B7F2-EC8FC46D10F6}.Debug|ARM64.Build.0 = Debug|ARM64
+		{162FC354-7650-4000-B7F2-EC8FC46D10F6}.Debug|x64.ActiveCfg = Debug|x64
+		{162FC354-7650-4000-B7F2-EC8FC46D10F6}.Debug|x64.Build.0 = Debug|x64
+		{162FC354-7650-4000-B7F2-EC8FC46D10F6}.Release|ARM64.ActiveCfg = Release|ARM64
+		{162FC354-7650-4000-B7F2-EC8FC46D10F6}.Release|ARM64.Build.0 = Release|ARM64
+		{162FC354-7650-4000-B7F2-EC8FC46D10F6}.Release|x64.ActiveCfg = Release|x64
+		{162FC354-7650-4000-B7F2-EC8FC46D10F6}.Release|x64.Build.0 = Release|x64
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {166D23FF-1362-43F2-BEE7-58FDCDB133DF}
+	EndGlobalSection
+EndGlobal
