@@ -30,6 +30,9 @@
     <ClCompile Include="VbsEnclaveSDKTests\SDKTests.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="ToolingExecutableTests\LexicalAnalyzerTests.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h">
@@ -38,5 +41,11 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="README.md" />
+  </ItemGroup>
+  <ItemGroup>
+    <CopyFileToFolders Include="TestFiles\ArrayTest.edl" />
+    <CopyFileToFolders Include="TestFiles\BasicTypesTest.edl" />
+    <CopyFileToFolders Include="TestFiles\EnumTest.edl" />
+    <CopyFileToFolders Include="TestFiles\StructTest.edl" />
   </ItemGroup>
 </Project>

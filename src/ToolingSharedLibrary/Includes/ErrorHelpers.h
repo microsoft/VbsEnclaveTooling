@@ -32,6 +32,9 @@ namespace ErrorHelpers
         InvalidArgument,
         IncorrectNonHelpArgsProvided,
         MissingArgument,
+        EdlCommentEndingNotFound,
+        EdlStringEndingNotFound,
+        EdlUnexpectedToken,
     };
 
     struct ErrorIdsHash
@@ -58,6 +61,11 @@ namespace ErrorHelpers
         { ErrorIds::InvalidArgument,"Unknown argument: {}" },
         { ErrorIds::IncorrectNonHelpArgsProvided,"VbsEnclaveTooling.exe expects '{}' arguments when '-h' is not used. Only found: '{}'" },
         { ErrorIds::MissingArgument,"Missing arguments. Use '-h' for usage." },
+
+        // Edl file lexical analysis errors
+        { ErrorIds::EdlCommentEndingNotFound, "EOF while looking for '*/' to match the '/*'" },
+        { ErrorIds::EdlStringEndingNotFound, "Could not find ending '\"' for string" },
+        { ErrorIds::EdlUnexpectedToken, "Unexpected token starting with '{}'" },
     };
 
     template<typename... Args>

@@ -1,0 +1,83 @@
+// Copyright (c) Open Enclave SDK contributors.
+// Licensed under the MIT License.
+// 
+// Copyright (c) Microsoft Corporation.
+// Licensed under the MIT License.
+// This file has been modified and adapted from its original
+// which was created by Open Enclave.
+// File used for testing purposes
+
+enclave
+{
+    trusted
+    {
+
+        /* Test all basic type parameters */
+        void TrustedWithBasicTypes(
+            char arg1,
+            float arg4,
+            double arg5,
+            size_t arg6,
+            int8_t arg8,
+            int16_t arg9,
+            int32_t arg10,
+            int64_t arg11,
+            uint8_t arg12,
+            uint16_t arg13,
+            uint32_t arg14,
+            uint64_t arg15
+        );
+
+        /* Test all basic types are return type */
+        char RetChar();
+        wchar_t RetWchar_t();
+        float RetFloat();
+        double RetDouble();
+        size_t RetSize_t();
+        int8_t RetInt8_t();
+        int16_t RetInt16_t();
+        int32_t RetInt32_t();
+        int64_t RetInt64_t();
+        uint8_t RetUint8_t();
+        uint16_t RetUint16_t();
+        uint32_t RetUint32_t();
+        uint64_t RetUint64_t();
+        void RetVoid();
+    };
+
+    untrusted 
+    {
+        /* Test all basic type parameters */
+        void UntrustedWithBasicTypes(
+            char arg1,
+            int arg3,
+            float arg4,
+            double arg5,
+            size_t arg6,
+            int8_t arg8,
+            int16_t arg9,
+            int32_t arg10,
+            int64_t arg11,
+            uint8_t arg12,
+            uint16_t arg13,
+            uint32_t arg14,
+            uint64_t arg15
+        );
+
+        /* Test all basic types are return type */
+        char RetChar();
+        wchar_t RetWchar_t();
+        float RetFloat();
+        double RetDouble();
+        size_t RetSize_t();
+        int8_t RetInt8_t();
+        int16_t RetInt16_t();
+        int32_t RetInt32_t();
+        int64_t RetInt64_t();
+        uint8_t RetUint8_t();
+        uint16_t RetUint16_t();
+        uint32_t RetUint32_t();
+        uint64_t RetUint64_t();
+        void RetVoid();
+    };
+};
