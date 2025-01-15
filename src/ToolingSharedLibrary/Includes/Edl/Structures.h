@@ -27,48 +27,9 @@ namespace EdlProcessor
         {
         }
 
-        std::uint32_t m_line_number {0};
-        std::uint32_t m_column_number {0};
-        const char* m_starting_character {0};
-        const char* m_ending_character {0};
-
-        // Anonymous enums don't have a specific token name/identifier 
-        // as they will just show up as '{' because they are declared like:  
-        //     enum
-        //     {
-        //         ...
-        //     };
-        // 
-        // while a regular enum's token e.g:
-        // 
-        //     enum TestEnum
-        //     {
-        //         ...
-        //     };
-        // 
-        // will have its Token identifier as 'TestEnum'.
-        bool is_anonymous_enum_token {false};
-
-        Token& operator=(const Token& other)
+        bool operator==(std::string_view str) const
         {
-            if (this == &other)  // Check for self-assignment
-            {
-                return *this;
-            }
-
-            m_line_number = other.m_line_number;
-            m_column_number = other.m_column_number;
-            m_starting_character = other.m_starting_character;
-            m_ending_character = other.m_ending_character;
-
-            return *this;
-        }
-
-        bool operator==(const char* str) const
-        {
-            size_t token_len = Length();
-            size_t string_len = static_cast<size_t>(strlen(str));
-            return (token_len == string_len) && (strncmp(m_starting_character, str, token_len) == 0);
+            return str == std::string_view(m_starting_character, Length());
         }
 
         bool operator!=(const char* str) const
@@ -127,5 +88,27 @@ namespace EdlProcessor
             const char* str = "\0\0";
             return Token(0, 0, str, str + 1);
         }
+
+        // Anonymous enums don't have a specific token name/identifier 
+        // as they will just show up as '{' because they are declared like:  
+        //     enum
+        //     {
+        //         ...
+        //     };
+        // 
+        // while a regular enum's token e.g:
+        // 
+        //     enum TestEnum
+        //     {
+        //         ...
+        //     };
+        // 
+        // will have its Token identifier as 'TestEnum'.
+        bool is_anonymous_enum_token {false};
+
+        std::uint32_t m_line_number{};
+        std::uint32_t m_column_number{};
+        const char* m_starting_character{};
+        const char* m_ending_character{};
     };
 }

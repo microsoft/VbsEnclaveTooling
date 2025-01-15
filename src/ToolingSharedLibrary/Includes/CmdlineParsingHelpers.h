@@ -42,7 +42,7 @@ namespace CmdlineParsingHelpers
         Cpp,
     };
 
-    static ErrorIds inline GetSupportedLanguageForCodeGen(
+    static ErrorId inline GetSupportedLanguageForCodeGen(
         std::uint32_t index,
         char* args[],
         std::uint32_t args_size,
@@ -51,21 +51,21 @@ namespace CmdlineParsingHelpers
         supported_language = SupportedLanguageKind::Unknown;
         if (index >= args_size)
         {
-            PRINT_AND_RETURN_ERROR(ErrorIds::LanguageNoMoreArgs);
+            PRINT_AND_RETURN_ERROR(ErrorId::LanguageNoMoreArgs);
         }
 
         std::string language{args[index]};
         if (language == "c++" || language == "C++")
         {
             supported_language = SupportedLanguageKind::Cpp;
-            return ErrorIds::Success;
+            return ErrorId::Success;
         }
         
-        PrintError(ErrorIds::UnsupportedLanguage, language);
-        PRINT_AND_RETURN_ERROR(ErrorIds::UnsupportedLanguage, language);
+        PrintError(ErrorId::UnsupportedLanguage, language);
+        PRINT_AND_RETURN_ERROR(ErrorId::UnsupportedLanguage, language);
     }
 
-    static ErrorIds inline GetEdlPathFromArgs(
+    static ErrorId inline GetEdlPathFromArgs(
         std::uint32_t index,
         char* args[],
         std::uint32_t args_size,
@@ -74,7 +74,7 @@ namespace CmdlineParsingHelpers
         edl_path = "";
         if (index >= args_size)
         {
-            PRINT_AND_RETURN_ERROR(ErrorIds::EdlNoMoreArgs);
+            PRINT_AND_RETURN_ERROR(ErrorId::EdlNoMoreArgs);
         }
 
         std::filesystem::path item_path(args[index]);
@@ -82,21 +82,21 @@ namespace CmdlineParsingHelpers
         // Check if the item exists
         if (!std::filesystem::exists(item_path))
         {
-            PRINT_AND_RETURN_ERROR(ErrorIds::EdlDoesNotExist, item_path.generic_string());
+            PRINT_AND_RETURN_ERROR(ErrorId::EdlDoesNotExist, item_path.generic_string());
         }
 
         // Check if the file is a regular file (not a directory)
         auto extension = item_path.extension();
         if (!std::filesystem::is_regular_file(item_path) || extension != L".edl")
         {
-            PRINT_AND_RETURN_ERROR(ErrorIds::NotAnEdlFile, item_path.generic_string());
+            PRINT_AND_RETURN_ERROR(ErrorId::NotAnEdlFile, item_path.generic_string());
         }
 
         edl_path = args[index];
-        return ErrorIds::Success;
+        return ErrorId::Success;
     }
 
-    static ErrorIds inline GetPathToOutputDirectoryFromArgs(
+    static ErrorId inline GetPathToOutputDirectoryFromArgs(
         std::uint32_t index,
         char* args[],
         std::uint32_t args_size,
@@ -105,21 +105,21 @@ namespace CmdlineParsingHelpers
         directory = "";
         if (index >= args_size)
         {
-            PRINT_AND_RETURN_ERROR(ErrorIds::OutputDirNoMoreArgs);
+            PRINT_AND_RETURN_ERROR(ErrorId::OutputDirNoMoreArgs);
         }
 
         std::filesystem::path item_path(args[index]);
         std::error_code error_code{};
         if (!std::filesystem::is_directory(item_path, error_code))
         {
-            PRINT_AND_RETURN_ERROR(ErrorIds::OutputDirNotADirectory, item_path.generic_string(), error_code.value());
+            PRINT_AND_RETURN_ERROR(ErrorId::OutputDirNotADirectory, item_path.generic_string(), error_code.value());
         }
 
         directory = args[index];
-        return ErrorIds::Success;
+        return ErrorId::Success;
     }
 
-    static ErrorIds inline GetErrorHandlingFromArg(
+    static ErrorId inline GetErrorHandlingFromArg(
         std::uint32_t index,
         char* args[],
         std::uint32_t args_size,
@@ -128,7 +128,7 @@ namespace CmdlineParsingHelpers
         errorKind = ErrorHandlingKind::Unknown;
         if (index >= args_size)
         {
-            PRINT_AND_RETURN_ERROR(ErrorIds::ErrorHandlingNoMoreArgs);
+            PRINT_AND_RETURN_ERROR(ErrorId::ErrorHandlingNoMoreArgs);
         }
 
         std::string error_handling(args[index]);
@@ -136,14 +136,14 @@ namespace CmdlineParsingHelpers
         if(error_handling == "ErrorCode")
         {
             errorKind = ErrorHandlingKind::ErrorCode;
-            return ErrorIds::Success;
+            return ErrorId::Success;
         }
         else if (error_handling == "Exception")
         {
             errorKind = ErrorHandlingKind::Exception;
-            return ErrorIds::Success;
+            return ErrorId::Success;
         }
         
-        PRINT_AND_RETURN_ERROR(ErrorIds::ErrorHandlingInvalidType, error_handling);
+        PRINT_AND_RETURN_ERROR(ErrorId::ErrorHandlingInvalidType, error_handling);
     }
 }

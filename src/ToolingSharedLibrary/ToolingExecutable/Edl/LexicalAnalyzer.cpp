@@ -18,15 +18,20 @@ using namespace ToolingExceptions;
 
 namespace EdlProcessor
 {
-    LexicalAnalyzer::LexicalAnalyzer(const std::filesystem::path& filepath)
-        : m_file_name(filepath.filename())
+    LexicalAnalyzer::LexicalAnalyzer(const std::filesystem::path& file_path)
+        : m_file_path(file_path)
     {
-        std::ifstream file(filepath.generic_string(), std::ios::in | std::ios::ate);
+    }
+
+    void LexicalAnalyzer::RetrieveAndStoreContentFromEdlFile()
+    {
+        std::ifstream file(m_file_path.generic_string(), std::ios::in | std::ios::ate);
 
         if (!file)
         {
-            m_file_contents_loaded = false;
-            return;
+            throw EdlAnalysisException(
+                ErrorId::EdlCommentEndingNotFound,
+                m_file_path.filename().generic_string());
         }
 
         std::streamsize last_character_position = file.tellg();
@@ -36,12 +41,11 @@ namespace EdlProcessor
         std::string file_contents(last_character_position + 1, '\0');
         file.read(&file_contents[0], last_character_position);
 
-        m_file = file_contents;
+        m_file = std::move(file_contents);
         m_null_character_position = &m_file[last_character_position + 1];
         m_line_number = 1;
         m_column_number = 1;
         m_cur_position_character = m_file.c_str();
-        m_file_contents_loaded = true;
     }
 
     bool IsEndOfMultiLineComment(
@@ -63,11 +67,11 @@ namespace EdlProcessor
         return starting_character[0] == ASTERISK && next_character[0] == FORWARD_SLASH;
     }
 
-    bool IsNotEndOfSingleLineComment(const char* cur_position_character)
+    bool IsEndOfSingleLineComment(const char* cur_position_character)
     {
         if (cur_position_character)
         {
-            return cur_position_character[0] != NEW_LINE_CHARACTER;
+            return cur_position_character[0] == NEW_LINE_CHARACTER;
         }
 
         return false;
@@ -114,7 +118,7 @@ namespace EdlProcessor
                 if (m_cur_position_character[1] == FORWARD_SLASH)
                 {
                     // skip past single line comment.
-                    while (IsNotEndOfSingleLineComment(m_cur_position_character))
+                    while (!IsEndOfSingleLineComment(m_cur_position_character))
                     {
                         ++m_cur_position_character;
                     }
@@ -147,8 +151,8 @@ namespace EdlProcessor
                     if (m_cur_position_character + 1 >= m_null_character_position)
                     {
                         throw EdlAnalysisException(
-                            ErrorIds::EdlCommentEndingNotFound,
-                            m_file_name,
+                            ErrorId::EdlCommentEndingNotFound,
+                            m_file_path.filename().generic_string(),
                             start_line_num,
                             start_col_num);
                     }
@@ -167,11 +171,11 @@ namespace EdlProcessor
         return std::isalpha(starting_character) || starting_character == UNDERSCORE;
     }
 
-    bool IsNotEndOfStringLiteral(const char* start_of_string)
+    bool IsEndOfStringLiteral(const char* start_of_string)
     {
         if (start_of_string)
         {
-            return start_of_string[0] != DOUBLE_QUOTE && start_of_string[0] != NEW_LINE_CHARACTER;
+            return start_of_string[0] == DOUBLE_QUOTE || start_of_string[0] == NEW_LINE_CHARACTER;
         }
         
         return false;
@@ -179,6 +183,12 @@ namespace EdlProcessor
 
     Token LexicalAnalyzer::GetNextToken()
     {
+        if (!m_file_contents_loaded)
+        {
+            RetrieveAndStoreContentFromEdlFile();
+            m_file_contents_loaded = true;
+        }
+
         SkipWhiteSpaceAndComments();
 
         switch (m_cur_position_character[0])
@@ -268,7 +278,7 @@ namespace EdlProcessor
 
             ++m_cur_position_character;
 
-            while (IsNotEndOfStringLiteral(m_cur_position_character))
+            while (!IsEndOfStringLiteral(m_cur_position_character))
             {
                 ++m_cur_position_character;
             }
@@ -276,8 +286,8 @@ namespace EdlProcessor
             if (m_cur_position_character[0] != DOUBLE_QUOTE)
             {
                 throw EdlAnalysisException(
-                    ErrorIds::EdlStringEndingNotFound,
-                    m_file_name,
+                    ErrorId::EdlStringEndingNotFound,
+                    m_file_path.filename().generic_string(),
                     m_line_number,
                     m_column_number);
             }
@@ -290,8 +300,8 @@ namespace EdlProcessor
         // If we get here then what we're currently looking at is a token we don't support within 
         // .edl files.
         throw EdlAnalysisException(
-            ErrorIds::EdlUnexpectedToken,
-            m_file_name,
+            ErrorId::EdlUnexpectedToken,
+            m_file_path.filename().generic_string(),
             m_line_number,
             m_column_number,
             m_cur_position_character[0]);

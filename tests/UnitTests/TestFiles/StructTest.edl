@@ -29,70 +29,70 @@ enclave
     trusted 
     {
         MyStruct1 TrustedGetStruct1 (
-            MyStruct1 a1,
+            MyStruct1 arg1,
 
             // Array of structs
-            [in] MyStruct1 a2[5],
-            [in, out] MyStruct1 a3[5][5],
-            [out] MyStruct1 a4[1][1][1],
+            [in] MyStruct1 arg2[5],
+            [in, out] MyStruct1 arg3[5][5],
+            [out] MyStruct1 arg4[1][1][1],
             
-            [in] MyStruct1* a5,
-            [in, out] MyStruct1* a6,
-            [out] MyStruct1* a7,
+            [in] MyStruct1* arg5,
+            [in, out] MyStruct1* arg6,
+            [out] MyStruct1* arg7,
 
-            [in, count=5] MyStruct1* a8,
-            [in, out, count=5] MyStruct1* a9,
-            [out, count=5] MyStruct1* a10,
+            [in, count=5] MyStruct1* arg8,
+            [in, out, count=5] MyStruct1* arg9,
+            [out, count=5] MyStruct1* arg10,
 
-            [in, size=40] MyStruct1* a11,
-            [in, out, size=40] MyStruct1* a12,
-            [out, size=40] MyStruct1* a13,
+            [in, size=40] MyStruct1* arg11,
+            [in, out, size=40] MyStruct1* arg12,
+            [out, size=40] MyStruct1* arg13,
             
-            [in, count=count] MyStruct1* a14,
-            [in, out, count=count] MyStruct1* a15,
-            [out, count=count] MyStruct1* a16,            
+            [in, count=arg20] MyStruct1* arg14,
+            [in, out, count=arg20] MyStruct1* arg15,
+            [out, count=arg20] MyStruct1* arg16,            
 
-            [in, size=size] MyStruct1* a17,
-            [in, out, size=size] MyStruct1* a18,
-            [out, size=size] MyStruct1* a19,               
+            [in, size=arg21] MyStruct1* arg17,
+            [in, out, size=arg21] MyStruct1* arg18,
+            [out, size=arg21] MyStruct1* arg19,               
 
-            size_t count,
-            size_t size
+            size_t arg20,
+            size_t arg21
         );
     };
 
     untrusted
     {
         MyStruct1 UntrustedGetStruct1 (
-            MyStruct1 a1,
+            MyStruct1 arg1,
 
             // Array of structs
-            [in] MyStruct1 a2[5],
-            [in, out] MyStruct1 a3[5][5],
-            [out] MyStruct1 a4[1][1][1],
+            [in] MyStruct1 arg2[5],
+            [in, out] MyStruct1 arg3[5][5],
+            [out] MyStruct1 arg4[1][1][1],
             
-            [in] MyStruct1* a5,
-            [in, out] MyStruct1* a6,
-            [out] MyStruct1* a7,
+            [in] MyStruct1* arg5,
+            [in, out] MyStruct1* arg6,
+            [out] MyStruct1* arg7,
 
-            [in, count=5] MyStruct1* a8,
-            [in, out, count=5] MyStruct1* a9,
-            [out, count=5] MyStruct1* a10,
+            [in, count=5] MyStruct1* arg8,
+            [in, out, count=5] MyStruct1* arg9,
+            [out, count=5] MyStruct1* arg10,
 
-            [in, size=40] MyStruct1* a11,
-            [in, out, size=40] MyStruct1* a12,
-            [out, size=40] MyStruct1* a13,
+            [in, size=40] MyStruct1* arg11,
+            [in, out, size=40] MyStruct1* arg12,
+            [out, size=40] MyStruct1* arg13,
             
-            [in, count=count] MyStruct1* a14,
-            [in, out, count=count] MyStruct1* a15,
-            [out, count=count] MyStruct1* a16,            
+            [in, count=arg20] MyStruct1* arg14,
+            [in, out, count=arg20] MyStruct1* arg15,
+            [out, count=arg20] MyStruct1* arg16,            
 
-            [in, size=size] MyStruct1* a17,
-            [in, out, size=size] MyStruct1* a18,
-            [out, size=size] MyStruct1* a19,               
+            [in, size=arg21] MyStruct1* arg17,
+            [in, out, size=arg21] MyStruct1* arg18,
+            [out, size=arg21] MyStruct1* arg19,               
 
-            size_t count,
-            size_t size
+            size_t arg20,
+            size_t arg21
         );
     };
 };

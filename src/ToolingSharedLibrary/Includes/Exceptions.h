@@ -9,13 +9,12 @@ using namespace ErrorHelpers;
 
 namespace ToolingExceptions
 {
-    template<typename... Args>
     class EdlAnalysisException: public std::exception
     {
     public:
         template<typename... Args>
         EdlAnalysisException(
-            ErrorIds id,
+            ErrorId id,
             const std::filesystem::path& file_name,
             std::uint32_t line_num,
             std::uint32_t column_num,
@@ -27,7 +26,7 @@ namespace ToolingExceptions
 
         template<typename... Args>
         EdlAnalysisException(
-            ErrorIds id,
+            ErrorId id,
             const std::filesystem::path& file_name,
             Args&&... args)
         {

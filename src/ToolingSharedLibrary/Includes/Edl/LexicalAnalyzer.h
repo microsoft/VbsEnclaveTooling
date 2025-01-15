@@ -19,20 +19,19 @@ namespace EdlProcessor
     class LexicalAnalyzer
     {
     public:
-        LexicalAnalyzer(const std::filesystem::path& filepath);
-        ~LexicalAnalyzer() = default;
+        LexicalAnalyzer(const std::filesystem::path& file_path);
 
-        bool CanStartAnalysis() { return m_file_contents_loaded; }
         Token GetNextToken();
     private:
         void SkipWhiteSpaceAndComments();
+        void RetrieveAndStoreContentFromEdlFile();
 
-        bool m_file_contents_loaded;
-        std::filesystem::path m_file_name;
+        std::filesystem::path m_file_path;
+        bool m_file_contents_loaded{};
         std::string m_file {};
-        const char* m_null_character_position{0};
-        const char* m_cur_position_character {0};
-        std::uint32_t m_line_number {0};
-        std::uint32_t m_column_number {0};
+        const char* m_null_character_position{};
+        const char* m_cur_position_character {};
+        std::uint32_t m_line_number {};
+        std::uint32_t m_column_number {};
     };
 }

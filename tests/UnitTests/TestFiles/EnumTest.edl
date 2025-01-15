@@ -27,78 +27,80 @@ enclave
     trusted 
     {
         Color TrustedGetColor(
-            Color a1,
+            Color arg1,
 
-            [in] Color a2[Nine],
-            [in,out] Color a3[5][5],
-            [out] Color a4[1][1][1],
+            // Use anonymous enum value for array size for this
+            // parameter.
+            [in] Color arg2[Nine],
+            [in,out] Color arg3[5][5],
+            [out] Color arg4[1][1][1],
 
             // count = 1
-            [in] Color* a5,
-            [in,out] Color* a6,
-            [out] Color* a7,
+            [in] Color* arg5,
+            [in,out] Color* arg6,
+            [out] Color* arg7,
 
             // count attribute           
-            [in, count=Ten] Color* a8,
-            [in,out, count=Ten] Color* a9,
-            [out, count=Ten] Color* a10,
+            [in, count=Ten] Color* arg8,
+            [in,out, count=Ten] Color* arg9,
+            [out, count=Ten] Color* arg10,
 
             // size attribute
-            [in, size=8] Color* a11,
-            [in,out, size=8] Color* a12,
-            [out, size=8] Color* a13,
+            [in, size=8] Color* arg11,
+            [in,out, size=8] Color* arg12,
+            [out, size=8] Color* arg13,
 
             // count parameter
-            [in, count=count] Color* a14,
-            [in,out, count=count] Color* a15,
-            [out, count=count] Color* a16,
+            [in, count=arg20] Color* arg14,
+            [in,out, count=arg20] Color* arg15,
+            [out, count=arg20] Color* arg16,
 
             // size parameter
-            [in, size=size] Color* a17,
-            [in,out, size=size] Color* a18,
-            [out, size=size] Color* a19,
+            [in, size=arg21] Color* arg17,
+            [in,out, size=arg21] Color* arg18,
+            [out, size=arg21] Color* arg19,
 
-            size_t count,
-            size_t size
+            size_t arg20,
+            size_t arg21
         );
     };
 
     untrusted 
     {
         Color UntrustedGetColor(
-            Color a1,
+            Color arg1,
 
-            [in] Color a2[5],
-            [in,out] Color a3[5][5],
-            [out] Color a4[1][1][1],
+            [in] Color arg2[5],
+            [in,out] Color arg3[5][5],
+            [out] Color arg4[1][1][1],
 
             // count = 1
-            [in] Color* a5,
-            [in,out] Color* a6,
-            [out] Color* a7,
+            [in] Color* arg5,
+            [in,out] Color* arg6,
+            [out] Color* arg7,
 
             // count attribute           
-            [in, count=5] Color* a8,
-            [in,out, count=5] Color* a9,
-            [out, count=5] Color* a10,
+            [in, count=5] Color* arg8,
+            [in,out, count=5] Color* arg9,
+            [out, count=5] Color* arg10,
 
             // size attribute
-            [in, size=8] Color* a11,
-            [in,out, size=8] Color* a12,
-            [out, size=8] Color* a13,
+            [in, size=8] Color* arg11,
+            [in,out, size=8] Color* arg12,
+            [out, size=8] Color* arg13,
 
             // count parameter
-            [in, count=count] Color* a14,
-            [in,out, count=count] Color* a15,
-            [out, count=count] Color* a16,
+            [in, count=arg20] Color* arg14,
+            [in,out, count=arg20] Color* arg15,
+            [out, count=arg20] Color* arg16,
 
             // size parameter
-            [in, size=size] Color* a17,
-            [in,out, size=size] Color* a18,
-            [out, size=size] Color* a19,
+            [in, size=arg21] Color* arg17,
+            [in,out, size=arg21] Color* arg18,
+            [out, size=arg21] Color* arg19,
 
-            size_t count,
-            size_t size
+            size_t arg20,
+            size_t arg21
         );
     };
 };

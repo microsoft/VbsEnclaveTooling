@@ -15,17 +15,18 @@ enclave
         /* Test all basic type parameters */
         void TrustedWithBasicTypes(
             char arg1,
-            float arg4,
-            double arg5,
-            size_t arg6,
-            int8_t arg8,
-            int16_t arg9,
-            int32_t arg10,
-            int64_t arg11,
-            uint8_t arg12,
-            uint16_t arg13,
-            uint32_t arg14,
-            uint64_t arg15
+            wchar_t arg2,
+            float arg3,
+            double arg4,
+            size_t arg5,
+            int8_t arg6,
+            int16_t arg7,
+            int32_t arg8,
+            int64_t arg9,
+            uint8_t arg10,
+            uint16_t arg11,
+            uint32_t arg12,
+            uint64_t arg13
         );
 
         /* Test all basic types are return type */
@@ -50,18 +51,18 @@ enclave
         /* Test all basic type parameters */
         void UntrustedWithBasicTypes(
             char arg1,
-            int arg3,
-            float arg4,
-            double arg5,
-            size_t arg6,
-            int8_t arg8,
-            int16_t arg9,
-            int32_t arg10,
-            int64_t arg11,
-            uint8_t arg12,
-            uint16_t arg13,
-            uint32_t arg14,
-            uint64_t arg15
+            wchar_t arg2,
+            float arg3,
+            double arg4,
+            size_t arg5,
+            int8_t arg6,
+            int16_t arg7,
+            int32_t arg8,
+            int64_t arg9,
+            uint8_t arg10,
+            uint16_t arg11,
+            uint32_t arg12,
+            uint64_t arg13
         );
 
         /* Test all basic types are return type */

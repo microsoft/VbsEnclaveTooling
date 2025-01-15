@@ -56,7 +56,7 @@ TEST_CLASS(LexicalAnalyzerTests)
                 return true;
             }
 
-            // Check if its a string literal
+            // Check if its the end of file character
             if (token.IsEof())
             {
                 return true;
@@ -73,26 +73,32 @@ TEST_CLASS(LexicalAnalyzerTests)
 
         void TokenizeFile(std::filesystem::path file_name)
         {
-            // Arrange
-            auto analyzer = LexicalAnalyzer(file_name);
-
-            // Fail test if we can't start the analysis
-            Assert::IsTrue(analyzer.CanStartAnalysis());
-            Token token = analyzer.GetNextToken();
-
-            // We should be able to tokenize the entire file without exceptions
-            while (!token.IsEmpty())
+            try
             {
-                if (!IsValidToken(token))
-                {
-                    throw EdlAnalysisException(
-                        ErrorIds::EdlUnexpectedToken,
-                        file_name,
-                        token.m_line_number,
-                        token.m_column_number);
-                }
+                // Arrange
+                auto analyzer = LexicalAnalyzer(file_name);
+                Token token = analyzer.GetNextToken();
 
-                token = analyzer.GetNextToken();
+                // We should be able to tokenize the entire file without exceptions
+                while (!token.IsEmpty())
+                {
+                    if (!IsValidToken(token))
+                    {
+                        throw EdlAnalysisException(
+                            ErrorId::EdlUnexpectedToken,
+                            file_name,
+                            token.m_line_number,
+                            token.m_column_number,
+                            token.ToString());
+                    }
+
+                    token = analyzer.GetNextToken();
+                }
+            }
+            catch (const std::exception& exception)
+            {
+                auto error_message = ConvertExceptionMessageToWstring(exception);
+                Assert::Fail(error_message.c_str());
             }
         }
 
@@ -106,56 +112,24 @@ TEST_CLASS(LexicalAnalyzerTests)
     public:
 
 
-    TEST_METHOD(TestParsingWithEdlFileThatContainsArrayTypes)
+    TEST_METHOD(TestTokenizingEdlFileThatContainsArrayTypes)
     {
-        try
-        {
-            TokenizeFile(m_array_edl_file_name);
-        }
-        catch(const std::exception& exception)
-        {
-            auto error_message = ConvertExceptionMessageToWstring(exception);
-            Assert::Fail(error_message.c_str());
-        }
+        TokenizeFile(m_array_edl_file_name);
     }
 
-    TEST_METHOD(TestParsingWithEdlFileThatContainsOnlyBasicTypes)
+    TEST_METHOD(TestTokenizingEdlFileThatContainsOnlyBasicTypes)
     {
-        try
-        {
-            TokenizeFile(m_basic_edl_file_name);
-        }
-        catch (const std::exception& exception)
-        {
-            auto error_message = ConvertExceptionMessageToWstring(exception);
-            Assert::Fail(error_message.c_str());
-        }
+        TokenizeFile(m_basic_edl_file_name);
     }
 
-    TEST_METHOD(TestParsingWithEdlFileThatContainsEnumTypes)
+    TEST_METHOD(TestTokenizingEdlFileThatContainsEnumTypes)
     {
-        try
-        {
-            TokenizeFile(m_enum_edl_file_name);
-        }
-        catch (const std::exception exception)
-        {
-            auto error_message = ConvertExceptionMessageToWstring(exception);
-            Assert::Fail(error_message.c_str());
-        }
+        TokenizeFile(m_enum_edl_file_name);
     }
 
-    TEST_METHOD(TestParsingWithEdlFileThatContainsStructTypes)
+    TEST_METHOD(TestTokenizingEdlFileThatContainsStructTypes)
     {
-        try
-        {
-            TokenizeFile(m_struct_edl_file_name);
-        }
-        catch (const std::exception& exception)
-        {
-            auto error_message = ConvertExceptionMessageToWstring(exception);
-            Assert::Fail(error_message.c_str());
-        }
+        TokenizeFile(m_struct_edl_file_name);
     }    
 };
 }
