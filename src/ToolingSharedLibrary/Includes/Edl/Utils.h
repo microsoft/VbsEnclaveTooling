@@ -40,6 +40,65 @@ namespace EdlProcessor
     constexpr const std::uint32_t HEX_PREFIX_LENGTH = 2;
     constexpr const char* HEX_PREFIX[HEX_PREFIX_LENGTH] = { "0x", "0X"};
 
+    struct EdlTypeToHash
+    {
+        std::size_t operator()(EdlTypeKind type) const
+        {
+            return std::hash<std::uint32_t>()(static_cast<std::uint32_t>(type));
+        }
+    };
+
+    // Special keyword for internal use for the anonymous enum value.
+    constexpr const char* EDL_ANONYMOUS_ENUM_KEYWORD = "__anonymous_enum";
+
+    static const std::unordered_map<EdlTypeKind, std::string, EdlTypeToHash> c_edlTypes_to_string_map =
+    {
+        { EdlTypeKind::Bool, "bool" },
+        { EdlTypeKind::Char, "char" },
+        { EdlTypeKind::Float, "float" },
+        { EdlTypeKind::Double, "double" },
+        { EdlTypeKind::Int8, "int8_t" },
+        { EdlTypeKind::Int16, "int16_t" },
+        { EdlTypeKind::Int32, "int32_t" },
+        { EdlTypeKind::Int64, "int64_t" },
+        { EdlTypeKind::UInt8, "uint8_t" },
+        { EdlTypeKind::UInt16, "uint16_t" },
+        { EdlTypeKind::UInt32, "uint32_t" },
+        { EdlTypeKind::UInt64, "uint64_t" },
+        { EdlTypeKind::WChar, "wchar_t" },
+        { EdlTypeKind::Void, "void" },
+        { EdlTypeKind::Enum, "enum" },
+        { EdlTypeKind::AnonymousEnum, EDL_ANONYMOUS_ENUM_KEYWORD},
+        { EdlTypeKind::Struct, "struct" },
+        { EdlTypeKind::Ptr, "*" },
+        { EdlTypeKind::SizeT, "size_t" },
+        { EdlTypeKind::String, "string" },
+    };
+
+    static const std::unordered_map<std::string, EdlTypeKind> c_string_to_edltype_map =
+    {
+        { "bool", EdlTypeKind::Bool },
+        { "char", EdlTypeKind::Char },
+        { "float", EdlTypeKind::Float },
+        { "double", EdlTypeKind::Double },
+        { "int8_t", EdlTypeKind::Int8 },
+        { "int16_t", EdlTypeKind::Int16 },
+        { "int32_t", EdlTypeKind::Int32 },
+        { "int64_t", EdlTypeKind::Int64 },
+        { "uint8_t", EdlTypeKind::UInt8 },
+        { "uint16_t", EdlTypeKind::UInt16 },
+        { "uint32_t", EdlTypeKind::UInt32 },
+        { "uint64_t", EdlTypeKind::UInt64 },
+        { "wchar_t", EdlTypeKind::WChar },
+        { "void", EdlTypeKind::Void },
+        { "enum", EdlTypeKind::Enum },
+        { EDL_ANONYMOUS_ENUM_KEYWORD, EdlTypeKind::AnonymousEnum },
+        { "struct", EdlTypeKind::Struct },
+        { "string", EdlTypeKind::String },
+        { "*", EdlTypeKind::Ptr },
+        { "size_t", EdlTypeKind::SizeT },
+    };
+
     static inline bool IsHexPrefix(const char* token_start)
     {
         for (auto& prefix : HEX_PREFIX)
@@ -51,5 +110,52 @@ namespace EdlProcessor
         }
 
         return false;
+    }
+
+    static inline bool TokenMeetsMinimumHexLength(const Token& token)
+    {
+        return token.Length() >= MINIMUM_HEX_LENGTH;
+    }
+
+    static inline bool TryParseHexidecimal(const Token& token, uint64_t& value)
+    {
+        if (!TokenMeetsMinimumHexLength(token) || !IsHexPrefix(token.m_starting_character))
+        {
+            return false;
+        }
+
+        for (auto i = HEX_PREFIX_LENGTH; i < token.Length(); i++)
+        {
+            if (!std::isxdigit(token.m_starting_character[i]))
+            {
+                return false;
+            }
+        }
+
+        std::stringstream string_stream;
+        string_stream << std::hex << (token.m_starting_character + HEX_PREFIX_LENGTH);
+        string_stream >> value;
+
+        return true;
+    }
+
+    static inline bool TryParseDecimal(const Token& token, uint64_t& value)
+    {
+        if (token.Length() == 0)
+        {
+            return false;
+        }
+
+        for (auto i = 0; i < token.Length(); i++)
+        {
+            if (!std::isdigit(token.m_starting_character[i]))
+            {
+                return false;
+            }
+        }
+
+        std::stringstream() << token.m_starting_character >> value;
+
+        return true;
     }
 }

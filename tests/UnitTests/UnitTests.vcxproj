@@ -181,6 +181,10 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="ToolingExecutableTests\EdlParserBasicTypesTests.cpp" />
+    <ClCompile Include="ToolingExecutableTests\EdlParserArrayTests.cpp" />
+    <ClCompile Include="ToolingExecutableTests\EdlParserEnumTypeTests.cpp" />
+    <ClCompile Include="ToolingExecutableTests\EdlParserStructTypesTests.cpp" />
     <ClCompile Include="ToolingExecutableTests\ErrorHelpersTests.cpp" />
     <ClCompile Include="pch.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
@@ -195,6 +199,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />
+    <ClInclude Include="ToolingExecutableTests\EdlParserTestHelpers.h" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\src\ToolingSharedLibrary\ToolingSharedLibrary.vcxproj">
