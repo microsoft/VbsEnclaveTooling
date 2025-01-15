@@ -4,7 +4,9 @@
 #include <pch.h>
 #include <CmdlineParsingHelpers.h>
 #include <CmdlineArgumentsParser.h>
+#include <Edl\LexicalAnalyzer.h>
 
+using namespace EdlProcessor;
 using namespace CmdlineParsingHelpers;
 
 int main(int argc, char* argv[])

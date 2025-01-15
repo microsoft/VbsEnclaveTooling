@@ -1,0 +1,98 @@
+// Copyright (c) Open Enclave SDK contributors.
+// Licensed under the MIT License.
+// 
+// Copyright (c) Microsoft Corporation.
+// Licensed under the MIT License.
+// This file has been modified and adapted from its original
+// which was created by Open Enclave.
+// File used for testing purposes
+
+enclave
+{
+    struct MyStruct0
+    {
+        int x;
+    };
+
+    struct MyStruct1
+    {
+        MyStruct0 s0;
+        int y;
+    };
+
+    struct MyStruct_node
+    {
+        char data;
+        struct MyStruct_node *next;
+    };
+
+    trusted 
+    {
+        MyStruct1 TrustedGetStruct1 (
+            MyStruct1 arg1,
+
+            // Array of structs
+            [in] MyStruct1 arg2[5],
+            [in, out] MyStruct1 arg3[5][5],
+            [out] MyStruct1 arg4[1][1][1],
+            
+            [in] MyStruct1* arg5,
+            [in, out] MyStruct1* arg6,
+            [out] MyStruct1* arg7,
+
+            [in, count=5] MyStruct1* arg8,
+            [in, out, count=5] MyStruct1* arg9,
+            [out, count=5] MyStruct1* arg10,
+
+            [in, size=40] MyStruct1* arg11,
+            [in, out, size=40] MyStruct1* arg12,
+            [out, size=40] MyStruct1* arg13,
+            
+            [in, count=arg20] MyStruct1* arg14,
+            [in, out, count=arg20] MyStruct1* arg15,
+            [out, count=arg20] MyStruct1* arg16,            
+
+            [in, size=arg21] MyStruct1* arg17,
+            [in, out, size=arg21] MyStruct1* arg18,
+            [out, size=arg21] MyStruct1* arg19,               
+
+            size_t arg20,
+            size_t arg21
+        );
+    };
+
+    untrusted
+    {
+        MyStruct1 UntrustedGetStruct1 (
+            MyStruct1 arg1,
+
+            // Array of structs
+            [in] MyStruct1 arg2[5],
+            [in, out] MyStruct1 arg3[5][5],
+            [out] MyStruct1 arg4[1][1][1],
+            
+            [in] MyStruct1* arg5,
+            [in, out] MyStruct1* arg6,
+            [out] MyStruct1* arg7,
+
+            [in, count=5] MyStruct1* arg8,
+            [in, out, count=5] MyStruct1* arg9,
+            [out, count=5] MyStruct1* arg10,
+
+            [in, size=40] MyStruct1* arg11,
+            [in, out, size=40] MyStruct1* arg12,
+            [out, size=40] MyStruct1* arg13,
+            
+            [in, count=arg20] MyStruct1* arg14,
+            [in, out, count=arg20] MyStruct1* arg15,
+            [out, count=arg20] MyStruct1* arg16,            
+
+            [in, size=arg21] MyStruct1* arg17,
+            [in, out, size=arg21] MyStruct1* arg18,
+            [out, size=arg21] MyStruct1* arg19,               
+
+            size_t arg20,
+            size_t arg21
+        );
+    };
+};

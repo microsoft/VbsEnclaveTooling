@@ -8,7 +8,7 @@ using namespace ErrorHelpers;
 using namespace CmdlineParsingHelpers;
 
 #define CHECK_SUCCESS(result)  \
-    if ((result) != ErrorIds::Success) { \
+    if ((result) != ErrorId::Success) { \
         return false; \
     }
 
@@ -24,7 +24,7 @@ bool CmdlineArgumentsParser::ParseArguments(int argc, char* argv[])
     // our use cases.
     if (argc <= 1)
     {
-        PrintError(ErrorIds::MissingArgument);
+        PrintError(ErrorId::MissingArgument);
         return false;
     }
 
@@ -61,7 +61,7 @@ bool CmdlineArgumentsParser::ParseArguments(int argc, char* argv[])
         }
         else
         {
-            PrintError(ErrorIds::InvalidArgument, arg);
+            PrintError(ErrorId::InvalidArgument, arg);
             return false;
         }
     }
@@ -69,7 +69,7 @@ bool CmdlineArgumentsParser::ParseArguments(int argc, char* argv[])
     if (non_help_args_found != m_non_help_expected_Arg_count)
     {
         PrintError(
-            ErrorIds::IncorrectNonHelpArgsProvided,
+            ErrorId::IncorrectNonHelpArgsProvided,
             m_non_help_expected_Arg_count,
             non_help_args_found);
 

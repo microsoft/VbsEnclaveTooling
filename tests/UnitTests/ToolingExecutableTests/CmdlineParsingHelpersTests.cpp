@@ -39,10 +39,10 @@ TEST_CLASS(CmdlineParsingHelpersTests)
             SupportedLanguageKind supported_language;
 
             // Call function
-            ErrorIds result = GetSupportedLanguageForCodeGen(m_starting_index, args, m_args_size, supported_language);
+            ErrorId result = GetSupportedLanguageForCodeGen(m_starting_index, args, m_args_size, supported_language);
 
             // Check that the correct language was set
-            Assert::AreEqual(static_cast<uint32_t>(ErrorIds::Success), static_cast<uint32_t>(result));
+            Assert::AreEqual(static_cast<uint32_t>(ErrorId::Success), static_cast<uint32_t>(result));
             Assert::AreEqual(static_cast<uint32_t>(SupportedLanguageKind::Cpp), static_cast<uint32_t>(supported_language));
         }
 
@@ -52,10 +52,10 @@ TEST_CLASS(CmdlineParsingHelpersTests)
             SupportedLanguageKind supported_language;
 
             // Call function
-            ErrorIds result = GetSupportedLanguageForCodeGen(m_starting_index, args, m_args_size, supported_language);
+            ErrorId result = GetSupportedLanguageForCodeGen(m_starting_index, args, m_args_size, supported_language);
 
             // Check that the correct error was set and supported_language variable still has default unknown enum value.
-            Assert::AreEqual(static_cast<uint32_t>(ErrorIds::UnsupportedLanguage), static_cast<uint32_t>(result));
+            Assert::AreEqual(static_cast<uint32_t>(ErrorId::UnsupportedLanguage), static_cast<uint32_t>(result));
             Assert::AreEqual(static_cast<uint32_t>(SupportedLanguageKind::Unknown), static_cast<uint32_t>(supported_language));
         }
 
@@ -69,10 +69,10 @@ TEST_CLASS(CmdlineParsingHelpersTests)
             file.close();
 
             // Call function
-            ErrorIds result = GetEdlPathFromArgs(m_starting_index, args, m_args_size, edl_path);
+            ErrorId result = GetEdlPathFromArgs(m_starting_index, args, m_args_size, edl_path);
 
             // Check that the file exists.
-            Assert::AreEqual(static_cast<uint32_t>(ErrorIds::Success), static_cast<uint32_t>(result));
+            Assert::AreEqual(static_cast<uint32_t>(ErrorId::Success), static_cast<uint32_t>(result));
             Assert::AreEqual(m_test_edl, edl_path);
 
             // Cleanup the mock file
@@ -89,10 +89,10 @@ TEST_CLASS(CmdlineParsingHelpersTests)
             file.close();
 
             // Call function
-            ErrorIds result = GetEdlPathFromArgs(m_starting_index, args, m_args_size, edl_path);
+            ErrorId result = GetEdlPathFromArgs(m_starting_index, args, m_args_size, edl_path);
 
             // Make sure edl_path variable hasn't been updated.
-            Assert::AreEqual(static_cast<uint32_t>(ErrorIds::NotAnEdlFile), static_cast<uint32_t>(result));
+            Assert::AreEqual(static_cast<uint32_t>(ErrorId::NotAnEdlFile), static_cast<uint32_t>(result));
             Assert::AreEqual(std::string(""), edl_path);
 
             // Cleanup the mock file
@@ -105,10 +105,10 @@ TEST_CLASS(CmdlineParsingHelpersTests)
             std::string edl_path;
 
             // Call function
-            ErrorIds result = GetEdlPathFromArgs(m_starting_index, args, m_args_size, edl_path);
+            ErrorId result = GetEdlPathFromArgs(m_starting_index, args, m_args_size, edl_path);
 
             // Check that the file does not exist and that the edl_path_variable hasn't been changed.
-            Assert::AreEqual(static_cast<uint32_t>(ErrorIds::EdlDoesNotExist), static_cast<uint32_t>(result));
+            Assert::AreEqual(static_cast<uint32_t>(ErrorId::EdlDoesNotExist), static_cast<uint32_t>(result));
             Assert::AreEqual(std::string(""), edl_path);
         }
 
@@ -118,10 +118,10 @@ TEST_CLASS(CmdlineParsingHelpersTests)
             std::string directory;
 
             // Call function
-            ErrorIds result = GetPathToOutputDirectoryFromArgs(m_starting_index, args, m_args_size, directory);
+            ErrorId result = GetPathToOutputDirectoryFromArgs(m_starting_index, args, m_args_size, directory);
 
             // Check that the directory was correctly set
-            Assert::AreEqual(static_cast<uint32_t>(ErrorIds::Success), static_cast<uint32_t>(result));
+            Assert::AreEqual(static_cast<uint32_t>(ErrorId::Success), static_cast<uint32_t>(result));
             Assert::AreEqual(std::string("."), directory);
         }
 
@@ -131,10 +131,10 @@ TEST_CLASS(CmdlineParsingHelpersTests)
             std::string directory;
 
             // Call function
-            ErrorIds result = GetPathToOutputDirectoryFromArgs(m_starting_index, args, m_args_size, directory);
+            ErrorId result = GetPathToOutputDirectoryFromArgs(m_starting_index, args, m_args_size, directory);
 
             // Check that the directory is still empty and an error was returned.
-            Assert::AreEqual(static_cast<uint32_t>(ErrorIds::OutputDirNotADirectory), static_cast<uint32_t>(result));
+            Assert::AreEqual(static_cast<uint32_t>(ErrorId::OutputDirNotADirectory), static_cast<uint32_t>(result));
             Assert::AreEqual(std::string(""), directory);
         }
 
@@ -144,10 +144,10 @@ TEST_CLASS(CmdlineParsingHelpersTests)
             ErrorHandlingKind errorKind;
 
             // Call function
-            ErrorIds result = GetErrorHandlingFromArg(m_starting_index, args, m_args_size, errorKind);
+            ErrorId result = GetErrorHandlingFromArg(m_starting_index, args, m_args_size, errorKind);
 
             // Check that the error kind was correctly set
-            Assert::AreEqual(static_cast<uint32_t>(ErrorIds::Success), static_cast<uint32_t>(result));
+            Assert::AreEqual(static_cast<uint32_t>(ErrorId::Success), static_cast<uint32_t>(result));
             Assert::AreEqual(static_cast<uint32_t>(ErrorHandlingKind::ErrorCode), static_cast<uint32_t>(errorKind));
         }
 
@@ -157,10 +157,10 @@ TEST_CLASS(CmdlineParsingHelpersTests)
             ErrorHandlingKind errorKind;
 
             // Call function
-            ErrorIds result = GetErrorHandlingFromArg(m_starting_index, args, m_args_size, errorKind);
+            ErrorId result = GetErrorHandlingFromArg(m_starting_index, args, m_args_size, errorKind);
 
             // Check that the error kind was correctly set
-            Assert::AreEqual(static_cast<uint32_t>(ErrorIds::Success), static_cast<uint32_t>(result));
+            Assert::AreEqual(static_cast<uint32_t>(ErrorId::Success), static_cast<uint32_t>(result));
             Assert::AreEqual(static_cast<uint32_t>(ErrorHandlingKind::Exception), static_cast<uint32_t>(errorKind));
         }
 
@@ -170,10 +170,10 @@ TEST_CLASS(CmdlineParsingHelpersTests)
             ErrorHandlingKind errorKind;
 
             // Call function
-            ErrorIds result = GetErrorHandlingFromArg(m_starting_index, args, m_args_size, errorKind);
+            ErrorId result = GetErrorHandlingFromArg(m_starting_index, args, m_args_size, errorKind);
 
             // Check that the error kind was not changed
-            Assert::AreEqual(static_cast<uint32_t>(ErrorIds::ErrorHandlingInvalidType), static_cast<uint32_t>(result));
+            Assert::AreEqual(static_cast<uint32_t>(ErrorId::ErrorHandlingInvalidType), static_cast<uint32_t>(result));
             Assert::AreEqual(static_cast<uint32_t>(ErrorHandlingKind::Unknown), static_cast<uint32_t>(errorKind));
         }
 
@@ -183,10 +183,10 @@ TEST_CLASS(CmdlineParsingHelpersTests)
             SupportedLanguageKind supported_language;
 
             // Call function
-            ErrorIds result = GetSupportedLanguageForCodeGen(m_invalid_starting_index, args, m_args_size, supported_language);
+            ErrorId result = GetSupportedLanguageForCodeGen(m_invalid_starting_index, args, m_args_size, supported_language);
 
             // Check that no more args result was returned and out param still the same
-            Assert::AreEqual(static_cast<uint32_t>(ErrorIds::LanguageNoMoreArgs), static_cast<uint32_t>(result));
+            Assert::AreEqual(static_cast<uint32_t>(ErrorId::LanguageNoMoreArgs), static_cast<uint32_t>(result));
             Assert::AreEqual(static_cast<uint32_t>(SupportedLanguageKind::Unknown), static_cast<uint32_t>(supported_language));
         }
 
@@ -196,10 +196,10 @@ TEST_CLASS(CmdlineParsingHelpersTests)
             std::string edl_path;
 
             // Call function
-            ErrorIds result = GetEdlPathFromArgs(m_invalid_starting_index, args, m_args_size, edl_path);
+            ErrorId result = GetEdlPathFromArgs(m_invalid_starting_index, args, m_args_size, edl_path);
 
             // Check that no more args result was returned and out param still the same
-            Assert::AreEqual(static_cast<uint32_t>(ErrorIds::EdlNoMoreArgs), static_cast<uint32_t>(result));
+            Assert::AreEqual(static_cast<uint32_t>(ErrorId::EdlNoMoreArgs), static_cast<uint32_t>(result));
             Assert::AreEqual(std::string(""), edl_path);
         }
 
@@ -209,10 +209,10 @@ TEST_CLASS(CmdlineParsingHelpersTests)
             ErrorHandlingKind errorKind;
 
             // Call function
-            ErrorIds result = GetErrorHandlingFromArg(m_invalid_starting_index, args, m_args_size, errorKind);
+            ErrorId result = GetErrorHandlingFromArg(m_invalid_starting_index, args, m_args_size, errorKind);
 
             // Check that no more args result was returned and out param still the same
-            Assert::AreEqual(static_cast<uint32_t>(ErrorIds::ErrorHandlingNoMoreArgs), static_cast<uint32_t>(result));
+            Assert::AreEqual(static_cast<uint32_t>(ErrorId::ErrorHandlingNoMoreArgs), static_cast<uint32_t>(result));
             Assert::AreEqual(static_cast<uint32_t>(ErrorHandlingKind::Unknown), static_cast<uint32_t>(errorKind));
         }
 
@@ -222,10 +222,10 @@ TEST_CLASS(CmdlineParsingHelpersTests)
             std::string directory;
 
             // Call function
-            ErrorIds result = GetPathToOutputDirectoryFromArgs(m_invalid_starting_index, args, m_args_size, directory);
+            ErrorId result = GetPathToOutputDirectoryFromArgs(m_invalid_starting_index, args, m_args_size, directory);
 
             // Check that no more args result was returned and out param still the same
-            Assert::AreEqual(static_cast<uint32_t>(ErrorIds::OutputDirNoMoreArgs), static_cast<uint32_t>(result));
+            Assert::AreEqual(static_cast<uint32_t>(ErrorId::OutputDirNoMoreArgs), static_cast<uint32_t>(result));
             Assert::AreEqual(std::string(""), directory);
         }
     };

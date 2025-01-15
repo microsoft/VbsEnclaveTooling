@@ -51,122 +51,122 @@ namespace VbsEnclaveToolingTests
 
     public:
         // Make sure you add a new line character at the end.
-        std::unordered_map<ErrorIds, std::string, ErrorIdsHash> m_test_error_messages =
+        std::unordered_map<ErrorId, std::string, ErrorIdHash> m_test_error_messages =
         {
-           { ErrorIds::LanguageNoMoreArgs, "Unable to find codegen language of choice. No more commandline arguments available to find supported language.\n" },
-           { ErrorIds::UnsupportedLanguage, "Language '{}' is not supported.\n" },
-           { ErrorIds::EdlNoMoreArgs, "Unable to find edl file path. No more commandline arguments available to find edl path.\n" },
-           { ErrorIds::EdlDoesNotExist, "The path to the provided .edl file '{}' does not exist.\n" },
-           { ErrorIds::NotAnEdlFile, "The path '{}' must be a path to a .edl file.\n" },
-           { ErrorIds::OutputDirNoMoreArgs, "Unable to find output directory. No more commandline arguments available to find output directory.\n" },
-           { ErrorIds::OutputDirNotADirectory, "The path '{}' must be a directory that exists. Error code : '{}'\n" },
-           { ErrorIds::ErrorHandlingNoMoreArgs, "Unable to find error handling argument. No more commandline arguments available.\n" },
-           { ErrorIds::ErrorHandlingInvalidType, "Error handling type '{}' invalid.\n" },
-           { ErrorIds::InvalidArgument, "Unknown argument: {}\n" },
-           { ErrorIds::IncorrectNonHelpArgsProvided, "VbsEnclaveTooling.exe expects '{}' arguments when '-h' is not used. Only found: '{}'\n" },
-           { ErrorIds::MissingArgument, "Missing arguments. Use '-h' for usage.\n" }
+           { ErrorId::LanguageNoMoreArgs, "Unable to find codegen language of choice. No more commandline arguments available to find supported language.\n" },
+           { ErrorId::UnsupportedLanguage, "Language '{}' is not supported.\n" },
+           { ErrorId::EdlNoMoreArgs, "Unable to find edl file path. No more commandline arguments available to find edl path.\n" },
+           { ErrorId::EdlDoesNotExist, "The path to the provided .edl file '{}' does not exist.\n" },
+           { ErrorId::NotAnEdlFile, "The path '{}' must be a path to a .edl file.\n" },
+           { ErrorId::OutputDirNoMoreArgs, "Unable to find output directory. No more commandline arguments available to find output directory.\n" },
+           { ErrorId::OutputDirNotADirectory, "The path '{}' must be a directory that exists. Error code : '{}'\n" },
+           { ErrorId::ErrorHandlingNoMoreArgs, "Unable to find error handling argument. No more commandline arguments available.\n" },
+           { ErrorId::ErrorHandlingInvalidType, "Error handling type '{}' invalid.\n" },
+           { ErrorId::InvalidArgument, "Unknown argument: {}\n" },
+           { ErrorId::IncorrectNonHelpArgsProvided, "VbsEnclaveTooling.exe expects '{}' arguments when '-h' is not used. Only found: '{}'\n" },
+           { ErrorId::MissingArgument, "Missing arguments. Use '-h' for usage.\n" }
         };
 
         TEST_METHOD(TestPrintLanguageNoMoreArgs)
         {
             RedirectCerr redirect_cerr;
-            std::string expected_msg = m_error_prefix + m_test_error_messages.at(ErrorIds::LanguageNoMoreArgs);
-            PrintError(ErrorIds::LanguageNoMoreArgs);
+            std::string expected_msg = m_error_prefix + m_test_error_messages.at(ErrorId::LanguageNoMoreArgs);
+            PrintError(ErrorId::LanguageNoMoreArgs);
             Assert::AreEqual(expected_msg, redirect_cerr.GetString());
         }
 
         TEST_METHOD(TestPrintUnsupportedLanguage)
         {
             RedirectCerr redirect_cerr;
-            std::string expected_msg = m_error_prefix + m_test_error_messages.at(ErrorIds::UnsupportedLanguage);
+            std::string expected_msg = m_error_prefix + m_test_error_messages.at(ErrorId::UnsupportedLanguage);
             expected_msg = std::vformat(expected_msg, std::make_format_args(m_invalid_lang));
-            PrintError(ErrorIds::UnsupportedLanguage, m_invalid_lang);
+            PrintError(ErrorId::UnsupportedLanguage, m_invalid_lang);
             Assert::AreEqual(expected_msg, redirect_cerr.GetString());
         }
 
         TEST_METHOD(TestPrintEdlNoMoreArgs)
         {
             RedirectCerr redirect_cerr;
-            std::string expected_msg = m_error_prefix + m_test_error_messages.at(ErrorIds::EdlNoMoreArgs);
-            PrintError(ErrorIds::EdlNoMoreArgs);
+            std::string expected_msg = m_error_prefix + m_test_error_messages.at(ErrorId::EdlNoMoreArgs);
+            PrintError(ErrorId::EdlNoMoreArgs);
             Assert::AreEqual(expected_msg, redirect_cerr.GetString());
         }
 
         TEST_METHOD(TestPrintEdlDoesNotExist)
         {
             RedirectCerr redirect_cerr;
-            std::string expected_msg = m_error_prefix + m_test_error_messages.at(ErrorIds::EdlDoesNotExist);
+            std::string expected_msg = m_error_prefix + m_test_error_messages.at(ErrorId::EdlDoesNotExist);
             expected_msg = std::vformat(expected_msg, std::make_format_args(m_edl_invalid_path));
-            PrintError(ErrorIds::EdlDoesNotExist, m_edl_invalid_path);
+            PrintError(ErrorId::EdlDoesNotExist, m_edl_invalid_path);
             Assert::AreEqual(expected_msg, redirect_cerr.GetString());
         }
 
         TEST_METHOD(TestPrintNotAnEdlFile)
         {
             RedirectCerr redirect_cerr;
-            std::string expected_msg = m_error_prefix + m_test_error_messages.at(ErrorIds::NotAnEdlFile);
+            std::string expected_msg = m_error_prefix + m_test_error_messages.at(ErrorId::NotAnEdlFile);
             expected_msg = std::vformat(expected_msg, std::make_format_args(m_edl_invalid_file));
-            PrintError(ErrorIds::NotAnEdlFile, m_edl_invalid_file);
+            PrintError(ErrorId::NotAnEdlFile, m_edl_invalid_file);
             Assert::AreEqual(expected_msg, redirect_cerr.GetString());
         }
 
         TEST_METHOD(TestPrintOutputDirNoMoreArgs)
         {
             RedirectCerr redirect_cerr;
-            std::string expected_msg = m_error_prefix + m_test_error_messages.at(ErrorIds::OutputDirNoMoreArgs);
-            PrintError(ErrorIds::OutputDirNoMoreArgs);
+            std::string expected_msg = m_error_prefix + m_test_error_messages.at(ErrorId::OutputDirNoMoreArgs);
+            PrintError(ErrorId::OutputDirNoMoreArgs);
             Assert::AreEqual(expected_msg, redirect_cerr.GetString());
         }
 
         TEST_METHOD(TestPrintOutputDirNotADirectory)
         {
             RedirectCerr redirect_cerr;
-            std::string expected_msg = m_error_prefix + m_test_error_messages.at(ErrorIds::OutputDirNotADirectory);
+            std::string expected_msg = m_error_prefix + m_test_error_messages.at(ErrorId::OutputDirNotADirectory);
             expected_msg = std::vformat(expected_msg, std::make_format_args(m_out_dir_invalid_path, m_out_dir_error_code));
-            PrintError(ErrorIds::OutputDirNotADirectory, m_out_dir_invalid_path, m_out_dir_error_code);
+            PrintError(ErrorId::OutputDirNotADirectory, m_out_dir_invalid_path, m_out_dir_error_code);
             Assert::AreEqual(expected_msg, redirect_cerr.GetString());
         }
 
         TEST_METHOD(TestPrintErrorHandlingNoMoreArgs)
         {
             RedirectCerr redirect_cerr;
-            std::string expected_msg = m_error_prefix + m_test_error_messages.at(ErrorIds::ErrorHandlingNoMoreArgs);
-            PrintError(ErrorIds::ErrorHandlingNoMoreArgs);
+            std::string expected_msg = m_error_prefix + m_test_error_messages.at(ErrorId::ErrorHandlingNoMoreArgs);
+            PrintError(ErrorId::ErrorHandlingNoMoreArgs);
             Assert::AreEqual(expected_msg, redirect_cerr.GetString());
         }
 
         TEST_METHOD(TestPrintErrorHandlingInvalidType)
         {
             RedirectCerr redirect_cerr;
-            std::string expected_msg = m_error_prefix + m_test_error_messages.at(ErrorIds::ErrorHandlingInvalidType);
+            std::string expected_msg = m_error_prefix + m_test_error_messages.at(ErrorId::ErrorHandlingInvalidType);
             expected_msg = std::vformat(expected_msg, std::make_format_args(m_error_handling_invalid));
-            PrintError(ErrorIds::ErrorHandlingInvalidType, m_error_handling_invalid);
+            PrintError(ErrorId::ErrorHandlingInvalidType, m_error_handling_invalid);
             Assert::AreEqual(expected_msg, redirect_cerr.GetString());
         }
 
         TEST_METHOD(TestPrintInvalidArgument)
         {
             RedirectCerr redirect_cerr;
-            std::string expected_msg = m_error_prefix + m_test_error_messages.at(ErrorIds::InvalidArgument);
+            std::string expected_msg = m_error_prefix + m_test_error_messages.at(ErrorId::InvalidArgument);
             expected_msg = std::vformat(expected_msg, std::make_format_args(m_invalid_arg));
-            PrintError(ErrorIds::InvalidArgument, m_invalid_arg);
+            PrintError(ErrorId::InvalidArgument, m_invalid_arg);
             Assert::AreEqual(expected_msg, redirect_cerr.GetString());
         }
 
         TEST_METHOD(TestPrintIncorrectNonHelpArgsProvided)
         {
             RedirectCerr redirect_cerr;
-            std::string expected_msg = m_error_prefix + m_test_error_messages.at(ErrorIds::IncorrectNonHelpArgsProvided);
+            std::string expected_msg = m_error_prefix + m_test_error_messages.at(ErrorId::IncorrectNonHelpArgsProvided);
             expected_msg = std::vformat(expected_msg, std::make_format_args(m_max_args, m_invalid_arg_amount));
-            PrintError(ErrorIds::IncorrectNonHelpArgsProvided, m_max_args, m_invalid_arg_amount);
+            PrintError(ErrorId::IncorrectNonHelpArgsProvided, m_max_args, m_invalid_arg_amount);
             Assert::AreEqual(expected_msg, redirect_cerr.GetString());
         }
 
         TEST_METHOD(TestPrintMissingArgument)
         {
             RedirectCerr redirect_cerr;
-            std::string expected_msg = m_error_prefix + m_test_error_messages.at(ErrorIds::MissingArgument);
-            PrintError(ErrorIds::MissingArgument);
+            std::string expected_msg = m_error_prefix + m_test_error_messages.at(ErrorId::MissingArgument);
+            PrintError(ErrorId::MissingArgument);
             Assert::AreEqual(expected_msg, redirect_cerr.GetString());
         }
     };
