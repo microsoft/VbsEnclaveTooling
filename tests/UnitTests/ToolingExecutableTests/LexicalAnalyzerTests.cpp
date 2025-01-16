@@ -8,6 +8,7 @@
 #include <Edl\Utils.h>
 #include <unordered_set>
 #include <Exceptions.h>
+#include "EdlParserTestHelpers.h"
 
 using namespace ErrorHelpers;
 using namespace ToolingExceptions;
@@ -100,13 +101,6 @@ TEST_CLASS(LexicalAnalyzerTests)
                 auto error_message = ConvertExceptionMessageToWstring(exception);
                 Assert::Fail(error_message.c_str());
             }
-        }
-
-        std::wstring ConvertExceptionMessageToWstring(const std::exception& exception)
-        {
-            std::wstringstream wstring_stream;
-            wstring_stream << exception.what();
-            return wstring_stream.str();
         }
 
     public:

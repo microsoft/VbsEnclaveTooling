@@ -1,6 +1,6 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
-
+#pragma once 
 #include <pch.h>
 #include <exception>
 #include "ErrorHelpers.h"

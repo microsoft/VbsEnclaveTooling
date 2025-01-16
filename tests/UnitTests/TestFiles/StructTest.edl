@@ -11,19 +11,19 @@ enclave
 {
     struct MyStruct0
     {
-        int x;
+        int32_t x;
     };
 
     struct MyStruct1
     {
         MyStruct0 s0;
-        int y;
+        int32_t y;
     };
 
     struct MyStruct_node
     {
         char data;
-        struct MyStruct_node *next;
+        MyStruct_node *next;
     };
 
     trusted 

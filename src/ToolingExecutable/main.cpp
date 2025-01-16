@@ -4,7 +4,7 @@
 #include <pch.h>
 #include <CmdlineParsingHelpers.h>
 #include <CmdlineArgumentsParser.h>
-#include <Edl\LexicalAnalyzer.h>
+#include <Edl\Parser.h>
 
 using namespace EdlProcessor;
 using namespace CmdlineParsingHelpers;
@@ -26,5 +26,16 @@ int main(int argc, char* argv[])
         return S_OK;
     }
     
+    try
+    {
+        auto edl_parser = EdlParser(argument_parser.EdlFilePath());
+        Edl edl = edl_parser.Parse();
+    }
+    catch (const std::exception& exception)
+    {
+        PrintStatus(Status::Error, exception.what());
+        return E_FAIL;
+    }
+
     return S_OK;
 }

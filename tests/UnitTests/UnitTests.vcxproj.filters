@@ -33,9 +33,24 @@
     <ClCompile Include="ToolingExecutableTests\LexicalAnalyzerTests.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="ToolingExecutableTests\EdlParserArrayTests.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="ToolingExecutableTests\EdlParserBasicTypesTests.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="ToolingExecutableTests\EdlParserEnumTypeTests.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="ToolingExecutableTests\EdlParserStructTypesTests.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ToolingExecutableTests\EdlParserTestHelpers.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
