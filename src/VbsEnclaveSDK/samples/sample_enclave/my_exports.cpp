@@ -218,9 +218,7 @@ namespace RunThreadpoolExamples
 
 ENCLAVE_FUNCTION RunThreadpoolExample(_In_ PVOID params) try
 {
-    //THROW_HR_IF(HRESULT_FROM_WIN32(ERROR_WAS_LOCKED), !veil::vtl1::enclave_interface::is_unlocked());
-
-    /*
+#if 0
     print_string(L"TEST");
     RunThreadpoolExamples::Test_Dont_WaitForAllTasksToFinish(params);
     print_string(L"");
@@ -232,7 +230,7 @@ ENCLAVE_FUNCTION RunThreadpoolExample(_In_ PVOID params) try
     print_string(L"USAGE");
     RunThreadpoolExamples::UsageExample(params);
     print_string(L"");
-    */
+#endif
 
     print_wstring(L"USAGE EXCEPTIONS");
     RunThreadpoolExamples::UsageExceptionExample(params);
