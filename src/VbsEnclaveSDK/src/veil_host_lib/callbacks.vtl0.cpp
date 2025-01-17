@@ -10,6 +10,7 @@
 #include "veil.any.h"
 
 #include "callbacks.vtl0.h"
+#include "taskpool.vtl0.h"
 #include "utils.vtl0.h"
 
 namespace veil::vtl0::implementation::callbacks
@@ -24,6 +25,9 @@ namespace veil::vtl0::implementation::callbacks
         &free,
         &printf,
         &wprintf,
+        &taskpool_make,
+        &taskpool_delete,
+        &taskpool_schedule_task
     };
 }
 

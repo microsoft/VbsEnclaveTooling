@@ -71,11 +71,13 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
     </Link>
   </ItemDefinitionGroup>
+  
   <ItemDefinitionGroup>
     <ClCompile>
       <LanguageStandard>stdcpp20</LanguageStandard>
     </ClCompile>
   </ItemDefinitionGroup>
+  
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
@@ -132,6 +134,7 @@
     <ClInclude Include="enclave_api.vtl0.h" />
     <ClInclude Include="exports.vtl0.h" />
     <ClInclude Include="pch.h" />
+    <ClInclude Include="taskpool.vtl0.h" />
     <ClInclude Include="utils.vtl0.h" />
   </ItemGroup>
   <ItemGroup>
@@ -141,6 +144,7 @@
     <ClCompile Include="callbacks.vtl0.cpp" />
     <ClCompile Include="enclave_api.vtl0.cpp" />
     <ClCompile Include="exports.vtl0.cpp" />
+    <ClCompile Include="taskpool.vtl0.cpp" />
     <ClCompile Include="utils.vtl0.cpp" />
   </ItemGroup>
   <ImportGroup Label="ExtensionTargets">
