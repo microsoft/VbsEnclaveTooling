@@ -46,7 +46,7 @@ namespace veil::vtl0
     {
         inline size_t megabytes(unsigned long long megabytes)
         {
-            return 0x10000000;
+            return megabytes * 0x100000;
         }
 
         inline unique_enclave create(DWORD enclaveType, std::span<const uint8_t> ownerId, DWORD flags, size_t size, size_t initialCommitment = 0, LPDWORD lpEnclaveError = nullptr)
