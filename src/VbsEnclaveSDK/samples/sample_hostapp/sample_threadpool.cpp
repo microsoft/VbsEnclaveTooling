@@ -25,11 +25,8 @@ namespace Samples::Threadpool
         veil::vtl0::enclave::load_image(enclave.get(), L"sample_enclave.dll");
         veil::vtl0::enclave::initialize(enclave.get(), THREAD_COUNT);
 
-        // Unlock the enclave or further operations will be blocked
-        veil::vtl0::enclave_functions::unlock_for_app_user(enclave.get());
-
         // Register framework callbacks
-        veil::vtl0::enclave_functions::register_callbacks(enclave.get());
+        veil::vtl0::enclave_api::register_callbacks(enclave.get());
 
         // Call into enclave to 'RunThreadpoolExample' export
         sample::args::RunThreadpoolExample data;

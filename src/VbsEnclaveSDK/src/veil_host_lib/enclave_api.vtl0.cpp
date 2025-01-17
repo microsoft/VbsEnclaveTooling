@@ -8,7 +8,7 @@
 #include "enclave_api.vtl0.h"
 #include "exports.vtl0.h"
 
-namespace veil::vtl0::enclave_functions
+namespace veil::vtl0::enclave_api
 {
     void unlock_for_app_user(void* enclave)
     {

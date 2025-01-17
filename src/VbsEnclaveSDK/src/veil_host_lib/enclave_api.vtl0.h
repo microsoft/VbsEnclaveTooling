@@ -209,7 +209,7 @@ namespace veil::vtl0::enclave::implementation
     }
 }
 
-namespace veil::vtl0::enclave_functions
+namespace veil::vtl0::enclave_api
 {
     void unlock_for_app_user(void* enclave);
     void register_callbacks(void* enclave);
