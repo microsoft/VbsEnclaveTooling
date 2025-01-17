@@ -1,0 +1,241 @@
+#include "pch.h"
+
+#include <array>
+#include <stdexcept>
+
+#include <enclave_interface.vtl1.h>
+#include <taskpool.vtl1.h>
+
+#include "sample_arguments.any.h"
+
+/*
+* Our exports: My app-enclave's exports
+*/
+ENCLAVE_FUNCTION MySaveScreenshotExport(_In_ PVOID params)
+{
+    (void)params;
+
+    // ..code here..
+
+    return 0;
+}
+
+/*
+* Some sample code
+*/
+
+using namespace veil::vtl1::vtl0_functions;
+
+namespace RunTaskpoolExamples
+{
+
+    void Test_Dont_WaitForAllTasksToFinish(_In_ PVOID params)
+    {
+        auto data = reinterpret_cast<sample::args::RunTaskpoolExample*>(params);
+
+        print_wstring(L"Creating taskpool with '%d' threads...", data->threadCount);
+
+        auto tasks = std::vector<veil::vtl1::future<void>>();
+
+        std::atomic<bool> ranLastTask = false;
+
+        // taskpool
+        {
+            auto taskpool = veil::vtl1::taskpool(data->threadCount, false);
+
+            // Use up all the threads
+            for (uint32_t i = 0; i < data->threadCount; i++)
+            {
+                auto task = taskpool.queue_task([=]()
+                {
+                    print_wstring(L"hello from task: %d", i);
+                    veil::vtl1::sleep(500);
+                });
+                tasks.push_back(std::move(task));
+            }
+
+            auto task = taskpool.queue_task([&ranLastTask]()
+            {
+                ranLastTask = true;
+                print_wstring(L"...you SHOULD NOT see this message...");
+            });
+
+            // Detach the future from the shared state so its destructor doesn't block on waiting forever (it's never scheduled)
+            task.detach();
+
+            print_wstring(L"Waiting for taskpool to destruct...");
+        }
+
+        if (ranLastTask)
+        {
+            print_wstring(L"ERROR: Taskpool destructed after all tasks finished.");
+        }
+        else
+        {
+            print_wstring(L"SUCCEESS: Taskpool destructed before all tasks finished.");
+        }
+    }
+
+    void Test_Do_WaitForAllTasksToFinish(_In_ PVOID params)
+    {
+        auto data = reinterpret_cast<sample::args::RunTaskpoolExample*>(params);
+
+        print_wstring(L"Creating taskpool with '%d' threads...", data->threadCount);
+
+        auto tasks = std::vector<veil::vtl1::future<void>>();
+
+        std::atomic<bool> ranLastTask = false;
+
+        // taskpool
+        {
+            auto taskpool = veil::vtl1::taskpool(data->threadCount, true);
+
+            // Use up all the threads
+            for (uint32_t i = 0; i < data->threadCount; i++)
+            {
+                auto task = taskpool.queue_task([=]()
+                {
+                    print_wstring(L"hello from task: %d", i);
+                    veil::vtl1::sleep(500);
+                });
+                tasks.push_back(std::move(task));
+            }
+
+            auto task = taskpool.queue_task([&ranLastTask]()
+            {
+                ranLastTask = true;
+                print_wstring(L"...you SHOULD see this message...");
+            });
+            tasks.push_back(std::move(task));
+
+            print_wstring(L"Waiting for taskpool to destruct...");
+        }
+
+        if (!ranLastTask)
+        {
+            print_wstring(L"ERROR: Taskpool destructed before all tasks finished.");
+        }
+        else
+        {
+            print_wstring(L"SUCCEESS: Taskpool destructed after all tasks finished.");
+        }
+    }
+
+    void UsageExample(_In_ PVOID params)
+    {
+        auto data = reinterpret_cast<sample::args::RunTaskpoolExample*>(params);
+
+        print_wstring(L"Creating taskpool with '%d' threads...", data->threadCount);
+
+        auto taskpool = veil::vtl1::taskpool(data->threadCount, true);
+
+        auto task_1 = taskpool.queue_task([=]()
+        {
+            veil::vtl1::sleep(500);
+            print_wstring(L"hello from task 1");
+        });
+
+        auto task_2 = taskpool.queue_task([=]()
+        {
+            veil::vtl1::sleep(500);
+            print_wstring(L"hello from task 2");
+        });
+
+        struct complex_struct
+        {  
+            std::wstring contents;
+        };
+
+        auto a_complex_task = taskpool.queue_task([=]()
+        {
+            veil::vtl1::sleep(500);
+            print_wstring(L"hello from complex task");
+            return complex_struct{ L"this is a complex struct!" };
+        });
+
+        print_wstring(L"Waiting for tasks...");
+
+        task_1.get();
+        task_2.get();
+        auto a_complex_struct = a_complex_task.get();
+
+        print_wstring(L"complex task returned a complex struct: %ls", a_complex_struct.contents.c_str());
+
+        print_wstring(L"Waiting for taskpool to destruct...");
+    }
+
+    void UsageExceptionExample(_In_ PVOID params)
+    {
+        auto data = reinterpret_cast<sample::args::RunTaskpoolExample*>(params);
+
+        print_wstring(L"Creating taskpool with '%d' threads...", data->threadCount);
+
+        auto taskpool = veil::vtl1::taskpool(data->threadCount, true);
+
+        auto task1 = taskpool.queue_task([=]()
+        {
+            volatile int x = 5;
+            if (x == 5)
+            {
+                throw std::runtime_error("task1 threw this exception");
+            }
+        });
+
+        auto task2 = taskpool.queue_task([=]()
+        {
+            volatile int x = 5;
+            if (x == 5)
+            {
+                throw std::runtime_error("task2 threw this exception");
+            }
+            return 1234;
+        });
+
+        try
+        {
+            task1.get();
+        }
+        catch (std::runtime_error e)
+        {
+            print_string("Caught exception from running task: %s", e.what());
+        }
+
+        try
+        {
+            task2.get();
+        }
+        catch (std::runtime_error e)
+        {
+            print_string("Caught exception from running task: %s", e.what());
+        }
+
+        print_wstring(L"Waiting for taskpool to destruct...");
+    }
+}
+
+ENCLAVE_FUNCTION RunTaskpoolExample(_In_ PVOID params) try
+{
+#if 0
+    print_string(L"TEST");
+    RunTaskpoolExamples::Test_Dont_WaitForAllTasksToFinish(params);
+    print_string(L"");
+
+    print_string(L"TEST");
+    RunTaskpoolExamples::Test_Do_WaitForAllTasksToFinish(params);
+    print_string(L"");
+
+    print_string(L"USAGE");
+    RunTaskpoolExamples::UsageExample(params);
+    print_string(L"");
+#endif
+
+    print_wstring(L"USAGE EXCEPTIONS");
+    RunTaskpoolExamples::UsageExceptionExample(params);
+    print_wstring(L"");
+
+    RETURN_HR_AS_PVOID(S_OK);
+}
+catch (...)
+{
+    RETURN_HR_AS_PVOID(wil::ResultFromCaughtException());
+}
