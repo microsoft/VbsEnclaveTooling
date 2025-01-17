@@ -5,7 +5,6 @@
 
 #include <enclave_interface.vtl1.h>
 #include <memory.vtl1.h>
-#include <registered_callbacks.vtl1.h>
 #include <threadpool.vtl1.h>
 
 #include "sample_arguments.any.h"
