@@ -55,7 +55,7 @@ enum class export_ordinals : uint32_t
 {
     retrieve_enclave_error_for_thread = 100,
     register_callbacks,
-    EnclaveImplementationFramework_Vtl1_Threadpool_RunTask,
+    threadpool_run_task,
 };
 
 namespace veil

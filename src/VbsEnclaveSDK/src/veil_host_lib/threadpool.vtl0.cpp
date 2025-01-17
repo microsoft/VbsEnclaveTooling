@@ -100,7 +100,7 @@ namespace eif_client::implementation
                 void* output{};
                 veil::any::implementation::args::StartHelloSession data = {};
                 THROW_IF_FAILED(enclave_model_api::CallEnclaveModelApi_CallByOrdinal(m_enclave, export_ordinals::StartHelloSession, data));
-                //THROW_IF_FAILED(enclave_model_api::CallEnclaveModelApi_CallByOrdinal(enclave, export_ordinals::EnclaveImplementationFramework_Vtl1_Threadpool_RunTask, data));
+                //THROW_IF_FAILED(enclave_model_api::CallEnclaveModelApi_CallByOrdinal(enclave, export_ordinals::threadpool_run_task, data));
                 //LOG_IF_WIN32_BOOL_FALSE(CallEnclave(routine, reinterpret_cast<void*>(taskHandle), TRUE, reinterpret_cast<void**>(&output)));
             }
         }
