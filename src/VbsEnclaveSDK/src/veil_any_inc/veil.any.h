@@ -16,11 +16,6 @@
 #define PVOID_TO_HRESULT(p) ((HRESULT)((ULONG_PTR)(p) & 0x00000000FFFFFFFF))
 #define RETURN_PVOID_AS_HR(p) return PVOID_TO_HRESULT(p);
 
-#define NCRYPT_NGC_SESSION_CHALLENGE_PROPERTY L"NgcSessionChallenge"
-#define NCRYPT_NGC_CLIENT_ATTESTATION_PROPERTY L"NgcClientAttestation"
-#define NCRYPT_NGC_CONTAINER_SECURE_ID_PROPERTY L"NgcContainerSecureId"
-#define NCRYPT_NGC_IS_SECURE_ID_OWNER_ID_PROPERTY L"NgcIsSecureIdOwnerId"
-
 inline constexpr HRESULT pvoid_to_hr(void* ptr)
 {
 #pragma warning(push)
