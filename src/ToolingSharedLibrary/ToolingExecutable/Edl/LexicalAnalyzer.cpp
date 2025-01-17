@@ -30,7 +30,7 @@ namespace EdlProcessor
         if (!file)
         {
             throw EdlAnalysisException(
-                ErrorId::EdlCommentEndingNotFound,
+                ErrorId::EdlFailureToLoadFile,
                 m_file_path.filename().generic_string());
         }
 

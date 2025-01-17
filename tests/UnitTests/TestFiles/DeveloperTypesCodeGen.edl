@@ -1,0 +1,34 @@
+// Copyright (c) Open Enclave SDK contributors.
+// Licensed under the MIT License.
+
+enclave
+{
+    // Anonymous enum
+    enum
+    {
+        value1 = 10,
+        value2 = 50,
+    };
+
+    // Normal named enum
+     enum TestEnum 
+     {
+        test_val1 = 0x01,
+        test_val2,
+        test_val3,
+    };
+
+    // Struct that contains a pointer and arrays
+    struct TestStruct
+    {
+       size_t size;
+
+       [size=size] char* arg1;
+
+       uint32_t arg2[5];
+
+       uint32_t arg3[0x14];
+
+       uint32_t arg4[10][value1];
+    };
+};

@@ -5,14 +5,17 @@
 #include <CmdlineParsingHelpers.h>
 #include <CmdlineArgumentsParser.h>
 #include <Edl\Parser.h>
+#include <CodeGeneration\CodeGeneration.h>
 
 using namespace EdlProcessor;
 using namespace CmdlineParsingHelpers;
+using namespace CodeGeneration;
+
 
 int main(int argc, char* argv[])
 {
     auto argument_parser = CmdlineArgumentsParser(argc, argv);
-    
+
     // Only proceed with valid arguments
     if (!argument_parser.ParseSuccessful())
     {
@@ -30,6 +33,8 @@ int main(int argc, char* argv[])
     {
         auto edl_parser = EdlParser(argument_parser.EdlFilePath());
         Edl edl = edl_parser.Parse();
+        auto cpp_code_generator = CppCodeGenerator(edl, argument_parser);
+        cpp_code_generator.Generate();
     }
     catch (const std::exception& exception)
     {

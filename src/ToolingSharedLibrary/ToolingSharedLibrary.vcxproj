@@ -170,6 +170,8 @@
     <Text Include="Includes\Edl\LexicalAnalyzer.h">
       <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</DeploymentContent>
     </Text>
+    <ClInclude Include="Includes\CodeGeneration\CodeGeneration.h" />
+    <ClInclude Include="Includes\CodeGeneration\Contants.h" />
     <ClInclude Include="Includes\Edl\Parser.h" />
     <ClInclude Include="Includes\Edl\Structures.h" />
     <ClInclude Include="Includes\Edl\Utils.h" />
@@ -185,6 +187,11 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|ARM64'">Create</PrecompiledHeader>
     </ClCompile>
+    <ClInclude Include="Includes\CodeGeneration\CodeGenerationHelpers.h">
+      <FileType>CppCode</FileType>
+    </ClInclude>
+    <ClCompile Include="ToolingExecutable\CodeGeneration\CppCodeBuilder.cpp" />
+    <ClCompile Include="ToolingExecutable\CodeGeneration\CppCodeGenerator.cpp" />
     <ClCompile Include="ToolingExecutable\Edl\LexicalAnalyzer.cpp" />
     <ClCompile Include="ToolingExecutable\Edl\Parser.cpp" />
   </ItemGroup>
