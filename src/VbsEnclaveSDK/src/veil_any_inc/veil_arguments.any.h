@@ -78,7 +78,7 @@ namespace veil::any
                 UINT32 status;
             };
 
-            struct RegisterCallbacks
+            struct register_callbacks
             {
                 veil::callback_t* callbackAddresses;
             };

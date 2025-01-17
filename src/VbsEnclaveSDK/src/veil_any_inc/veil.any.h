@@ -31,7 +31,6 @@ inline constexpr void* hr_to_pvoid(HRESULT hr)
 #pragma warning(pop)
 }
 
-
 #define VEIL_ABI_FUNCTION(__name, __args, __funcbody) \
     void* __name(void* __args) \
     try \
@@ -52,20 +51,6 @@ inline constexpr void* hr_to_pvoid(HRESULT hr)
     } \
 
 
-//
-// Enclave complex HRESULT return type
-//
-#define ENCLAVE_RESULT_WMESSAGE_SIZE 512
-
-
-
-
-
-//#define veil_EXPORT(name, ordinal) \
-
-
-//veil_EXPORT_ORDINAL(StartHelloSession, 8);
-
 enum class export_ordinals : uint32_t
 {
     StartHelloSession = 101,
@@ -76,7 +61,7 @@ enum class export_ordinals : uint32_t
     CreateAttestationReport,
     ValidatePackagedEnclaveIdentityProof,
     retrieve_enclave_error_for_thread,
-    RegisterCallbacks,
+    register_callbacks,
     EnclaveImplementationFramework_Vtl1_Threadpool_RunTask,
 };
 
@@ -106,7 +91,7 @@ namespace veil
 }
 
 
-
+#define ENCLAVE_RESULT_WMESSAGE_SIZE 512
 
 namespace veil
 {

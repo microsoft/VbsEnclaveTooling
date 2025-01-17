@@ -113,16 +113,16 @@ namespace veil::vtl1
             RETURN_HR_AS_PVOID(S_OK);
         }
 
-        ENCLAVE_FUNCTION RegisterCallbacks(_In_ PVOID params)
+        ENCLAVE_FUNCTION register_callbacks(_In_ PVOID params)
         {
             static int i = 0;
             if (i == 1)
                 RETURN_HR_AS_PVOID(E_INVALIDARG);
             i++;
-            auto eawh = static_cast<enclave_arguments_with_hr<veil::any::implementation::args::RegisterCallbacks>*>(params);
+            auto eawh = static_cast<enclave_arguments_with_hr<veil::any::implementation::args::register_callbacks>*>(params);
             auto errorPopulator = veil::vtl1::implementation::export_helpers::enclave_error_populator(eawh->error);
 
-            RETURN_HR_AS_PVOID(veil::vtl1::implementation::exports::RegisterCallbacks(&eawh->data));
+            RETURN_HR_AS_PVOID(veil::vtl1::implementation::exports::register_callbacks(&eawh->data));
         }
 
         ENCLAVE_FUNCTION threadpool_run_task(_In_ PVOID params)
@@ -162,7 +162,7 @@ namespace veil::vtl1
                 ENCLAVE_SDK_EXPORT_ORDINAL(CreateAttestationReport, i++);
                 ENCLAVE_SDK_EXPORT_ORDINAL(ValidatePackagedEnclaveIdentityProof, i++);
                 ENCLAVE_SDK_EXPORT_ORDINAL(retrieve_enclave_error_for_thread, i++);
-                ENCLAVE_SDK_EXPORT_ORDINAL(RegisterCallbacks, i++);
+                ENCLAVE_SDK_EXPORT_ORDINAL(register_callbacks, i++);
                 //int x2 = 5;
                 //if (x2 == 5)
                 //RETURN_HR_AS_PVOID(E_APPLICATION_EXITING);

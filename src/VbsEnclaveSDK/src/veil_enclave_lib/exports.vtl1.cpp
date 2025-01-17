@@ -1155,7 +1155,7 @@ namespace veil::vtl1::implementation::exports
 
         int x2 = 5;
 
-    HRESULT RegisterCallbacks(_Inout_ veil::any::implementation::args::RegisterCallbacks* params)
+    HRESULT register_callbacks(_Inout_ veil::any::implementation::args::register_callbacks* params)
         try
     {
         static int i = 0;

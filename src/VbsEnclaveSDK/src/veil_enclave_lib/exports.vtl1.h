@@ -16,5 +16,5 @@ namespace veil::vtl1::implementation::exports
 
     HRESULT ValidatePackagedEnclaveIdentityProof(_Inout_ veil::any::implementation::args::ValidatePackagedEnclaveIdentityProof* params);
     HRESULT retrieve_enclave_error_for_thread(_Inout_ veil::any::implementation::args::retrieve_enclave_error_for_thread* params);
-    HRESULT RegisterCallbacks(_Inout_ veil::any::implementation::args::RegisterCallbacks* params);
+    HRESULT register_callbacks(_Inout_ veil::any::implementation::args::register_callbacks* params);
 }

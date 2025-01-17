@@ -13,10 +13,10 @@ namespace veil::vtl0::exports
 {
     HRESULT register_callbacks(void* enclave, veil::callback_t* callbackAddresses)
     {
-        veil::any::implementation::args::RegisterCallbacks data = {};
+        veil::any::implementation::args::register_callbacks data = {};
         data.callbackAddresses = callbackAddresses;
 
-        THROW_IF_FAILED(veil::vtl0::enclave::implementation::call_enclave_function(enclave, export_ordinals::RegisterCallbacks, data));
+        THROW_IF_FAILED(veil::vtl0::enclave::implementation::call_enclave_function(enclave, export_ordinals::register_callbacks, data));
 
         return S_OK;
     }
