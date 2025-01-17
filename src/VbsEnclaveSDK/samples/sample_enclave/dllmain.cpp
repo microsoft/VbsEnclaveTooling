@@ -23,7 +23,7 @@
 #define SAMPLE_SNAPSHOT_ENCLAVE_SVN 1000
 
 #define ENCLAVE_ADDRESS_SPACE_SIZE \
-    0x10000000 // The expected virtual size of the private address range for the enclave, in bytes, 256MB
+    0x20000000 // The expected virtual size of the private address range for the enclave, in bytes, 512MB
 
 // Enclave image creation policies
 #ifndef ENCLAVE_MAX_THREADS

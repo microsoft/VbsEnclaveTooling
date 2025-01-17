@@ -21,7 +21,7 @@ namespace Samples::Threadpool
         // Let's arbitrarily choose to spawn 3 threads
         constexpr DWORD THREAD_COUNT = 3;
 
-        auto enclave = veil::vtl0::enclave::create(ENCLAVE_TYPE_VBS, ownerId, flags, veil::vtl0::enclave::megabytes(256));
+        auto enclave = veil::vtl0::enclave::create(ENCLAVE_TYPE_VBS, ownerId, flags, veil::vtl0::enclave::megabytes(512));
         veil::vtl0::enclave::load_image(enclave.get(), L"sample_enclave.dll");
         veil::vtl0::enclave::initialize(enclave.get(), THREAD_COUNT);
 
