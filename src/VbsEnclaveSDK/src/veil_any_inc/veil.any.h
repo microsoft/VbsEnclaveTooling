@@ -6,15 +6,11 @@
 #define ENCLAVE_FUNCTION extern "C" PVOID WINAPI
 #endif
 
-#define RETURN_HR_AS_PVOID(x) return (hr_to_pvoid(x));
-
-#define HRESULT_TO_PVOID(hr) (PVOID)((ULONG_PTR)(hr) & 0x00000000FFFFFFFF)
-
-#ifndef RETURN_HR_AS_PVOID
-#define RETURN_HR_AS_PVOID(hr) return HRESULT_TO_PVOID(hr);
-#endif
+#define HRESULT_TO_PVOID(hr) ((PVOID)((ULONG_PTR)(hr) & 0x00000000FFFFFFFF))
 #define PVOID_TO_HRESULT(p) ((HRESULT)((ULONG_PTR)(p) & 0x00000000FFFFFFFF))
-#define RETURN_PVOID_AS_HR(p) return PVOID_TO_HRESULT(p);
+
+#define RETURN_HR_AS_PVOID(x) return hr_to_pvoid(x);
+#define RETURN_PVOID_AS_HR(x) return pvoid_to_hr(x);
 
 inline constexpr HRESULT pvoid_to_hr(void* ptr)
 {
