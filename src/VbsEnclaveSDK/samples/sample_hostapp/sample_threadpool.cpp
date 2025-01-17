@@ -32,7 +32,7 @@ namespace Samples::Threadpool
         veil::vtl0::enclave_functions::register_callbacks(enclave.get());
 
         // Call into enclave to 'RunThreadpoolExample' export
-        sample::args::ThreadPoolTest data;
+        sample::args::RunThreadpoolExample data;
         data.threadCount = THREAD_COUNT - 1;
         THROW_IF_FAILED(veil::vtl0::enclave::call_enclave(enclave.get(), "RunThreadpoolExample", data));
 

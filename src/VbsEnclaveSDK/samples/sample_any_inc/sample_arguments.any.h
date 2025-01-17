@@ -6,7 +6,7 @@ namespace sample
 {
     namespace args
     {
-        struct ThreadPoolTest
+        struct RunThreadpoolExample
         {
             uint32_t threadCount;
         };

@@ -35,7 +35,7 @@ namespace RunThreadpoolExamples
 
     void Test_Dont_WaitForAllTasksToFinish(_In_ PVOID params)
     {
-        auto data = reinterpret_cast<sample::args::ThreadPoolTest*>(params);
+        auto data = reinterpret_cast<sample::args::RunThreadpoolExample*>(params);
 
         print_wstring(L"Creating threadpool with '%d' threads...", data->threadCount);
 
@@ -82,7 +82,7 @@ namespace RunThreadpoolExamples
 
     void Test_Do_WaitForAllTasksToFinish(_In_ PVOID params)
     {
-        auto data = reinterpret_cast<sample::args::ThreadPoolTest*>(params);
+        auto data = reinterpret_cast<sample::args::RunThreadpoolExample*>(params);
 
         print_wstring(L"Creating threadpool with '%d' threads...", data->threadCount);
 
@@ -127,7 +127,7 @@ namespace RunThreadpoolExamples
 
     void UsageExample(_In_ PVOID params)
     {
-        auto data = reinterpret_cast<sample::args::ThreadPoolTest*>(params);
+        auto data = reinterpret_cast<sample::args::RunThreadpoolExample*>(params);
 
         print_wstring(L"Creating threadpool with '%d' threads...", data->threadCount);
 
@@ -170,7 +170,7 @@ namespace RunThreadpoolExamples
 
     void UsageExceptionExample(_In_ PVOID params)
     {
-        auto data = reinterpret_cast<sample::args::ThreadPoolTest*>(params);
+        auto data = reinterpret_cast<sample::args::RunThreadpoolExample*>(params);
 
         print_wstring(L"Creating threadpool with '%d' threads...", data->threadCount);
 
