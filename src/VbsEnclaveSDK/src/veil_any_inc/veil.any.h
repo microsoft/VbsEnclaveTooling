@@ -53,14 +53,7 @@ inline constexpr void* hr_to_pvoid(HRESULT hr)
 
 enum class export_ordinals : uint32_t
 {
-    StartHelloSession = 101,
-    GenerateEncryptionKeySecuredByHello,
-    LoadEncryptionKeySecuredByHello,
-    ExportKey,
-    GetPackagedEnclaveIdentityProofChallenge,
-    CreateAttestationReport,
-    ValidatePackagedEnclaveIdentityProof,
-    retrieve_enclave_error_for_thread,
+    retrieve_enclave_error_for_thread = 100,
     register_callbacks,
     EnclaveImplementationFramework_Vtl1_Threadpool_RunTask,
 };

@@ -40,7 +40,7 @@ namespace veil::vtl1::implementation::call_ins
             // Run the task
             threadpoolInstance->run_task(taskInfo->task_handle);
 
-            //return S_OK;
+            return S_OK;
         }
 
         THROW_HR(HRESULT_FROM_WIN32(ERROR_RESOURCE_NOT_ONLINE)); // ERROR_NOT_READY? ERROR_INVALID_STATE?

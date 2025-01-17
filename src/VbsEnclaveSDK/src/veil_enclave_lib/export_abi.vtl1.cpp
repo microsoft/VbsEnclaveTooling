@@ -152,7 +152,10 @@ namespace veil::vtl1
             PVOID call_by_ordinal(_In_ PVOID ordinalStruct)
             {
                 auto _x = reinterpret_cast<enclave_ordinal_call_unwrapping*>(ordinalStruct);
-                uint32_t i = 101;
+                uint32_t i = 100;
+                ENCLAVE_SDK_EXPORT_ORDINAL(retrieve_enclave_error_for_thread, i++);
+                ENCLAVE_SDK_EXPORT_ORDINAL(register_callbacks, i++);
+                ENCLAVE_SDK_EXPORT_ORDINAL(threadpool_run_task, i++);
                 //ENCLAVE_SDK_EXPORT_ORDINAL(StartHelloSession, i++);
                 ENCLAVE_SDK_EXPORT_ORDINAL_TRAITS(StartHelloSession, i++);
                 ENCLAVE_SDK_EXPORT_ORDINAL(GenerateEncryptionKeySecuredByHello, i++);
@@ -161,12 +164,9 @@ namespace veil::vtl1
                 ENCLAVE_SDK_EXPORT_ORDINAL(GetPackagedEnclaveIdentityProofChallenge, i++);
                 ENCLAVE_SDK_EXPORT_ORDINAL(CreateAttestationReport, i++);
                 ENCLAVE_SDK_EXPORT_ORDINAL(ValidatePackagedEnclaveIdentityProof, i++);
-                ENCLAVE_SDK_EXPORT_ORDINAL(retrieve_enclave_error_for_thread, i++);
-                ENCLAVE_SDK_EXPORT_ORDINAL(register_callbacks, i++);
                 //int x2 = 5;
                 //if (x2 == 5)
                 //RETURN_HR_AS_PVOID(E_APPLICATION_EXITING);
-                ENCLAVE_SDK_EXPORT_ORDINAL(threadpool_run_task, i++);
                 //RETURN_HR_AS_PVOID(E_HANDLE);
                 RETURN_HR_AS_PVOID(E_INVALIDARG);
             }
