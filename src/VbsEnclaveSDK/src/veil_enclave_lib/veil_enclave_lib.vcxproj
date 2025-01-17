@@ -1,0 +1,171 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="..\..\packages\Microsoft.Windows.SDK.BuildTools.10.0.26100.1742\build\Microsoft.Windows.SDK.BuildTools.props" Condition="Exists('..\..\packages\Microsoft.Windows.SDK.BuildTools.10.0.26100.1742\build\Microsoft.Windows.SDK.BuildTools.props')" />
+  <Import Project="..\..\packages\Microsoft.Windows.SDK.CPP.x64.10.0.26100.2454\build\native\Microsoft.Windows.SDK.cpp.x64.props" Condition="Exists('..\..\packages\Microsoft.Windows.SDK.CPP.x64.10.0.26100.2454\build\native\Microsoft.Windows.SDK.cpp.x64.props')" />
+  <Import Project="..\..\packages\Microsoft.Windows.SDK.CPP.10.0.26100.2454\build\native\Microsoft.Windows.SDK.cpp.props" Condition="Exists('..\..\packages\Microsoft.Windows.SDK.CPP.10.0.26100.2454\build\native\Microsoft.Windows.SDK.cpp.props')" />
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|ARM64">
+      <Configuration>Debug</Configuration>
+      <Platform>ARM64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|ARM64">
+      <Configuration>Release</Configuration>
+      <Platform>ARM64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Debug|x64">
+      <Configuration>Debug</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|x64">
+      <Configuration>Release</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <VCProjectVersion>16.0</VCProjectVersion>
+    <Keyword>Win32Proj</Keyword>
+    <ProjectGuid>{323433E4-11D6-4B5B-93E4-04504E2EF0E1}</ProjectGuid>
+    <RootNamespace>veil_enclave_lib</RootNamespace>
+    <WindowsTargetPlatformVersion>10.0.22621.0</WindowsTargetPlatformVersion>
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <PlatformToolset>v143</PlatformToolset>
+    <ProjectName>veil_enclave_lib</ProjectName>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="Shared">
+    <Import Project="..\veil_any_inc\veil_any_inc.vcxitems" Label="Shared" />
+  </ImportGroup>
+  <ImportGroup Label="ExtensionSettings" />
+  <PropertyGroup>
+    <TargetName>veil_enclave_lib</TargetName>
+    <LinkIncremental>false</LinkIncremental>
+  </PropertyGroup>
+  <PropertyGroup>
+    <IncludePath>$(VC_IncludePath);$(WindowsSDK_IncludePath)</IncludePath>
+  </PropertyGroup>
+  <ImportGroup Label="Shared">
+    <Import Project="..\..\packages\Microsoft.Windows.ImplementationLibrary.1.0.240803.1\build\native\Microsoft.Windows.ImplementationLibrary.targets" Condition="Exists('..\..\packages\Microsoft.Windows.ImplementationLibrary.1.0.240803.1\build\native\Microsoft.Windows.ImplementationLibrary.targets')" />
+  </ImportGroup>
+  <PropertyGroup>
+    <WindowsSDK_LibraryPath_Platform>$(WindowsSDKLibDir)\um\$(Platform)</WindowsSDK_LibraryPath_Platform>
+    <VBS_Enclave_Dependencies>$(WindowsSDK_LibraryPath_Platform)\vertdll.lib;$(WindowsSDK_LibraryPath_Platform)\bcrypt.lib</VBS_Enclave_Dependencies>
+    <VC_LibraryPath_Enclave>$(VC_LibraryPath_VC_x64_Desktop)\..\$(Platform)\enclave</VC_LibraryPath_Enclave>
+    <WindowsSDK_LibraryPath_Enclave>$(WindowsSDK_LibraryPath)\..\ucrt_enclave\$(Platform)</WindowsSDK_LibraryPath_Enclave>
+    <VBS_Enclave_Dependencies>$(VC_LibraryPath_Enclave)\libcmt.lib;$(VC_LibraryPath_Enclave)\libvcruntime.lib;$(winsdk_cpp_x64_root)\um\x64\vertdll.lib;$(winsdk_cpp_x64_root)\um\x64\bcrypt.lib;$(winsdk_cpp_x64_root)\ucrt_enclave\x64\ucrt.lib</VBS_Enclave_Dependencies>
+  </PropertyGroup>
+  <!-- For the dev build, we use VS compiler and require VS 17.9 or later. -->
+  <!--
+  <PropertyGroup Condition="'$(UES_IsLabBuild)' == 'False' and Exists('$(VC_LibraryPath_VC_x64_Desktop)\..\$(Platform)\enclave')">
+    <VC_LibraryPath_Enclave>$(VC_LibraryPath_VC_x64_Desktop)\..\$(Platform)\enclave</VC_LibraryPath_Enclave>
+    <WindowsSDK_LibraryPath_Enclave>$(WindowsSDKLibDir)\ucrt_enclave\$(Platform)</WindowsSDK_LibraryPath_Enclave>
+    <VBS_Enclave_Dependencies>$(VC_LibraryPath_Enclave)\libcmt.lib;$(VC_LibraryPath_Enclave)\libvcruntime.lib;$(WindowsSDK_LibraryPath_Enclave)\ucrt.lib</VBS_Enclave_Dependencies>
+  </PropertyGroup>
+  -->
+  <PropertyGroup>
+    <VEIIDExeFullPath>$(WindowsSDKBuildToolsBinVersionedArchFolder)\veiid.exe</VEIIDExeFullPath>
+    <VEIID_Command>$(VEIIDExeFullPath) "$(OutDir)$(TargetName)$(TargetExt)"</VEIID_Command>
+  </PropertyGroup>
+  <!-- Undocked UCRT configuration. -->
+  <PropertyGroup>
+    <UndockedSettingsLoaded>True</UndockedSettingsLoaded>
+    <UseCrtSDKReferenceStaticWarning>False</UseCrtSDKReferenceStaticWarning>
+    <UseEnclave>True</UseEnclave>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)'=='Debug'">
+    <ClCompile>
+      <PreprocessorDefinitions>_DEBUG;CONSOLE;KEY_ENCLAVE_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
+    </ClCompile>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)'=='Release'">
+    <ClCompile>
+      <PreprocessorDefinitions>NDEBUG;CONSOLE;KEY_ENCLAVE_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
+    </ClCompile>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup>
+    <ClCompile>
+      <WarningLevel>Level4</WarningLevel>
+      <TreatWarningAsError>true</TreatWarningAsError>
+      <DisableSpecificWarnings>%(DisableSpecificWarnings)</DisableSpecificWarnings>
+      <SDLCheck>true</SDLCheck>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+      <BasicRuntimeChecks>Default</BasicRuntimeChecks>
+      <LanguageStandard_C>stdc17</LanguageStandard_C>
+      <RuntimeTypeInfo>false</RuntimeTypeInfo>
+      <PrecompiledHeader>Use</PrecompiledHeader>
+      <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
+      <!-- jw: not sure why no props entry for this. $(WindowsSdkDir)Include\$(WindowsSDKBuildToolsVersion)\um -->
+      <!-- jw: not sure why no props entry for this. $(WindowsSdkDir)Include\$(WindowsSDKBuildToolsVersion)\shared -->
+      <!-- jw: not sure why no props entry for this. $(WindowsSdkDir)Include\$(WindowsSDKBuildToolsVersion)\ucrt -->
+      <AdditionalIncludeDirectories>$(WindowsSdkDir)Include\$(WindowsSDKBuildToolsVersion)\um;$(WindowsSdkDir)Include\$(WindowsSDKBuildToolsVersion)\shared;$(WindowsSdkDir)Include\$(WindowsSDKBuildToolsVersion)\ucrt;$(MSBUILDThisFileDirectory)..\veil_enclave_wil_inc;$(MSBUILDThisFileDirectory)..\veil_enclave_inc;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <LanguageStandard Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">stdcpp20</LanguageStandard>
+    </ClCompile>
+    <Link>
+      <SubSystem>Console</SubSystem>
+      <AdditionalDependencies>$(VBS_Enclave_Dependencies)</AdditionalDependencies>
+      <AdditionalOptions>/INTEGRITYCHECK /ENCLAVE /GUARD:MIXED</AdditionalOptions>
+      <ModuleDefinitionFile>veil_enclave_lib.def</ModuleDefinitionFile>
+      <CETCompat Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</CETCompat>
+      <IgnoreAllDefaultLibraries Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</IgnoreAllDefaultLibraries>
+    </Link>
+    <PostBuildEvent>
+      <Message>Apply VEIID Protection</Message>
+      <!--
+        Skip veiid.exe for static library
+      <Command>$(VEIID_Command)</Command>
+      -->
+    </PostBuildEvent>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <ClInclude Include="export_helpers.vtl1.h" />
+    <ClInclude Include="enclave_interface.vtl1.h" />
+    <ClInclude Include="exports.vtl1.h" />
+    <ClInclude Include="future.vtl1.h" />
+    <ClInclude Include="crypto.vtl1.h" />
+    <ClInclude Include="memory.vtl1.h" />
+    <ClInclude Include="object_table.vtl1.h" />
+    <ClInclude Include="vtl0_functions.vtl1.h" />
+    <ClInclude Include="paramvalidation.vtl1.h" />
+    <ClInclude Include="pch.h" />
+    <ClInclude Include="registered_callbacks.vtl1.h" />
+    <ClInclude Include="threadpool.vtl1.h" />
+    <ClInclude Include="utils.vtl1.h" />
+    <ClInclude Include="mutualauth.vtl1.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="ProductionEnclaveServices.cpp" />
+    <ClCompile Include="export_abi.vtl1.cpp" />
+    <ClCompile Include="crypto.vtl1.cpp" />
+    <ClCompile Include="export_helpers.vtl1.cpp" />
+    <ClCompile Include="exports.vtl1.cpp" />
+    <ClCompile Include="paramvalidation.vtl1.cpp" />
+    <ClCompile Include="pch.cpp">
+      <PrecompiledHeader>Create</PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="registered_callbacks.vtl1.cpp" />
+    <ClCompile Include="threadpool.vtl1.cpp" />
+    <ClCompile Include="utils.vtl1.cpp" />
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ItemGroup>
+    <None Include="packages.config" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\veil_enclave_cpp_support_lib\veil_enclave_cpp_support_lib.vcxproj">
+      <Project>{26116633-98ec-4eac-859c-139d020d10c9}</Project>
+    </ProjectReference>
+  </ItemGroup>
+  <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
+    <PropertyGroup>
+      <ErrorText>This project references NuGet package(s) that are missing on this computer. Use NuGet Package Restore to download them.  For more information, see http://go.microsoft.com/fwlink/?LinkID=322105. The missing file is {0}.</ErrorText>
+    </PropertyGroup>
+    <Error Condition="!Exists('..\..\packages\Microsoft.Windows.ImplementationLibrary.1.0.240803.1\build\native\Microsoft.Windows.ImplementationLibrary.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\..\packages\Microsoft.Windows.ImplementationLibrary.1.0.240803.1\build\native\Microsoft.Windows.ImplementationLibrary.targets'))" />
+    <Error Condition="!Exists('..\..\packages\Microsoft.Windows.SDK.CPP.10.0.26100.2454\build\native\Microsoft.Windows.SDK.cpp.props')" Text="$([System.String]::Format('$(ErrorText)', '..\..\packages\Microsoft.Windows.SDK.CPP.10.0.26100.2454\build\native\Microsoft.Windows.SDK.cpp.props'))" />
+    <Error Condition="!Exists('..\..\packages\Microsoft.Windows.SDK.CPP.10.0.26100.2454\build\native\Microsoft.Windows.SDK.cpp.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\..\packages\Microsoft.Windows.SDK.CPP.10.0.26100.2454\build\native\Microsoft.Windows.SDK.cpp.targets'))" />
+    <Error Condition="!Exists('..\..\packages\Microsoft.Windows.SDK.CPP.x64.10.0.26100.2454\build\native\Microsoft.Windows.SDK.cpp.x64.props')" Text="$([System.String]::Format('$(ErrorText)', '..\..\packages\Microsoft.Windows.SDK.CPP.x64.10.0.26100.2454\build\native\Microsoft.Windows.SDK.cpp.x64.props'))" />
+    <Error Condition="!Exists('..\..\packages\Microsoft.Windows.SDK.BuildTools.10.0.26100.1742\build\Microsoft.Windows.SDK.BuildTools.props')" Text="$([System.String]::Format('$(ErrorText)', '..\..\packages\Microsoft.Windows.SDK.BuildTools.10.0.26100.1742\build\Microsoft.Windows.SDK.BuildTools.props'))" />
+    <Error Condition="!Exists('..\..\packages\Microsoft.Windows.SDK.BuildTools.10.0.26100.1742\build\Microsoft.Windows.SDK.BuildTools.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\..\packages\Microsoft.Windows.SDK.BuildTools.10.0.26100.1742\build\Microsoft.Windows.SDK.BuildTools.targets'))" />
+  </Target>
+</Project>

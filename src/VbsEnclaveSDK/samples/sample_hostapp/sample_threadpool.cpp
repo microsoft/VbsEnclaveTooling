@@ -1,0 +1,41 @@
+#include "pch.h"
+
+#include <iostream>
+
+#include <enclave_api.vtl0.h>
+
+#include <sample_arguments.any.h>
+
+namespace Samples::Threadpool
+{
+    void main()
+    {
+        std::wcout << L"Running sample: Threadpool..." << std::endl;
+
+        // Create app+user enclave identity
+        auto ownerId = veil::vtl0::appmodel::owner_id();
+
+        // Load enclave
+        auto flags = ENCLAVE_VBS_FLAG_DEBUG;
+
+        // Let's arbitrarily choose to spawn 3 threads
+        constexpr DWORD THREAD_COUNT = 3;
+
+        auto enclave = veil::vtl0::enclave::create(ENCLAVE_TYPE_VBS, ownerId, flags, veil::vtl0::enclave::megabytes(2));
+        veil::vtl0::enclave::load_image(enclave.get(), L"sample_enclave.dll");
+        veil::vtl0::enclave::initialize(enclave.get(), THREAD_COUNT);
+
+        // Unlock the enclave or further operations will be blocked
+        veil::vtl0::enclave_functions::unlock_for_app_user(enclave.get());
+
+        // Register framework callbacks
+        veil::vtl0::enclave_functions::register_callbacks(enclave.get());
+
+        // Call into enclave to 'RunThreadpoolExample' export
+        sample::args::ThreadPoolTest data;
+        data.threadCount = THREAD_COUNT - 1;
+        THROW_IF_FAILED(veil::vtl0::enclave::call_enclave(enclave.get(), "RunThreadpoolExample", data));
+
+        std::wcout << L"Finished sample: Threadpool..." << std::endl;
+    }
+}
