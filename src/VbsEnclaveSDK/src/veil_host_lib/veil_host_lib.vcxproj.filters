@@ -41,6 +41,9 @@
     <ClInclude Include="exports.vtl0.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="callbacks.vtl0.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />

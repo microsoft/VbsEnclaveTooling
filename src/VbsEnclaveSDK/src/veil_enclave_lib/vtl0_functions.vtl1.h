@@ -18,7 +18,7 @@ namespace veil::vtl1::vtl0_functions
 
         void* output;
         //auto fp_malloc = (LPENCLAVE_ROUTINE)implementation::get_callback(L"malloc");
-        auto fp_malloc = (LPENCLAVE_ROUTINE)veil::vtl1::implementation::get_callback(veil::callback_id::malloc);
+        auto fp_malloc = (LPENCLAVE_ROUTINE)veil::vtl1::implementation::get_callback(veil::implementation::callback_id::malloc);
         THROW_IF_WIN32_BOOL_FALSE(CallEnclave((LPENCLAVE_ROUTINE)fp_malloc, reinterpret_cast<void*>(size), TRUE, reinterpret_cast<void**>(&output)));
         return output;
     }
@@ -33,14 +33,14 @@ namespace veil::vtl1::vtl0_functions
         struct string_traits<std::string>
         {
             static inline char nul_char = '\0';
-            static inline veil::callback_id callback_id = veil::callback_id::printf;
+            static inline veil::implementation::callback_id callback_id = veil::implementation::callback_id::printf;
         };
 
         template <>
         struct string_traits<std::wstring>
         {
             static inline wchar_t nul_char = L'\0';
-            static inline veil::callback_id callback_id = veil::callback_id::wprintf;
+            static inline veil::implementation::callback_id callback_id = veil::implementation::callback_id::wprintf;
         };
 
         // StringCchPrintf
@@ -91,7 +91,7 @@ namespace veil::vtl1::vtl0_functions
             size_t len = str.size();
             size_t cbBuffer = (len + 1) * sizeof(string_type::value_type);
 
-            auto fp_malloc = (LPENCLAVE_ROUTINE)veil::vtl1::implementation::get_callback(veil::callback_id::malloc);
+            auto fp_malloc = (LPENCLAVE_ROUTINE)veil::vtl1::implementation::get_callback(veil::implementation::callback_id::malloc);
             THROW_IF_WIN32_BOOL_FALSE(CallEnclave((LPENCLAVE_ROUTINE)fp_malloc, reinterpret_cast<void*>(cbBuffer), TRUE, reinterpret_cast<void**>(&output)));
 
             void* allocation = veil::vtl1::vtl0_functions::malloc(cbBuffer);

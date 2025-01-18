@@ -5,6 +5,7 @@
 #include <wil/resource.h>
 #include <wil/token_helpers.h>
 
+#include "callbacks.vtl0.h"
 #include "enclave_api.vtl0.h"
 #include "exports.vtl0.h"
 

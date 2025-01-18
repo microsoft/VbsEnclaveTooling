@@ -11,12 +11,12 @@
 
 namespace veil::vtl0::exports
 {
-    HRESULT register_callbacks(void* enclave, veil::callback_t* callbackAddresses)
+    HRESULT register_callbacks(void* enclave, veil::implementation::callback_t* callbackAddresses)
     {
         veil::any::implementation::args::register_callbacks data = {};
         data.callbackAddresses = callbackAddresses;
 
-        THROW_IF_FAILED(veil::vtl0::enclave::implementation::call_enclave_function(enclave, export_ordinals::register_callbacks, data));
+        THROW_IF_FAILED(veil::vtl0::enclave::implementation::call_enclave_function(enclave, veil::implementation::export_ordinals::register_callbacks, data));
 
         return S_OK;
     }
@@ -25,7 +25,7 @@ namespace veil::vtl0::exports
     {
         veil::any::implementation::args::retrieve_enclave_error_for_thread data = {};
 
-        THROW_IF_FAILED(veil::vtl0::enclave::implementation::call_enclave_function(enclave, export_ordinals::retrieve_enclave_error_for_thread, data));
+        THROW_IF_FAILED(veil::vtl0::enclave::implementation::call_enclave_function(enclave, veil::implementation::export_ordinals::retrieve_enclave_error_for_thread, data));
 
         return static_cast<HRESULT>(data.status);
     }

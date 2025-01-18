@@ -110,7 +110,7 @@ namespace veil::vtl0
 namespace veil::vtl0::enclave::implementation
 {
     template <typename T>
-    inline HRESULT call_enclave_function(void* enclave, export_ordinals ordinal, T& io);
+    inline HRESULT call_enclave_function(void* enclave, veil::implementation::export_ordinals ordinal, T& io);
 }
 
 namespace veil::vtl0::enclave
@@ -161,7 +161,7 @@ namespace veil::vtl0::enclave
         {
             enclave_arguments_with_hr<DWORD> threadError;
             threadError.data = threadId;
-            if (SUCCEEDED(implementation::call_enclave_function(enclave, export_ordinals::retrieve_enclave_error_for_thread, threadError)))
+            if (SUCCEEDED(implementation::call_enclave_function(enclave, veil::implementation::export_ordinals::retrieve_enclave_error_for_thread, threadError)))
             {
                 auto& error = threadError.error;
                 if (SUCCEEDED(error.hr))
@@ -182,7 +182,7 @@ namespace veil::vtl0::enclave
 namespace veil::vtl0::enclave::implementation
 {
     template <typename T>
-    inline HRESULT call_enclave_function(void* enclave, export_ordinals ordinal, T& io)
+    inline HRESULT call_enclave_function(void* enclave, veil::implementation::export_ordinals ordinal, T& io)
     {
         constexpr auto name = "VeilEnclaveSdkEntrypoint";
 

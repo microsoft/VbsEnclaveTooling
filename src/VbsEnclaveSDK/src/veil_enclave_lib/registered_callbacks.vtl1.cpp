@@ -9,15 +9,15 @@
 
 namespace veil::vtl1::implementation
 {
-    veil::callback_t* g_callbackTable{};
+    veil::implementation::callback_t* g_callbackTable{};
 
-    void register_callback(veil::callback_t* callbackAddresses)
+    void register_callback(veil::implementation::callback_t* callbackAddresses)
     {
         // Register callback
         g_callbackTable = callbackAddresses;
     }
 
-    veil::callback_t get_callback(veil::callback_id callbackId)
+    veil::implementation::callback_t get_callback(veil::implementation::callback_id callbackId)
     {
         return g_callbackTable[static_cast<uint32_t>(callbackId)];
     }

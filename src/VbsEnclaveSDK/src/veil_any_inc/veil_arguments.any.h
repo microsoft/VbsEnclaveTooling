@@ -80,7 +80,7 @@ namespace veil::any
 
             struct register_callbacks
             {
-                veil::callback_t* callbackAddresses;
+                veil::implementation::callback_t* callbackAddresses;
             };
 
 

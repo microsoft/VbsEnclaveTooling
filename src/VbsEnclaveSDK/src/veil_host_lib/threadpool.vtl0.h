@@ -122,7 +122,7 @@ namespace veil::vtl0::implementation
                 veil::any::implementation::args::threadpool_run_task data = {};
                 data.threadpoolInstance = m_threadpoolInstance_vtl1;
                 data.taskHandle = taskHandle;
-                THROW_IF_FAILED(veil::vtl0::enclave::implementation::call_enclave_function(m_enclave, export_ordinals::threadpool_run_task, data));
+                THROW_IF_FAILED(veil::vtl0::enclave::implementation::call_enclave_function(m_enclave, veil::implementation::export_ordinals::threadpool_run_task, data));
             }
         }
 

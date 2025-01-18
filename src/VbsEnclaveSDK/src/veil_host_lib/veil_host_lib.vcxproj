@@ -180,6 +180,7 @@
   </ItemDefinitionGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ItemGroup>
+    <ClInclude Include="callbacks.vtl0.h" />
     <ClInclude Include="enclave_api.vtl0.h" />
     <ClInclude Include="exports.vtl0.h" />
     <ClInclude Include="pch.h" />

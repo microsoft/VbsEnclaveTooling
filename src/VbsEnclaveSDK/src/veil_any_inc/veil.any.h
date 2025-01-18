@@ -57,33 +57,31 @@ namespace veil
 
 namespace veil
 {
-    enum class export_ordinals : uint32_t
+    namespace implementation
     {
-        retrieve_enclave_error_for_thread = 100,
-        register_callbacks,
-        threadpool_run_task,
-    };
+        enum class export_ordinals : uint32_t
+        {
+            retrieve_enclave_error_for_thread = 100,
+            register_callbacks,
+            threadpool_run_task,
+        };
 
-    using callback_t = void*(*)(void*);
+        using callback_t = void* (*)(void*);
 
-    enum class callback_id : uint32_t
-    {
-        malloc,
-        printf,
-        wprintf,
-        get_per_thread_buffer,
-        threadpool_make,
-        threadpool_delete,
-        threadpool_schedule_task,
-        __count__ // keep as last entry
-    };
+        enum class callback_id : uint32_t
+        {
+            malloc,
+            printf,
+            wprintf,
+            get_per_thread_buffer,
+            threadpool_make,
+            threadpool_delete,
+            threadpool_schedule_task,
+            __count__ // keep as last entry
+        };
 
-    // Total number of callbacks
-    constexpr size_t callback_id_count = static_cast<size_t>(callback_id::__count__);
-
-    namespace vtl0::implementation::callbacks
-    {
-        extern callback_t callback_addresses[callback_id_count];
+        // Total number of callbacks
+        constexpr size_t callback_id_count = static_cast<size_t>(callback_id::__count__);
     }
 
     struct enclave_error
@@ -93,7 +91,6 @@ namespace veil
         DWORD threadId{};
         wchar_t wmessage[ENCLAVE_RESULT_WMESSAGE_SIZE]{};
     };
-
 
     template <typename T>
     struct enclave_arguments_with_hr
@@ -105,7 +102,7 @@ namespace veil
     };
 
     //
-    // todo:jw fix alignment
+    // todo: fix alignment
     //
 #pragma warning(push)
 #pragma warning(disable : 4324)

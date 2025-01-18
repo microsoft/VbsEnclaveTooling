@@ -4,10 +4,9 @@
 #include <map>
 #include <mutex>
 
-//#include "callbacks.vtl0.h"
-
 #include "veil.any.h"
 
+#include "callbacks.vtl0.h"
 #include "threadpool.vtl0.h"
 
 namespace veil::vtl0::implementation::callbacks
@@ -17,7 +16,7 @@ namespace veil::vtl0::implementation::callbacks
     void* wprintf(void* args);
     void* get_per_thread_buffer(void* args);
 
-    veil::callback_t callback_addresses[callback_id_count] = {
+    veil::implementation::callback_t callback_addresses[veil::implementation::callback_id_count] = {
         &malloc,
         &printf,
         &wprintf,
@@ -27,7 +26,6 @@ namespace veil::vtl0::implementation::callbacks
         &threadpool_schedule_task
     };
 }
-
 
 namespace veil::vtl0::implementation::callbacks
 {
@@ -66,4 +64,3 @@ namespace veil::vtl0::implementation::callbacks
         return S_OK;
     })
 }
-
