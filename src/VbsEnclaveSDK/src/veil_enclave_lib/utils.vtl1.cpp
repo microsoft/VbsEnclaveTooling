@@ -6,7 +6,6 @@
 
 #include <bcrypt.h>
 
-#include "mutualauth.vtl1.h"
 #include "utils.vtl1.h"
 
 //#include "shared_enclave.h"

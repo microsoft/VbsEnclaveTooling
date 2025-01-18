@@ -129,7 +129,6 @@
     <ClInclude Include="registered_callbacks.vtl1.h" />
     <ClInclude Include="threadpool.vtl1.h" />
     <ClInclude Include="utils.vtl1.h" />
-    <ClInclude Include="mutualauth.vtl1.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="export_abi.vtl1.cpp" />
