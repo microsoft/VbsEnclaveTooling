@@ -238,7 +238,7 @@ namespace veil::vtl1
 
         // this is required secure lifetime management
         //keepalive_system<threadpool> m_objectTableEntry;
-        veil::vtl1::keepalive_object<threadpool> m_keepalive;
+        veil::vtl1::keepalive_mechanism<threadpool> m_keepalive;
         size_t m_objectTableEntryId{};
     };
 }

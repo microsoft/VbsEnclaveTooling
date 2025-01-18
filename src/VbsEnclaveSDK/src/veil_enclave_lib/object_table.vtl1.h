@@ -5,23 +5,16 @@
 
 namespace veil::vtl1
 {
-    //template <typename T>
-    struct chit
-    {
-        //std::shared_ptr<T>
-        void* object{};
-    };
-
     template <typename T>
-    struct keepalive_object;
+    struct keepalive_mechanism;
 
     template <typename T>
     struct keepalive_hold
     {
-        keepalive_object<T>* m_keepaliveObject{};
+        keepalive_mechanism<T>* m_keepaliveObject{};
         wil::srwlock m_lock;
 
-        keepalive_hold(keepalive_object<T>* keeapliveObject)
+        keepalive_hold(keepalive_mechanism<T>* keeapliveObject)
             : m_keepaliveObject(keeapliveObject)
         {
         }
@@ -44,34 +37,6 @@ namespace veil::vtl1
             return m_keepaliveObject->object();
         }
     };
-
-    template <typename T>
-    struct keepalive_system
-    {
-        keepalive_system(T* object)
-            : m_keepaliveHold(std::make_shared<keepalive_hold<T>>(object))
-        {
-        }
-
-        std::weak_ptr<keepalive_hold<T>> get_weak()
-        {
-            return std::weak_ptr(m_keepaliveHold);
-        }
-
-        void wait_until_no_more_keepalive()
-        {
-            auto weakPtr = get_weak();
-            m_keepaliveHold.reset();
-            while (!weakPtr.expired())
-            {
-                veil::vtl1::sleep(200);
-            }
-        }
-
-    private:
-        std::shared_ptr<keepalive_hold<T>> m_keepaliveHold;
-    };
-
 
     //
     // Unique objects table that gives handles suitable for sharing with VTL0
@@ -179,26 +144,26 @@ namespace veil::vtl1
 
 
     template <typename T>
-    struct keepalive_object
+    struct keepalive_mechanism
     {
-        keepalive_object(T* object)
+        keepalive_mechanism(T* object)
             : m_object(object),
               m_keepaliveHold(std::make_shared<keepalive_hold<T>>(this))
         {
         }
 
-        ~keepalive_object()
+        ~keepalive_mechanism()
         {
             reset_keepalive_and_block();
         }
 
         // Delete copy
-        keepalive_object(const keepalive_object&) = delete;
-        keepalive_object& operator=(const keepalive_object&) = delete;
+        keepalive_mechanism(const keepalive_mechanism&) = delete;
+        keepalive_mechanism& operator=(const keepalive_mechanism&) = delete;
 
         // Allow move
-        keepalive_object(keepalive_object&& other) noexcept = default;
-        keepalive_object& operator=(keepalive_object&& other) noexcept = default;
+        keepalive_mechanism(keepalive_mechanism&& other) noexcept = default;
+        keepalive_mechanism& operator=(keepalive_mechanism&& other) noexcept = default;
 
         std::weak_ptr<keepalive_hold<T>> get_weak()
         {
