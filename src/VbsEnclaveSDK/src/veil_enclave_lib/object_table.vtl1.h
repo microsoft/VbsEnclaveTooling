@@ -38,6 +38,73 @@ namespace veil::vtl1
         }
     };
 
+
+
+    template <typename T>
+    struct keepalive_mechanism
+    {
+        keepalive_mechanism(T* object)
+            : m_object(object),
+            m_keepaliveHold(std::make_shared<keepalive_hold<T>>(this))
+        {
+        }
+
+        ~keepalive_mechanism()
+        {
+            reset_keepalive_and_block();
+        }
+
+        // Delete copy
+        keepalive_mechanism(const keepalive_mechanism&) = delete;
+        keepalive_mechanism& operator=(const keepalive_mechanism&) = delete;
+
+        // Allow move
+        keepalive_mechanism(keepalive_mechanism&& other) noexcept = default;
+        keepalive_mechanism& operator=(keepalive_mechanism&& other) noexcept = default;
+
+        std::weak_ptr<keepalive_hold<T>> get_weak()
+        {
+            return std::weak_ptr(m_keepaliveHold);
+        }
+
+        T* object()
+        {
+            return m_object;
+        }
+
+        void notify_keepalive_hold_done()
+        {
+            {
+                auto lock = m_lock.lock_exclusive();
+                m_done = true;
+            }
+            m_cv.notify_all();
+        }
+
+        // release keepalive_hold and wait until no more strong references
+        void reset_keepalive_and_block()
+        {
+            auto weakPtr = get_weak();
+            m_keepaliveHold.reset();
+            while (true)
+            {
+                auto lock = m_lock.lock_exclusive();
+                if (m_done)
+                {
+                    break;
+                }
+                m_cv.wait(lock);
+            }
+        }
+
+        private:
+        T* m_object {};
+        std::shared_ptr<keepalive_hold<T>> m_keepaliveHold;
+        wil::srwlock m_lock;
+        wil::condition_variable m_cv;
+        bool m_done {};
+    };
+
     //
     // Unique objects table that gives handles suitable for sharing with VTL0
     //
@@ -142,69 +209,4 @@ namespace veil::vtl1
     };
 
 
-
-    template <typename T>
-    struct keepalive_mechanism
-    {
-        keepalive_mechanism(T* object)
-            : m_object(object),
-              m_keepaliveHold(std::make_shared<keepalive_hold<T>>(this))
-        {
-        }
-
-        ~keepalive_mechanism()
-        {
-            reset_keepalive_and_block();
-        }
-
-        // Delete copy
-        keepalive_mechanism(const keepalive_mechanism&) = delete;
-        keepalive_mechanism& operator=(const keepalive_mechanism&) = delete;
-
-        // Allow move
-        keepalive_mechanism(keepalive_mechanism&& other) noexcept = default;
-        keepalive_mechanism& operator=(keepalive_mechanism&& other) noexcept = default;
-
-        std::weak_ptr<keepalive_hold<T>> get_weak()
-        {
-            return std::weak_ptr(m_keepaliveHold);
-        }
-
-        T* object()
-        {
-            return m_object;
-        }
-
-        void notify_keepalive_hold_done()
-        {
-            {
-                auto lock = m_lock.lock_exclusive();
-                m_done = true;
-            }
-            m_cv.notify_all();
-        }
-
-        // release keepalive_hold and wait until no more strong references
-        void reset_keepalive_and_block()
-        {
-            auto weakPtr = get_weak();
-            m_keepaliveHold.reset();
-            while (true)
-            {
-                auto lock = m_lock.lock_exclusive();
-                if (m_done)
-                {
-                    break;
-                }
-                m_cv.wait(lock);
-            }
-        }
-
-    private:
-        T* m_object{};
-        std::shared_ptr<keepalive_hold<T>> m_keepaliveHold;
-        wil::srwlock m_lock;
-        wil::condition_variable m_cv;
-        bool m_done{};
-    };
 }
