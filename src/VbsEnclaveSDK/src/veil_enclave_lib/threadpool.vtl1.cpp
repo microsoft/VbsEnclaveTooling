@@ -26,7 +26,7 @@ namespace veil::vtl1::implementation::call_ins
     HRESULT threadpool_run_task(_Inout_ veil::any::implementation::args::threadpool_run_task* params)
     try
     {
-        auto taskInfo = reinterpret_cast<veil::any::implementation::threadpool_task_handle*>(params);
+        auto taskInfo = reinterpret_cast<veil::any::implementation::args::threadpool_task_handle*>(params);
 
         auto keepaliveMaybeChit = (size_t)taskInfo->threadpool_instance;
 

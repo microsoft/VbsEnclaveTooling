@@ -97,8 +97,6 @@ namespace veil
     {
         T data{};
         enclave_error error;
-        void* crumb{};
-        UINT32 crumb2{};
     };
 
     //
@@ -120,15 +118,3 @@ namespace veil
     };
 #pragma warning(pop)
 }
-
-
-namespace veil::any::implementation
-{
-    // threadpool
-    struct threadpool_task_handle
-    {
-        void* threadpool_instance;
-        UINT64 task_handle;
-    };
-}
-

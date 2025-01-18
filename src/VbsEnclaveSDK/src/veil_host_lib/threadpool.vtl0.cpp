@@ -143,7 +143,7 @@ namespace veil::vtl0::implementation::callbacks
 
     VEIL_ABI_FUNCTION(threadpool_schedule_task, args,
     {
-        auto taskInfo = reinterpret_cast<veil::any::implementation::threadpool_task_handle*>(args);
+        auto taskInfo = reinterpret_cast<veil::any::implementation::args::threadpool_task_handle*>(args);
         auto threadpoolInstance = reinterpret_cast<veil::vtl0::implementation::threadpool_backing_threads*>(taskInfo->threadpool_instance);
         //auto threadpoolInstance = g_threadpool;
         RETURN_IF_FAILED(threadpoolInstance->add_task(taskInfo->task_handle));

@@ -126,7 +126,7 @@ namespace veil::vtl1
         {
             using return_type = decltype(f());
 
-            void* allocation = veil::vtl1::vtl0_functions::malloc(sizeof(veil::any::implementation::threadpool_task_handle));
+            void* allocation = veil::vtl1::vtl0_functions::malloc(sizeof(veil::any::implementation::args::threadpool_task_handle));
             THROW_IF_NULL_ALLOC(allocation);
 
             // Store the task
@@ -164,7 +164,7 @@ namespace veil::vtl1
             //UINT64 taskHandle = store_task(std::move(func));
             auto taskHandle = m_tasks.store_object(std::move(func));
 
-            auto taskHandleArgs = reinterpret_cast<veil::any::implementation::threadpool_task_handle*>(allocation);
+            auto taskHandleArgs = reinterpret_cast<veil::any::implementation::args::threadpool_task_handle*>(allocation);
             taskHandleArgs->threadpool_instance = m_vtl1_threadpool_vtl0_backing_threads_instance;
             taskHandleArgs->task_handle = taskHandle;
 

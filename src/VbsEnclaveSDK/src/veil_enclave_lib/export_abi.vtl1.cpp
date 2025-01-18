@@ -44,11 +44,6 @@ namespace veil::vtl1
         {
             auto eawh = static_cast<enclave_arguments_with_hr<veil::any::implementation::args::StartHelloSession>*>(params);
             auto errorPopulator = veil::vtl1::implementation::export_helpers::enclave_error_populator(eawh->error);
-            //eawh->crumb = & eawh->data.challengeByteCount;
-
-            eawh->crumb = &eawh->data;
-            eawh->crumb = &(eawh->data.challengeByteCount);
-            eawh->crumb2 = (eawh->data.challengeByteCount);
 
             RETURN_HR_AS_PVOID(veil::vtl1::implementation::exports::StartHelloSession(&eawh->data));
         }

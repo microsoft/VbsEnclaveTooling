@@ -15,14 +15,17 @@ struct EnclaveKeyContent
     uint32_t sealedKeySize;
 };
 
-
 namespace veil::any
 {
     namespace implementation
     {
         namespace args
         {
-
+            struct threadpool_task_handle
+            {
+                void* threadpool_instance;
+                UINT64 task_handle;
+            };
 
             struct StartHelloSession
             {
