@@ -22,7 +22,7 @@ namespace veil::vtl1::implementation::exports
 
     HRESULT register_callbacks(_Inout_ veil::any::implementation::args::register_callbacks* params) noexcept try
     {
-        veil::vtl1::implementation::register_callback(params->callbackAddresses);
+        veil::vtl1::implementation::register_callbacks(params->callbackAddresses);
         return S_OK;
     }
     CATCH_RETURN()

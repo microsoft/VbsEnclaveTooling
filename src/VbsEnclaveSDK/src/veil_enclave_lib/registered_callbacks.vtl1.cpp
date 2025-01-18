@@ -5,15 +5,16 @@
 
 #include "registered_callbacks.vtl1.h"
 
-
+//
+// TODO: SECURITY
+//
 
 namespace veil::vtl1::implementation
 {
     veil::implementation::callback_t* g_callbackTable{};
 
-    void register_callback(veil::implementation::callback_t* callbackAddresses)
+    void register_callbacks(veil::implementation::callback_t* callbackAddresses)
     {
-        // Register callback
         g_callbackTable = callbackAddresses;
     }
 
