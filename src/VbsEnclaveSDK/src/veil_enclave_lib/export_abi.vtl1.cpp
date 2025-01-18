@@ -18,16 +18,16 @@ namespace veil::vtl1
         // Traits
         namespace traits
         {
-            struct StartHelloSessionT {};
+            struct threadpool_run_task_t {};
 
             template <typename T>
             struct atype;
 
             template <>
-            struct atype<StartHelloSessionT>
+            struct atype<threadpool_run_task_t>
             {
-                using args = veil::any::implementation::args::StartHelloSession;
-                static HRESULT func(_Inout_ args* a) { return veil::vtl1::implementation::exports::StartHelloSession(a);
+                using args = veil::any::implementation::args::threadpool_run_task;
+                static HRESULT func(_Inout_ args* a) { return veil::vtl1::implementation::exports::threadpool_run_task(a);
                 }
             };
         }
@@ -40,62 +40,7 @@ namespace veil::vtl1
             RETURN_HR_AS_PVOID(veil::vtl1::implementation::traits::atype<T>::func(&eawh->data));
         }
 
-        ENCLAVE_FUNCTION StartHelloSession(_In_ PVOID params)
-        {
-            auto eawh = static_cast<enclave_arguments_with_hr<veil::any::implementation::args::StartHelloSession>*>(params);
-            auto errorPopulator = veil::vtl1::implementation::export_helpers::enclave_error_populator(eawh->error);
-
-            RETURN_HR_AS_PVOID(veil::vtl1::implementation::exports::StartHelloSession(&eawh->data));
-        }
-
-        ENCLAVE_FUNCTION GenerateEncryptionKeySecuredByHello(_In_ PVOID params)
-        {
-            auto eawh = static_cast<enclave_arguments_with_hr<veil::any::implementation::args::GenerateEncryptionKeySecuredByHello>*>(params);
-            auto errorPopulator = veil::vtl1::implementation::export_helpers::enclave_error_populator(eawh->error);
-
-            RETURN_HR_AS_PVOID(veil::vtl1::implementation::exports::GenerateEncryptionKeySecuredByHello(static_cast<veil::any::implementation::args::GenerateEncryptionKeySecuredByHello*>(params)));
-        }
-
-        ENCLAVE_FUNCTION LoadEncryptionKeySecuredByHello(_In_ PVOID params)
-        {
-            auto eawh = static_cast<enclave_arguments_with_hr<veil::any::implementation::args::LoadEncryptionKeySecuredByHello>*>(params);
-            auto errorPopulator = veil::vtl1::implementation::export_helpers::enclave_error_populator(eawh->error);
-
-            RETURN_HR_AS_PVOID(veil::vtl1::implementation::exports::LoadEncryptionKeySecuredByHello(&eawh->data));
-        }
-
-        ENCLAVE_FUNCTION ExportKey(_In_ PVOID params)
-        {
-            auto eawh = static_cast<enclave_arguments_with_hr<veil::any::implementation::args::ExportKey>*>(params);
-            auto errorPopulator = veil::vtl1::implementation::export_helpers::enclave_error_populator(eawh->error);
-
-            RETURN_HR_AS_PVOID(veil::vtl1::implementation::exports::ExportKey(&eawh->data));
-        }
-
-        ENCLAVE_FUNCTION GetPackagedEnclaveIdentityProofChallenge(_In_ PVOID params)
-        {
-            auto eawh = static_cast<enclave_arguments_with_hr<veil::any::implementation::args::GetPackagedEnclaveIdentityProofChallenge>*>(params);
-            auto errorPopulator = veil::vtl1::implementation::export_helpers::enclave_error_populator(eawh->error);
-
-            RETURN_HR_AS_PVOID(veil::vtl1::implementation::exports::GetPackagedEnclaveIdentityProofChallenge(&eawh->data));
-        }
-
-        ENCLAVE_FUNCTION CreateAttestationReport(_In_ PVOID params)
-        {
-            auto eawh = static_cast<enclave_arguments_with_hr<veil::any::implementation::args::CreateAttestationReport>*>(params);
-            auto errorPopulator = veil::vtl1::implementation::export_helpers::enclave_error_populator(eawh->error);
-
-            RETURN_HR_AS_PVOID(veil::vtl1::implementation::exports::CreateAttestationReport(&eawh->data));
-        }
-
-        ENCLAVE_FUNCTION ValidatePackagedEnclaveIdentityProof(_In_ PVOID params)
-        {
-            auto eawh = static_cast<enclave_arguments_with_hr<veil::any::implementation::args::ValidatePackagedEnclaveIdentityProof>*>(params);
-            auto errorPopulator = veil::vtl1::implementation::export_helpers::enclave_error_populator(eawh->error);
-
-            RETURN_HR_AS_PVOID(veil::vtl1::implementation::exports::ValidatePackagedEnclaveIdentityProof(&eawh->data));
-        }
-
+        // Special cased export
         PVOID retrieve_enclave_error_for_thread(_In_ PVOID params)
         {
             auto eawh = reinterpret_cast<enclave_arguments_with_hr<DWORD>*>(params);
@@ -108,12 +53,12 @@ namespace veil::vtl1
             RETURN_HR_AS_PVOID(S_OK);
         }
 
+        //
+        // Normal exports
+        //
+
         ENCLAVE_FUNCTION register_callbacks(_In_ PVOID params)
         {
-            static int i = 0;
-            if (i == 1)
-                RETURN_HR_AS_PVOID(E_INVALIDARG);
-            i++;
             auto eawh = static_cast<enclave_arguments_with_hr<veil::any::implementation::args::register_callbacks>*>(params);
             auto errorPopulator = veil::vtl1::implementation::export_helpers::enclave_error_populator(eawh->error);
 
@@ -125,7 +70,7 @@ namespace veil::vtl1
             auto eawh = static_cast<enclave_arguments_with_hr<veil::any::implementation::args::threadpool_run_task>*>(params);
             auto errorPopulator = veil::vtl1::implementation::export_helpers::enclave_error_populator(eawh->error);
 
-            RETURN_HR_AS_PVOID(veil::vtl1::implementation::call_ins::threadpool_run_task(&eawh->data));
+            RETURN_HR_AS_PVOID(veil::vtl1::implementation::exports::threadpool_run_task(&eawh->data));
         }
 
     }
@@ -137,12 +82,11 @@ namespace veil::vtl1
     {
         namespace details
         {
-    // todo:jw generify
 #define ENCLAVE_SDK_EXPORT_ORDINAL(_name, _ordinal) \
     if (_x->ordinal == _ordinal) { return veil::vtl1::implementation:: ## _name(&_x->argumentsWithHr); }
 
 #define ENCLAVE_SDK_EXPORT_ORDINAL_TRAITS(_name, _ordinal) \
-    if (_x->ordinal == _ordinal) { return veil::vtl1::implementation::CallImplementation<veil::vtl1::implementation::traits:: ## _name ## T>(&_x->argumentsWithHr); }
+    if (_x->ordinal == _ordinal) { return veil::vtl1::implementation::CallImplementation<veil::vtl1::implementation::traits:: ## _name ## _t>(&_x->argumentsWithHr); }
 
             PVOID call_by_ordinal(_In_ PVOID ordinalStruct)
             {
@@ -151,19 +95,7 @@ namespace veil::vtl1
                 ENCLAVE_SDK_EXPORT_ORDINAL(retrieve_enclave_error_for_thread, i++);
                 ENCLAVE_SDK_EXPORT_ORDINAL(register_callbacks, i++);
                 ENCLAVE_SDK_EXPORT_ORDINAL(threadpool_run_task, i++);
-                //ENCLAVE_SDK_EXPORT_ORDINAL(StartHelloSession, i++);
-                ENCLAVE_SDK_EXPORT_ORDINAL_TRAITS(StartHelloSession, i++);
-                ENCLAVE_SDK_EXPORT_ORDINAL(GenerateEncryptionKeySecuredByHello, i++);
-                ENCLAVE_SDK_EXPORT_ORDINAL(LoadEncryptionKeySecuredByHello, i++);
-                ENCLAVE_SDK_EXPORT_ORDINAL(ExportKey, i++);
-                ENCLAVE_SDK_EXPORT_ORDINAL(GetPackagedEnclaveIdentityProofChallenge, i++);
-                ENCLAVE_SDK_EXPORT_ORDINAL(CreateAttestationReport, i++);
-                ENCLAVE_SDK_EXPORT_ORDINAL(ValidatePackagedEnclaveIdentityProof, i++);
-                //int x2 = 5;
-                //if (x2 == 5)
-                //RETURN_HR_AS_PVOID(E_APPLICATION_EXITING);
-                //RETURN_HR_AS_PVOID(E_HANDLE);
-                RETURN_HR_AS_PVOID(E_INVALIDARG);
+                RETURN_HR_AS_PVOID(HRESULT_FROM_WIN32(ERROR_INVALID_FUNCTION));
             }
         }
 

@@ -6,6 +6,6 @@
 
 namespace veil::vtl1::implementation::exports
 {
-    HRESULT register_callbacks(_Inout_ veil::any::implementation::args::register_callbacks* params);
     HRESULT retrieve_enclave_error_for_thread(_Inout_ veil::any::implementation::args::retrieve_enclave_error_for_thread* params);
+    HRESULT register_callbacks(_Inout_ veil::any::implementation::args::register_callbacks* params);
 }

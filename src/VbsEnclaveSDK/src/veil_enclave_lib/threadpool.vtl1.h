@@ -60,7 +60,7 @@ namespace veil::vtl1
 }
 
 // call ins
-namespace veil::vtl1::implementation::call_ins
+namespace veil::vtl1::implementation::exports
 {
     HRESULT threadpool_run_task(_Inout_ veil::any::implementation::args::threadpool_run_task* params);
 }
@@ -99,12 +99,12 @@ namespace veil::vtl1
             void* output{};
             auto makeThreadpool = veil::vtl1::implementation::get_callback(veil::implementation::callback_id::threadpool_make);
             makeThreadpoolArgs->enclave = enclave;
-            makeThreadpoolArgs->threadpoolInstance_vtl1 = (uint64_t)(m_objectTableEntryId);
+            makeThreadpoolArgs->threadpoolInstanceVtl1 = (uint64_t)(m_objectTableEntryId);
             makeThreadpoolArgs->threadCount = threadCount;
             makeThreadpoolArgs->mustFinishAllQueuedTasks = mustFinishAllQueuedTasks;
             THROW_IF_WIN32_BOOL_FALSE(CallEnclave(makeThreadpool, reinterpret_cast<void*>(makeThreadpoolArgs), TRUE, reinterpret_cast<void**>(&output)));
 
-            m_vtl1_threadpool_vtl0_backing_threads_instance = makeThreadpoolArgs->threadpoolInstance_vtl0;
+            m_vtl1_threadpool_vtl0_backing_threads_instance = makeThreadpoolArgs->threadpoolInstanceVtl0;
         }
 
         ~threadpool()
@@ -126,7 +126,7 @@ namespace veil::vtl1
         {
             using return_type = decltype(f());
 
-            void* allocation = veil::vtl1::vtl0_functions::malloc(sizeof(veil::any::implementation::args::threadpool_task_handle));
+            void* allocation = veil::vtl1::vtl0_functions::malloc(sizeof(veil::any::implementation::args::threadpool_schedule_task));
             THROW_IF_NULL_ALLOC(allocation);
 
             // Store the task
@@ -164,9 +164,9 @@ namespace veil::vtl1
             //UINT64 taskHandle = store_task(std::move(func));
             auto taskHandle = m_tasks.store_object(std::move(func));
 
-            auto taskHandleArgs = reinterpret_cast<veil::any::implementation::args::threadpool_task_handle*>(allocation);
-            taskHandleArgs->threadpool_instance = m_vtl1_threadpool_vtl0_backing_threads_instance;
-            taskHandleArgs->task_handle = taskHandle;
+            auto taskHandleArgs = reinterpret_cast<veil::any::implementation::args::threadpool_schedule_task*>(allocation);
+            taskHandleArgs->threadpoolInstanceVtl0 = m_vtl1_threadpool_vtl0_backing_threads_instance;
+            taskHandleArgs->taskHandle = taskHandle;
 
             void* output{};
             auto vtl0_scheduleTask_callback = (LPENCLAVE_ROUTINE)veil::vtl1::implementation::get_callback(veil::implementation::callback_id::threadpool_schedule_task);

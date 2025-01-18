@@ -123,10 +123,10 @@ namespace veil::vtl0::implementation::callbacks
     {
         auto makeArgs = reinterpret_cast<veil::any::implementation::args::threadpool_make*>(args);
 
-        auto threadpool = new veil::vtl0::implementation::threadpool_backing_threads(makeArgs->enclave, makeArgs->threadpoolInstance_vtl1, makeArgs->threadCount, makeArgs->mustFinishAllQueuedTasks);
+        auto threadpool = new veil::vtl0::implementation::threadpool_backing_threads(makeArgs->enclave, makeArgs->threadpoolInstanceVtl1, makeArgs->threadCount, makeArgs->mustFinishAllQueuedTasks);
         //g_threadpool = threadpool;
 
-        makeArgs->threadpoolInstance_vtl0 = reinterpret_cast<void*>(threadpool);
+        makeArgs->threadpoolInstanceVtl0 = reinterpret_cast<void*>(threadpool);
 
         // todo: how to delete
 
@@ -135,18 +135,18 @@ namespace veil::vtl0::implementation::callbacks
 
     VEIL_ABI_FUNCTION(threadpool_delete, args,
     {
-        auto threadpool_vtl0 = reinterpret_cast<veil::vtl0::implementation::threadpool_backing_threads*>(args);
-        auto threadpool_for_deletion = std::unique_ptr<veil::vtl0::implementation::threadpool_backing_threads>(threadpool_vtl0);
+        auto threadpoolVtl0 = reinterpret_cast<veil::vtl0::implementation::threadpool_backing_threads*>(args);
+        auto threadpoolForDeletion = std::unique_ptr<veil::vtl0::implementation::threadpool_backing_threads>(threadpoolVtl0);
         //Sleep(1000);
         return S_OK;
     })
 
     VEIL_ABI_FUNCTION(threadpool_schedule_task, args,
     {
-        auto taskInfo = reinterpret_cast<veil::any::implementation::args::threadpool_task_handle*>(args);
-        auto threadpoolInstance = reinterpret_cast<veil::vtl0::implementation::threadpool_backing_threads*>(taskInfo->threadpool_instance);
+        auto taskInfo = reinterpret_cast<veil::any::implementation::args::threadpool_schedule_task*>(args);
+        auto threadpoolInstance = reinterpret_cast<veil::vtl0::implementation::threadpool_backing_threads*>(taskInfo->threadpoolInstanceVtl0);
         //auto threadpoolInstance = g_threadpool;
-        RETURN_IF_FAILED(threadpoolInstance->add_task(taskInfo->task_handle));
+        RETURN_IF_FAILED(threadpoolInstance->add_task(taskInfo->taskHandle));
 
         /*
         auto threadpoolInstance = g_threadpool;

@@ -21,14 +21,14 @@ namespace veil::vtl1::implementation
 }
 
 // call ins
-namespace veil::vtl1::implementation::call_ins
+namespace veil::vtl1::implementation::exports
 {
     HRESULT threadpool_run_task(_Inout_ veil::any::implementation::args::threadpool_run_task* params)
     try
     {
-        auto taskInfo = reinterpret_cast<veil::any::implementation::args::threadpool_task_handle*>(params);
+        auto taskInfo = reinterpret_cast<veil::any::implementation::args::threadpool_schedule_task*>(params);
 
-        auto keepaliveMaybeChit = (size_t)taskInfo->threadpool_instance;
+        auto keepaliveMaybeChit = (size_t)taskInfo->threadpoolInstanceVtl0;
 
         if (auto keepaliveHold = get_threadpool_object_table().resolve_strong_reference(keepaliveMaybeChit))
         {
@@ -38,7 +38,7 @@ namespace veil::vtl1::implementation::call_ins
             auto threadpoolInstance = keepaliveHold->object();
 
             // Run the task
-            threadpoolInstance->run_task(taskInfo->task_handle);
+            threadpoolInstance->run_task(taskInfo->taskHandle);
 
             return S_OK;
         }
