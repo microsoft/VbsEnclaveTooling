@@ -134,7 +134,6 @@
     <ClInclude Include="mutualauth.vtl1.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="ProductionEnclaveServices.cpp" />
     <ClCompile Include="export_abi.vtl1.cpp" />
     <ClCompile Include="crypto.vtl1.cpp" />
     <ClCompile Include="export_helpers.vtl1.cpp" />

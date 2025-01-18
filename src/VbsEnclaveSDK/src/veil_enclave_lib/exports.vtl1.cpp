@@ -24,7 +24,6 @@
 
 
 
-#include "EnclaveServices.h"
 
 
 // Indicate whether an enclave that runs with debugging turned on

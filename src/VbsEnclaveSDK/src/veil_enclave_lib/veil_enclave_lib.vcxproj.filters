@@ -71,9 +71,6 @@
     <ClCompile Include="export_abi.vtl1.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="ProductionEnclaveServices.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="threadpool.vtl1.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
