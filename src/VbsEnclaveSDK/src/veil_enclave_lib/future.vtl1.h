@@ -3,7 +3,6 @@
 #include <memory>
 #include <optional>
 
-#include "memory.vtl1.h"
 #include "utils.vtl1.h"
 
 extern std::exception_ptr globalExceptionPtr;

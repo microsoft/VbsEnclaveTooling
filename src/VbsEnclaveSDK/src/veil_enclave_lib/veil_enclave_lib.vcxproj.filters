@@ -30,9 +30,6 @@
     <ClInclude Include="threadpool.vtl1.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="memory.vtl1.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="exports.vtl1.h">
       <Filter>Header Files</Filter>
     </ClInclude>

@@ -123,7 +123,6 @@
     <ClInclude Include="enclave_interface.vtl1.h" />
     <ClInclude Include="exports.vtl1.h" />
     <ClInclude Include="future.vtl1.h" />
-    <ClInclude Include="memory.vtl1.h" />
     <ClInclude Include="object_table.vtl1.h" />
     <ClInclude Include="vtl0_functions.vtl1.h" />
     <ClInclude Include="pch.h" />

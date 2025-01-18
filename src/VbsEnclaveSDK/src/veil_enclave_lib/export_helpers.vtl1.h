@@ -79,7 +79,6 @@ namespace veil::vtl1::implementation::export_helpers
 
             auto& lastError = threadErrors.back();
             copy_enclave_error(m_errorReference, lastError);
-            //g_enclaveErrors[GetCurrentThreadId()].clear();
         }
     };
 

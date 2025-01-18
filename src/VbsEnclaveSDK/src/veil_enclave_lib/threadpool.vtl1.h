@@ -4,7 +4,6 @@
 #include <map>
 
 #include "future.vtl1.h"
-#include "memory.vtl1.h"
 #include "object_table.vtl1.h"
 #include "registered_callbacks.vtl1.h"
 #include "vtl0_functions.vtl1.h"
