@@ -53,16 +53,17 @@ namespace veil
         return hr_to_pvoid(__hr); \
     } \
 
-
-enum class export_ordinals : uint32_t
-{
-    retrieve_enclave_error_for_thread = 100,
-    register_callbacks,
-    threadpool_run_task,
-};
+#define ENCLAVE_RESULT_WMESSAGE_SIZE 512
 
 namespace veil
 {
+    enum class export_ordinals : uint32_t
+    {
+        retrieve_enclave_error_for_thread = 100,
+        register_callbacks,
+        threadpool_run_task,
+    };
+
     using callback_t = void*(*)(void*);
 
     enum class callback_id : uint32_t
@@ -84,13 +85,7 @@ namespace veil
     {
         extern callback_t callback_addresses[callback_id_count];
     }
-}
 
-
-#define ENCLAVE_RESULT_WMESSAGE_SIZE 512
-
-namespace veil
-{
     struct enclave_error
     {
         HRESULT hr{};
