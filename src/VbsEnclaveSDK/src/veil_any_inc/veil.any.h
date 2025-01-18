@@ -71,15 +71,15 @@ namespace veil
         threadpool_make,
         threadpool_delete,
         threadpool_schedule_task,
-        COUNT // keep as last entry
+        __count__ // keep as last entry
     };
 
     // Total number of callbacks
-    constexpr size_t CALLBACK_COUNT = static_cast<size_t>(callback_id::COUNT);
+    constexpr size_t callback_id_count = static_cast<size_t>(callback_id::__count__);
 
     namespace vtl0::implementation::callbacks
     {
-        extern callback_t callback_addresses[CALLBACK_COUNT];
+        extern callback_t callback_addresses[callback_id_count];
     }
 }
 

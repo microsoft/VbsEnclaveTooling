@@ -17,7 +17,7 @@ namespace veil::vtl0::implementation::callbacks
     void* wprintf(void* args);
     void* get_per_thread_buffer(void* args);
 
-    veil::callback_t callback_addresses[CALLBACK_COUNT] = {
+    veil::callback_t callback_addresses[callback_id_count] = {
         &malloc,
         &printf,
         &wprintf,
