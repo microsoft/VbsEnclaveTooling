@@ -202,6 +202,7 @@ namespace veil::vtl1
             task.reset();
             */
 
+            // Remove the task entry from the unique_object_table
             auto task = m_tasks.try_take_object(taskHandle);
             if (!task)
             {
