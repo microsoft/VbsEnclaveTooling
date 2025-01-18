@@ -23,6 +23,13 @@ namespace veil::vtl1::vtl0_functions
         return output;
     }
 
+    template <typename T>
+    inline T* allocate()
+    {
+        void* allocation = veil::vtl1::vtl0_functions::malloc(sizeof(T));
+        THROW_IF_NULL_ALLOC(allocation);
+        return reinterpret_cast<T*>(allocation);
+    }
 
     namespace details
     {

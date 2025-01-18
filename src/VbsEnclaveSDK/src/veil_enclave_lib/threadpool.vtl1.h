@@ -86,14 +86,15 @@ namespace veil::vtl1
             // store this threadpool (weakly) into a global table of threadpools (and get a unique id)
             m_objectTableEntryId = veil::vtl1::implementation::get_threadpool_object_table().store(m_keepalive.get_weak());
 
-            void* allocation = veil::vtl1::vtl0_functions::malloc(sizeof(veil::any::implementation::args::threadpool_make));
-            THROW_IF_NULL_ALLOC(allocation);
+            //void* allocation = veil::vtl1::vtl0_functions::malloc(sizeof(veil::any::implementation::args::threadpool_make));
+            //THROW_IF_NULL_ALLOC(allocation);
 
             ENCLAVE_INFORMATION enclaveInformation;
             THROW_IF_FAILED(EnclaveGetEnclaveInformation(sizeof(ENCLAVE_INFORMATION), &enclaveInformation));
             void* enclave = enclaveInformation.BaseAddress;
 
-            auto makeThreadpoolArgs = reinterpret_cast<veil::any::implementation::args::threadpool_make*>(allocation);
+            //auto makeThreadpoolArgs = reinterpret_cast<veil::any::implementation::args::threadpool_make*>(allocation);
+            auto makeThreadpoolArgs = veil::vtl1::vtl0_functions::allocate<veil::any::implementation::args::threadpool_make>();
 
             void* output{};
             auto makeThreadpool = veil::vtl1::implementation::get_callback(veil::implementation::callback_id::threadpool_make);
