@@ -9,26 +9,29 @@
 #define HRESULT_TO_PVOID(hr) ((PVOID)((ULONG_PTR)(hr) & 0x00000000FFFFFFFF))
 #define PVOID_TO_HRESULT(p) ((HRESULT)((ULONG_PTR)(p) & 0x00000000FFFFFFFF))
 
-#define RETURN_HR_AS_PVOID(x) return hr_to_pvoid(x);
-#define RETURN_PVOID_AS_HR(x) return pvoid_to_hr(x);
+#define RETURN_HR_AS_PVOID(x) return veil::hr_to_pvoid(x);
+#define RETURN_PVOID_AS_HR(x) return veil::pvoid_to_hr(x);
 
-inline constexpr HRESULT pvoid_to_hr(void* ptr)
+namespace veil
 {
+    inline constexpr HRESULT pvoid_to_hr(void* ptr)
+    {
 #pragma warning(push)
 #pragma warning(disable: 4302)
 #pragma warning(push)
 #pragma warning(disable: 4311)
-    return PVOID_TO_HRESULT(ptr);
+        return PVOID_TO_HRESULT(ptr);
 #pragma warning(pop)
 #pragma warning(pop)
-}
+    }
 
-inline constexpr void* hr_to_pvoid(HRESULT hr)
-{
+    inline constexpr void* hr_to_pvoid(HRESULT hr)
+    {
 #pragma warning(push)
 #pragma warning(disable: 4312)
-    return HRESULT_TO_PVOID(hr);
+        return HRESULT_TO_PVOID(hr);
 #pragma warning(pop)
+    }
 }
 
 #define VEIL_ABI_FUNCTION(__name, __args, __funcbody) \
