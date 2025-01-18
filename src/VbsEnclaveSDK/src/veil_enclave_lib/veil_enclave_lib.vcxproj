@@ -127,7 +127,6 @@
     <ClInclude Include="memory.vtl1.h" />
     <ClInclude Include="object_table.vtl1.h" />
     <ClInclude Include="vtl0_functions.vtl1.h" />
-    <ClInclude Include="paramvalidation.vtl1.h" />
     <ClInclude Include="pch.h" />
     <ClInclude Include="registered_callbacks.vtl1.h" />
     <ClInclude Include="threadpool.vtl1.h" />
@@ -140,7 +139,6 @@
     <ClCompile Include="crypto.vtl1.cpp" />
     <ClCompile Include="export_helpers.vtl1.cpp" />
     <ClCompile Include="exports.vtl1.cpp" />
-    <ClCompile Include="paramvalidation.vtl1.cpp" />
     <ClCompile Include="pch.cpp">
       <PrecompiledHeader>Create</PrecompiledHeader>
     </ClCompile>

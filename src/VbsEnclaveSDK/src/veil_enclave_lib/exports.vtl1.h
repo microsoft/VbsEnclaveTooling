@@ -6,15 +6,6 @@
 
 namespace veil::vtl1::implementation::exports
 {
-    HRESULT StartHelloSession(_Inout_ veil::any::implementation::args::StartHelloSession* params);
-    HRESULT CreateAttestationReport(_Inout_ veil::any::implementation::args::CreateAttestationReport* params);
-    HRESULT GenerateEncryptionKeySecuredByHello(_Inout_ veil::any::implementation::args::GenerateEncryptionKeySecuredByHello* params);
-    HRESULT LoadEncryptionKeySecuredByHello(_Inout_ veil::any::implementation::args::LoadEncryptionKeySecuredByHello* params);
-
-    HRESULT ExportKey(_Inout_ veil::any::implementation::args::ExportKey* params);
-    HRESULT GetPackagedEnclaveIdentityProofChallenge(_Inout_ veil::any::implementation::args::GetPackagedEnclaveIdentityProofChallenge* params);
-
-    HRESULT ValidatePackagedEnclaveIdentityProof(_Inout_ veil::any::implementation::args::ValidatePackagedEnclaveIdentityProof* params);
-    HRESULT retrieve_enclave_error_for_thread(_Inout_ veil::any::implementation::args::retrieve_enclave_error_for_thread* params);
     HRESULT register_callbacks(_Inout_ veil::any::implementation::args::register_callbacks* params);
+    HRESULT retrieve_enclave_error_for_thread(_Inout_ veil::any::implementation::args::retrieve_enclave_error_for_thread* params);
 }
