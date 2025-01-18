@@ -16,8 +16,6 @@ ENCLAVE_FUNCTION MySaveScreenshotExport(_In_ PVOID params)
 {
     (void)params;
 
-    THROW_HR_IF(HRESULT_FROM_WIN32(ERROR_WAS_LOCKED), !veil::vtl1::enclave_interface::is_unlocked());
-
     // ..code here..
 
     return 0;

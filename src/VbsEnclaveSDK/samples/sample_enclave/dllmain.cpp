@@ -51,39 +51,6 @@ BOOL WINAPI DllMain(HINSTANCE, DWORD reason, LPVOID)
     switch (reason)
     {
     case DLL_PROCESS_ATTACH:
-        // Set allowed families
-        //  (enforced when the enclave is unlocked)
-        auto allowedPackageFamilyNames = std::array<PCWSTR, 3> {
-            L"family1",
-            L"family2",
-            L"VirtualizationTests.Main_8wekyb3d8bbwe" };
-        FAIL_FAST_IF_FAILED(veil::vtl1::enclave_interface::config::set_allowed_package_family_names(allowedPackageFamilyNames));
-
-        // Set intancing callback
-        //  (will enforced when the enclave is unlocked)
-        FAIL_FAST_IF_FAILED(veil::vtl1::enclave_interface::config::set_instancing_enforcement_callback([](std::span<const veil::vtl1::enclave_interface::enclave_info> enclaveInfos)
-        {
-            auto ownerId = veil::vtl1::enclave_interface::owner_id();
-
-            // Allow 3 instances of this enclave for the { user, app } pair
-            auto left = 3;
-
-            for (const auto& enclaveInfo : enclaveInfos)
-            {
-                if (veil::vtl1::buffers_are_equal(ownerId, enclaveInfo.owner_id))
-                {
-                    // Another enclave instance is running with this ownerId
-
-                    if (left <= 0)
-                    {
-                        return HRESULT_FROM_WIN32(ERROR_MAX_SESSIONS_REACHED);
-                    }
-                    left--;
-                }
-            }
-            return S_OK;
-        }));
-        
         break;
     case DLL_PROCESS_DETACH:
         break;
