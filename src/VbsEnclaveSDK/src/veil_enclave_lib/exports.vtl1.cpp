@@ -14,7 +14,6 @@
 //#include "shared_enclave.h"
 #include "veil_arguments.any.h"
 
-#include "crypto.vtl1.h"
 #include "enclave_interface.vtl1.h"
 #include "exports.vtl1.h"
 #include "mutualauth.vtl1.h"

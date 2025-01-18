@@ -123,7 +123,6 @@
     <ClInclude Include="enclave_interface.vtl1.h" />
     <ClInclude Include="exports.vtl1.h" />
     <ClInclude Include="future.vtl1.h" />
-    <ClInclude Include="crypto.vtl1.h" />
     <ClInclude Include="memory.vtl1.h" />
     <ClInclude Include="object_table.vtl1.h" />
     <ClInclude Include="vtl0_functions.vtl1.h" />
@@ -135,7 +134,6 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="export_abi.vtl1.cpp" />
-    <ClCompile Include="crypto.vtl1.cpp" />
     <ClCompile Include="export_helpers.vtl1.cpp" />
     <ClCompile Include="exports.vtl1.cpp" />
     <ClCompile Include="pch.cpp">

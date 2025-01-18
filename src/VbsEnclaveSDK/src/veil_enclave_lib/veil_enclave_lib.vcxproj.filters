@@ -39,9 +39,6 @@
     <ClInclude Include="future.vtl1.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="crypto.vtl1.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="object_table.vtl1.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -72,9 +69,6 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="threadpool.vtl1.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="crypto.vtl1.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="registered_callbacks.vtl1.cpp">
