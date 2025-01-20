@@ -139,7 +139,6 @@
     </ClCompile>
     <ClCompile Include="registered_callbacks.vtl1.cpp" />
     <ClCompile Include="taskpool.vtl1.cpp" />
-    <ClCompile Include="utils.vtl1.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ItemGroup>
