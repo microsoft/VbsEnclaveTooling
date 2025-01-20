@@ -11,12 +11,11 @@
 #include "veil_arguments.any.h"
 
 /*
-
-Usage...
+[Usage]
 
     void usage()
     {
-        auto taskpool = eif_server::enclave_interface::vtl1_taskpool{};  // create and store this in a global somewhere
+        auto taskpool = veil::vtl1::taskpool{};
 
         auto task1 = taskpool.queue_task([]() {
             // Do work
@@ -24,32 +23,35 @@ Usage...
 
         auto task2 = taskpool.queue_task([]() {
             // Do work
+            return 55;
         });
 
         auto task3 = taskpool.queue_task([]() {
             // Do work
-            return 55;
+            throw std::runtime_error("uh-oh");
         });
 
         task1.get();
-        task2.get();
-        int x = task3.get();  // 55
-    }
+        int x = task2.get();  // 55
+        try {
+            task3.get();
+        } catch (...){
+            //handle error
+        }
 
+[Implementation]
 
-Implementation...
+    This is a taskpool designed to be used in VTL1.  VTL1 cannot dynamically create threads
+    or easily schedule work onto threads. To work around this limitation, a backing VTL0 thread
+    will act as a conduit to get a task scheduled an available thread in VTL1.
 
-    This is a taskpool designed to be used in VTL1.  VTL1 cannot create threads or schedule work onto threads.
-    To work around this limitation, a backing VTL0 thread will act as a conduit to get a task scheduled on
-    a different, available, thread in VTL1.
-
-    Task scheduling flow mechanics:/
-        0. VTL1 app enclave consumer calls taskpool's add_task(task_lambda)
-        1. VTL1 taskpool stores the task (lambda) + task handle
-        2. VTL1 calls out to VTL0, passing the task handle
-        3. VTL0 finds an available thread (from VTL0 backing taskpool) to call CallEnclave, passing the task handle, to get back into VTL1
-        4. VTL1 is now running on a different thread(!!)
-        5. VTL1 retrieves the task (lambda) using the task handle and runs the task
+    Task scheduling flow mechanics:
+        0. VTL1 app enclave consumer calls taskpool's add_task(lambda)
+        1. VTL1 taskpool stores the task (lambda) /w a task id
+        2. VTL1 calls out to VTL0, passing the task id
+        3. VTL0 switches to an available thread, calls into enclave (CallEnclave), passing the task id
+        4. VTL1 is now running on a different thread and has the task id(!!)
+        5. VTL1 retrieves the task (lambda) using the task id and runs the task's lambda
 */
 
 // fwd decls
@@ -68,10 +70,6 @@ namespace veil::vtl1::implementation::exports
 namespace veil::vtl1::implementation
 {
     weak_object_table<keepalive_hold<taskpool>>& get_taskpool_object_table();
-    //size_t insert_weak_object_table_entry(std::weak_ptr<veil::vtl1::keepalive_hold<veil::vtl1::taskpool>> keepaliveHandle);
-    //void erase_weak_object_table_entry(size_t handle);
-
-    //using unique_object_table_entry = wil::unique_any<size_t, decltype(&erase_weak_object_table_entry), erase_weak_object_table_entry>;
 }
 
 // impl
