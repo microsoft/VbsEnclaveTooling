@@ -32,7 +32,7 @@ namespace veil::vtl1::implementation::exports
         {
             // We have keepalive hold
             //  i.e. a strong reference (std::shared_ptr) to the keepalive_hold object of the taskpool.
-            //  (The taskpool's dtor has promised to block)
+            //  (The taskpool's dtor has promised to block until we release all keepalive_holds)
             auto taskpoolInstance = keepaliveHold->object();
 
             // Run the task
