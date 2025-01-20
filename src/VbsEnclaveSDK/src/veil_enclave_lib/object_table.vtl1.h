@@ -114,14 +114,14 @@ namespace veil::vtl1
     public:
         using handle = size_t;
 
-        handle store_object(T&& object)
+        handle store(T&& object)
         {
-            handle handle = nextHandle++;
+            handle handle = m_nextHandle++;
             m_objects.emplace(handle, std::move(object));
             return handle;
         }
 
-        std::optional<T> try_take_object(handle handle)
+        std::optional<T> try_take(handle handle)
         {
             auto it = m_objects.find(handle);
             if (it != m_objects.end())
@@ -132,9 +132,9 @@ namespace veil::vtl1
             return std::nullopt;
         }
 
-        T take_object(handle handle)
+        T take(handle handle)
         {
-            if (auto object = try_take_object(handle))
+            if (auto object = try_take(handle))
             {
                 return object;
             }
@@ -142,7 +142,7 @@ namespace veil::vtl1
         }
 
     private:
-        handle nextHandle = 1;
+        handle m_nextHandle = 1;
         std::unordered_map<handle, T> m_objects;
     };
 
@@ -158,36 +158,31 @@ namespace veil::vtl1
 
         handle store(std::weak_ptr<T> object)
         {
-            handle handle = nextHandle++;
-            //objects.emplace(handle, std::make_unique<T>(object));
-            objects.emplace(handle, std::move(object));
+            handle handle = m_nextHandle++;
+            m_objects.emplace(handle, std::move(object));
             return handle;
         }
 
         void erase(handle handle)
         {
-            objects.erase(handle);
+            m_objects.erase(handle);
         }
 
         std::weak_ptr<T> get(handle handle)
         {
-            auto it = objects.find(handle);
-            if (it == objects.end())
+            auto it = m_objects.find(handle);
+            if (it == m_objects.end())
             {
                 return {};
             }
-            //auto strong = it->second->lock();
-            //return strong;
             return it->second;
-            //auto node = objects.extract(it);
-            //return std::optional<T>{std::move(node.mapped())};
         }
 
         std::shared_ptr<T> resolve_strong_reference(handle handle)
         {
             // todo: make threadsafe
-            auto it = objects.find(handle);
-            if (it == objects.end())
+            auto it = m_objects.find(handle);
+            if (it == m_objects.end())
             {
                 return nullptr;
             }
@@ -196,14 +191,11 @@ namespace veil::vtl1
                 return strong;
             }
             return nullptr;
-            //auto node = objects.extract(it);
-            //return std::optional<T>{std::move(node.mapped())};
         }
 
     private:
-        handle nextHandle = 1;
-        std::unordered_map<handle, std::weak_ptr<T>> objects;
-        //std::unordered_map<handle, std::shared_ptr<T>> objects;
+        handle m_nextHandle = 1;
+        std::unordered_map<handle, std::weak_ptr<T>> m_objects;
     };
 
 

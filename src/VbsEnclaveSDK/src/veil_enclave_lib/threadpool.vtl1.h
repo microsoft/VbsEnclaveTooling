@@ -158,7 +158,7 @@ namespace veil::vtl1
             };
 
             //UINT64 taskHandle = store_task(std::move(func));
-            auto taskHandle = m_tasks.store_object(std::move(func));
+            auto taskHandle = m_tasks.store(std::move(func));
 
             auto taskHandleArgs = reinterpret_cast<veil::any::implementation::args::threadpool_schedule_task*>(allocation);
             taskHandleArgs->threadpoolInstanceVtl0 = m_vtl1_threadpool_vtl0_backing_threads_instance;
@@ -200,7 +200,7 @@ namespace veil::vtl1
             */
 
             // Remove the task entry from the unique_object_table
-            auto task = m_tasks.try_take_object(taskHandle);
+            auto task = m_tasks.try_take(taskHandle);
             if (!task)
             {
                 THROW_WIN32_MSG(ERROR_INVALID_INDEX, "Task handle doesn't exist: %d", (int)taskHandle);
