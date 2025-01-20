@@ -162,7 +162,7 @@ namespace veil::vtl1
 
             auto taskHandleArgs = reinterpret_cast<veil::any::implementation::args::threadpool_schedule_task*>(allocation);
             taskHandleArgs->threadpoolInstanceVtl0 = m_vtl1_threadpool_vtl0_backing_threads_instance;
-            taskHandleArgs->taskHandle = taskHandle;
+            taskHandleArgs->taskId = taskHandle;
 
             void* output{};
             auto vtl0_scheduleTask_callback = (LPENCLAVE_ROUTINE)veil::vtl1::implementation::get_callback(veil::implementation::callback_id::threadpool_schedule_task);

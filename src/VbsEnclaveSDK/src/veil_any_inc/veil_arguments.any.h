@@ -45,13 +45,13 @@ namespace veil::any
             struct threadpool_schedule_task
             {
                 void* threadpoolInstanceVtl0;
-                uint64_t taskHandle;
+                uint64_t taskId;
             };
 
             struct threadpool_run_task
             {
                 uint64_t threadpoolInstanceVtl1;
-                uint64_t taskHandle;
+                uint64_t taskId;
             };
         }
     }

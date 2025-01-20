@@ -38,7 +38,7 @@ namespace veil::vtl1::implementation::exports
             auto threadpoolInstance = keepaliveHold->object();
 
             // Run the task
-            threadpoolInstance->run_task(taskInfo->taskHandle);
+            threadpoolInstance->run_task(taskInfo->taskId);
 
             return S_OK;
         }

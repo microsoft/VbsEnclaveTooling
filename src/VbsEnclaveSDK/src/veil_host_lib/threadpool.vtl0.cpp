@@ -146,7 +146,7 @@ namespace veil::vtl0::implementation::callbacks
         auto taskInfo = reinterpret_cast<veil::any::implementation::args::threadpool_schedule_task*>(args);
         auto threadpoolInstance = reinterpret_cast<veil::vtl0::implementation::threadpool_backing_threads*>(taskInfo->threadpoolInstanceVtl0);
         //auto threadpoolInstance = g_threadpool;
-        RETURN_IF_FAILED(threadpoolInstance->add_task(taskInfo->taskHandle));
+        RETURN_IF_FAILED(threadpoolInstance->add_task(taskInfo->taskId));
 
         /*
         auto threadpoolInstance = g_threadpool;
