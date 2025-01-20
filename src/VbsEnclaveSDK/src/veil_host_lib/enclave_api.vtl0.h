@@ -26,10 +26,10 @@ namespace veil::vtl0
             // fWait = TRUE means that we wait for all threads in the enclave to terminate.
             // This is necessary because you cannot delete an enclave if it still has
             // running threads.
-            LOG_IF_WIN32_BOOL_FALSE(TerminateEnclave(enclave, TRUE));
+            LOG_IF_WIN32_BOOL_FALSE(::TerminateEnclave(enclave, TRUE));
 
             // Delete the enclave.
-            LOG_IF_WIN32_BOOL_FALSE(DeleteEnclave(enclave));
+            LOG_IF_WIN32_BOOL_FALSE(::DeleteEnclave(enclave));
         }
     }
 
@@ -58,7 +58,7 @@ namespace veil::vtl0
                 THROW_HR(E_FAIL);
             }
 
-            if (!IsEnclaveTypeSupported(ENCLAVE_TYPE_VBS))
+            if (!::IsEnclaveTypeSupported(ENCLAVE_TYPE_VBS))
             {
                 printf("VBS Enclave not supported\n");
                 THROW_HR_MSG(E_ACCESSDENIED, "VBS enclave type not supported");
@@ -70,7 +70,7 @@ namespace veil::vtl0
                 createInfo.OwnerID, ownerId.data(),
                 ownerId.size() > IMAGE_ENCLAVE_LONG_ID_LENGTH ? IMAGE_ENCLAVE_LONG_ID_LENGTH : ownerId.size());
 
-            auto enclave = unique_enclave{ CreateEnclave(
+            auto enclave = unique_enclave{ ::CreateEnclave(
                 GetCurrentProcess(),
                 nullptr,    // Preferred base address
                 size, // Size
@@ -89,12 +89,12 @@ namespace veil::vtl0
             // Load enclave module with SEM_FAILCRITICALERRORS enabled to suppress
             // the error message dialog.
             DWORD previousMode = GetThreadErrorMode();
-            SetThreadErrorMode(previousMode | SEM_FAILCRITICALERRORS, nullptr);
+            ::SetThreadErrorMode(previousMode | SEM_FAILCRITICALERRORS, nullptr);
             auto restoreErrorMode = wil::scope_exit([&]
             {
-                SetThreadErrorMode(previousMode, nullptr);
+                ::SetThreadErrorMode(previousMode, nullptr);
             });
-            THROW_IF_WIN32_BOOL_FALSE(LoadEnclaveImageW(enclave, image));
+            THROW_IF_WIN32_BOOL_FALSE(::LoadEnclaveImageW(enclave, image));
         }
 
         inline void initialize(void* enclave, DWORD threadCount = 1)
@@ -103,7 +103,7 @@ namespace veil::vtl0
             initializationInfo.Length = sizeof(ENCLAVE_INIT_INFO_VBS);
             initializationInfo.ThreadCount = threadCount;
 
-            THROW_IF_WIN32_BOOL_FALSE(InitializeEnclave(GetCurrentProcess(), enclave, &initializationInfo, initializationInfo.Length, nullptr));
+            THROW_IF_WIN32_BOOL_FALSE(::InitializeEnclave(GetCurrentProcess(), enclave, &initializationInfo, initializationInfo.Length, nullptr));
         }
     }
 }
