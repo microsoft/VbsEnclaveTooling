@@ -7,7 +7,6 @@ namespace veil::vtl0::implementation::callbacks
     VEIL_ABI_FUNCTION(taskpool_make, args,
     {
         auto makeArgs = reinterpret_cast<veil::any::implementation::args::taskpool_make*>(args);
-        //auto taskpool = new veil::vtl0::implementation::taskpool_backing_threads(makeArgs->enclave, makeArgs->taskpoolInstanceVtl1, makeArgs->threadCount, makeArgs->mustFinishAllQueuedTasks);
         auto taskpoolInstanceVtl0 = std::make_unique<veil::vtl0::implementation::taskpool_backing_threads>(makeArgs->enclave, makeArgs->taskpoolInstanceVtl1, makeArgs->threadCount, makeArgs->mustFinishAllQueuedTasks);
         makeArgs->taskpoolInstanceVtl0 = reinterpret_cast<void*>(taskpoolInstanceVtl0.release());
         return S_OK;
