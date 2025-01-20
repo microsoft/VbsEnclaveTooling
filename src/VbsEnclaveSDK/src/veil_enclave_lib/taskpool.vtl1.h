@@ -81,7 +81,7 @@ namespace veil::vtl1
         taskpool(uint32_t threadCount, bool mustFinishAllQueuedTasks = true)
             : m_keepalive(this)
         {
-            // store this taskpool (weakly) into a global table of taskpools (and get a unique id)
+            // Store this taskpool (weakly) into a global table of taskpools (and get a unique id)
             m_objectTableEntryId = veil::vtl1::implementation::get_taskpool_object_table().store(m_keepalive.get_weak());
 
             ENCLAVE_INFORMATION enclaveInformation;
@@ -108,10 +108,12 @@ namespace veil::vtl1
             
             THROW_IF_WIN32_BOOL_FALSE(CallEnclave(deleteTaskpool, reinterpret_cast<void*>(m_vtl1_taskpool_vtl0_backing_threads_instance), TRUE, reinterpret_cast<void**>(&output)));
 
-            // erase weak reference from weak object table
+            // Erase weak reference from weak object table
             veil::vtl1::implementation::get_taskpool_object_table().erase(m_objectTableEntryId);
 
-            // stay alive if someone is holding a strong reference to the "keepalive_hold" (strong-reference to the weak-entry in the weak object table)
+            // Stay alive if someone is holding a strong reference to the "keepalive_hold" (strong-reference to the weak-entry in the weak object table)
+            //
+            // Note: Calling explicitly here for clarity, but m_keepalive would have called it anyway in dtor.
             m_keepalive.release_hold_and_block();
         }
 
