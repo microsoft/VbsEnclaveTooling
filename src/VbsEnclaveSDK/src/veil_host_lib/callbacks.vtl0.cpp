@@ -3,7 +3,6 @@
 #include <iostream>
 #include <map>
 #include <mutex>
-#include <syncstream>
 
 #include "veil.any.h"
 
@@ -42,8 +41,7 @@ namespace veil::vtl0::implementation::callbacks
         auto lock = std::scoped_lock<std::mutex>(veil::vtl0::implementation::g_printMutex);
         auto buffer = reinterpret_cast<char*>(args);
 
-        std::osyncstream synced_out(std::cout);
-        synced_out << "FROM VTL1: " << buffer << std::endl;
+        std::cout << "FROM VTL1: " << buffer << std::endl;
         return S_OK;
     })
 
@@ -52,8 +50,7 @@ namespace veil::vtl0::implementation::callbacks
         auto lock = std::scoped_lock<std::mutex>(veil::vtl0::implementation::g_printMutex);
         auto buffer = reinterpret_cast<wchar_t*>(args);
 
-        std::wosyncstream synced_out(std::wcout);
-        synced_out << L"FROM VTL1: " << buffer << std::endl;
+        std::wcout << L"FROM VTL1: " << buffer << std::endl;
         return S_OK;
     })
 }

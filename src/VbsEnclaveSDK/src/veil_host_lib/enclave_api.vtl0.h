@@ -6,7 +6,6 @@
 #include <iostream>
 #include <span>
 #include <sstream>
-#include <syncstream>
 #include <vector>
 
 #include <wil/resource.h>
@@ -154,9 +153,8 @@ namespace veil::vtl0::enclave
     {
         for (const auto& error : errors)
         {
-            std::wosyncstream synced_out(std::wcout);
             auto msg = format_enclave_error(error);
-            synced_out << L"  " << msg << std::endl;
+            std::wcout << L"  " << msg << std::endl;
         }
     }
 
@@ -205,13 +203,11 @@ namespace veil::vtl0::enclave::implementation
 
             auto lock = std::scoped_lock<std::mutex>(veil::vtl0::implementation::g_printMutex);
 
-            (std::osyncstream(std::cout)) << std::endl;
-            (std::osyncstream(std::cout)) << "[Error-chain] Routine: " << name << ", " << (uint32_t)ordinal << "." << std::endl << std::endl;
-            //(std::osyncstream(std::cout)) << "[Error-chain: " << name << ", " << (uint32_t)ordinal << "]" << std::endl << std::endl;
-            //(std::osyncstream(std::cout)) << "[Enclave errors for thread: " << std::hex << threadId << std::dec << "]" << std::endl;
+            std::wcout << std::endl;
+            std::wcout << "[Error-chain] Routine: " << name << ", " << (uint32_t)ordinal << "." << std::endl << std::endl;
             auto errors = retrieve_enclave_errors(enclave, threadId);
             print_enclave_errors(errors);
-            (std::osyncstream(std::cout)) << "[/Error-chain]" << std::endl << std::endl;
+            std::wcout << "[/Error-chain]" << std::endl << std::endl;
 #endif
             RETURN_HR(hr);
         }
