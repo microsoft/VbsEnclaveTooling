@@ -11,15 +11,9 @@ namespace veil::vtl1::vtl0_functions
 {
     inline void* malloc(size_t size)
     {
-        // Try get buffer from call context
-
-        // Perform host allocation by making an ocall.
-        //return oe_host_malloc(size);
-
         void* output;
-        //auto fp_malloc = (LPENCLAVE_ROUTINE)implementation::get_callback(L"malloc");
-        auto fp_malloc = veil::vtl1::implementation::get_callback(veil::implementation::callback_id::malloc);
-        THROW_IF_WIN32_BOOL_FALSE(CallEnclave(fp_malloc, reinterpret_cast<void*>(size), TRUE, reinterpret_cast<void**>(&output)));
+        auto malloc = veil::vtl1::implementation::get_callback(veil::implementation::callback_id::malloc);
+        THROW_IF_WIN32_BOOL_FALSE(::CallEnclave(malloc, reinterpret_cast<void*>(size), TRUE, reinterpret_cast<void**>(&output)));
         return output;
     }
 
@@ -107,7 +101,7 @@ namespace veil::vtl1::vtl0_functions
             buffer[len] = string_traits<string_type>::nul_char;
 
             auto funcPrintf = veil::vtl1::implementation::get_callback(string_traits<string_type>::callback_id);
-            THROW_IF_WIN32_BOOL_FALSE(CallEnclave(funcPrintf, reinterpret_cast<void*>(buffer), TRUE, reinterpret_cast<void**>(&output)));
+            THROW_IF_WIN32_BOOL_FALSE(::CallEnclave(funcPrintf, reinterpret_cast<void*>(buffer), TRUE, reinterpret_cast<void**>(&output)));
             THROW_IF_FAILED(pvoid_to_hr(output));
         }
     }
