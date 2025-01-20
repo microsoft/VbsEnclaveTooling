@@ -153,7 +153,6 @@ namespace veil::vtl1
                 }
             };
 
-            //UINT64 taskHandle = store_task(std::move(func));
             auto taskHandle = m_tasks.store(std::move(func));
 
             auto taskHandleArgs = veil::vtl1::vtl0_functions::allocate<veil::any::implementation::args::taskpool_schedule_task>();
@@ -164,38 +163,12 @@ namespace veil::vtl1
             auto vtl0_scheduleTask_callback = veil::vtl1::implementation::get_callback(veil::implementation::callback_id::taskpool_schedule_task);
             THROW_IF_WIN32_BOOL_FALSE(CallEnclave(vtl0_scheduleTask_callback, reinterpret_cast<void*>(taskHandleArgs), TRUE, reinterpret_cast<void**>(&output)));
 
-            //return std::move(fut);
             return fut;
         }
 
         void run_task(UINT64 taskHandle)
         {
-            // Lock
-            // 
-            // 
-            
-
-
-            //std::scoped_lock lock(m_mutex);
-            /*
-            auto task = m_tasks.try_take_object(task_handle);
-            if (!task)
-            {
-                THROW_WIN32_MSG(ERROR_INVALID_INDEX, "Task handle doesn't exist: %d", (int)taskHandle);
-            }
-
-            auto& task_lambda = *task.get();
-
-            // Finally run the task, which is a std::function<void()> that,
-            //  1. Runs the captured user-provided lambda
-            //  2. Runs the promise setter (so the user's future is live)
-            task_lambda();
-
-            // Free the task
-            task.reset();
-            */
-
-            // Remove the task entry from the unique_object_table
+            // Take the task out of our task table
             auto task = m_tasks.try_take(taskHandle);
             if (!task)
             {
@@ -212,26 +185,14 @@ namespace veil::vtl1
             // The task, std::function<void()>, is freed...
         }
 
-        /*
-        static taskpool* resolve_taskpool(unique_object_table<taskpool>::handle handle)
-        {
-            // todo: lock
-            m_taskpools.
-        }
-        */
-
     private:
-
-        // std::map of tasks with handles
-        //std::map<UINT64, std::function<void()>> m_tasks;
-        //std::mutex m_mutex;
-
+        // Task objects (but the actual queue order is managed in vtl0)
         veil::vtl1::unique_object_table<std::function<void()>> m_tasks;
 
+        // Backing threads in vtl0
         void* m_taskpoolInstanceVtl0{};
 
-        // this is required secure lifetime management
-        //keepalive_system<taskpool> m_objectTableEntry;
+        // Required for secure lifetime management and to avoid passing contexts (void*) pointers to vtl0
         veil::vtl1::keepalive_mechanism<taskpool> m_keepalive;
         size_t m_objectTableEntryId{};
     };
