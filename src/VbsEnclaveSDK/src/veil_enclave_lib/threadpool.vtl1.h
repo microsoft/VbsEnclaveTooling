@@ -114,7 +114,7 @@ namespace veil::vtl1
             veil::vtl1::implementation::get_threadpool_object_table().erase(m_objectTableEntryId);
 
             // stay alive if someone is holding a strong reference to the "keepalive_hold" (strong-reference to the weak-entry in the weak object table)
-            m_keepalive.reset_keepalive_and_block();
+            m_keepalive.release_hold_and_block();
         }
 
         template <typename F>

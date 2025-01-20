@@ -11,17 +11,14 @@ namespace veil::vtl1
     template <typename T>
     struct keepalive_hold
     {
-        keepalive_mechanism<T>* m_keepaliveObject{};
-        wil::srwlock m_lock;
-
-        keepalive_hold(keepalive_mechanism<T>* keeapliveObject)
-            : m_keepaliveObject(keeapliveObject)
+        keepalive_hold(keepalive_mechanism<T>* mechanism)
+            : m_mechanism(mechanism)
         {
         }
 
         ~keepalive_hold()
         {
-            m_keepaliveObject->notify_keepalive_hold_done();
+            m_mechanism->notify_keepalive_hold_done();
         }
 
         // Delete copy
@@ -34,8 +31,10 @@ namespace veil::vtl1
 
         T* object()
         {
-            return m_keepaliveObject->object();
+            return m_mechanism->object();
         }
+    private:
+        keepalive_mechanism<T>* m_mechanism{};
     };
 
 
@@ -51,7 +50,10 @@ namespace veil::vtl1
 
         ~keepalive_mechanism()
         {
-            reset_keepalive_and_block();
+            if (m_keepaliveHold)
+            {
+                release_hold_and_block();
+            }
         }
 
         // Delete copy
@@ -82,7 +84,7 @@ namespace veil::vtl1
         }
 
         // release keepalive_hold and wait until no more strong references
-        void reset_keepalive_and_block()
+        void release_hold_and_block()
         {
             auto weakPtr = get_weak();
             m_keepaliveHold.reset();
