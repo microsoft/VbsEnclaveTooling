@@ -37,8 +37,6 @@ namespace veil::vtl1
         keepalive_mechanism<T>* m_mechanism{};
     };
 
-
-
     template <typename T>
     struct keepalive_mechanism
     {
@@ -50,10 +48,7 @@ namespace veil::vtl1
 
         ~keepalive_mechanism()
         {
-            if (m_keepaliveHold)
-            {
-                release_hold_and_block();
-            }
+            release_hold_and_block();
         }
 
         // Delete copy
@@ -86,16 +81,19 @@ namespace veil::vtl1
         // release keepalive_hold and wait until no more strong references
         void release_hold_and_block()
         {
-            auto weakPtr = get_weak();
-            m_keepaliveHold.reset();
-            while (true)
+            if (m_keepaliveHold)
             {
-                auto lock = m_lock.lock_exclusive();
-                if (m_done)
+                auto weakPtr = get_weak();
+                m_keepaliveHold.reset();
+                while (true)
                 {
-                    break;
+                    auto lock = m_lock.lock_exclusive();
+                    if (m_done)
+                    {
+                        break;
+                    }
+                    m_cv.wait(lock);
                 }
-                m_cv.wait(lock);
             }
         }
 
