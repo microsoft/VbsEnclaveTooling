@@ -98,9 +98,6 @@ namespace veil::vtl1::vtl0_functions
             size_t len = str.size();
             size_t cbBuffer = (len + 1) * sizeof(string_type::value_type);
 
-            auto fp_malloc = (LPENCLAVE_ROUTINE)veil::vtl1::implementation::get_callback(veil::implementation::callback_id::malloc);
-            THROW_IF_WIN32_BOOL_FALSE(CallEnclave((LPENCLAVE_ROUTINE)fp_malloc, reinterpret_cast<void*>(cbBuffer), TRUE, reinterpret_cast<void**>(&output)));
-
             void* allocation = veil::vtl1::vtl0_functions::malloc(cbBuffer);
             THROW_IF_NULL_ALLOC(allocation);
 
