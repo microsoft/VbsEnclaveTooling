@@ -124,11 +124,10 @@
     <ClInclude Include="exports.vtl1.h" />
     <ClInclude Include="future.vtl1.h" />
     <ClInclude Include="object_table.vtl1.h" />
-    <ClInclude Include="thread.vtl1.h" />
     <ClInclude Include="vtl0_functions.vtl1.h" />
     <ClInclude Include="pch.h" />
     <ClInclude Include="registered_callbacks.vtl1.h" />
-    <ClInclude Include="threadpool.vtl1.h" />
+    <ClInclude Include="taskpool.vtl1.h" />
     <ClInclude Include="utils.vtl1.h" />
   </ItemGroup>
   <ItemGroup>
@@ -139,7 +138,7 @@
       <PrecompiledHeader>Create</PrecompiledHeader>
     </ClCompile>
     <ClCompile Include="registered_callbacks.vtl1.cpp" />
-    <ClCompile Include="threadpool.vtl1.cpp" />
+    <ClCompile Include="taskpool.vtl1.cpp" />
     <ClCompile Include="utils.vtl1.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

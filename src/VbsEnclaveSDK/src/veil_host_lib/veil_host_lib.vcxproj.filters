@@ -15,7 +15,7 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="threadpool.vtl0.cpp">
+    <ClCompile Include="taskpool.vtl0.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="callbacks.vtl0.cpp">
@@ -38,7 +38,7 @@
     <ClInclude Include="enclave_api.vtl0.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="threadpool.vtl0.h">
+    <ClInclude Include="taskpool.vtl0.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="exports.vtl0.h">
