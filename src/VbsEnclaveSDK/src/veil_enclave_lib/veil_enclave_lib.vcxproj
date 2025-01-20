@@ -124,6 +124,7 @@
     <ClInclude Include="exports.vtl1.h" />
     <ClInclude Include="future.vtl1.h" />
     <ClInclude Include="object_table.vtl1.h" />
+    <ClInclude Include="thread.vtl1.h" />
     <ClInclude Include="vtl0_functions.vtl1.h" />
     <ClInclude Include="pch.h" />
     <ClInclude Include="registered_callbacks.vtl1.h" />

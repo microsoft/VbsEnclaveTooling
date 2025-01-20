@@ -45,6 +45,9 @@
     <ClInclude Include="registered_callbacks.vtl1.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="thread.vtl1.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp">

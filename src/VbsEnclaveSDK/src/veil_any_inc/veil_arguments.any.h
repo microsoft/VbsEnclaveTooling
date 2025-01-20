@@ -15,6 +15,7 @@ namespace veil::any
         {
             struct retrieve_enclave_error_for_thread
             {
+                // out
                 uint32_t status;
             };
 
@@ -23,26 +24,15 @@ namespace veil::any
                 veil::implementation::callback_t* callbackAddresses;
             };
 
-            struct thread_make
-            {
-                void* enclave;
-                uint64_t threadInstanceVtl1;
-                void* threadInstanceVtl0;
-            };
-
-            struct thread_run
-            {
-                uint64_t threadId;
-            };
-
             struct threadpool_make
             {
                 void* enclave;
                 uint64_t threadpoolInstanceVtl1;
-                void* threadpoolInstanceVtl0;
                 uint32_t threadCount;
                 bool mustFinishAllQueuedTasks = true;
-                void* context;
+
+                // out
+                void* threadpoolInstanceVtl0;
             };
 
             struct threadpool_delete
@@ -58,7 +48,7 @@ namespace veil::any
 
             struct threadpool_run_task
             {
-                uint64_t threadpoolInstance;
+                uint64_t threadpoolInstanceVtl1;
                 uint64_t taskHandle;
             };
         }

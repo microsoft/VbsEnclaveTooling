@@ -99,9 +99,6 @@ namespace veil
         enclave_error error;
     };
 
-    //
-    // todo: fix alignment
-    //
 #pragma warning(push)
 #pragma warning(disable : 4324)
     template <typename T>
