@@ -23,6 +23,18 @@ namespace veil::any
                 veil::implementation::callback_t* callbackAddresses;
             };
 
+            struct thread_make
+            {
+                void* enclave;
+                uint64_t threadInstanceVtl1;
+                void* threadInstanceVtl0;
+            };
+
+            struct thread_run
+            {
+                uint64_t threadId;
+            };
+
             struct threadpool_make
             {
                 void* enclave;
