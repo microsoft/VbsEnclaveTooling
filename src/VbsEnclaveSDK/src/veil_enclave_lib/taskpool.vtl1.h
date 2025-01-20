@@ -16,17 +16,17 @@ Usage...
 
     void usage()
     {
-        auto threadpool = eif_server::enclave_interface::vtl1_threadpool{};  // create and store this in a global somewhere
+        auto taskpool = eif_server::enclave_interface::vtl1_taskpool{};  // create and store this in a global somewhere
 
-        auto task1 = threadpool.queue_task([]() {
+        auto task1 = taskpool.queue_task([]() {
             // Do work
         });
 
-        auto task2 = threadpool.queue_task([]() {
+        auto task2 = taskpool.queue_task([]() {
             // Do work
         });
 
-        auto task3 = threadpool.queue_task([]() {
+        auto task3 = taskpool.queue_task([]() {
             // Do work
             return 55;
         });
@@ -39,15 +39,15 @@ Usage...
 
 Implementation...
 
-    This is a threadpool designed to be used in VTL1.  VTL1 cannot create threads or schedule work onto threads.
+    This is a taskpool designed to be used in VTL1.  VTL1 cannot create threads or schedule work onto threads.
     To work around this limitation, a backing VTL0 thread will act as a conduit to get a task scheduled on
     a different, available, thread in VTL1.
 
     Task scheduling flow mechanics:/
-        0. VTL1 app enclave consumer calls threadpool's add_task(task_lambda)
-        1. VTL1 threadpool stores the task (lambda) + task handle
+        0. VTL1 app enclave consumer calls taskpool's add_task(task_lambda)
+        1. VTL1 taskpool stores the task (lambda) + task handle
         2. VTL1 calls out to VTL0, passing the task handle
-        3. VTL0 finds an available thread (from VTL0 backing threadpool) to call CallEnclave, passing the task handle, to get back into VTL1
+        3. VTL0 finds an available thread (from VTL0 backing taskpool) to call CallEnclave, passing the task handle, to get back into VTL1
         4. VTL1 is now running on a different thread(!!)
         5. VTL1 retrieves the task (lambda) using the task handle and runs the task
 */
@@ -55,20 +55,20 @@ Implementation...
 // fwd decls
 namespace veil::vtl1
 {
-    struct threadpool;
+    struct taskpool;
 }
 
 // call ins
 namespace veil::vtl1::implementation::exports
 {
-    HRESULT threadpool_run_task(_Inout_ veil::any::implementation::args::threadpool_run_task* params);
+    HRESULT taskpool_run_task(_Inout_ veil::any::implementation::args::taskpool_run_task* params);
 }
 
 // object table entries
 namespace veil::vtl1::implementation
 {
-    weak_object_table<keepalive_hold<threadpool>>& get_threadpool_object_table();
-    //size_t insert_weak_object_table_entry(std::weak_ptr<veil::vtl1::keepalive_hold<veil::vtl1::threadpool>> keepaliveHandle);
+    weak_object_table<keepalive_hold<taskpool>>& get_taskpool_object_table();
+    //size_t insert_weak_object_table_entry(std::weak_ptr<veil::vtl1::keepalive_hold<veil::vtl1::taskpool>> keepaliveHandle);
     //void erase_weak_object_table_entry(size_t handle);
 
     //using unique_object_table_entry = wil::unique_any<size_t, decltype(&erase_weak_object_table_entry), erase_weak_object_table_entry>;
@@ -77,41 +77,41 @@ namespace veil::vtl1::implementation
 // impl
 namespace veil::vtl1
 {
-    struct threadpool
+    struct taskpool
     {
     public:
-        threadpool(uint32_t threadCount, bool mustFinishAllQueuedTasks = true)
+        taskpool(uint32_t threadCount, bool mustFinishAllQueuedTasks = true)
             : m_keepalive(this)
         {
-            // store this threadpool (weakly) into a global table of threadpools (and get a unique id)
-            m_objectTableEntryId = veil::vtl1::implementation::get_threadpool_object_table().store(m_keepalive.get_weak());
+            // store this taskpool (weakly) into a global table of taskpools (and get a unique id)
+            m_objectTableEntryId = veil::vtl1::implementation::get_taskpool_object_table().store(m_keepalive.get_weak());
 
             ENCLAVE_INFORMATION enclaveInformation;
             THROW_IF_FAILED(EnclaveGetEnclaveInformation(sizeof(ENCLAVE_INFORMATION), &enclaveInformation));
             void* enclave = enclaveInformation.BaseAddress;
 
-            auto makeThreadpoolArgs = veil::vtl1::vtl0_functions::allocate<veil::any::implementation::args::threadpool_make>();
+            auto makeTaskpoolArgs = veil::vtl1::vtl0_functions::allocate<veil::any::implementation::args::taskpool_make>();
 
             void* output{};
-            auto makeThreadpool = veil::vtl1::implementation::get_callback(veil::implementation::callback_id::threadpool_make);
-            makeThreadpoolArgs->enclave = enclave;
-            makeThreadpoolArgs->threadpoolInstanceVtl1 = (uint64_t)(m_objectTableEntryId);
-            makeThreadpoolArgs->threadCount = threadCount;
-            makeThreadpoolArgs->mustFinishAllQueuedTasks = mustFinishAllQueuedTasks;
-            THROW_IF_WIN32_BOOL_FALSE(CallEnclave(makeThreadpool, reinterpret_cast<void*>(makeThreadpoolArgs), TRUE, reinterpret_cast<void**>(&output)));
+            auto makeTaskpool = veil::vtl1::implementation::get_callback(veil::implementation::callback_id::taskpool_make);
+            makeTaskpoolArgs->enclave = enclave;
+            makeTaskpoolArgs->taskpoolInstanceVtl1 = (uint64_t)(m_objectTableEntryId);
+            makeTaskpoolArgs->threadCount = threadCount;
+            makeTaskpoolArgs->mustFinishAllQueuedTasks = mustFinishAllQueuedTasks;
+            THROW_IF_WIN32_BOOL_FALSE(CallEnclave(makeTaskpool, reinterpret_cast<void*>(makeTaskpoolArgs), TRUE, reinterpret_cast<void**>(&output)));
 
-            m_vtl1_threadpool_vtl0_backing_threads_instance = makeThreadpoolArgs->threadpoolInstanceVtl0;
+            m_vtl1_taskpool_vtl0_backing_threads_instance = makeTaskpoolArgs->taskpoolInstanceVtl0;
         }
 
-        ~threadpool()
+        ~taskpool()
         {
             void* output{};
-            auto deleteThreadpool = veil::vtl1::implementation::get_callback(veil::implementation::callback_id::threadpool_delete);
+            auto deleteTaskpool = veil::vtl1::implementation::get_callback(veil::implementation::callback_id::taskpool_delete);
             
-            THROW_IF_WIN32_BOOL_FALSE(CallEnclave(deleteThreadpool, reinterpret_cast<void*>(m_vtl1_threadpool_vtl0_backing_threads_instance), TRUE, reinterpret_cast<void**>(&output)));
+            THROW_IF_WIN32_BOOL_FALSE(CallEnclave(deleteTaskpool, reinterpret_cast<void*>(m_vtl1_taskpool_vtl0_backing_threads_instance), TRUE, reinterpret_cast<void**>(&output)));
 
             // erase weak reference from weak object table
-            veil::vtl1::implementation::get_threadpool_object_table().erase(m_objectTableEntryId);
+            veil::vtl1::implementation::get_taskpool_object_table().erase(m_objectTableEntryId);
 
             // stay alive if someone is holding a strong reference to the "keepalive_hold" (strong-reference to the weak-entry in the weak object table)
             m_keepalive.release_hold_and_block();
@@ -122,7 +122,7 @@ namespace veil::vtl1
         {
             using return_type = decltype(f());
 
-            void* allocation = veil::vtl1::vtl0_functions::malloc(sizeof(veil::any::implementation::args::threadpool_schedule_task));
+            void* allocation = veil::vtl1::vtl0_functions::malloc(sizeof(veil::any::implementation::args::taskpool_schedule_task));
             THROW_IF_NULL_ALLOC(allocation);
 
             // Store the task
@@ -160,12 +160,12 @@ namespace veil::vtl1
             //UINT64 taskHandle = store_task(std::move(func));
             auto taskHandle = m_tasks.store(std::move(func));
 
-            auto taskHandleArgs = reinterpret_cast<veil::any::implementation::args::threadpool_schedule_task*>(allocation);
-            taskHandleArgs->threadpoolInstanceVtl0 = m_vtl1_threadpool_vtl0_backing_threads_instance;
+            auto taskHandleArgs = reinterpret_cast<veil::any::implementation::args::taskpool_schedule_task*>(allocation);
+            taskHandleArgs->taskpoolInstanceVtl0 = m_vtl1_taskpool_vtl0_backing_threads_instance;
             taskHandleArgs->taskId = taskHandle;
 
             void* output{};
-            auto vtl0_scheduleTask_callback = (LPENCLAVE_ROUTINE)veil::vtl1::implementation::get_callback(veil::implementation::callback_id::threadpool_schedule_task);
+            auto vtl0_scheduleTask_callback = (LPENCLAVE_ROUTINE)veil::vtl1::implementation::get_callback(veil::implementation::callback_id::taskpool_schedule_task);
             THROW_IF_WIN32_BOOL_FALSE(CallEnclave(vtl0_scheduleTask_callback, reinterpret_cast<void*>(taskHandleArgs), TRUE, reinterpret_cast<void**>(&output)));
 
             //return std::move(fut);
@@ -217,10 +217,10 @@ namespace veil::vtl1
         }
 
         /*
-        static threadpool* resolve_threadpool(unique_object_table<threadpool>::handle handle)
+        static taskpool* resolve_taskpool(unique_object_table<taskpool>::handle handle)
         {
             // todo: lock
-            m_threadpools.
+            m_taskpools.
         }
         */
 
@@ -232,11 +232,11 @@ namespace veil::vtl1
 
         veil::vtl1::unique_object_table<std::function<void()>> m_tasks;
 
-        void* m_vtl1_threadpool_vtl0_backing_threads_instance{};
+        void* m_vtl1_taskpool_vtl0_backing_threads_instance{};
 
         // this is required secure lifetime management
-        //keepalive_system<threadpool> m_objectTableEntry;
-        veil::vtl1::keepalive_mechanism<threadpool> m_keepalive;
+        //keepalive_system<taskpool> m_objectTableEntry;
+        veil::vtl1::keepalive_mechanism<taskpool> m_keepalive;
         size_t m_objectTableEntryId{};
     };
 }

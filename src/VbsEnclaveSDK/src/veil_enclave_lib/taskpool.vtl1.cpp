@@ -7,38 +7,38 @@
 
 #include <veil.any.h>
 
-#include "threadpool.vtl1.h"
+#include "taskpool.vtl1.h"
 
 
 // object table entries
 namespace veil::vtl1::implementation
 {
-    weak_object_table<keepalive_hold<threadpool>>& get_threadpool_object_table()
+    weak_object_table<keepalive_hold<taskpool>>& get_taskpool_object_table()
     {
-        static weak_object_table<keepalive_hold<threadpool>> s_threadpoolWeakReferences;
-        return s_threadpoolWeakReferences;
+        static weak_object_table<keepalive_hold<taskpool>> s_taskpoolWeakReferences;
+        return s_taskpoolWeakReferences;
     }
 }
 
 // call ins
 namespace veil::vtl1::implementation::exports
 {
-    HRESULT threadpool_run_task(_Inout_ veil::any::implementation::args::threadpool_run_task* params)
+    HRESULT taskpool_run_task(_Inout_ veil::any::implementation::args::taskpool_run_task* params)
     try
     {
-        auto taskInfo = reinterpret_cast<veil::any::implementation::args::threadpool_schedule_task*>(params);
+        auto taskInfo = reinterpret_cast<veil::any::implementation::args::taskpool_schedule_task*>(params);
 
-        auto keepaliveMaybeChit = (size_t)taskInfo->threadpoolInstanceVtl0;
+        auto keepaliveMaybeChit = (size_t)taskInfo->taskpoolInstanceVtl0;
 
-        if (auto keepaliveHold = get_threadpool_object_table().resolve_strong_reference(keepaliveMaybeChit))
+        if (auto keepaliveHold = get_taskpool_object_table().resolve_strong_reference(keepaliveMaybeChit))
         {
             // We have keepalive hold
-            //  i.e. a strong reference (std::shared_ptr) to the keepalive_hold object of the threadpool.
-            //  (The threadpool's dtor has promised to block)
-            auto threadpoolInstance = keepaliveHold->object();
+            //  i.e. a strong reference (std::shared_ptr) to the keepalive_hold object of the taskpool.
+            //  (The taskpool's dtor has promised to block)
+            auto taskpoolInstance = keepaliveHold->object();
 
             // Run the task
-            threadpoolInstance->run_task(taskInfo->taskId);
+            taskpoolInstance->run_task(taskInfo->taskId);
 
             return S_OK;
         }

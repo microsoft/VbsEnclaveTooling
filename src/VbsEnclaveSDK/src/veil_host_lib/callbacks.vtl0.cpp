@@ -8,7 +8,7 @@
 #include "veil.any.h"
 
 #include "callbacks.vtl0.h"
-#include "threadpool.vtl0.h"
+#include "taskpool.vtl0.h"
 #include "utils.vtl0.h"
 
 namespace veil::vtl0::implementation::callbacks
@@ -23,9 +23,9 @@ namespace veil::vtl0::implementation::callbacks
         &printf,
         &wprintf,
         &get_per_thread_buffer,
-        &threadpool_make,
-        &threadpool_delete,
-        &threadpool_schedule_task
+        &taskpool_make,
+        &taskpool_delete,
+        &taskpool_schedule_task
     };
 }
 

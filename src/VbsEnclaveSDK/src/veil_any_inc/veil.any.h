@@ -63,7 +63,7 @@ namespace veil
         {
             register_callbacks = 100,
             retrieve_enclave_error_for_thread,
-            threadpool_run_task,
+            taskpool_run_task,
         };
 
         using callback_t = void* (*)(void*);
@@ -74,9 +74,9 @@ namespace veil
             printf,
             wprintf,
             get_per_thread_buffer,
-            threadpool_make,
-            threadpool_delete,
-            threadpool_schedule_task,
+            taskpool_make,
+            taskpool_delete,
+            taskpool_schedule_task,
             __count__ // keep as last entry
         };
 

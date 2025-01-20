@@ -13,15 +13,15 @@
 #include "exports.vtl0.h"
 
 /*
-This is a threadpool designed to be used in VTL1.  VTL1 cannot create threads or schedule work onto threads. 
+This is a taskpool designed to be used in VTL1.  VTL1 cannot create threads or schedule work onto threads. 
 To work around this limitation, a backing VTL0 thread will act as a conduit to get a task scheduled on
 a different, available, thread in VTL1.
 
 Task scheduling flow mechanics:
-    0. VTL1 app enclave consumer calls threadpool's add_task(task_lambda)
-    1. VTL1 threadpool stores the task (lambda) + task handle
+    0. VTL1 app enclave consumer calls taskpool's add_task(task_lambda)
+    1. VTL1 taskpool stores the task (lambda) + task handle
     2. VTL1 calls out to VTL0, passing the task handle
-    3. VTL0 finds an available thread (from VTL0 backing threadpool) to call CallEnclave, passing the task handle, to get back into VTL1
+    3. VTL0 finds an available thread (from VTL0 backing taskpool) to call CallEnclave, passing the task handle, to get back into VTL1
     4. VTL1 is now running on a different thread(!!)
     5. VTL1 retrieves the task (lambda) using the task handle and runs the task
 */
@@ -29,21 +29,21 @@ Task scheduling flow mechanics:
 
 namespace veil::vtl0::implementation::callbacks
 {
-    void* threadpool_make(void* args);
-    void* threadpool_delete(void* args);
-    void* threadpool_schedule_task(void* args);
+    void* taskpool_make(void* args);
+    void* taskpool_delete(void* args);
+    void* taskpool_schedule_task(void* args);
 }
 
-// vtl0 code - vtl0 threads that back the vtl1 threadpool implementation
+// vtl0 code - vtl0 threads that back the vtl1 taskpool implementation
 namespace veil::vtl0::implementation
 {
-    struct threadpool_backing_threads
+    struct taskpool_backing_threads
     {
     public:
         // Make sure the threadCount is at most [IMAGE_ENCLAVE_CONFIG.NumberOfThreads - 1] so the
         // enclave always has a thread of execution, and prevent deadlocking the enclave.
-        threadpool_backing_threads(void* enclave, uint64_t threadpoolInstance_vtl1, size_t threadCount = 1, bool mustFinishAllQueuedTasks = true)
-            : m_enclave(enclave), m_threadpoolInstance_vtl1(threadpoolInstance_vtl1), m_mustFinishAllQueuedTasks(mustFinishAllQueuedTasks)
+        taskpool_backing_threads(void* enclave, uint64_t taskpoolInstance_vtl1, size_t threadCount = 1, bool mustFinishAllQueuedTasks = true)
+            : m_enclave(enclave), m_taskpoolInstance_vtl1(taskpoolInstance_vtl1), m_mustFinishAllQueuedTasks(mustFinishAllQueuedTasks)
         {
             for (size_t i = 0; i < threadCount; i++)
             {
@@ -51,7 +51,7 @@ namespace veil::vtl0::implementation
             }
         }
 
-        ~threadpool_backing_threads()
+        ~taskpool_backing_threads()
         {
             {
                 std::unique_lock lock(m_mutex);
@@ -119,15 +119,15 @@ namespace veil::vtl0::implementation
 
                 // Run task
                 //      Signal VTL1 to run the task - this is a blocking call, even if there is no VTL1 thread ready
-                veil::any::implementation::args::threadpool_run_task data = {};
-                data.threadpoolInstanceVtl1 = m_threadpoolInstance_vtl1;
+                veil::any::implementation::args::taskpool_run_task data = {};
+                data.taskpoolInstanceVtl1 = m_taskpoolInstance_vtl1;
                 data.taskId = taskHandle;
-                THROW_IF_FAILED(veil::vtl0::enclave::implementation::call_enclave_function(m_enclave, veil::implementation::export_ordinals::threadpool_run_task, data));
+                THROW_IF_FAILED(veil::vtl0::enclave::implementation::call_enclave_function(m_enclave, veil::implementation::export_ordinals::taskpool_run_task, data));
             }
         }
 
         void* m_enclave{};
-        uint64_t m_threadpoolInstance_vtl1{};
+        uint64_t m_taskpoolInstance_vtl1{};
         std::vector<std::thread> m_threads;
         std::deque<UINT64> m_taskHandles;
         std::mutex m_mutex;

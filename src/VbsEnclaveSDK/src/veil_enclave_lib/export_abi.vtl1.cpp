@@ -4,7 +4,7 @@
 
 #include "export_helpers.vtl1.h"
 #include "exports.vtl1.h"
-#include "threadpool.vtl1.h"
+#include "taskpool.vtl1.h"
 
 #include "veil.any.h"
 #include "veil_arguments.any.h"
@@ -33,12 +33,12 @@ namespace veil::vtl1
             RETURN_HR_AS_PVOID(veil::vtl1::implementation::exports::retrieve_enclave_error_for_thread(&eawh->data));
         }
 
-        ENCLAVE_FUNCTION threadpool_run_task(_In_ PVOID params)
+        ENCLAVE_FUNCTION taskpool_run_task(_In_ PVOID params)
         {
-            auto eawh = static_cast<enclave_arguments_with_hr<veil::any::implementation::args::threadpool_run_task>*>(params);
+            auto eawh = static_cast<enclave_arguments_with_hr<veil::any::implementation::args::taskpool_run_task>*>(params);
             auto errorPopulator = veil::vtl1::implementation::export_helpers::enclave_error_populator(eawh->error);
 
-            RETURN_HR_AS_PVOID(veil::vtl1::implementation::exports::threadpool_run_task(&eawh->data));
+            RETURN_HR_AS_PVOID(veil::vtl1::implementation::exports::taskpool_run_task(&eawh->data));
         }
 
     }
@@ -62,7 +62,7 @@ namespace veil::vtl1
                 uint32_t i = 100;
                 ENCLAVE_SDK_EXPORT_ORDINAL(register_callbacks, i++);
                 ENCLAVE_SDK_EXPORT_ORDINAL(retrieve_enclave_error_for_thread, i++);
-                ENCLAVE_SDK_EXPORT_ORDINAL(threadpool_run_task, i++);
+                ENCLAVE_SDK_EXPORT_ORDINAL(taskpool_run_task, i++);
                 RETURN_HR_AS_PVOID(HRESULT_FROM_WIN32(ERROR_INVALID_FUNCTION));
             }
         }

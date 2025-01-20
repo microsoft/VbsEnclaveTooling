@@ -1,6 +1,6 @@
 #pragma once
 
-namespace Samples::Threadpool
+namespace Samples::Taskpool
 {
     void main();
 }

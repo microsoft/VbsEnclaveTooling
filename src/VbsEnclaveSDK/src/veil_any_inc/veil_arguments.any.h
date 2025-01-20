@@ -26,31 +26,31 @@ namespace veil::any
                 veil::enclave_error error;
             };
 
-            struct threadpool_make
+            struct taskpool_make
             {
                 void* enclave;
-                uint64_t threadpoolInstanceVtl1;
+                uint64_t taskpoolInstanceVtl1;
                 uint32_t threadCount;
                 bool mustFinishAllQueuedTasks = true;
 
                 // out
-                void* threadpoolInstanceVtl0;
+                void* taskpoolInstanceVtl0;
             };
 
-            struct threadpool_delete
+            struct taskpool_delete
             {
-                void* threadpoolInstanceVtl0;
+                void* taskpoolInstanceVtl0;
             };
 
-            struct threadpool_schedule_task
+            struct taskpool_schedule_task
             {
-                void* threadpoolInstanceVtl0;
+                void* taskpoolInstanceVtl0;
                 uint64_t taskId;
             };
 
-            struct threadpool_run_task
+            struct taskpool_run_task
             {
-                uint64_t threadpoolInstanceVtl1;
+                uint64_t taskpoolInstanceVtl1;
                 uint64_t taskId;
             };
         }

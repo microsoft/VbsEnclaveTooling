@@ -4,7 +4,7 @@
 #include <stdexcept>
 
 #include <enclave_interface.vtl1.h>
-#include <threadpool.vtl1.h>
+#include <taskpool.vtl1.h>
 
 #include "sample_arguments.any.h"
 
@@ -26,27 +26,27 @@ ENCLAVE_FUNCTION MySaveScreenshotExport(_In_ PVOID params)
 
 using namespace veil::vtl1::vtl0_functions;
 
-namespace RunThreadpoolExamples
+namespace RunTaskpoolExamples
 {
 
     void Test_Dont_WaitForAllTasksToFinish(_In_ PVOID params)
     {
-        auto data = reinterpret_cast<sample::args::RunThreadpoolExample*>(params);
+        auto data = reinterpret_cast<sample::args::RunTaskpoolExample*>(params);
 
-        print_wstring(L"Creating threadpool with '%d' threads...", data->threadCount);
+        print_wstring(L"Creating taskpool with '%d' threads...", data->threadCount);
 
         auto tasks = std::vector<veil::vtl1::future<void>>();
 
         std::atomic<bool> ranLastTask = false;
 
-        // threadpool
+        // taskpool
         {
-            auto threadpool = veil::vtl1::threadpool(data->threadCount, false);
+            auto taskpool = veil::vtl1::taskpool(data->threadCount, false);
 
             // Use up all the threads
             for (uint32_t i = 0; i < data->threadCount; i++)
             {
-                auto task = threadpool.queue_task([=]()
+                auto task = taskpool.queue_task([=]()
                 {
                     print_wstring(L"hello from task: %d", i);
                     veil::vtl1::sleep(500);
@@ -54,7 +54,7 @@ namespace RunThreadpoolExamples
                 tasks.push_back(std::move(task));
             }
 
-            auto task = threadpool.queue_task([&ranLastTask]()
+            auto task = taskpool.queue_task([&ranLastTask]()
             {
                 ranLastTask = true;
                 print_wstring(L"...you SHOULD NOT see this message...");
@@ -63,37 +63,37 @@ namespace RunThreadpoolExamples
             // Detach the future from the shared state so its destructor doesn't block on waiting forever (it's never scheduled)
             task.detach();
 
-            print_wstring(L"Waiting for threadpool to destruct...");
+            print_wstring(L"Waiting for taskpool to destruct...");
         }
 
         if (ranLastTask)
         {
-            print_wstring(L"ERROR: Threadpool destructed after all tasks finished.");
+            print_wstring(L"ERROR: Taskpool destructed after all tasks finished.");
         }
         else
         {
-            print_wstring(L"SUCCEESS: Threadpool destructed before all tasks finished.");
+            print_wstring(L"SUCCEESS: Taskpool destructed before all tasks finished.");
         }
     }
 
     void Test_Do_WaitForAllTasksToFinish(_In_ PVOID params)
     {
-        auto data = reinterpret_cast<sample::args::RunThreadpoolExample*>(params);
+        auto data = reinterpret_cast<sample::args::RunTaskpoolExample*>(params);
 
-        print_wstring(L"Creating threadpool with '%d' threads...", data->threadCount);
+        print_wstring(L"Creating taskpool with '%d' threads...", data->threadCount);
 
         auto tasks = std::vector<veil::vtl1::future<void>>();
 
         std::atomic<bool> ranLastTask = false;
 
-        // threadpool
+        // taskpool
         {
-            auto threadpool = veil::vtl1::threadpool(data->threadCount, true);
+            auto taskpool = veil::vtl1::taskpool(data->threadCount, true);
 
             // Use up all the threads
             for (uint32_t i = 0; i < data->threadCount; i++)
             {
-                auto task = threadpool.queue_task([=]()
+                auto task = taskpool.queue_task([=]()
                 {
                     print_wstring(L"hello from task: %d", i);
                     veil::vtl1::sleep(500);
@@ -101,41 +101,41 @@ namespace RunThreadpoolExamples
                 tasks.push_back(std::move(task));
             }
 
-            auto task = threadpool.queue_task([&ranLastTask]()
+            auto task = taskpool.queue_task([&ranLastTask]()
             {
                 ranLastTask = true;
                 print_wstring(L"...you SHOULD see this message...");
             });
             tasks.push_back(std::move(task));
 
-            print_wstring(L"Waiting for threadpool to destruct...");
+            print_wstring(L"Waiting for taskpool to destruct...");
         }
 
         if (!ranLastTask)
         {
-            print_wstring(L"ERROR: Threadpool destructed before all tasks finished.");
+            print_wstring(L"ERROR: Taskpool destructed before all tasks finished.");
         }
         else
         {
-            print_wstring(L"SUCCEESS: Threadpool destructed after all tasks finished.");
+            print_wstring(L"SUCCEESS: Taskpool destructed after all tasks finished.");
         }
     }
 
     void UsageExample(_In_ PVOID params)
     {
-        auto data = reinterpret_cast<sample::args::RunThreadpoolExample*>(params);
+        auto data = reinterpret_cast<sample::args::RunTaskpoolExample*>(params);
 
-        print_wstring(L"Creating threadpool with '%d' threads...", data->threadCount);
+        print_wstring(L"Creating taskpool with '%d' threads...", data->threadCount);
 
-        auto threadpool = veil::vtl1::threadpool(data->threadCount, true);
+        auto taskpool = veil::vtl1::taskpool(data->threadCount, true);
 
-        auto task_1 = threadpool.queue_task([=]()
+        auto task_1 = taskpool.queue_task([=]()
         {
             veil::vtl1::sleep(500);
             print_wstring(L"hello from task 1");
         });
 
-        auto task_2 = threadpool.queue_task([=]()
+        auto task_2 = taskpool.queue_task([=]()
         {
             veil::vtl1::sleep(500);
             print_wstring(L"hello from task 2");
@@ -146,7 +146,7 @@ namespace RunThreadpoolExamples
             std::wstring contents;
         };
 
-        auto a_complex_task = threadpool.queue_task([=]()
+        auto a_complex_task = taskpool.queue_task([=]()
         {
             veil::vtl1::sleep(500);
             print_wstring(L"hello from complex task");
@@ -161,18 +161,18 @@ namespace RunThreadpoolExamples
 
         print_wstring(L"complex task returned a complex struct: %ls", a_complex_struct.contents.c_str());
 
-        print_wstring(L"Waiting for threadpool to destruct...");
+        print_wstring(L"Waiting for taskpool to destruct...");
     }
 
     void UsageExceptionExample(_In_ PVOID params)
     {
-        auto data = reinterpret_cast<sample::args::RunThreadpoolExample*>(params);
+        auto data = reinterpret_cast<sample::args::RunTaskpoolExample*>(params);
 
-        print_wstring(L"Creating threadpool with '%d' threads...", data->threadCount);
+        print_wstring(L"Creating taskpool with '%d' threads...", data->threadCount);
 
-        auto threadpool = veil::vtl1::threadpool(data->threadCount, true);
+        auto taskpool = veil::vtl1::taskpool(data->threadCount, true);
 
-        auto task1 = threadpool.queue_task([=]()
+        auto task1 = taskpool.queue_task([=]()
         {
             volatile int x = 5;
             if (x == 5)
@@ -181,7 +181,7 @@ namespace RunThreadpoolExamples
             }
         });
 
-        auto task2 = threadpool.queue_task([=]()
+        auto task2 = taskpool.queue_task([=]()
         {
             volatile int x = 5;
             if (x == 5)
@@ -209,28 +209,28 @@ namespace RunThreadpoolExamples
             print_string("Caught exception from running task: %s", e.what());
         }
 
-        print_wstring(L"Waiting for threadpool to destruct...");
+        print_wstring(L"Waiting for taskpool to destruct...");
     }
 }
 
-ENCLAVE_FUNCTION RunThreadpoolExample(_In_ PVOID params) try
+ENCLAVE_FUNCTION RunTaskpoolExample(_In_ PVOID params) try
 {
 #if 0
     print_string(L"TEST");
-    RunThreadpoolExamples::Test_Dont_WaitForAllTasksToFinish(params);
+    RunTaskpoolExamples::Test_Dont_WaitForAllTasksToFinish(params);
     print_string(L"");
 
     print_string(L"TEST");
-    RunThreadpoolExamples::Test_Do_WaitForAllTasksToFinish(params);
+    RunTaskpoolExamples::Test_Do_WaitForAllTasksToFinish(params);
     print_string(L"");
 
     print_string(L"USAGE");
-    RunThreadpoolExamples::UsageExample(params);
+    RunTaskpoolExamples::UsageExample(params);
     print_string(L"");
 #endif
 
     print_wstring(L"USAGE EXCEPTIONS");
-    RunThreadpoolExamples::UsageExceptionExample(params);
+    RunTaskpoolExamples::UsageExceptionExample(params);
     print_wstring(L"");
 
     RETURN_HR_AS_PVOID(S_OK);

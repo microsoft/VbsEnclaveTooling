@@ -24,7 +24,7 @@ try
 
     if (argc <= 1)
     {
-        Samples::Threadpool::main();
+        Samples::Taskpool::main();
     }
     else
     {
