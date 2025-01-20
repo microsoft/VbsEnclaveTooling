@@ -15,8 +15,10 @@ namespace veil::any
         {
             struct retrieve_enclave_error_for_thread
             {
+                DWORD threadId;
+
                 // out
-                uint32_t status;
+                veil::enclave_error error;
             };
 
             struct register_callbacks

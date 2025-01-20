@@ -41,7 +41,7 @@ namespace veil::vtl1
         }
 
         // Special cased export
-        PVOID retrieve_enclave_error_for_thread(_In_ PVOID params)
+        PVOID retrieve_enclave_error_for_thread2(_In_ PVOID params)
         {
             auto eawh = reinterpret_cast<enclave_arguments_with_hr<DWORD>*>(params);
             auto threadId = eawh->data;
@@ -51,6 +51,14 @@ namespace veil::vtl1
                 veil::vtl1::implementation::export_helpers::copy_enclave_error(eawh->error, error.value());
             }
             RETURN_HR_AS_PVOID(S_OK);
+        }
+
+        PVOID retrieve_enclave_error_for_thread(_In_ PVOID params)
+        {
+            auto eawh = static_cast<enclave_arguments_with_hr<veil::any::implementation::args::retrieve_enclave_error_for_thread>*>(params);
+            auto errorPopulator = veil::vtl1::implementation::export_helpers::enclave_error_populator(eawh->error);
+
+            RETURN_HR_AS_PVOID(veil::vtl1::implementation::exports::retrieve_enclave_error_for_thread(&eawh->data));
         }
 
         //

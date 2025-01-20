@@ -27,6 +27,6 @@ namespace veil::vtl0::exports
 
         THROW_IF_FAILED(veil::vtl0::enclave::implementation::call_enclave_function(enclave, veil::implementation::export_ordinals::retrieve_enclave_error_for_thread, data));
 
-        return static_cast<HRESULT>(data.status);
+        return S_OK;
     }
 }
