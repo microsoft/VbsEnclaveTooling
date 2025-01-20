@@ -117,17 +117,16 @@ namespace veil::vtl1
         handle store_object(T&& object)
         {
             handle handle = nextHandle++;
-            //objects.emplace(handle, std::make_unique<T>(object));
-            objects.emplace(handle, std::move(object));
+            m_objects.emplace(handle, std::move(object));
             return handle;
         }
 
         std::optional<T> try_take_object(handle handle)
         {
-            auto it = objects.find(handle);
-            if (it != objects.end())
+            auto it = m_objects.find(handle);
+            if (it != m_objects.end())
             {
-                auto node = objects.extract(it);
+                auto node = m_objects.extract(it);
                 return std::optional<T>{std::move(node.mapped())};
             }
             return std::nullopt;
@@ -144,8 +143,7 @@ namespace veil::vtl1
 
     private:
         handle nextHandle = 1;
-        std::unordered_map<handle, T> objects;
-        //std::unordered_map<handle, std::shared_ptr<T>> objects;
+        std::unordered_map<handle, T> m_objects;
     };
 
 
