@@ -9,37 +9,10 @@
 #include "veil.any.h"
 #include "veil_arguments.any.h"
 
-// todo:revisit
-
 namespace veil::vtl1
 {
     namespace implementation
     {
-        // Traits
-        namespace traits
-        {
-            struct threadpool_run_task_t {};
-
-            template <typename T>
-            struct atype;
-
-            template <>
-            struct atype<threadpool_run_task_t>
-            {
-                using args = veil::any::implementation::args::threadpool_run_task;
-                static HRESULT func(_Inout_ args* a) { return veil::vtl1::implementation::exports::threadpool_run_task(a);
-                }
-            };
-        }
-
-        template <typename T>
-        void* CallImplementation(_In_ void* params)
-        {
-            auto eawh = static_cast<enclave_arguments_with_hr<typename veil::vtl1::implementation::traits::atype<T>::args>*>(params);
-            auto errorPopulator = veil::vtl1::implementation::export_helpers::enclave_error_populator(eawh->error);
-            RETURN_HR_AS_PVOID(veil::vtl1::implementation::traits::atype<T>::func(&eawh->data));
-        }
-
         //
         // Framework exports
         //
