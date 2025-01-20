@@ -12,20 +12,9 @@
 #include "enclave_api.vtl0.h"
 #include "exports.vtl0.h"
 
-/*
-This is a taskpool designed to be used in VTL1.  VTL1 cannot create threads or schedule work onto threads. 
-To work around this limitation, a backing VTL0 thread will act as a conduit to get a task scheduled on
-a different, available, thread in VTL1.
-
-Task scheduling flow mechanics:
-    0. VTL1 app enclave consumer calls taskpool's add_task(task_lambda)
-    1. VTL1 taskpool stores the task (lambda) + task handle
-    2. VTL1 calls out to VTL0, passing the task handle
-    3. VTL0 finds an available thread (from VTL0 backing taskpool) to call CallEnclave, passing the task handle, to get back into VTL1
-    4. VTL1 is now running on a different thread(!!)
-    5. VTL1 retrieves the task (lambda) using the task handle and runs the task
-*/
-
+//
+// See taskpool.vtl1.h for usage.
+//
 
 namespace veil::vtl0::implementation::callbacks
 {
@@ -34,9 +23,9 @@ namespace veil::vtl0::implementation::callbacks
     void* taskpool_schedule_task(void* args);
 }
 
-// vtl0 code - vtl0 threads that back the vtl1 taskpool implementation
 namespace veil::vtl0::implementation
 {
+    // vtl0 threads that back the vtl1 taskpool implementation. See taskpool.vtl1.h
     struct taskpool_backing_threads
     {
     public:
