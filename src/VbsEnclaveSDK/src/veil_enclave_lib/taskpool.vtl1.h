@@ -96,7 +96,7 @@ namespace veil::vtl1
             makeTaskpoolArgs->taskpoolInstanceVtl1 = (uint64_t)(m_objectTableEntryId);
             makeTaskpoolArgs->threadCount = threadCount;
             makeTaskpoolArgs->mustFinishAllQueuedTasks = mustFinishAllQueuedTasks;
-            THROW_IF_WIN32_BOOL_FALSE(CallEnclave(makeTaskpool, reinterpret_cast<void*>(makeTaskpoolArgs), TRUE, reinterpret_cast<void**>(&output)));
+            THROW_IF_WIN32_BOOL_FALSE(::CallEnclave(makeTaskpool, reinterpret_cast<void*>(makeTaskpoolArgs), TRUE, reinterpret_cast<void**>(&output)));
 
             m_taskpoolInstanceVtl0 = makeTaskpoolArgs->taskpoolInstanceVtl0;
         }
