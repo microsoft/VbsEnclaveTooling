@@ -26,11 +26,12 @@ namespace veil::vtl1::implementation::exports
     HRESULT taskpool_run_task(_Inout_ veil::any::implementation::args::taskpool_run_task* params)
     try
     {
-        auto taskInfo = reinterpret_cast<veil::any::implementation::args::taskpool_schedule_task*>(params);
+        auto taskInfo = reinterpret_cast<veil::any::implementation::args::taskpool_run_task*>(params);
 
-        auto keepaliveMaybeChit = (size_t)taskInfo->taskpoolInstanceVtl0;
+        //auto keepaliveMaybeChit = (size_t)taskInfo->taskpoolInstanceVtl0;
+        auto taskpoolId = taskInfo->taskpoolInstanceVtl1;
 
-        if (auto keepaliveHold = get_taskpool_object_table().resolve_strong_reference(keepaliveMaybeChit))
+        if (auto keepaliveHold = get_taskpool_object_table().resolve_strong_reference(taskpoolId))
         {
             // We have keepalive hold
             //  i.e. a strong reference (std::shared_ptr) to the keepalive_hold object of the taskpool.
