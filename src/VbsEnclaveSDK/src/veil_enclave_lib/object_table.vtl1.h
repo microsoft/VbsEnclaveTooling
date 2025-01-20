@@ -106,23 +106,23 @@ namespace veil::vtl1
     };
 
     //
-    // Unique objects table that gives handles suitable for sharing with VTL0
+    // Unique objects table that gives identifiers suitable for sharing with VTL0
     //
     template <typename T>
     class unique_object_table
     {
     public:
-        using handle = size_t;
+        using id = size_t;
 
-        handle store(T&& object)
+        id store(T&& object)
         {
             auto lock = m_lock.lock_exclusive();
-            handle handle = m_nextHandle++;
-            m_objects.emplace(handle, std::move(object));
-            return handle;
+            id id = m_id++;
+            m_objects.emplace(id, std::move(object));
+            return id;
         }
 
-        std::optional<T> try_take(handle handle)
+        std::optional<T> try_take(id handle)
         {
             auto lock = m_lock.lock_shared();
             auto it = m_objects.find(handle);
@@ -134,7 +134,7 @@ namespace veil::vtl1
             return std::nullopt;
         }
 
-        T&& take(handle handle)
+        T&& take(id handle)
         {
             if (auto&& object = try_take(handle))
             {
@@ -144,34 +144,34 @@ namespace veil::vtl1
         }
 
     private:
-        handle m_nextHandle = 1;
-        std::unordered_map<handle, T> m_objects;
+        id m_id = 1;
+        std::unordered_map<id, T> m_objects;
         wil::srwlock m_lock;
     };
 
 
     //
-    // Weak object table that gives handles suitable for sharing with VTL0
+    // Weak object table that gives identifiers suitable for sharing with VTL0
     //
     template <typename T>
     class weak_object_table
     {
     public:
-        using handle = size_t;
+        using id = size_t;
 
-        handle store(std::weak_ptr<T> object)
+        id store(std::weak_ptr<T> object)
         {
-            handle handle = m_nextHandle++;
-            m_objects.emplace(handle, std::move(object));
-            return handle;
+            id id = m_id++;
+            m_objects.emplace(id, std::move(object));
+            return id;
         }
 
-        void erase(handle handle)
+        void erase(id handle)
         {
             m_objects.erase(handle);
         }
 
-        std::weak_ptr<T> get(handle handle)
+        std::weak_ptr<T> get(id handle)
         {
             auto it = m_objects.find(handle);
             if (it == m_objects.end())
@@ -181,7 +181,7 @@ namespace veil::vtl1
             return it->second;
         }
 
-        std::shared_ptr<T> resolve_strong_reference(handle handle)
+        std::shared_ptr<T> resolve_strong_reference(id handle)
         {
             // todo: make threadsafe
             auto it = m_objects.find(handle);
@@ -197,8 +197,8 @@ namespace veil::vtl1
         }
 
     private:
-        handle m_nextHandle = 1;
-        std::unordered_map<handle, std::weak_ptr<T>> m_objects;
+        id m_id = 1;
+        std::unordered_map<id, std::weak_ptr<T>> m_objects;
         wil::srwlock m_lock;
     };
 
