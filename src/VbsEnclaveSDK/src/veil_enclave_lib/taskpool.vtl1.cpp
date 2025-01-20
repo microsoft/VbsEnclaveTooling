@@ -26,10 +26,7 @@ namespace veil::vtl1::implementation::exports
     HRESULT taskpool_run_task(_Inout_ veil::any::implementation::args::taskpool_run_task* params)
     try
     {
-        auto taskInfo = reinterpret_cast<veil::any::implementation::args::taskpool_run_task*>(params);
-
-        //auto keepaliveMaybeChit = (size_t)taskInfo->taskpoolInstanceVtl0;
-        auto taskpoolId = taskInfo->taskpoolInstanceVtl1;
+        auto taskpoolId = params->taskpoolInstanceVtl1;
 
         if (auto keepaliveHold = get_taskpool_object_table().resolve_strong_reference(taskpoolId))
         {
@@ -39,7 +36,7 @@ namespace veil::vtl1::implementation::exports
             auto taskpoolInstance = keepaliveHold->object();
 
             // Run the task
-            taskpoolInstance->run_task(taskInfo->taskId);
+            taskpoolInstance->run_task(params->taskId);
 
             return S_OK;
         }
