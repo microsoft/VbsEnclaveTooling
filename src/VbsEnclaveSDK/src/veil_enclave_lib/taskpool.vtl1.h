@@ -98,17 +98,16 @@ namespace veil::vtl1
             makeTaskpoolArgs->mustFinishAllQueuedTasks = mustFinishAllQueuedTasks;
             THROW_IF_WIN32_BOOL_FALSE(CallEnclave(makeTaskpool, reinterpret_cast<void*>(makeTaskpoolArgs), TRUE, reinterpret_cast<void**>(&output)));
 
-            m_vtl1_taskpool_vtl0_backing_threads_instance = makeTaskpoolArgs->taskpoolInstanceVtl0;
+            m_taskpoolInstanceVtl0 = makeTaskpoolArgs->taskpoolInstanceVtl0;
         }
 
         ~taskpool()
         {
             void* output{};
             auto deleteTaskpool = veil::vtl1::implementation::get_callback(veil::implementation::callback_id::taskpool_delete);
-            
-            THROW_IF_WIN32_BOOL_FALSE(CallEnclave(deleteTaskpool, reinterpret_cast<void*>(m_vtl1_taskpool_vtl0_backing_threads_instance), TRUE, reinterpret_cast<void**>(&output)));
+            THROW_IF_WIN32_BOOL_FALSE(CallEnclave(deleteTaskpool, reinterpret_cast<void*>(m_taskpoolInstanceVtl0), TRUE, reinterpret_cast<void**>(&output)));
 
-            // Erase weak reference from weak object table
+            // Erase weak reference from weak object table so nobody else can run tasks
             veil::vtl1::implementation::get_taskpool_object_table().erase(m_objectTableEntryId);
 
             // Stay alive if someone is holding a strong reference to the "keepalive_hold" (strong-reference to the weak-entry in the weak object table)
@@ -161,7 +160,7 @@ namespace veil::vtl1
             auto taskHandle = m_tasks.store(std::move(func));
 
             auto taskHandleArgs = reinterpret_cast<veil::any::implementation::args::taskpool_schedule_task*>(allocation);
-            taskHandleArgs->taskpoolInstanceVtl0 = m_vtl1_taskpool_vtl0_backing_threads_instance;
+            taskHandleArgs->taskpoolInstanceVtl0 = m_taskpoolInstanceVtl0;
             taskHandleArgs->taskId = taskHandle;
 
             void* output{};
@@ -232,7 +231,7 @@ namespace veil::vtl1
 
         veil::vtl1::unique_object_table<std::function<void()>> m_tasks;
 
-        void* m_vtl1_taskpool_vtl0_backing_threads_instance{};
+        void* m_taskpoolInstanceVtl0{};
 
         // this is required secure lifetime management
         //keepalive_system<taskpool> m_objectTableEntry;
