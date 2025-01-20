@@ -116,6 +116,7 @@ namespace veil::vtl1
 
         handle store(T&& object)
         {
+            auto lock = m_lock.lock_exclusive();
             handle handle = m_nextHandle++;
             m_objects.emplace(handle, std::move(object));
             return handle;
@@ -123,6 +124,7 @@ namespace veil::vtl1
 
         std::optional<T> try_take(handle handle)
         {
+            auto lock = m_lock.lock_shared();
             auto it = m_objects.find(handle);
             if (it != m_objects.end())
             {
@@ -132,11 +134,11 @@ namespace veil::vtl1
             return std::nullopt;
         }
 
-        T take(handle handle)
+        T&& take(handle handle)
         {
-            if (auto object = try_take(handle))
+            if (auto&& object = try_take(handle))
             {
-                return object;
+                return std::move(object);
             }
             THROW_WIN32_MSG(ERROR_INVALID_INDEX, "Object handle doesn't exist: %d", (int)handle);
         }
@@ -144,6 +146,7 @@ namespace veil::vtl1
     private:
         handle m_nextHandle = 1;
         std::unordered_map<handle, T> m_objects;
+        wil::srwlock m_lock;
     };
 
 
@@ -196,6 +199,7 @@ namespace veil::vtl1
     private:
         handle m_nextHandle = 1;
         std::unordered_map<handle, std::weak_ptr<T>> m_objects;
+        wil::srwlock m_lock;
     };
 
 
