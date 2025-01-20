@@ -121,9 +121,6 @@ namespace veil::vtl1
         {
             using return_type = decltype(f());
 
-            void* allocation = veil::vtl1::vtl0_functions::malloc(sizeof(veil::any::implementation::args::taskpool_schedule_task));
-            THROW_IF_NULL_ALLOC(allocation);
-
             // Store the task
             auto promise = std::make_shared<veil::vtl1::promise<return_type>>();
             auto fut = promise->get_future();
@@ -159,7 +156,7 @@ namespace veil::vtl1
             //UINT64 taskHandle = store_task(std::move(func));
             auto taskHandle = m_tasks.store(std::move(func));
 
-            auto taskHandleArgs = reinterpret_cast<veil::any::implementation::args::taskpool_schedule_task*>(allocation);
+            auto taskHandleArgs = veil::vtl1::vtl0_functions::allocate<veil::any::implementation::args::taskpool_schedule_task>();
             taskHandleArgs->taskpoolInstanceVtl0 = m_taskpoolInstanceVtl0;
             taskHandleArgs->taskId = taskHandle;
 
