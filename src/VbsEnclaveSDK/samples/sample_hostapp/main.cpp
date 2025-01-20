@@ -12,6 +12,7 @@ int
 wmain([[maybe_unused]] _In_ int argc, [[maybe_unused]] _In_reads_(argc) wchar_t** argv)
 try
 {
+    /*
     // Print diagnostic messages to the console for developer convenience.
     wil::SetResultLoggingCallback([](wil::FailureInfo const& failure) noexcept
     {
@@ -19,6 +20,7 @@ try
         wil::GetFailureLogString(message, ARRAYSIZE(message), failure);
         wprintf(L"Diagnostic message: %ls\n", message);
     });
+    */
 
     if (argc <= 1)
     {

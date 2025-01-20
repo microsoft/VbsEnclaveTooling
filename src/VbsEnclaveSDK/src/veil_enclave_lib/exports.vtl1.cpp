@@ -13,6 +13,13 @@
 
 namespace veil::vtl1::implementation::exports
 {
+    HRESULT register_callbacks(_Inout_ veil::any::implementation::args::register_callbacks* params) noexcept try
+    {
+        veil::vtl1::implementation::register_callbacks(params->callbackAddresses);
+        return S_OK;
+    }
+    CATCH_RETURN()
+    
     HRESULT retrieve_enclave_error_for_thread(_Inout_ veil::any::implementation::args::retrieve_enclave_error_for_thread* params) noexcept try
     {
         auto threadId = params->threadId;
@@ -20,13 +27,6 @@ namespace veil::vtl1::implementation::exports
         {
             veil::vtl1::implementation::export_helpers::copy_enclave_error(params->error, error.value());
         }
-        return S_OK;
-    }
-    CATCH_RETURN()
-
-    HRESULT register_callbacks(_Inout_ veil::any::implementation::args::register_callbacks* params) noexcept try
-    {
-        veil::vtl1::implementation::register_callbacks(params->callbackAddresses);
         return S_OK;
     }
     CATCH_RETURN()

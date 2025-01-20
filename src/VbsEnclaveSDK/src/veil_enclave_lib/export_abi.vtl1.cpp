@@ -40,29 +40,8 @@ namespace veil::vtl1
             RETURN_HR_AS_PVOID(veil::vtl1::implementation::traits::atype<T>::func(&eawh->data));
         }
 
-        // Special cased export
-        PVOID retrieve_enclave_error_for_thread2(_In_ PVOID params)
-        {
-            auto eawh = reinterpret_cast<enclave_arguments_with_hr<DWORD>*>(params);
-            auto threadId = eawh->data;
-
-            if (auto error = veil::vtl1::implementation::export_helpers::pop_back_thread_enclave_error(threadId))
-            {
-                veil::vtl1::implementation::export_helpers::copy_enclave_error(eawh->error, error.value());
-            }
-            RETURN_HR_AS_PVOID(S_OK);
-        }
-
-        PVOID retrieve_enclave_error_for_thread(_In_ PVOID params)
-        {
-            auto eawh = static_cast<enclave_arguments_with_hr<veil::any::implementation::args::retrieve_enclave_error_for_thread>*>(params);
-            auto errorPopulator = veil::vtl1::implementation::export_helpers::enclave_error_populator(eawh->error);
-
-            RETURN_HR_AS_PVOID(veil::vtl1::implementation::exports::retrieve_enclave_error_for_thread(&eawh->data));
-        }
-
         //
-        // Normal exports
+        // Framework exports
         //
 
         ENCLAVE_FUNCTION register_callbacks(_In_ PVOID params)
@@ -71,6 +50,14 @@ namespace veil::vtl1
             auto errorPopulator = veil::vtl1::implementation::export_helpers::enclave_error_populator(eawh->error);
 
             RETURN_HR_AS_PVOID(veil::vtl1::implementation::exports::register_callbacks(&eawh->data));
+        }
+
+        ENCLAVE_FUNCTION retrieve_enclave_error_for_thread(_In_ PVOID params)
+        {
+            auto eawh = static_cast<enclave_arguments_with_hr<veil::any::implementation::args::retrieve_enclave_error_for_thread>*>(params);
+            auto errorPopulator = veil::vtl1::implementation::export_helpers::enclave_error_populator(eawh->error);
+
+            RETURN_HR_AS_PVOID(veil::vtl1::implementation::exports::retrieve_enclave_error_for_thread(&eawh->data));
         }
 
         ENCLAVE_FUNCTION threadpool_run_task(_In_ PVOID params)
@@ -100,8 +87,8 @@ namespace veil::vtl1
             {
                 auto _x = reinterpret_cast<enclave_ordinal_call_unwrapping*>(ordinalStruct);
                 uint32_t i = 100;
-                ENCLAVE_SDK_EXPORT_ORDINAL(retrieve_enclave_error_for_thread, i++);
                 ENCLAVE_SDK_EXPORT_ORDINAL(register_callbacks, i++);
+                ENCLAVE_SDK_EXPORT_ORDINAL(retrieve_enclave_error_for_thread, i++);
                 ENCLAVE_SDK_EXPORT_ORDINAL(threadpool_run_task, i++);
                 RETURN_HR_AS_PVOID(HRESULT_FROM_WIN32(ERROR_INVALID_FUNCTION));
             }

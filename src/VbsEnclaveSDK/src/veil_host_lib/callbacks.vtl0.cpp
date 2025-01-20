@@ -3,11 +3,13 @@
 #include <iostream>
 #include <map>
 #include <mutex>
+#include <syncstream>
 
 #include "veil.any.h"
 
 #include "callbacks.vtl0.h"
 #include "threadpool.vtl0.h"
+#include "utils.vtl0.h"
 
 namespace veil::vtl0::implementation::callbacks
 {
@@ -29,8 +31,6 @@ namespace veil::vtl0::implementation::callbacks
 
 namespace veil::vtl0::implementation::callbacks
 {
-    std::mutex g_mutex_printf;
-
     void* malloc(void* args)
     {
         // todo: alignment, etc
@@ -41,19 +41,23 @@ namespace veil::vtl0::implementation::callbacks
 
     VEIL_ABI_FUNCTION(printf, args,
     {
-        auto lock = std::scoped_lock<std::mutex>(g_mutex_printf);
+        auto lock = std::scoped_lock<std::mutex>(veil::vtl0::implementation::g_printMutex);
         //auto io = reinterpret_cast<recall::args::PrintfBuffer*>(args);
         auto buffer = reinterpret_cast<char*>(args);
-        std::cout << "FROM VTL1: " << buffer << std::endl;
+
+        std::osyncstream synced_out(std::cout);
+        synced_out << "FROM VTL1: " << buffer << std::endl;
         return S_OK;
     })
 
     VEIL_ABI_FUNCTION(wprintf, args,
     {
-        auto lock = std::scoped_lock<std::mutex>(g_mutex_printf);
+        auto lock = std::scoped_lock<std::mutex>(veil::vtl0::implementation::g_printMutex);
         //auto io = reinterpret_cast<recall::args::PrintfBuffer*>(args);
         auto buffer = reinterpret_cast<wchar_t*>(args);
-        std::wcout << L"FROM VTL1: " << buffer << std::endl;
+
+        std::wosyncstream synced_out(std::wcout);
+        synced_out << L"FROM VTL1: " << buffer << std::endl;
         return S_OK;
     })
 

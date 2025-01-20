@@ -6,6 +6,7 @@
 #include <iostream>
 #include <span>
 #include <sstream>
+#include <syncstream>
 #include <vector>
 
 #include <wil/resource.h>
@@ -13,6 +14,8 @@
 
 #include "veil.any.h"
 #include "veil_arguments.any.h"
+
+#include "utils.vtl0.h"
 
 namespace veil::vtl0
 {
@@ -141,7 +144,9 @@ namespace veil::vtl0::enclave
             nullptr);
 
         std::wstringstream ss;
-        ss << L"[Error] " << error.wmessage << L" " << szErrorText;
+        static int s_errorId{};
+        //ss << L"[Error: " << (s_errorId++) << L"] " << error.wmessage << L" " << szErrorText;
+        ss << L"[Error:" << (s_errorId++) << L" Thread:" << std::hex << error.threadId << L"] " << error.wmessage << L" " << szErrorText;
         return ss.str();
     }
 
@@ -149,8 +154,9 @@ namespace veil::vtl0::enclave
     {
         for (const auto& error : errors)
         {
+            std::wosyncstream synced_out(std::wcout);
             auto msg = format_enclave_error(error);
-            std::wcout << msg << std::endl;
+            synced_out << L"  " << msg << std::endl;
         }
     }
 
@@ -194,14 +200,19 @@ namespace veil::vtl0::enclave::implementation
         HRESULT hr = call_enclave(enclave, name, ordinalCall);
         if (FAILED(hr))
         {
+#if 1
             auto threadId = result.error.threadId;
 
-            std::cout << std::endl;
-            std::cout << "[ERROR CALLING ENCLAVE ROUTINE: " << name << "]" << std::endl << std::endl;
-            std::cout << "[Enclave errors for thread: " << std::hex << threadId << std::dec << "]" << std::endl;
+            auto lock = std::scoped_lock<std::mutex>(veil::vtl0::implementation::g_printMutex);
+
+            (std::osyncstream(std::cout)) << std::endl;
+            (std::osyncstream(std::cout)) << "[Error-chain] Routine: " << name << ", " << (uint32_t)ordinal << "." << std::endl << std::endl;
+            //(std::osyncstream(std::cout)) << "[Error-chain: " << name << ", " << (uint32_t)ordinal << "]" << std::endl << std::endl;
+            //(std::osyncstream(std::cout)) << "[Enclave errors for thread: " << std::hex << threadId << std::dec << "]" << std::endl;
             auto errors = retrieve_enclave_errors(enclave, threadId);
             print_enclave_errors(errors);
-            std::cout << "[Done.]" << std::endl << std::endl;
+            (std::osyncstream(std::cout)) << "[/Error-chain]" << std::endl << std::endl;
+#endif
             RETURN_HR(hr);
         }
         io = result.data; // shallow copy in reverse - debug-mode-only - doesn't work in general

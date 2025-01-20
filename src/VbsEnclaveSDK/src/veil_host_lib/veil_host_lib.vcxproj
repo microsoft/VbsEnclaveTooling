@@ -185,6 +185,7 @@
     <ClInclude Include="exports.vtl0.h" />
     <ClInclude Include="pch.h" />
     <ClInclude Include="threadpool.vtl0.h" />
+    <ClInclude Include="utils.vtl0.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
@@ -194,6 +195,7 @@
     <ClCompile Include="enclave_api.vtl0.cpp" />
     <ClCompile Include="exports.vtl0.cpp" />
     <ClCompile Include="threadpool.vtl0.cpp" />
+    <ClCompile Include="utils.vtl0.cpp" />
   </ItemGroup>
   <ImportGroup Label="ExtensionTargets">
     <Import Project="..\..\packages\Microsoft.Windows.ImplementationLibrary.1.0.240122.1\build\native\Microsoft.Windows.ImplementationLibrary.targets" Condition="Exists('..\..\packages\Microsoft.Windows.ImplementationLibrary.1.0.240122.1\build\native\Microsoft.Windows.ImplementationLibrary.targets')" />
