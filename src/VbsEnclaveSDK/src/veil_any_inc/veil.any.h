@@ -73,7 +73,6 @@ namespace veil
             malloc,
             printf,
             wprintf,
-            get_per_thread_buffer,
             taskpool_make,
             taskpool_delete,
             taskpool_schedule_task,
