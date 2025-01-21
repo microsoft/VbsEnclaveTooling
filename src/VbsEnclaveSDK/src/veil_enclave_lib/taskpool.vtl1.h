@@ -103,9 +103,13 @@ namespace veil::vtl1
 
         ~taskpool()
         {
+            auto deleteTaskpoolArgs = veil::vtl1::vtl0_functions::allocate<veil::any::implementation::args::taskpool_delete>();
+            deleteTaskpoolArgs->taskpoolInstanceVtl0 = m_taskpoolInstanceVtl0;
+
             void* output{};
             auto deleteTaskpool = veil::vtl1::implementation::get_callback(veil::implementation::callback_id::taskpool_delete);
-            THROW_IF_WIN32_BOOL_FALSE(::CallEnclave(deleteTaskpool, reinterpret_cast<void*>(m_taskpoolInstanceVtl0), TRUE, reinterpret_cast<void**>(&output)));
+            deleteTaskpoolArgs->taskpoolInstanceVtl0 = m_taskpoolInstanceVtl0;
+            THROW_IF_WIN32_BOOL_FALSE(::CallEnclave(deleteTaskpool, reinterpret_cast<void*>(deleteTaskpoolArgs), TRUE, reinterpret_cast<void**>(&output)));
 
             // Erase weak reference from weak object table so nobody else can run tasks
             veil::vtl1::implementation::get_taskpool_object_table().erase(m_objectTableEntryId);
