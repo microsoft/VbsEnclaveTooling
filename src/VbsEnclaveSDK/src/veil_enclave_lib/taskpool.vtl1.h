@@ -135,7 +135,8 @@ namespace veil::vtl1
                         f();
                         p->set_value();
                     }
-                    catch (...) {
+                    catch (...)
+                    {
                         p->set_exception(std::current_exception());
                     }
                 }
@@ -147,7 +148,8 @@ namespace veil::vtl1
                         auto value = f();
                         p->set_value(std::move(value));
                     }
-                    catch (...) {
+                    catch (...)
+                    {
                         p->set_exception(std::current_exception());
                     }
                 }
