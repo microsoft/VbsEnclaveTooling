@@ -7,15 +7,7 @@
 
 #include "wil/stl.h"
 
-//#include "memory.vtl1.h"
 #include "registered_callbacks.vtl1.h"
-
-/*
-namespace veil::vtl1::memory
-{
-    struct vtl0_ptr;
-}
-*/
 
 namespace veil::vtl1::vtl0_functions
 {
@@ -125,7 +117,6 @@ namespace veil::vtl1::vtl0_functions
             size_t len = str.size();
             size_t cbBuffer = (len + 1) * sizeof(string_type::value_type);
 
-            //auto allocation = reinterpret_cast<void*>(veil::vtl1::vtl0_functions::malloc(cbBuffer));
             auto allocation = veil::vtl1::vtl0_functions::malloc(cbBuffer);
             THROW_IF_NULL_ALLOC(allocation.m_dangerous);
 
