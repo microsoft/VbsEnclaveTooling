@@ -49,8 +49,8 @@ namespace veil::vtl1::memory
     template <typename T>
     inline unique_vtl0_ptr<T> allocate_vtl0()
     {
-        void* allocation = veil::vtl1::vtl0_functions::malloc(sizeof(T));
-        THROW_IF_NULL_ALLOC(allocation);
-        return { reinterpret_cast<T*>(allocation) };
+        auto allocation = veil::vtl1::vtl0_functions::malloc(sizeof(T));
+        THROW_IF_NULL_ALLOC(allocation.m_dangerous);
+        return {reinterpret_cast<T*>(allocation.m_dangerous)};
     }
 }
