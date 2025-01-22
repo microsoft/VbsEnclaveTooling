@@ -7,11 +7,31 @@
 
 #include "wil/stl.h"
 
+//#include "memory.vtl1.h"
 #include "registered_callbacks.vtl1.h"
+
+/*
+namespace veil::vtl1::memory
+{
+    struct vtl0_ptr;
+}
+*/
 
 namespace veil::vtl1::vtl0_functions
 {
-    inline void* malloc(size_t size)
+    // todo: stand-in type until tooling+marshalling code is online
+    //  <This is ** not ** a smart pointer>
+    struct VTL0_PTR
+    {
+        VTL0_PTR(void* memory)
+            : m_dangerous(memory)
+        {
+        }
+
+        void* m_dangerous;
+    };
+
+    inline VTL0_PTR malloc(size_t size)
     {
         // TODO:Branden security-todo
         // 
@@ -28,7 +48,7 @@ namespace veil::vtl1::vtl0_functions
         void* output;
         auto malloc = veil::vtl1::implementation::get_callback(veil::implementation::callback_id::malloc);
         THROW_IF_WIN32_BOOL_FALSE(::CallEnclave(malloc, reinterpret_cast<void*>(size), TRUE, reinterpret_cast<void**>(&output)));
-        return output;
+        return { output };
     }
 
     inline void free(void* memory) noexcept
@@ -105,10 +125,11 @@ namespace veil::vtl1::vtl0_functions
             size_t len = str.size();
             size_t cbBuffer = (len + 1) * sizeof(string_type::value_type);
 
-            void* allocation = veil::vtl1::vtl0_functions::malloc(cbBuffer);
-            THROW_IF_NULL_ALLOC(allocation);
+            //auto allocation = reinterpret_cast<void*>(veil::vtl1::vtl0_functions::malloc(cbBuffer));
+            auto allocation = veil::vtl1::vtl0_functions::malloc(cbBuffer);
+            THROW_IF_NULL_ALLOC(allocation.m_dangerous);
 
-            auto buffer = reinterpret_cast<string_type::value_type*>(allocation);
+            auto buffer = reinterpret_cast<string_type::value_type*>(allocation.m_dangerous);
 
             memcpy(buffer, str.c_str(), cbBuffer);
             buffer[len] = string_traits<string_type>::nul_char;

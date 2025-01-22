@@ -26,16 +26,21 @@ ENCLAVE_FUNCTION MySaveScreenshotExport(_In_ PVOID params)
 * Some sample code
 */
 
-using namespace veil::vtl1::vtl0_functions;
-
-
-ENCLAVE_FUNCTION RunTaskpoolExample(_In_ PVOID) try
+void RunTaskpoolExampleImpl(_In_ PVOID)
 {
-    print_wstring(L"HELLO FROM SAMPLE ENCLAVE");
+    veil::vtl1::vtl0_functions::print_wstring(L"HELLO FROM SAMPLE ENCLAVE");
+}
 
-    RETURN_HR_AS_PVOID(S_OK);
+ENCLAVE_FUNCTION RunTaskpoolExample(_In_ PVOID pv) try
+{
+    // TODO: Use tooling codegen to create your exports, or manually use the
+    // vtl0_ptr secure pointers.
+    // RunTaskpoolExampleImpl(vtl0_ptr<RunTaslpoolExampleArgs>(pv));
+    RunTaskpoolExampleImpl(pv);
+    return nullptr;
 }
 catch (...)
 {
+    LOG_CAUGHT_EXCEPTION();
     RETURN_HR_AS_PVOID(wil::ResultFromCaughtException());
 }

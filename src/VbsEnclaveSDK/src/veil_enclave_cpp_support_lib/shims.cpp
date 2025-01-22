@@ -72,9 +72,8 @@ BOOL InitOnceBeginInitializeEnclave(
 {
     auto lock = g_initOnceSrwLock.lock_exclusive();
 
-    // This is a very dumb init-once method. The real one is very clever about interlocke exchanges
-    // to be lock-free and racy-init. We're going the simple route since the enclave really only has
-    // a small number of actual threads operating in it.
+    // This is a very simple init-once method. The real one is very clever about interlocked exchanges
+    // to be lock-free. Let's keep this simple since the enclave has few actual threads operating in it.
 
     const auto controlFlags = RunOnceCompleted | RunOncePending;
     auto flags = ((DWORD_PTR)lpInitOnce->Ptr) & controlFlags;

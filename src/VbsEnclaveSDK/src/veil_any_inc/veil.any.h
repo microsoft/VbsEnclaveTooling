@@ -93,8 +93,8 @@ namespace veil
     template <typename T>
     struct enclave_arguments_with_hr
     {
-        T data{};
         enclave_error error;
+        T data{};
     };
 
 #pragma warning(push)

@@ -3,7 +3,8 @@
 #pragma once
 
 #include <span>
-#include <vector>
+
+#include <wil/resource.h>
 
 namespace veil::vtl1
 {
@@ -19,15 +20,55 @@ namespace veil::vtl1
 
 namespace veil::vtl1
 {
-    inline void sleep(DWORD milliseconds) noexcept
+    inline void sleep(DWORD milliseconds)
     {
-        CONDITION_VARIABLE cv;
-        SRWLOCK lock;
-        InitializeConditionVariable(&cv);
-        InitializeSRWLock(&lock);
+        LARGE_INTEGER frequency;
+        LARGE_INTEGER startTime;
+        LARGE_INTEGER endTime;
 
-        AcquireSRWLockExclusive(&lock);
-        SleepConditionVariableSRW(&cv, &lock, milliseconds, 0);
-        ReleaseSRWLockExclusive(&lock);
+        // Retrieve the frequency of the high-resolution performance counter
+        if (!QueryPerformanceFrequency(&frequency))
+        {
+            return;
+        }
+
+        // Calculate the target time in performance counter ticks
+        LONGLONG targetTicks = (frequency.QuadPart * milliseconds) / 1000;
+
+        // Record the starting time
+        if (!QueryPerformanceCounter(&startTime))
+        {
+            return;
+        }
+
+        // Use a condition variable to implement precise sleep
+        wil::srwlock srwlock;
+        auto lock = srwlock.lock_exclusive();
+        wil::condition_variable cv;
+
+        while (true)
+        {
+            // Check the current time
+            if (!QueryPerformanceCounter(&endTime))
+            {
+                return;
+            }
+
+            LONGLONG elapsedTicks = endTime.QuadPart - startTime.QuadPart;
+
+            // Exit loop if the target time has been reached
+            if (elapsedTicks >= targetTicks)
+            {
+                break;
+            }
+
+            // Calculate the remaining time in milliseconds
+            LONGLONG remainingTicks = targetTicks - elapsedTicks;
+            DWORD remainingMilliseconds = static_cast<DWORD>((remainingTicks * 1000) / frequency.QuadPart);
+
+            // Wait using condition_variable with a short timeout to minimize busy-waiting
+            cv.wait_for(lock, remainingMilliseconds);
+        }
     }
+
 }

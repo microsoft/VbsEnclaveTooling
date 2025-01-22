@@ -9,6 +9,25 @@
 
 #include "vtl0_functions.vtl1.h"
 
+/*
+namespace veil::vtl1::memory
+{
+    // todo: stand-in type until tooling+marshalling code is online
+    struct vtl0_ptr
+    {
+        vtl0_ptr(void* memory) : dangerous(memory) {}
+        void* dangerous;
+    };
+}
+*/
+
+/*
+namespace veil::vtl1::vtl0_functions
+{
+    inline veil::vtl1::memory::vtl0_ptr malloc(size_t size);
+}
+*/
+
 namespace veil::vtl1::memory
 {
     // todo: stand-in type until tooling+marshalling code is online
@@ -51,7 +70,6 @@ namespace veil::vtl1::memory
     {
         void* allocation = veil::vtl1::vtl0_functions::malloc(sizeof(T));
         THROW_IF_NULL_ALLOC(allocation);
-        auto ptr = reinterpret_cast<T*>(allocation);
-        return {ptr};
+        return { reinterpret_cast<T*>(allocation) };
     }
 }

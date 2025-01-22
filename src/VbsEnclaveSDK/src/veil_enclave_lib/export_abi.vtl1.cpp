@@ -56,7 +56,7 @@ namespace veil::vtl1
 
         namespace exports
         {
-            PVOID call_by_ordinal(_In_ PVOID params)
+            PVOID call_by_ordinal(_In_ PVOID params) noexcept
             {
                 return veil::vtl1::enclave_interface::details::call_by_ordinal(params);
             }
@@ -65,7 +65,7 @@ namespace veil::vtl1
 }
 
 // The "call funnel" export for all veil calls to pass through - user app enclave must export this in .def file!
-extern "C" PVOID __declspec(dllexport) WINAPI VeilEnclaveSdkEntrypoint(_In_ PVOID params)
+extern "C" PVOID __declspec(dllexport) WINAPI VeilEnclaveSdkEntrypoint(_In_ PVOID params) noexcept
 {
     // Forward the call to the framework
     return veil::vtl1::enclave_interface::exports::call_by_ordinal(params);
