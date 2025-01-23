@@ -1,10 +1,34 @@
-// <copyright placeholder>
+// Copyright (c) Microsoft Corporation.
+// Licensed under the MIT License.
 
 #pragma once
 
 #include <span>
 
 #include <wil/resource.h>
+
+#include <winenclaveapi.h>
+
+
+#define UNREFERENCED_PARAMETER_PACK(Ts, x) veil::vtl1::implementation::details::ignore_parameter_pack(std::forward<Ts>(x)...)
+
+namespace veil::vtl1::implementation
+{
+    namespace details
+    {
+        template <typename... Ts>
+        constexpr void ignore_parameter_pack(Ts&&... args)
+        {
+            auto ignored = {(std::forward<Ts&>(args))...};
+            (void)ignored;
+        }
+
+        template <>
+        constexpr void ignore_parameter_pack<>()
+        {
+        }
+    }
+}
 
 namespace veil::vtl1
 {
@@ -20,6 +44,27 @@ namespace veil::vtl1
 
 namespace veil::vtl1
 {
+    inline ENCLAVE_INFORMATION& enclave_information()
+    {
+        static ENCLAVE_INFORMATION enclaveInformation = []()
+        {
+            ENCLAVE_INFORMATION info;
+            THROW_IF_FAILED(::EnclaveGetEnclaveInformation(sizeof(ENCLAVE_INFORMATION), &info));
+            return info;
+        }();
+        return enclaveInformation;
+    }
+
+    inline bool is_enclave_full_debug_enabled()
+    {
+        static bool fullDebugEnabled = [] ()
+        {
+            auto& identity = enclave_information().Identity;
+            return WI_IsFlagSet(identity.Flags, ENCLAVE_FLAG_FULL_DEBUG_ENABLED);
+        }();
+        return fullDebugEnabled;
+    }
+
     inline void sleep(DWORD milliseconds)
     {
         LARGE_INTEGER frequency;

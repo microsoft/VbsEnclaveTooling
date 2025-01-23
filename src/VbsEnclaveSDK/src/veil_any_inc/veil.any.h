@@ -1,4 +1,5 @@
-// <copyright placeholder>
+// Copyright (c) Microsoft Corporation.
+// Licensed under the MIT License.
 
 #pragma once
 
@@ -18,21 +19,12 @@ namespace veil
 {
     inline constexpr HRESULT pvoid_to_hr(void* ptr) noexcept
     {
-#pragma warning(push)
-#pragma warning(disable: 4302)
-#pragma warning(push)
-#pragma warning(disable: 4311)
         return PVOID_TO_HRESULT(ptr);
-#pragma warning(pop)
-#pragma warning(pop)
     }
 
     inline constexpr void* hr_to_pvoid(HRESULT hr) noexcept
     {
-#pragma warning(push)
-#pragma warning(disable: 4312)
         return HRESULT_TO_PVOID(hr);
-#pragma warning(pop)
     }
 }
 
@@ -63,7 +55,7 @@ namespace veil
     {
         enum class export_ordinals : uint32_t
         {
-            register_callbacks = 100,
+            register_callbacks = 1,
             retrieve_enclave_error_for_thread,
         };
 

@@ -1,4 +1,5 @@
-// <copyright placeholder>
+// Copyright (c) Microsoft Corporation.
+// Licensed under the MIT License.
 
 #pragma once
 
@@ -7,7 +8,9 @@
 
 #include "wil/stl.h"
 
+#include "utils.vtl1.h"
 #include "registered_callbacks.vtl1.h"
+
 
 namespace veil::vtl1::vtl0_functions
 {
@@ -106,40 +109,48 @@ namespace veil::vtl1::vtl0_functions
             }
         };
 
-        // print string
+        // debug print string
         template <typename string_type, typename... Ts>
-        inline void print_string_impl(const typename string_type::value_type* formatString, Ts&&... args)
+        inline void debug_print_impl(const typename string_type::value_type* formatString, Ts&&... args)
         {
-            auto str = details::format_string<string_type>::call(formatString, std::forward<Ts>(args)...);
+            if (veil::vtl1::is_enclave_full_debug_enabled())
+            {
+                auto str = details::format_string<string_type>::call(formatString, std::forward<Ts>(args)...);
 
-            void* output{};
+                void* output{};
 
-            size_t len = str.size();
-            size_t cbBuffer = (len + 1) * sizeof(string_type::value_type);
+                size_t len = str.size();
+                size_t cbBuffer = (len + 1) * sizeof(string_type::value_type);
 
-            auto allocation = veil::vtl1::vtl0_functions::malloc(cbBuffer);
-            THROW_IF_NULL_ALLOC(allocation.m_dangerous);
+                auto allocation = veil::vtl1::vtl0_functions::malloc(cbBuffer);
+                THROW_IF_NULL_ALLOC(allocation.m_dangerous);
 
-            auto buffer = reinterpret_cast<string_type::value_type*>(allocation.m_dangerous);
+                auto buffer = reinterpret_cast<string_type::value_type*>(allocation.m_dangerous);
 
-            memcpy(buffer, str.c_str(), cbBuffer);
-            buffer[len] = string_traits<string_type>::nul_char;
+                memcpy(buffer, str.c_str(), cbBuffer);
+                buffer[len] = string_traits<string_type>::nul_char;
 
-            auto funcPrintf = veil::vtl1::implementation::get_callback(string_traits<string_type>::callback_id);
-            THROW_IF_WIN32_BOOL_FALSE(::CallEnclave(funcPrintf, reinterpret_cast<void*>(buffer), TRUE, reinterpret_cast<void**>(&output)));
-            THROW_IF_FAILED(pvoid_to_hr(output));
+                auto funcPrintf = veil::vtl1::implementation::get_callback(string_traits<string_type>::callback_id);
+                THROW_IF_WIN32_BOOL_FALSE(::CallEnclave(funcPrintf, reinterpret_cast<void*>(buffer), TRUE, reinterpret_cast<void**>(&output)));
+                THROW_IF_FAILED(pvoid_to_hr(output));
+            }
+            else
+            {
+                UNREFERENCED_PARAMETER(formatString);
+                UNREFERENCED_PARAMETER_PACK(Ts, args);
+            }
         }
     }
 
     template <typename... Ts>
-    inline void print_string(PCSTR formatString, Ts&&... args)
+    inline void debug_print(PCSTR formatString, Ts&&... args)
     {
-        details::print_string_impl<std::string>(formatString, std::forward<Ts>(args)...);
+        details::debug_print_impl<std::string>(formatString, std::forward<Ts>(args)...);
     }
 
     template <typename... Ts>
-    inline void print_wstring(PCWSTR formatString, Ts&&... args)
+    inline void debug_print(PCWSTR formatString, Ts&&... args)
     {
-        details::print_string_impl<std::wstring>(formatString, std::forward<Ts>(args)...);
+        details::debug_print_impl<std::wstring>(formatString, std::forward<Ts>(args)...);
     }
 }

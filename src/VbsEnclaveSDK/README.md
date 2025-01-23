@@ -45,3 +45,9 @@ This will/can be fixed before release as the SDK gets fleshed
 out. In the mean time you can use the `Not Using Precompiled Headers`
 option in your projects properties. Specifically in the
 C/C++ > precompiled headers section before consuming the SDK.
+
+
+Consumption
+------------
+Your enclave must export VeilEnclaveSdkEntrypoint, which is
+a required entrypoint for the Veil Enclave SDK to function.

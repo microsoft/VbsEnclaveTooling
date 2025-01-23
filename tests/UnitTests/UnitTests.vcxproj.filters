@@ -27,9 +27,6 @@
     <ClCompile Include="ToolingExecutableTests\ErrorHelpersTests.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="VbsEnclaveSDKTests\SDKTests.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="ToolingExecutableTests\LexicalAnalyzerTests.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>

@@ -43,13 +43,6 @@
   </PropertyGroup>
   <ImportGroup Label="Shared">
   </ImportGroup>
-  <!-- Undocked UCRT configuration. -->
-  <PropertyGroup>
-    <UndockedSettingsLoaded>True</UndockedSettingsLoaded>
-    <UseInternalMSUniCrtPackage>True</UseInternalMSUniCrtPackage>
-    <UseCrtSDKReferenceStaticWarning>False</UseCrtSDKReferenceStaticWarning>
-    <UseEnclave>True</UseEnclave>
-  </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)'=='Debug'">
     <ClCompile>
       <PreprocessorDefinitions>_DEBUG;CONSOLE;KEY_ENCLAVE_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>

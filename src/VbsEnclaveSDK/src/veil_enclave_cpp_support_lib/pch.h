@@ -15,11 +15,3 @@
 #include <array>
 
 #include <bcrypt.h>
-
-//#include "utils.vtl1.h"
-//#include "shared_enclave.h"
-//#include "data_enclave.h"
-//#include "EnclaveServices.h"
-
-//#define FEATURE_STAGING_LEGACY_MODE
-//#include <FeatureStaging-modeHelpers.h>

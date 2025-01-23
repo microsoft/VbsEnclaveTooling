@@ -1,4 +1,5 @@
-// <copyright placeholder>
+// Copyright (c) Microsoft Corporation.
+// Licensed under the MIT License.
 
 #include "pch.h"
 
@@ -10,9 +11,9 @@
 
 #include "sample_arguments.any.h"
 
-/*
-* My app exports: My app-enclave's exports
-*/
+//
+// My app exports: My app-enclave's exports
+//
 ENCLAVE_FUNCTION MySaveScreenshotExport(_In_ PVOID params)
 {
     (void)params;
@@ -22,13 +23,13 @@ ENCLAVE_FUNCTION MySaveScreenshotExport(_In_ PVOID params)
     return 0;
 }
 
-/*
-* Some sample code
-*/
+//
+// Some sample code
+//
 
 void RunTaskpoolExampleImpl(_In_ PVOID)
 {
-    veil::vtl1::vtl0_functions::print_wstring(L"HELLO FROM SAMPLE ENCLAVE");
+    veil::vtl1::vtl0_functions::debug_print(L"HELLO FROM SAMPLE ENCLAVE");
 }
 
 ENCLAVE_FUNCTION RunTaskpoolExample(_In_ PVOID pv) try

@@ -1,4 +1,5 @@
-// <copyright placeholder>
+// Copyright (c) Microsoft Corporation.
+// Licensed under the MIT License.
 
 #include "pch.h"
 
@@ -18,24 +19,24 @@ namespace veil::vtl1
 
         ENCLAVE_FUNCTION register_callbacks(_In_ PVOID params) noexcept
         {
-            auto eawh = static_cast<enclave_arguments_with_hr<veil::any::implementation::args::register_callbacks>*>(params);
-            auto errorPopulator = veil::vtl1::implementation::export_helpers::enclave_error_populator(eawh->error);
+            auto argsWithHr = reinterpret_cast<enclave_arguments_with_hr<veil::any::implementation::args::register_callbacks>*>(params);
+            auto errorPopulator = veil::vtl1::implementation::export_helpers::enclave_error_populator(argsWithHr->error);
 
-            RETURN_HR_AS_PVOID(veil::vtl1::implementation::exports::register_callbacks(&eawh->data));
+            RETURN_HR_AS_PVOID(veil::vtl1::implementation::exports::register_callbacks(&argsWithHr->data));
         }
 
         ENCLAVE_FUNCTION retrieve_enclave_error_for_thread(_In_ PVOID params) noexcept
         {
-            auto eawh = static_cast<enclave_arguments_with_hr<veil::any::implementation::args::retrieve_enclave_error_for_thread>*>(params);
-            auto errorPopulator = veil::vtl1::implementation::export_helpers::enclave_error_populator(eawh->error);
+            auto argsWithHr = reinterpret_cast<enclave_arguments_with_hr<veil::any::implementation::args::retrieve_enclave_error_for_thread>*>(params);
+            auto errorPopulator = veil::vtl1::implementation::export_helpers::enclave_error_populator(argsWithHr->error);
 
-            RETURN_HR_AS_PVOID(veil::vtl1::implementation::exports::retrieve_enclave_error_for_thread(&eawh->data));
+            RETURN_HR_AS_PVOID(veil::vtl1::implementation::exports::retrieve_enclave_error_for_thread(&argsWithHr->data));
         }
 
     }
 }
 
-#define ENCLAVE_SDK_EXPORT_ORDINAL(_name, _ordinal) \
+#define ENCLAVE_SDK_EXPORT_ORDINAL(_x, _name, _ordinal) \
     if (_x->ordinal == _ordinal) { return veil::vtl1::implementation:: ## _name(&_x->argumentsWithHr); }
 
 namespace veil::vtl1
@@ -46,10 +47,10 @@ namespace veil::vtl1
         {
             PVOID call_by_ordinal(_In_ PVOID ordinalStruct) noexcept
             {
-                auto _x = reinterpret_cast<enclave_ordinal_call_unwrapping*>(ordinalStruct);
-                uint32_t i = 100;
-                ENCLAVE_SDK_EXPORT_ORDINAL(register_callbacks, i++);
-                ENCLAVE_SDK_EXPORT_ORDINAL(retrieve_enclave_error_for_thread, i++);
+                auto x = reinterpret_cast<enclave_ordinal_call_unwrapping*>(ordinalStruct);
+                uint32_t i = 1;
+                ENCLAVE_SDK_EXPORT_ORDINAL(x, register_callbacks, i++);
+                ENCLAVE_SDK_EXPORT_ORDINAL(x, retrieve_enclave_error_for_thread, i++);
                 RETURN_HR_AS_PVOID(HRESULT_FROM_WIN32(ERROR_INVALID_FUNCTION));
             }
         }

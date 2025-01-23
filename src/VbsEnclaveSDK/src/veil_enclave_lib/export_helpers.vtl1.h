@@ -1,9 +1,10 @@
-// <copyright placeholder>
+// Copyright (c) Microsoft Corporation.
+// Licensed under the MIT License.
 
 #pragma once
 
-#include <map>
 #include <optional>
+#include <unordered_map>
 #include <vector>
 
 #include "veil.any.h"
@@ -13,20 +14,20 @@ namespace veil::vtl1::implementation::export_helpers
     extern wil::srwlock g_enclaveErrorsMutex;
 
     // TID, Errors
-    extern std::map<DWORD, std::vector<enclave_error>> g_enclaveErrors;
+    extern std::unordered_map<DWORD, std::vector<enclave_error>> g_enclaveErrors;
 
     namespace
     {
         inline errno_t __cdecl wcsncpy_s_max(
-                _Out_writes_z_(sizeInWords) wchar_t* dst,
-                _In_                         rsize_t        sizeInWords,
-                _In_reads_or_z_(srcSizeInWords)   wchar_t const* src,
-                _In_                         rsize_t        srcSizeInWords
+                _Out_writes_z_(dstSizeInWords)  wchar_t* dst,
+                _In_                            rsize_t        dstSizeInWords,
+                _In_reads_or_z_(srcSizeInWords) wchar_t const* src,
+                _In_                            rsize_t        srcSizeInWords
         ) noexcept
         {
-            size_t amount = sizeInWords < srcSizeInWords ? sizeInWords : srcSizeInWords;
-            auto ret = wcsncpy_s(dst, sizeInWords, src, amount);
-            dst[sizeInWords - 1] = '\0';
+            size_t amount = dstSizeInWords < srcSizeInWords ? dstSizeInWords : srcSizeInWords;
+            auto ret = wcsncpy_s(dst, dstSizeInWords, src, amount);
+            dst[dstSizeInWords - 1] = '\0';
             return ret;
         }
     }

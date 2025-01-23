@@ -1,4 +1,5 @@
-// <copyright placeholder>
+// Copyright (c) Microsoft Corporation.
+// Licensed under the MIT License.
 
 // Do *not* #pragma once this file since it needs to take effect each time you include it.
 //

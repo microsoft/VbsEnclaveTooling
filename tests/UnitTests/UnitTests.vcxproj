@@ -195,7 +195,6 @@
     <ClCompile Include="ToolingExecutableTests\CmdlineParsingHelpersTests.cpp" />
     <ClCompile Include="ToolingExecutableTests\CmdlineArgumentsParserTests.cpp" />
     <ClCompile Include="ToolingExecutableTests\LexicalAnalyzerTests.cpp" />
-    <ClCompile Include="VbsEnclaveSDKTests\SDKTests.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />
@@ -204,9 +203,6 @@
   <ItemGroup>
     <ProjectReference Include="..\..\src\ToolingSharedLibrary\ToolingSharedLibrary.vcxproj">
       <Project>{27c99e39-8373-4559-83d7-f21b5134eb83}</Project>
-    </ProjectReference>
-    <ProjectReference Include="..\..\src\VbsEnclaveSDK\VbsEnclaveSDK.vcxproj">
-      <Project>{162fc354-7650-4000-b7f2-ec8fc46d10f6}</Project>
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
