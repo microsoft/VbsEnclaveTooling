@@ -1,0 +1,8 @@
+LIBRARY
+
+EXPORTS
+        ; Required entrypoint for the Veil Enclave SDK
+        VeilEnclaveSdkEntrypoint
+
+        ; AppEnclave exports here
+        RunTaskpoolExample

@@ -31,8 +31,6 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "UnitTests", "tests\UnitTest
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ToolingSharedLibrary", "src\ToolingSharedLibrary\ToolingSharedLibrary.vcxproj", "{27C99E39-8373-4559-83D7-F21B5134EB83}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "VbsEnclaveSDK", "src\VbsEnclaveSDK\VbsEnclaveSDK.vcxproj", "{162FC354-7650-4000-B7F2-EC8FC46D10F6}"
-EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "docs", "docs", "{890A5ACE-43AB-4957-B32A-7720ED8ED565}"
 	ProjectSection(SolutionItems) = preProject
 		docs\Edl.md = docs\Edl.md
@@ -78,14 +76,6 @@ Global
 		{27C99E39-8373-4559-83D7-F21B5134EB83}.Release|ARM64.Build.0 = Release|ARM64
 		{27C99E39-8373-4559-83D7-F21B5134EB83}.Release|x64.ActiveCfg = Release|x64
 		{27C99E39-8373-4559-83D7-F21B5134EB83}.Release|x64.Build.0 = Release|x64
-		{162FC354-7650-4000-B7F2-EC8FC46D10F6}.Debug|ARM64.ActiveCfg = Debug|ARM64
-		{162FC354-7650-4000-B7F2-EC8FC46D10F6}.Debug|ARM64.Build.0 = Debug|ARM64
-		{162FC354-7650-4000-B7F2-EC8FC46D10F6}.Debug|x64.ActiveCfg = Debug|x64
-		{162FC354-7650-4000-B7F2-EC8FC46D10F6}.Debug|x64.Build.0 = Debug|x64
-		{162FC354-7650-4000-B7F2-EC8FC46D10F6}.Release|ARM64.ActiveCfg = Release|ARM64
-		{162FC354-7650-4000-B7F2-EC8FC46D10F6}.Release|ARM64.Build.0 = Release|ARM64
-		{162FC354-7650-4000-B7F2-EC8FC46D10F6}.Release|x64.ActiveCfg = Release|x64
-		{162FC354-7650-4000-B7F2-EC8FC46D10F6}.Release|x64.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
