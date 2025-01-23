@@ -212,7 +212,7 @@ namespace EdlProcessor
             {
                 info_string += std::format("[{}]", numeric_value);
             }
-
+            
             return info_string;
         }
 

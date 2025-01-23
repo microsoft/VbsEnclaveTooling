@@ -1,0 +1,82 @@
+// Copyright (c) Microsoft Corporation.
+// Licensed under the MIT License.
+#pragma once 
+#include <pch.h>
+#include <Edl\Structures.h>
+#include <CodeGeneration\CodeGeneration.h>
+#include <CodeGeneration\Contants.h>
+#include <ErrorHelpers.h>
+
+using namespace EdlProcessor;
+using namespace ErrorHelpers;
+using namespace CodeGeneration::CppCodeBuilder;
+
+namespace CodeGeneration
+{
+    CppCodeGenerator::CppCodeGenerator(
+        const Edl& edl,
+        const std::filesystem::path& output_path,
+        ErrorHandlingKind error_handling)
+        :   m_edl(edl), m_output_folder_path(output_path), m_error_handling(error_handling)
+    {
+    }
+
+    void CppCodeGenerator::Generate()
+    {
+        auto base_header = BuildBaseHeaderFile();
+        auto enclave_types_header = GenerateDeveloperTypesHeader();
+
+        // Save the base header for enclave functionality to output location
+        SaveFileToOutputFolder(
+            c_base_header_name_with_ext,
+            m_output_folder_path,
+            base_header);
+
+        // Save the developer types to a header file in the output location
+        SaveFileToOutputFolder(
+            c_developer_types_header,
+            m_output_folder_path,
+            enclave_types_header);
+    }
+
+    std::string CppCodeGenerator::GenerateDeveloperTypesHeader()
+    {
+        std::string types_header {};
+
+        for (auto&& [name, type] : m_edl.m_developer_types)
+        {
+            if (type->m_type_kind == EdlTypeKind::Enum ||
+                type->m_type_kind == EdlTypeKind::AnonymousEnum)
+            {
+                types_header += BuildEnumDefinition(*type);
+            }
+            else
+            {
+                types_header += BuildStructDefinition(*type);
+            }
+        }
+
+        return BuildDeveloperTypesHeaderFile(types_header);
+    }
+
+    void CppCodeGenerator::SaveFileToOutputFolder(
+        std::string_view file_name,
+        const std::filesystem::path& output_folder,
+        std::string_view file_content)
+    {
+        auto output_file_path = output_folder / file_name;
+        std::ofstream output_file(output_file_path.generic_string());
+
+        if (output_file.is_open())
+        {
+            output_file << file_content;
+            output_file.close();
+        }
+        else
+        {
+            throw CodeGenerationException(
+                ErrorId::CodeGenUnableToOpenOutputFile,
+                output_file_path.generic_string());
+        }
+    }
+}

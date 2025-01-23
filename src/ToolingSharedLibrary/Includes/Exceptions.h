@@ -27,7 +27,26 @@ namespace ToolingExceptions
         template<typename... Args>
         EdlAnalysisException(
             ErrorId id,
-            const std::filesystem::path& file_name,
+            const std::filesystem::path& file_name)
+        {
+            m_message = GetErrorMessageById(id, file_name.generic_string());
+        }
+
+        const char* what() const noexcept override
+        {
+            return m_message.c_str();
+        }
+
+    private:
+        std::string m_message;
+    };
+
+    class CodeGenerationException : public std::exception
+    {
+    public:
+        template<typename... Args>
+        CodeGenerationException(
+            ErrorId id,
             Args&&... args)
         {
             m_message = GetErrorMessageById(id, std::forward<Args>(args)...);
@@ -38,7 +57,7 @@ namespace ToolingExceptions
             return m_message.c_str();
         }
 
-    private:
-        std::string m_message;
+        private:
+            std::string m_message;
     };
 }

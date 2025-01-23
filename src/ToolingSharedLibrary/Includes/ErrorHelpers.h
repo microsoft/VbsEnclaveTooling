@@ -66,6 +66,7 @@ namespace ErrorHelpers
         EdlEnumNameDuplicated,
         EdlDuplicateFieldOrParameter,
         EdlSizeAndCountNotValidForNonPointer,
+        CodeGenUnableToOpenOutputFile,
     };
 
     struct ErrorIdHash
@@ -92,6 +93,7 @@ namespace ErrorHelpers
         { ErrorId::InvalidArgument,"Unknown argument: {}" },
         { ErrorId::IncorrectNonHelpArgsProvided,"VbsEnclaveTooling.exe expects '{}' arguments when '-h' is not used. Only found: '{}'" },
         { ErrorId::MissingArgument,"Missing arguments. Use '-h' for usage." },
+
 
         // Edl file lexical analysis errors
         { ErrorId::EdlCommentEndingNotFound, "EOF while looking for '*/' to match the '/*'" },
@@ -129,6 +131,9 @@ namespace ErrorHelpers
         { ErrorId::EdlEnumNameDuplicated, "'{}' enum value already defined." },
         { ErrorId::EdlDuplicateFieldOrParameter, "duplicate name '{}' found in '{}'." },
         { ErrorId::EdlSizeAndCountNotValidForNonPointer, "Size/count attributes are only valid for pointer types. Found type '{}'" },
+
+        // CodeGen errors
+        { ErrorId::CodeGenUnableToOpenOutputFile, "Failed to open '{}' for writing." },
     };
 
     template<typename... Args>

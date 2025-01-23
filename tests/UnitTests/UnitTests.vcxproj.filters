@@ -45,6 +45,9 @@
     <ClCompile Include="ToolingExecutableTests\EdlParserStructTypesTests.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="ToolingExecutableTests\CppCodeGenerationTests.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h">
@@ -62,5 +65,12 @@
     <CopyFileToFolders Include="TestFiles\BasicTypesTest.edl" />
     <CopyFileToFolders Include="TestFiles\EnumTest.edl" />
     <CopyFileToFolders Include="TestFiles\StructTest.edl" />
+    <CopyFileToFolders Include="TestFiles\DeveloperTypesCodeGen.edl" />
+    <CopyFileToFolders Include="TestFiles\ExpectedCodeGeneratedFiles\VbsEnclaveBase.h">
+      <Filter>Header Files</Filter>
+    </CopyFileToFolders>
+    <CopyFileToFolders Include="TestFiles\ExpectedCodeGeneratedFiles\EnclaveDeveloperTypes.h">
+      <Filter>Header Files</Filter>
+    </CopyFileToFolders>
   </ItemGroup>
 </Project>

@@ -24,11 +24,11 @@ namespace CmdlineParsingHelpers
 
         bool ParseSuccessful() const { return m_parse_successful; }
 
-    private:
+        private:
         bool ParseArguments(int argc, char* argv[]);
         bool m_parse_successful = false;
-        std::string m_edl_path{};
-        std::string m_out_directory{};
+        std::string m_edl_path {};
+        std::string m_out_directory {};
         ErrorHandlingKind m_error_handling_kind = ErrorHandlingKind::Unknown;
         bool m_should_display_help = false;
         SupportedLanguageKind m_supported_language = SupportedLanguageKind::Unknown;
