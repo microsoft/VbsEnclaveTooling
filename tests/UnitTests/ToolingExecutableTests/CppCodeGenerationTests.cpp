@@ -88,7 +88,7 @@ TEST_CLASS(CppCodeGenerationTests)
             auto edl_parser = EdlParser(m_edl_file_path);
             Edl edl = edl_parser.Parse();
 
-            auto code_generator = CppCodeGenerator(edl, argument_parser);
+            auto code_generator = CppCodeGenerator(edl, argument_parser.OutDirectory(), argument_parser.ErrorHandling());
             code_generator.Generate();
 
             // verify contents of base enclave header
@@ -112,7 +112,7 @@ TEST_CLASS(CppCodeGenerationTests)
             auto edl_parser = EdlParser(m_edl_file_path);
             Edl edl = edl_parser.Parse();
 
-            auto code_generator = CppCodeGenerator(edl, argument_parser);
+            auto code_generator = CppCodeGenerator(edl, argument_parser.OutDirectory(), argument_parser.ErrorHandling());
             code_generator.Generate();
             
             // verify contents of generated developer types header

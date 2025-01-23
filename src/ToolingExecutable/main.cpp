@@ -33,7 +33,7 @@ int main(int argc, char* argv[])
     {
         auto edl_parser = EdlParser(argument_parser.EdlFilePath());
         Edl edl = edl_parser.Parse();
-        auto cpp_code_generator = CppCodeGenerator(edl, argument_parser);
+        auto cpp_code_generator = CppCodeGenerator(std::move(edl), argument_parser.OutDirectory(), argument_parser.ErrorHandling());
         cpp_code_generator.Generate();
     }
     catch (const std::exception& exception)

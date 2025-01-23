@@ -9,17 +9,21 @@
 
 using namespace EdlProcessor;
 using namespace ErrorHelpers;
+using namespace CodeGeneration::CppCodeBuilder;
 
 namespace CodeGeneration
 {
-    CppCodeGenerator::CppCodeGenerator(const Edl& edl, const CmdlineArgumentsParser& parser)
-        :   m_edl(edl), m_output_folder_path(parser.OutDirectory()), m_error_handling(parser.ErrorHandling())
+    CppCodeGenerator::CppCodeGenerator(
+        const Edl& edl,
+        const std::filesystem::path& output_path,
+        ErrorHandlingKind error_handling)
+        :   m_edl(edl), m_output_folder_path(output_path), m_error_handling(error_handling)
     {
     }
 
     void CppCodeGenerator::Generate()
     {
-        m_base_header = m_builder.BuildBaseHeaderFile();
+        m_base_header = BuildBaseHeaderFile();
         m_enclave_types_header = GenerateDeveloperTypesHeader();
 
 
@@ -45,15 +49,15 @@ namespace CodeGeneration
             if (type->m_type_kind == EdlTypeKind::Enum ||
                 type->m_type_kind == EdlTypeKind::AnonymousEnum)
             {
-                types_header += m_builder.BuildEnumDefinition(type);
+                types_header += BuildEnumDefinition(*type);
             }
             else
             {
-                types_header += m_builder.BuildStructDefinition(type);
+                types_header += BuildStructDefinition(*type);
             }
         }
 
-        return m_builder.BuildDeveloperTypesHeaderFile(types_header);
+        return BuildDeveloperTypesHeaderFile(types_header);
     }
 
     void CppCodeGenerator::SaveFileToOutputFolder(
