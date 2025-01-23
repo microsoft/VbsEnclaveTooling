@@ -25,8 +25,15 @@ TEST_CLASS(CppCodeGenerationTests)
     private:
 
     std::filesystem::path m_edl_file_path = "DeveloperTypesCodeGen.edl";
+    
+    // Contents of these files contain the data we expect the generated files to contain
     std::filesystem::path m_base_header_path = R"(..\..\..\tests\UnitTests\TestFiles\ExpectedCodeGeneratedFiles\VbsEnclaveBase.h)";
     std::filesystem::path m_developer_types_header_path = R"(..\..\..\tests\UnitTests\TestFiles\ExpectedCodeGeneratedFiles\EnclaveDeveloperTypes.h)";
+
+    // Contents of these files contain the generated data from the CppCodeGenerator class, which should be in the output directory
+    std::filesystem::path m_generated_base_header_path = R"(VbsEnclaveBase.h)";
+    std::filesystem::path m_generated_developer_types_header_path = R"(EnclaveDeveloperTypes.h)";
+
     static const uint32_t m_cmdline_arg_count = 11;
     const char* m_cmdline_args[m_cmdline_arg_count] =
     {
@@ -59,7 +66,7 @@ TEST_CLASS(CppCodeGenerationTests)
         return result;
     }
 
-    std::string GetTestFileContent(const std::filesystem::path& file_path)
+    std::string GetFileContent(const std::filesystem::path& file_path)
     {
         std::ifstream file(file_path.generic_string(), std::ios::in | std::ios::ate);
 
@@ -92,10 +99,10 @@ TEST_CLASS(CppCodeGenerationTests)
             code_generator.Generate();
 
             // verify contents of base enclave header
-            auto expected_content = GetTestFileContent(m_base_header_path);
-            auto actual_content = code_generator.EnclaveBaseHeader();
+            auto expected_content = GetFileContent(m_base_header_path);
+            auto actual_content = GetFileContent(m_generated_base_header_path);
             Assert::AreEqual(expected_content.size(), actual_content.size());
-            Assert::AreEqual(std::string_view(expected_content), actual_content);
+            Assert::AreEqual(std::string_view(expected_content), std::string_view(actual_content));
         }
         catch (const std::exception& exception)
         {
@@ -116,10 +123,10 @@ TEST_CLASS(CppCodeGenerationTests)
             code_generator.Generate();
             
             // verify contents of generated developer types header
-            auto expected_content = GetTestFileContent(m_developer_types_header_path);
-            auto actual_content = code_generator.EnclaveTypesHeader();
+            auto expected_content = GetFileContent(m_developer_types_header_path);
+            auto actual_content = GetFileContent(m_generated_developer_types_header_path);
             Assert::AreEqual(expected_content.size(), actual_content.size());
-            Assert::AreEqual(std::string_view(expected_content), actual_content);
+            Assert::AreEqual(std::string_view(expected_content), std::string_view(actual_content));
         }
         catch (const std::exception& exception)
         {

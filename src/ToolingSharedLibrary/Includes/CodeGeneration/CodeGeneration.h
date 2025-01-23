@@ -55,21 +55,16 @@ namespace CodeGeneration
 
         void Generate();
 
-        std::string_view EnclaveTypesHeader() { return m_enclave_types_header; }
-        std::string_view EnclaveBaseHeader() { return m_base_header; }
-
     private:
         std::string GenerateDeveloperTypesHeader();
 
         void SaveFileToOutputFolder(
-            const std::string_view& file_name,
+            std::string_view file_name,
             const std::filesystem::path& output_folder,
-            const std::string_view& file_content);
+            std::string_view file_content);
 
         Edl m_edl {};
         ErrorHandlingKind m_error_handling {};
         std::filesystem::path m_output_folder_path {};
-        std::string m_base_header {};
-        std::string m_enclave_types_header {};
     };
 }

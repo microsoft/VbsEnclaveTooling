@@ -23,21 +23,20 @@ namespace CodeGeneration
 
     void CppCodeGenerator::Generate()
     {
-        m_base_header = BuildBaseHeaderFile();
-        m_enclave_types_header = GenerateDeveloperTypesHeader();
-
+        auto base_header = BuildBaseHeaderFile();
+        auto enclave_types_header = GenerateDeveloperTypesHeader();
 
         // Save the base header for enclave functionality to output location
         SaveFileToOutputFolder(
             c_base_header_name_with_ext,
             m_output_folder_path,
-            m_base_header);
+            base_header);
 
         // Save the developer types to a header file in the output location
         SaveFileToOutputFolder(
             c_developer_types_header,
             m_output_folder_path,
-            m_enclave_types_header);
+            enclave_types_header);
     }
 
     std::string CppCodeGenerator::GenerateDeveloperTypesHeader()
@@ -61,9 +60,9 @@ namespace CodeGeneration
     }
 
     void CppCodeGenerator::SaveFileToOutputFolder(
-        const std::string_view& file_name,
+        std::string_view file_name,
         const std::filesystem::path& output_folder,
-        const std::string_view& file_content)
+        std::string_view file_content)
     {
         auto output_file_path = output_folder / file_name;
         std::ofstream output_file(output_file_path.generic_string());

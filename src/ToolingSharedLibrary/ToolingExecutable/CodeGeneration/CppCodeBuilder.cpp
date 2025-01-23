@@ -7,7 +7,6 @@
 #include <Edl\Utils.h>
 #include <CodeGeneration\Contants.h>
 #include <CodeGeneration\CodeGeneration.h>
-#include <deque>
 
 using namespace EdlProcessor;
 
