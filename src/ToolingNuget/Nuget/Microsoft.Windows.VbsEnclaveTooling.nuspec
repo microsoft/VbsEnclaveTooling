@@ -18,8 +18,6 @@
     <file src="..\..\..\LICENSE"/>
     <file src="$vbsenclavetooling_x64_exe$" target="bin\x64"/>
     <file src="$vbsenclavetooling_arm64_exe$" target="bin\arm64"/>
-    <file src="..\..\VbsEnclaveSDK\Includes\**" target="src\VbsEnclaveSDK\Includes\" />
-    <file src="..\..\VbsEnclaveSDK\Sources\**" target="src\VbsEnclaveSDK\Sources\" />
     <file src="Microsoft.Windows.VbsEnclaveTooling.props" target="build\native"/>
     <file src="Microsoft.Windows.VbsEnclaveTooling.targets" target="build\native"/>
     <file src="..\..\..\README.md"/>
