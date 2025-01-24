@@ -141,6 +141,7 @@ namespace veil::vtl1
             makeTaskpoolArgs->threadCount = threadCount;
             makeTaskpoolArgs->mustFinishAllQueuedTasks = mustFinishAllQueuedTasks;
             THROW_IF_WIN32_BOOL_FALSE(::CallEnclave(makeTaskpool, reinterpret_cast<void*>(makeTaskpoolArgs.get()), TRUE, reinterpret_cast<void**>(&output)));
+            THROW_IF_FAILED(pvoid_to_hr(output));
 
             m_taskpoolInstanceVtl0 = makeTaskpoolArgs->taskpoolInstanceVtl0;
         }
@@ -163,6 +164,7 @@ namespace veil::vtl1
             auto deleteTaskpool = veil::vtl1::implementation::get_callback(veil::implementation::callback_id::taskpool_delete);
             deleteTaskpoolArgs->taskpoolInstanceVtl0 = m_taskpoolInstanceVtl0;
             THROW_IF_WIN32_BOOL_FALSE(::CallEnclave(deleteTaskpool, reinterpret_cast<void*>(deleteTaskpoolArgs.get()), TRUE, reinterpret_cast<void**>(&output)));
+            THROW_IF_FAILED(pvoid_to_hr(output));
 
             // Erase weak reference from weak object table so nobody else can run tasks
             veil::vtl1::implementation::get_taskpool_object_table().erase(m_objectTableEntryId);
@@ -226,6 +228,7 @@ namespace veil::vtl1
             void* output{};
             auto vtl0_scheduleTask_callback = veil::vtl1::implementation::get_callback(veil::implementation::callback_id::taskpool_schedule_task);
             THROW_IF_WIN32_BOOL_FALSE(::CallEnclave(vtl0_scheduleTask_callback, reinterpret_cast<void*>(taskHandleArgs.get()), TRUE, reinterpret_cast<void**>(&output)));
+            THROW_IF_FAILED(pvoid_to_hr(output));
 
             return fut;
         }

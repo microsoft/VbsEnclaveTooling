@@ -32,8 +32,6 @@ namespace veil::vtl0::implementation
     struct taskpool_backing_threads
     {
     public:
-        // Make sure the threadCount is at most [IMAGE_ENCLAVE_CONFIG.NumberOfThreads - 1] so the
-        // enclave always has a thread of execution, and prevent deadlocking the enclave.
         taskpool_backing_threads(void* enclave, uint64_t taskpoolInstance_vtl1, size_t threadCount = 1, bool mustFinishAllQueuedTasks = true)
             : m_enclave(enclave), m_taskpoolInstance_vtl1(taskpoolInstance_vtl1), m_mustFinishAllQueuedTasks(mustFinishAllQueuedTasks)
         {
@@ -64,7 +62,7 @@ namespace veil::vtl0::implementation
             }
         }
 
-        void queue_task(UINT64 task_handle)
+        void queue_task(uint64_t task_handle)
         {
             {
                 std::lock_guard lock(m_mutex);
@@ -104,7 +102,7 @@ namespace veil::vtl0::implementation
                 }
 
                 // Dequeue task
-                UINT64 taskHandle;
+                uint64_t taskHandle;
                 {
                     std::unique_lock lock(m_mutex);
                     if (m_taskHandles.empty())
@@ -112,7 +110,6 @@ namespace veil::vtl0::implementation
                         continue;
                     }
                     taskHandle = std::move(m_taskHandles.front());
-                    m_taskHandles.front();
                     m_taskHandles.pop();
                 }
 
@@ -128,7 +125,7 @@ namespace veil::vtl0::implementation
         void* m_enclave{};
         uint64_t m_taskpoolInstance_vtl1{};
         std::vector<std::thread> m_threads;
-        std::queue<UINT64> m_taskHandles;
+        std::queue<uint64_t> m_taskHandles;
         std::mutex m_mutex;
         std::condition_variable m_cv;
         std::atomic<bool> m_stop = false;
