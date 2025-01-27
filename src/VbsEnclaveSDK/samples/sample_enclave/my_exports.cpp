@@ -226,11 +226,11 @@ void RunTaskpoolExampleImpl(_In_ sample::args::RunTaskpoolExample* data)
 {
     using namespace veil::vtl1::vtl0_functions;
 
-    debug_print(L"TEST");
+    debug_print(L"TEST: Taskpool destruction, don't wait for all tasks to finish");
     RunTaskpoolExamples::Test_Dont_WaitForAllTasksToFinish(data);
     debug_print(L"");
 
-    debug_print(L"TEST");
+    debug_print(L"TEST: Taskpool destruction, wait for all tasks to finish");
     RunTaskpoolExamples::Test_Do_WaitForAllTasksToFinish(data);
     debug_print(L"");
 
