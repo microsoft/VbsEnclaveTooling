@@ -130,6 +130,53 @@ namespace RunTaskpoolExamples
         }
     }
 
+    void Test_Cancellation(_In_ sample::args::RunTaskpoolExample* data)
+    {
+        using namespace veil::vtl1::vtl0_functions;
+
+        debug_print(L"Creating taskpool with '%d' threads...", data->threadCount);
+
+        auto tasks = std::vector<veil::vtl1::future<void>>();
+
+        std::atomic<bool> ranLastTask = false;
+
+        // taskpool
+        {
+            auto taskpool = veil::vtl1::taskpool(data->threadCount, true);
+
+            // Use up all the threads
+            for (uint32_t i = 0; i < data->threadCount; i++)
+            {
+                auto task = taskpool.queue_task([=]()
+                {
+                    debug_print(L"hello from task: %d", i);
+                    veil::vtl1::sleep(500);
+                });
+                task.detach();
+            }
+
+            auto task = taskpool.queue_task([&ranLastTask]()
+            {
+                ranLastTask = true;
+                debug_print(L"...you SHOULD NOT see this message...");
+            });
+            task.detach();
+
+            taskpool.cancel_queued_tasks();
+
+            debug_print(L"Waiting for taskpool to destruct...");
+        }
+
+        if (ranLastTask)
+        {
+            debug_print(L"ERROR: Taskpool destructed after all tasks finished.");
+        }
+        else
+        {
+            debug_print(L"SUCCESS: Taskpool destructed before all tasks finished.");
+        }
+    }
+
     void UsageExample(_In_ sample::args::RunTaskpoolExample* data)
     {
         using namespace veil::vtl1::vtl0_functions;
@@ -232,6 +279,10 @@ void RunTaskpoolExampleImpl(_In_ sample::args::RunTaskpoolExample* data)
 
     debug_print(L"TEST: Taskpool destruction, wait for all tasks to finish");
     RunTaskpoolExamples::Test_Do_WaitForAllTasksToFinish(data);
+    debug_print(L"");
+
+    debug_print(L"TEST: Taskpool cancellation");
+    RunTaskpoolExamples::Test_Cancellation(data);
     debug_print(L"");
 
     debug_print(L"USAGE");

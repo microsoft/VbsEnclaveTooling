@@ -71,6 +71,7 @@ namespace veil
             taskpool_make,
             taskpool_delete,
             taskpool_schedule_task,
+            taskpool_cancel_queued_tasks,
             __count__ // keep as last entry
         };
 

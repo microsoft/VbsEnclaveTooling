@@ -239,6 +239,10 @@ namespace veil::vtl1
             auto task = m_tasks.try_take(taskHandle);
             if (!task)
             {
+                if (taskHandle < m_cancelledId)
+                {
+                    return;
+                }
                 THROW_WIN32_MSG(ERROR_INVALID_INDEX, "Task handle doesn't exist: %d", static_cast<int>(taskHandle));
             }
 
@@ -252,6 +256,22 @@ namespace veil::vtl1
             // The task, std::function<void()>, is freed...
         }
 
+        void cancel_queued_tasks()
+        {
+            m_cancelledId = m_tasks.peek_next_id();
+            m_tasks.clear();
+
+            auto args = veil::vtl1::memory::allocate_vtl0<veil::any::implementation::args::taskpool_cancel_queued_tasks>();
+            args->taskpoolInstanceVtl0 = m_taskpoolInstanceVtl0;
+
+            // Call out to VTL0 to delete the backing threads (TODO:NOT SAFE UNTIL TOOLING WORK COMPLETE)
+            void* output {};
+            auto func = veil::vtl1::implementation::get_callback(veil::implementation::callback_id::taskpool_cancel_queued_tasks);
+            args->taskpoolInstanceVtl0 = m_taskpoolInstanceVtl0;
+            THROW_IF_WIN32_BOOL_FALSE(::CallEnclave(func, reinterpret_cast<void*>(args.get()), TRUE, reinterpret_cast<void**>(&output)));
+            THROW_IF_FAILED(pvoid_to_hr(output));
+        }
+
     private:
         // Task objects (but the actual queue order is managed in vtl0)
         veil::vtl1::unique_object_table<std::function<void()>> m_tasks;
@@ -262,6 +282,8 @@ namespace veil::vtl1
         // Required for secure lifetime management and to avoid passing contexts (void*) pointers to vtl0
         veil::vtl1::keepalive_mechanism<taskpool> m_keepaliveMechanism;
         size_t m_objectTableEntryId{};
+
+        std::atomic<size_t> m_cancelledId{};
     };
 }
 

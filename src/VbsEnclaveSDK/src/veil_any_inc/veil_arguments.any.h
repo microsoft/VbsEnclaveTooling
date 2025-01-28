@@ -56,6 +56,11 @@ namespace veil::any
                 uint64_t taskpoolInstanceVtl1;
                 uint64_t taskId;
             };
+
+            struct taskpool_cancel_queued_tasks
+            {
+                void* taskpoolInstanceVtl0;
+            };
         }
     }
 }

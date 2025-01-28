@@ -31,4 +31,13 @@ namespace veil::vtl0::implementation::callbacks
         taskpoolInstance->queue_task(taskInfo->taskId);
         return S_OK;
     })
+
+    VEIL_ABI_FUNCTION(taskpool_cancel_queued_tasks, args,
+    {
+        using T = veil::vtl0::implementation::taskpool_backing_threads;
+        auto data = reinterpret_cast<veil::any::implementation::args::taskpool_cancel_queued_tasks*>(args);
+        auto taskpoolInstanceVtl0 = reinterpret_cast<T*>(data->taskpoolInstanceVtl0);
+        taskpoolInstanceVtl0->cancel_queued_tasks();
+        return S_OK;
+    })
 }

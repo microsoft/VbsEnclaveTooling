@@ -3,6 +3,7 @@
 
 #pragma once
 
+#include <future>
 #include <memory>
 #include <optional>
 
@@ -129,7 +130,7 @@ namespace veil::vtl1
                 auto lock = m_lock.lock_exclusive();
                 if (m_ready)
                 {
-                    THROW_HR(E_ILLEGAL_METHOD_CALL);
+                    throw std::future_error(std::future_errc::promise_already_satisfied);
                 }
                 m_valueholder.set_value(std::forward<decltype(args)>(args)...);
                 m_ready = true;
@@ -147,7 +148,7 @@ namespace veil::vtl1
                 auto lock = m_lock.lock_exclusive();
                 if (m_ready)
                 {
-                    THROW_HR(E_ILLEGAL_METHOD_CALL);
+                    throw std::future_error(std::future_errc::promise_already_satisfied);
                 }
                 m_exception = std::move(e);
                 m_ready = true;
@@ -192,25 +193,27 @@ namespace veil::vtl1
 
         constexpr T get()
         {
-            m_sharedState->wait_for_ready();
-
-            if (auto e = m_sharedState->get_exception())
+            auto state = std::exchange(m_sharedState, nullptr);
+            if (!state)
             {
-                m_sharedState.reset();
+                throw std::future_error(std::future_errc::no_state);
+            }
+            state->wait_for_ready();
+
+            if (auto e = state->get_exception())
+            {
+                state.reset();
                 std::rethrow_exception(e);
             }
 
             if constexpr (std::is_void_v<T>)
             {
-                m_sharedState->get_value();
-                m_sharedState.reset();
+                state->get_value();
                 return;
             }
             else
             {
-                auto&& value = std::move(m_sharedState->get_value());
-                m_sharedState.reset();
-                return value;
+                return std::move(state->get_value());
             }
         }
 
@@ -245,7 +248,10 @@ namespace veil::vtl1
 
         future<T> get_future()
         {
-            THROW_HR_IF(E_ILLEGAL_METHOD_CALL, m_alreadyRetrievedFuture);
+            if (m_alreadyRetrievedFuture)
+            {
+                throw std::future_error(std::future_errc::future_already_retrieved);
+            }
             m_alreadyRetrievedFuture = true;
             return { m_sharedState };
         }

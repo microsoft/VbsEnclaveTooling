@@ -27,7 +27,8 @@ namespace veil::vtl0::implementation::callbacks
         &wprintf,
         &taskpool_make,
         &taskpool_delete,
-        &taskpool_schedule_task
+        &taskpool_schedule_task,
+        &taskpool_cancel_queued_tasks,
     };
 }
 

@@ -149,6 +149,12 @@ namespace veil::vtl1
         unique_object_table(unique_object_table&& other) noexcept = default;
         unique_object_table& operator=(unique_object_table&& other) noexcept = default;
 
+        id peek_next_id()
+        {
+            auto lock = m_lock.lock_exclusive();
+            return m_id;
+        }
+
         id store(T&& object)
         {
             auto lock = m_lock.lock_exclusive();
@@ -167,6 +173,12 @@ namespace veil::vtl1
                 return std::optional<T>{std::move(node.mapped())};
             }
             return std::nullopt;
+        }
+
+        void clear()
+        {
+            auto lock = m_lock.lock_exclusive();
+            m_objects.clear();
         }
 
         T&& take(id handle)

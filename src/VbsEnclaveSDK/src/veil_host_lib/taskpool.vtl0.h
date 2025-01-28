@@ -24,6 +24,7 @@ namespace veil::vtl0::implementation::callbacks
     void* taskpool_make(void* args) noexcept;
     void* taskpool_delete(void* args) noexcept;
     void* taskpool_schedule_task(void* args) noexcept;
+    void* taskpool_cancel_queued_tasks(void* args) noexcept;
 }
 
 namespace veil::vtl0::implementation
@@ -75,6 +76,12 @@ namespace veil::vtl0::implementation
             m_cv.notify_one();
         }
 
+        void cancel_queued_tasks()
+        {
+            std::lock_guard lock(m_mutex);
+            std::queue<uint64_t>{}.swap(m_taskHandles); // i.e. m_taskHandles.clear()
+        }
+
     private:
         void thread_proc()
         {
@@ -124,11 +131,11 @@ namespace veil::vtl0::implementation
 
         void* m_enclave{};
         uint64_t m_taskpoolInstance_vtl1{};
-        std::vector<std::thread> m_threads;
         std::queue<uint64_t> m_taskHandles;
         std::mutex m_mutex;
         std::condition_variable m_cv;
         std::atomic<bool> m_stop = false;
         const bool m_mustFinishAllQueuedTasks;
+        std::vector<std::jthread> m_threads;
     };
 }
