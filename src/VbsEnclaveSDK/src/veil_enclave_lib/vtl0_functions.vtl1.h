@@ -51,6 +51,7 @@ namespace veil::vtl1::vtl0_functions
         void* output;
         auto free = veil::vtl1::implementation::get_callback(veil::implementation::callback_id::free);
         LOG_IF_WIN32_BOOL_FALSE(::CallEnclave(free, reinterpret_cast<void*>(memory), TRUE, reinterpret_cast<void**>(&output)));
+        LOG_IF_FAILED(pvoid_to_hr(output));
     }
 
     namespace details

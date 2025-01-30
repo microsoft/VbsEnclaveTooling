@@ -28,6 +28,39 @@ namespace veil::any
                 // out
                 veil::enclave_error error;
             };
+
+            struct taskpool_make
+            {
+                void* enclave;
+                uint64_t taskpoolInstanceVtl1;
+                uint32_t threadCount;
+                bool mustFinishAllQueuedTasks;
+
+                // out
+                void* taskpoolInstanceVtl0;
+            };
+
+            struct taskpool_delete
+            {
+                void* taskpoolInstanceVtl0;
+            };
+
+            struct taskpool_schedule_task
+            {
+                void* taskpoolInstanceVtl0;
+                uint64_t taskId;
+            };
+
+            struct taskpool_run_task
+            {
+                uint64_t taskpoolInstanceVtl1;
+                uint64_t taskId;
+            };
+
+            struct taskpool_cancel_queued_tasks
+            {
+                void* taskpoolInstanceVtl0;
+            };
         }
     }
 }

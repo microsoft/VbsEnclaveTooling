@@ -1,0 +1,43 @@
+// Copyright (c) Microsoft Corporation.
+// Licensed under the MIT License.
+
+#include "pch.h"
+
+#include "taskpool.vtl0.h"
+
+namespace veil::vtl0::implementation::callbacks
+{
+    VEIL_ABI_FUNCTION(taskpool_make, args,
+    {
+        auto makeArgs = reinterpret_cast<veil::any::implementation::args::taskpool_make*>(args);
+        auto taskpoolInstanceVtl0 = std::make_unique<veil::vtl0::implementation::taskpool_backing_threads>(makeArgs->enclave, makeArgs->taskpoolInstanceVtl1, makeArgs->threadCount, makeArgs->mustFinishAllQueuedTasks);
+        makeArgs->taskpoolInstanceVtl0 = reinterpret_cast<void*>(taskpoolInstanceVtl0.release()); // let the vtl0 counterpart be owned by vtl1 taskpool
+        return S_OK;
+    })
+
+    VEIL_ABI_FUNCTION(taskpool_delete, args,
+    {
+        using T = veil::vtl0::implementation::taskpool_backing_threads;
+        auto deleteArgs = reinterpret_cast<veil::any::implementation::args::taskpool_delete*>(args);
+        auto taskpoolInstanceVtl0 = std::unique_ptr<T>(reinterpret_cast<T*>(deleteArgs->taskpoolInstanceVtl0));
+        taskpoolInstanceVtl0.reset(); // deleting explicitly for clarity
+        return S_OK;
+    })
+
+    VEIL_ABI_FUNCTION(taskpool_schedule_task, args,
+    {
+        auto taskInfo = reinterpret_cast<veil::any::implementation::args::taskpool_schedule_task*>(args);
+        auto taskpoolInstance = reinterpret_cast<veil::vtl0::implementation::taskpool_backing_threads*>(taskInfo->taskpoolInstanceVtl0);
+        taskpoolInstance->queue_task(taskInfo->taskId);
+        return S_OK;
+    })
+
+    VEIL_ABI_FUNCTION(taskpool_cancel_queued_tasks, args,
+    {
+        using T = veil::vtl0::implementation::taskpool_backing_threads;
+        auto data = reinterpret_cast<veil::any::implementation::args::taskpool_cancel_queued_tasks*>(args);
+        auto taskpoolInstanceVtl0 = reinterpret_cast<T*>(data->taskpoolInstanceVtl0);
+        taskpoolInstanceVtl0->cancel_queued_tasks();
+        return S_OK;
+    })
+}

@@ -33,6 +33,7 @@ namespace Samples::Taskpool
 
         // Call into enclave to 'RunTaskpoolExample' export
         sample::args::RunTaskpoolExample data;
+        data.threadCount = THREAD_COUNT - 1;
         THROW_IF_FAILED(veil::vtl0::enclave::call_enclave(enclave.get(), "RunTaskpoolExample", data));
 
         std::wcout << L"Finished sample: Taskpool..." << std::endl;
