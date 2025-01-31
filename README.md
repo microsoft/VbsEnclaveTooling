@@ -50,38 +50,20 @@ or the `VbsEnclaveSDK` project inside a project that consumes the nuget package.
 
 VbsEnclaveSDK usage
 ------------
-Currently the `VbsEnclaveSDK` project is what builds the SDK. The SDK contains
-an `Includes` folder with header files for the SDK and a `Sources` file with the 
-C/C++ files for any implementation. 
+Currently the SDK is located inside a separate solution file called `vbs_enclave_implementation_library.sln` 
+located in `./src/VbsEnclaveSDK`.
 
-Both the `Includes` and the `Sources` folders are automatically added to a project
-that consume the `VbsEnclavesTooling` nuget package. These projects can access the
-SDK headers by simply using a `#include` preprocessor directive like below:
+To view and load the SDK Launch and build the solution. For further information on building and interacting
+with the SDK you can view the SDK specific README file [here](./src/VbsEnclaveSDK/README.md).
 
-```C
-#include <VbsEnclaveSDK\Includes\VbsEnclaveSDK.h>
-
-// use methods/types in form the SDK's .h files e.g VbsEnclaveSDK.h
-
-```
-
-During build time the `Microsoft.Windows.VbsEnclaveTooling.targets` targets file
-will build the files in the `Sources` folder into the consuming project.
-
-`Note:` The SDK and its consumption is still a work in progress.
-
-Sample App
-------------
-In the future we will add a "Sample App project solution" to the repository
-for testing and also a VSIX project template as well.
+The SDK also contains a sample hostApp and sample enclave project where you can view how a developer interacts
+with the SDK.
 
 General Information
 ------------
 
 Each project should have their own `README.md` file so you should read those
 before changing anything. They might contain more information specific to the project.
-
-
 
 Contributing
 ------------
