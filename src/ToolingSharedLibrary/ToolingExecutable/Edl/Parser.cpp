@@ -17,7 +17,7 @@ namespace EdlProcessor
     static const std::uint32_t c_max_number_of_pointers = 1;
 
     EdlParser::EdlParser(const std::filesystem::path& file_path)
-        : m_file_path(file_path), m_file_name(m_file_path.filename()), m_cur_line(1), m_cur_column(1)
+        : m_file_path(file_path), m_file_name(m_file_path.filename().replace_extension()), m_cur_line(1), m_cur_column(1)
     {
     }
 

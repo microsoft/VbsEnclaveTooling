@@ -22,6 +22,7 @@
     <file src="..\..\VbsEnclaveSDK\Sources\**" target="src\VbsEnclaveSDK\Sources\" />
     <file src="Microsoft.Windows.VbsEnclaveTooling.props" target="build\native"/>
     <file src="Microsoft.Windows.VbsEnclaveTooling.targets" target="build\native"/>
+    <file src="..\..\ToolingSharedLibrary\Includes\VbsEnclaveABI\**" target="src\VbsEnclaveABI\" />
     <file src="..\..\..\README.md"/>
   </files>
 </package>

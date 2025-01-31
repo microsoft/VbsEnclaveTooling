@@ -130,7 +130,7 @@ namespace EdlProcessor
 
     struct ParsedAttributeInfo
     {
-        bool IsSizeOrCountPresent()
+        bool IsSizeOrCountPresent() const
         {
             return !m_size_info.IsEmpty() || !m_count_info.IsEmpty();
         }

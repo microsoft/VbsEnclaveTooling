@@ -67,6 +67,7 @@ namespace ErrorHelpers
         EdlDuplicateFieldOrParameter,
         EdlSizeAndCountNotValidForNonPointer,
         CodeGenUnableToOpenOutputFile,
+        CodeGenUnableToCreateHeaderFile,
     };
 
     struct ErrorIdHash
@@ -134,6 +135,7 @@ namespace ErrorHelpers
 
         // CodeGen errors
         { ErrorId::CodeGenUnableToOpenOutputFile, "Failed to open '{}' for writing." },
+        { ErrorId::CodeGenUnableToCreateHeaderFile, "Failed to create '{}'." },
     };
 
     template<typename... Args>
