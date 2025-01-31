@@ -67,7 +67,7 @@ These can be accessed via:
 ### Data flow
 
 1. Developer creates enclave instance then creates enclave class e.g `auto enclave_class = GeneratedEnclaveClass(enclave_instance);`
-2. Developer calls vtl0 abi with enclave instance and function name e.g `vtl0_memory_ptr<User> user enclave_class.GetUser("Bob");`
+2. Developer calls vtl0 abi with enclave instance and function name e.g `vtl0_memory_ptr<User> user { enclave_class.GetUser("Bob") } ;`
 3. Abi packages parameters into a struct that contains a tuple type specific for that function. The structure also contains a buffer and size for a return result and a function pointer to allow the abi to allocate memory on demand during the function call.
 1. The structure is then casted to a void* and then calls `CallEnclave` with this structure as input. 
 1. The Abi layer once in the enclave has its code within a try/catch, and only returns HRESULTs as void*. Note: the plan is to support error codes and throwing on both sides, but right now only throwing is available outside the CallEnclave boundary.
@@ -79,7 +79,15 @@ These can be accessed via:
 
 Note: since return values are created from the heap using heap alloc, the developer will need to use the `vtl0_memory_ptr` smart pointer or use `HeapFree` themselves for any returned object from vtl1.
 
-                                             
+### Things still missing
+1. Code needs to be added to developers can pass in an std::string to the vtl0 stub and have the characters copied then passed as a new std::string in vtl1
+1. For InOut parameters code needs to be added just like in the return value case where we copy data from vtl1 back into vtl0. Currently InOut parameters are
+basically just In parameters.
+1. For out parameters to work nicely we should allow vtl1 to use vtl1 memory only. Then upon return from the vtl1 impl function perform a copy of the data 
+in the second pointer. Note: Out params will always have two pointers e.g _Out_ mytype**. This means we need to send a vtl1 only copy of both pointers to the
+vtl1 function. Then in the ABI layer copy the data back into the vtl0 verson of the out param.
+1. Enclave to host app codegen.
+                          
 ### How the generated ABI code looks (spacing updated for clarity)
 
 `Generated enclave C++ class with stub function`
