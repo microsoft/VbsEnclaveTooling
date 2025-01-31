@@ -163,7 +163,7 @@ namespace VbsEnclaveGenerated_test
 
                             // Pass void* function context, parameters, developer impl function
                             // and a parameter verifier function to the CallEnclaveFunction abi function
-                            THROW_IF_FAILED((CallEnclaveFunctionWithResult<MyStruct1, FunctionParams>(
+                            THROW_IF_FAILED((CallEnclaveFunctionWithResult<MyStruct1*, FunctionParams>(
                                 function_context,
                                 VTL1_Implementations::AbiDefinitions::TrustedGetStruct1_Abi_Impl,
                                 ParameterVerifiers::CopyAndVerifyFor_TrustedGetStruct1<FunctionParams>)));
@@ -199,7 +199,7 @@ namespace VbsEnclaveGenerated_test
             {
                 // Implementation declaration for Developer function. The Developer must implement this 
                 // function
-                MyStruct1 TrustedGetStruct1(
+                MyStruct1* TrustedGetStruct1(
                     _In_ MyStruct1 arg1,
                     _In_ std::array<MyStruct1, 5> arg2,
                     _Inout_ MyStruct1* arg3,
@@ -210,7 +210,7 @@ namespace VbsEnclaveGenerated_test
             {
 
                 // Abi impl function that forwards parameters to developers impl function declaration.
-                static inline MyStruct1 TrustedGetStruct1_Abi_Impl(
+                static inline MyStruct1* TrustedGetStruct1_Abi_Impl(
                     _In_ MyStruct1 arg1,
                     _In_ std::array<MyStruct1, 5> arg2,
                     _Inout_ MyStruct1* arg3,
