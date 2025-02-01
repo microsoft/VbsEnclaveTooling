@@ -14,7 +14,6 @@ namespace VbsEnclaveABI
             : m_memory(memory)
         {
         }
-
  
         // Provide access to the underlying pointer for specific operations
         // Dangerous, so use sparingly.
@@ -51,6 +50,7 @@ namespace VbsEnclaveABI
         ~vtl0_memory_ptr() noexcept
         {
             free_memory(m_memory);
+            m_memory = nullptr;
         }
 
         // Disallow copy for now
@@ -137,7 +137,6 @@ namespace VbsEnclaveABI
                 {
                     SecureZeroMemory(memory, sizeof(T));
                     ::HeapFree(::GetProcessHeap(), 0, memory);
-                    memory = nullptr;
                 }
             }
 

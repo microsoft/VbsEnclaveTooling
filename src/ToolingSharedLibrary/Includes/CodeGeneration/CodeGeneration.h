@@ -24,17 +24,9 @@ namespace CodeGeneration
             std::string vtl1_verifiers_header_content{};
         };
 
-        std::string BuildDeveloperTypesHeaderFile(std::string_view header_content);
-
-        std::string EncapsulateCodeInNamespace(
-            std::string_view namespace_name,
-            std::string_view code);
-
         std::tuple<std::string, std::string, std::string> BuildStartOfDefinition(
             std::string_view type_name,
             std::string_view identifier_name);
-
-        std::string AddUsingNamespace(std::string_view namespace_name);
 
         std::string BuildEnumDefinition(const DeveloperType& developer_types);
 

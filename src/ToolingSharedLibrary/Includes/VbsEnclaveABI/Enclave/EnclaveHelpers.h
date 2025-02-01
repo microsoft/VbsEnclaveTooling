@@ -11,6 +11,7 @@
 #include <VbsEnclaveABI\Shared\VbsEnclaveAbiBase.h>
 #include <VbsEnclaveABI\Shared\VbsEnclaveMemoryHelpers.h>
 
+// Content of this file should only be used within an enclave.
 namespace VbsEnclaveABI
 {
     // This will only be available in debug mode. Accessor Functions have not been ported to GE_Current yet
@@ -65,9 +66,9 @@ namespace VbsEnclaveABI
     }
 
     // Note about the verifier, in the future it will be used to do a deep copy of the function
-    // parameters, verify then and return them back to this function who will then pass them to
-    // the vtl1 impl function. Then when we return we will copy the content of the out params back
-    // into the original parameter. For now we simply copy the params into vtl1 and pass them to
+    // parameters, verify them and return them back to this function who will then pass them to
+    // the vtl1 impl function. When we return, we will copy the content of the out params back
+    // into the original parameter. For now we simply copy the parameters into vtl1 and pass them to
     // the impl function.
     template <typename ReturnT, typename ParamsT, typename FuncImplT, typename FuncCopyAndVerifyT>
     static inline HRESULT CallEnclaveFunctionWithResult(void* context, FuncImplT developer_impl_func, FuncCopyAndVerifyT verifier)

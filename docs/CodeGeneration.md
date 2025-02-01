@@ -67,14 +67,14 @@ These can be accessed via:
 ### Data flow
 
 1. Developer creates enclave instance then creates enclave class e.g `auto enclave_class = GeneratedEnclaveClass(enclave_instance);`
-2. Developer calls vtl0 abi with enclave instance and function name e.g `vtl0_memory_ptr<User> user { enclave_class.GetUser("Bob") } ;`
+2. Developer calls vtl0 abi with enclave instance and function name e.g `vtl0_memory_ptr<User> user { enclave_class.GetUser("Bob") };`
 3. Abi packages parameters into a struct that contains a tuple type specific for that function. The structure also contains a buffer and size for a return result and a function pointer to allow the abi to allocate memory on demand during the function call.
 1. The structure is then casted to a void* and then calls `CallEnclave` with this structure as input. 
 1. The Abi layer once in the enclave has its code within a try/catch, and only returns HRESULTs as void*. Note: the plan is to support error codes and throwing on both sides, but right now only throwing is available outside the CallEnclave boundary.
 1. The Abi then copies the void* input into an internal vtl1 structure then casts the copied parameter data into a vtl1 tuple and fowards the parameters to the vtl1 abi impl function.
 1. The abi impl function then calls the developers impl function with the correct parameters.
-1. Upon return (still in vtl1) from the developers impl function, if the function returns a value, this value is serialized into an array of bytes and copied into the original structures return buffer along with its size. Note the buffer size is allocated using the allocation function pointer in the original structure.
-1. When the abi returns from vtl1 if there is a return value it is deserialized and returned back to the caller.
+1. Upon return (still in vtl1) from the developers impl function, if the function returns a value, this value is copied into the original structures return buffer along with its size. Note the buffer size is allocated using the allocation function pointer in the original structure.
+1. When the abi returns from vtl1 if there is a return value it is returned back to the caller.
 
 
 Note: since return values are created from the heap using heap alloc, the developer will need to use the `vtl0_memory_ptr` smart pointer or use `HeapFree` themselves for any returned object from vtl1.

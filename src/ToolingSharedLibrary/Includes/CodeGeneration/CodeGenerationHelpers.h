@@ -13,8 +13,6 @@ using namespace ToolingExceptions;
 
 namespace CodeGeneration
 {
-    constexpr std::string_view RIGHT_ANGLE_BRACKET = ">";
-
     static inline std::string uint64_to_hex(uint64_t value)
     {
         std::stringstream string_stream;

@@ -66,7 +66,7 @@ namespace VbsEnclaveABI
 
         if (!return_value)
         {
-            LOG_IF_NULL_ALLOC_MSG(return_value, "VTL1 function that returns a value returned null.", "f");
+            LOG_IF_NULL_ALLOC_MSG(return_value, "VTL1 function that returns a value returned null.");
         }
 
         // Return developer must free with HeapFree or vtl0_memory_ptr.
