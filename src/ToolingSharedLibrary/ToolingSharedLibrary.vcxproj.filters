@@ -48,6 +48,18 @@
     <ClInclude Include="Includes\CodeGeneration\CodeGenerationHelpers.h">
       <Filter>Source Files</Filter>
     </ClInclude>
+    <ClInclude Include="Includes\VbsEnclaveABI\Shared\VbsEnclaveMemoryHelpers.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Includes\VbsEnclaveABI\Enclave\EnclaveHelpers.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Includes\VbsEnclaveABI\Shared\VbsEnclaveAbiBase.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Includes\VbsEnclaveABI\Host\VbsEnclaveHostHelpers.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp">
@@ -77,5 +89,8 @@
     <Text Include="Includes\Edl\LexicalAnalyzer.h">
       <Filter>Header Files</Filter>
     </Text>
+  </ItemGroup>
+  <ItemGroup>
+    <Natvis Include="$(MSBuildThisFileDirectory)..\..\natvis\wil.natvis" />
   </ItemGroup>
 </Project>

@@ -23,40 +23,50 @@ namespace CodeGeneration
 
     void CppCodeGenerator::Generate()
     {
-        auto base_header = BuildBaseHeaderFile();
-        auto enclave_types_header = GenerateDeveloperTypesHeader();
+        std::string enclave_headers_output = std::format(c_output_folder_for_generated_trusted_functions, m_edl.m_name);
+        std::string hostapp_headers_output = std::format(c_output_folder_for_generated_untrusted_functions, m_edl.m_name);
+        std::string shared_headers_output = std::format(c_output_folder_for_shared_files, m_edl.m_name);
 
-        // Save the base header for enclave functionality to output location
-        SaveFileToOutputFolder(
-            c_base_header_name_with_ext,
-            m_output_folder_path,
-            base_header);
+        auto enclave_types_header = BuildDeveloperTypesHeader(m_edl.m_developer_types);
 
         // Save the developer types to a header file in the output location
         SaveFileToOutputFolder(
             c_developer_types_header,
-            m_output_folder_path,
+            m_output_folder_path / shared_headers_output,
             enclave_types_header);
-    }
 
-    std::string CppCodeGenerator::GenerateDeveloperTypesHeader()
-    {
-        std::string types_header {};
-
-        for (auto&& [name, type] : m_edl.m_developer_types)
+        if (!m_edl.m_trusted_functions.empty())
         {
-            if (type->m_type_kind == EdlTypeKind::Enum ||
-                type->m_type_kind == EdlTypeKind::AnonymousEnum)
-            {
-                types_header += BuildEnumDefinition(*type);
-            }
-            else
-            {
-                types_header += BuildStructDefinition(*type);
-            }
-        }
+            auto enclave_headers = BuildHostToEnclaveFunctions(m_edl.m_name, m_edl.m_trusted_functions);
 
-        return BuildDeveloperTypesHeaderFile(types_header);
+            // Save the developer types to a header file in the output location
+            SaveFileToOutputFolder(
+                c_untrusted_vtl0_stubs_header,
+                m_output_folder_path / hostapp_headers_output,
+                enclave_headers.vtl0_class_header_content);
+
+            auto trusted_location = m_output_folder_path / enclave_headers_output;
+
+            SaveFileToOutputFolder(
+                c_trust_vtl1_stubs_header,
+                trusted_location,
+                enclave_headers.vtl1_stub_functions_header_content);
+
+            SaveFileToOutputFolder(
+                c_trusted_vtl1_impl_header,
+                trusted_location,
+                enclave_headers.vtl1_developer_impls_header_content);
+
+            SaveFileToOutputFolder(
+                std::format("{}.def", m_edl.m_name),
+                trusted_location,
+                enclave_headers.vtl1_enclave_module_defintiion_content);
+
+            SaveFileToOutputFolder(
+                c_parameter_verifier_header,
+                trusted_location,
+                enclave_headers.vtl1_verifiers_header_content);
+        }
     }
 
     void CppCodeGenerator::SaveFileToOutputFolder(
@@ -65,6 +75,15 @@ namespace CodeGeneration
         std::string_view file_content)
     {
         auto output_file_path = output_folder / file_name;
+
+        if (!std::filesystem::exists(output_folder) && !std::filesystem::create_directories(output_folder))
+        {
+            throw CodeGenerationException(
+                ErrorId::CodeGenUnableToOpenOutputFile,
+                output_file_path.generic_string());
+            
+        }
+
         std::ofstream output_file(output_file_path.generic_string());
 
         if (output_file.is_open())

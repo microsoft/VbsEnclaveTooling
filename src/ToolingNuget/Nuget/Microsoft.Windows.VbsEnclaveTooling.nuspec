@@ -20,6 +20,7 @@
     <file src="$vbsenclavetooling_arm64_exe$" target="bin\arm64"/>
     <file src="Microsoft.Windows.VbsEnclaveTooling.props" target="build\native"/>
     <file src="Microsoft.Windows.VbsEnclaveTooling.targets" target="build\native"/>
+    <file src="..\..\ToolingSharedLibrary\Includes\VbsEnclaveABI\**" target="src\VbsEnclaveABI\" />
     <file src="..\..\..\README.md"/>
   </files>
 </package>

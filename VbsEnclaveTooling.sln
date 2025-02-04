@@ -33,6 +33,7 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ToolingSharedLibrary", "src
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "docs", "docs", "{890A5ACE-43AB-4957-B32A-7720ED8ED565}"
 	ProjectSection(SolutionItems) = preProject
+		docs\CodeGeneration.md = docs\CodeGeneration.md
 		docs\Edl.md = docs\Edl.md
 	EndProjectSection
 EndProject
