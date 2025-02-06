@@ -37,6 +37,26 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "docs", "docs", "{890A5ACE-4
 		docs\Edl.md = docs\Edl.md
 	EndProjectSection
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "TestEnclave", "tests\CodeGenerationTests\TestEnclave\TestEnclave.vcxproj", "{F4A39F44-E333-48A9-B793-B97366FE00AF}"
+	ProjectSection(ProjectDependencies) = postProject
+		{0900AF8B-EE9B-4208-97A5-225BDBAD01BA} = {0900AF8B-EE9B-4208-97A5-225BDBAD01BA}
+	EndProjectSection
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "veil_enclave_cpp_support_lib", "Common\veil_enclave_cpp_support_lib\veil_enclave_cpp_support_lib.vcxproj", "{26116633-98EC-4EAC-859C-139D020D10C9}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "CodeGenerationTesting", "CodeGenerationTesting", "{2F6D61DA-0D52-4B60-9FB6-8372E7B2089F}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "TestHostApp", "tests\CodeGenerationTests\TestHostApp\TestHostApp.vcxproj", "{7B34DEC6-2C34-4C89-B9E1-3EBFF0118DAF}"
+	ProjectSection(ProjectDependencies) = postProject
+		{F4A39F44-E333-48A9-B793-B97366FE00AF} = {F4A39F44-E333-48A9-B793-B97366FE00AF}
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "SharedFiles", "SharedFiles", "{00ADD4B8-7C9D-407F-9D1F-91DEEE0C3A7D}"
+	ProjectSection(SolutionItems) = preProject
+		tests\CodeGenerationTests\CodeGenTestFunctions.edl = tests\CodeGenerationTests\CodeGenTestFunctions.edl
+		tests\CodeGenerationTests\TestEnclaveAndHostAppShared.targets = tests\CodeGenerationTests\TestEnclaveAndHostAppShared.targets
+	EndProjectSection
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|ARM64 = Debug|ARM64
@@ -77,9 +97,38 @@ Global
 		{27C99E39-8373-4559-83D7-F21B5134EB83}.Release|ARM64.Build.0 = Release|ARM64
 		{27C99E39-8373-4559-83D7-F21B5134EB83}.Release|x64.ActiveCfg = Release|x64
 		{27C99E39-8373-4559-83D7-F21B5134EB83}.Release|x64.Build.0 = Release|x64
+		{F4A39F44-E333-48A9-B793-B97366FE00AF}.Debug|ARM64.ActiveCfg = Debug|x64
+		{F4A39F44-E333-48A9-B793-B97366FE00AF}.Debug|ARM64.Build.0 = Debug|x64
+		{F4A39F44-E333-48A9-B793-B97366FE00AF}.Debug|x64.ActiveCfg = Debug|x64
+		{F4A39F44-E333-48A9-B793-B97366FE00AF}.Debug|x64.Build.0 = Debug|x64
+		{F4A39F44-E333-48A9-B793-B97366FE00AF}.Release|ARM64.ActiveCfg = Release|x64
+		{F4A39F44-E333-48A9-B793-B97366FE00AF}.Release|ARM64.Build.0 = Release|x64
+		{F4A39F44-E333-48A9-B793-B97366FE00AF}.Release|x64.ActiveCfg = Release|x64
+		{F4A39F44-E333-48A9-B793-B97366FE00AF}.Release|x64.Build.0 = Release|x64
+		{26116633-98EC-4EAC-859C-139D020D10C9}.Debug|ARM64.ActiveCfg = Debug|ARM64
+		{26116633-98EC-4EAC-859C-139D020D10C9}.Debug|ARM64.Build.0 = Debug|ARM64
+		{26116633-98EC-4EAC-859C-139D020D10C9}.Debug|x64.ActiveCfg = Debug|x64
+		{26116633-98EC-4EAC-859C-139D020D10C9}.Debug|x64.Build.0 = Debug|x64
+		{26116633-98EC-4EAC-859C-139D020D10C9}.Release|ARM64.ActiveCfg = Release|ARM64
+		{26116633-98EC-4EAC-859C-139D020D10C9}.Release|ARM64.Build.0 = Release|ARM64
+		{26116633-98EC-4EAC-859C-139D020D10C9}.Release|x64.ActiveCfg = Release|x64
+		{26116633-98EC-4EAC-859C-139D020D10C9}.Release|x64.Build.0 = Release|x64
+		{7B34DEC6-2C34-4C89-B9E1-3EBFF0118DAF}.Debug|ARM64.ActiveCfg = Debug|x64
+		{7B34DEC6-2C34-4C89-B9E1-3EBFF0118DAF}.Debug|ARM64.Build.0 = Debug|x64
+		{7B34DEC6-2C34-4C89-B9E1-3EBFF0118DAF}.Debug|x64.ActiveCfg = Debug|x64
+		{7B34DEC6-2C34-4C89-B9E1-3EBFF0118DAF}.Debug|x64.Build.0 = Debug|x64
+		{7B34DEC6-2C34-4C89-B9E1-3EBFF0118DAF}.Release|ARM64.ActiveCfg = Release|x64
+		{7B34DEC6-2C34-4C89-B9E1-3EBFF0118DAF}.Release|ARM64.Build.0 = Release|x64
+		{7B34DEC6-2C34-4C89-B9E1-3EBFF0118DAF}.Release|x64.ActiveCfg = Release|x64
+		{7B34DEC6-2C34-4C89-B9E1-3EBFF0118DAF}.Release|x64.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{F4A39F44-E333-48A9-B793-B97366FE00AF} = {2F6D61DA-0D52-4B60-9FB6-8372E7B2089F}
+		{7B34DEC6-2C34-4C89-B9E1-3EBFF0118DAF} = {2F6D61DA-0D52-4B60-9FB6-8372E7B2089F}
+		{00ADD4B8-7C9D-407F-9D1F-91DEEE0C3A7D} = {2F6D61DA-0D52-4B60-9FB6-8372E7B2089F}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {166D23FF-1362-43F2-BEE7-58FDCDB133DF}

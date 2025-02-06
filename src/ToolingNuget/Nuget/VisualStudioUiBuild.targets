@@ -1,11 +1,12 @@
 <Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
     <PropertyGroup>
         <VbsEnclaveNugetSpecFilePath>$(ProjectDir)Nuget\Microsoft.Windows.VbsEnclaveTooling.nuspec</VbsEnclaveNugetSpecFilePath>
-        <VbsEnclaveNugetPackVersionNumber>$([System.DateTime]::Now.ToString('MM.dd.yyyy.HHmmss'))</VbsEnclaveNugetPackVersionNumber>
+        <VbsEnclaveNugetPackVersionNumber>0.0.0</VbsEnclaveNugetPackVersionNumber>
 
         <!-- Property value should match the "ToolingExecutable" projects 'target name' property  -->
         <VbsEnclaveNugetPackExePath>$(OutDir)vbsenclavetooling.exe</VbsEnclaveNugetPackExePath>
-        <VbsEnclaveNugetPackProperties>target_version=$(VbsEnclaveNugetPackVersionNumber);vbsenclavetooling_$(Platform)_exe=$(VbsEnclaveNugetPackExePath)</VbsEnclaveNugetPackProperties>
+        <VbsEnclaveNugetPackCppSupportPath>$(OutDir)veil_enclave_cpp_support_lib.lib</VbsEnclaveNugetPackCppSupportPath>
+        <VbsEnclaveNugetPackProperties>target_version=$(VbsEnclaveNugetPackVersionNumber);vbsenclavetooling_$(Platform)_exe=$(VbsEnclaveNugetPackExePath);vbsenclavetooling_cpp_support_$(Platform)_lib=$(VbsEnclaveNugetPackCppSupportPath);</VbsEnclaveNugetPackProperties>
         <VbsEnclaveNugetPackOutputDirectory>$(SolutionDir)_build</VbsEnclaveNugetPackOutputDirectory>
         <VbsEnclaveNugetPackScriptFile>$(SolutionDir)buildScripts\PackageNuget.ps1</VbsEnclaveNugetPackScriptFile>
     </PropertyGroup>

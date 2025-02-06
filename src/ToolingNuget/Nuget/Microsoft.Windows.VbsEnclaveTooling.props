@@ -9,7 +9,7 @@
         <VbsEnclaveEdlPath></VbsEnclaveEdlPath>
         <VbsEnclaveCodeGenLanguage Condition="'$(VbsEnclaveCodeGenLanguage)' == ''">C++</VbsEnclaveCodeGenLanguage>
         <VbsEnclaveErrorHandling Condition="'$(VbsEnclaveErrorHandling)' == ''">ErrorCode</VbsEnclaveErrorHandling>
-        <VbsEnclaveGeneratedFilesDir>$(ProjectDir)Generated Files</VbsEnclaveGeneratedFilesDir>
+        <VirtualTrustLayer Condition="'$(VirtualTrustLayer)' == ''">HostApp</VirtualTrustLayer>
         <!-- End -->
     </PropertyGroup>
 </Project>

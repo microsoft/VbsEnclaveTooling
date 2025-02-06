@@ -2,18 +2,12 @@
 // Licensed under the MIT License.
 #pragma once 
 
-// TODO: These can be removed once the SDK and tooling codegen
-// share a base header that performs these
-// see: src/VbsEnclaveSDK/src/veil_enclave_wil_inc/wil/enclave/wil_for_enclaves.h
-#ifndef RESULT_SUPPRESS_STATIC_INITIALIZERS
-#define RESULT_SUPPRESS_STATIC_INITIALIZERS
+// Must be the first header included for enclave dll's
+#ifdef __ENCLAVE_PROJECT__
+#include <wil/enclave/wil_for_enclaves.h>
 #endif
 
-#define FormatMessageW DO_NOT_USE_FormatMessageW
-#define IsDebuggerPresent DO_NOT_USE_IsDebuggerPresent
-#undef FormatMessageW
-#undef IsDebuggerPresent
-// End
+// end
 
 #include <atomic>
 #include <array>

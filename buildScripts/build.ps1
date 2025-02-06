@@ -47,7 +47,8 @@ Options:
 "@
   Exit
 }
-
+# Note: new additions to the commandline build should be added to the VisualStudioUiBuild.targets file as well
+# so the building behavior in VS UI and commandline stay the same.
 $ErrorActionPreference = "Stop"
 $BuildRootDirectory = (Split-Path $MyInvocation.MyCommand.Path)
 $BaseRepositoryDirectory = Split-Path $BuildRootDirectory
@@ -78,10 +79,8 @@ $BuildTargetVersion = [System.Version]::new(0, 0, 1)
 
 if ($IsLocalBuild)
 {
-    # Use the current date and time as the version number for local builds.
-    $currentDate = Get-Date
-    $versionNumber = $currentDate.ToString("MM.dd.yyyy.HHmmss")
-    $BuildTargetVersion = [System.Version]::new($versionNumber)
+    # Use the triple zeros as the version number for local builds.
+    $BuildTargetVersion = [System.Version]::new(0, 0, 0)
 }
 
 $msbuildPath = & "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe" -latest -prerelease -products * -requires Microsoft.Component.MSBuild -find MSBuild\**\Bin\MSBuild.exe
@@ -114,6 +113,9 @@ Try
         #Now create the nuget package 
         $vbsExePath = "$BaseRepositoryDirectory\_build\$platform\$configuration\$solutionName.exe"
         $nugetPackProperties += "vbsenclavetooling_$platform"+"_exe=$vbsExePath;"
+
+        $cppSupportLibPath = "$BaseRepositoryDirectory\_build\$platform\$configuration\veil_enclave_cpp_support_lib.lib"
+        $nugetPackProperties += "vbsenclavetooling_cpp_support_$platform"+"_lib=$cppSupportLibPath;"
       }
     }
 

@@ -25,21 +25,19 @@ namespace CodeGeneration
     {
         std::string enclave_headers_output = std::format(c_output_folder_for_generated_trusted_functions, m_edl.m_name);
         std::string hostapp_headers_output = std::format(c_output_folder_for_generated_untrusted_functions, m_edl.m_name);
-        std::string shared_headers_output = std::format(c_output_folder_for_shared_files, m_edl.m_name);
 
         auto enclave_types_header = BuildDeveloperTypesHeader(m_edl.m_developer_types);
 
         // Save the developer types to a header file in the output location
         SaveFileToOutputFolder(
             c_developer_types_header,
-            m_output_folder_path / shared_headers_output,
+            m_output_folder_path / c_output_folder_for_shared_files,
             enclave_types_header);
 
         if (!m_edl.m_trusted_functions.empty())
         {
             auto enclave_headers = BuildHostToEnclaveFunctions(m_edl.m_name, m_edl.m_trusted_functions);
 
-            // Save the developer types to a header file in the output location
             SaveFileToOutputFolder(
                 c_untrusted_vtl0_stubs_header,
                 m_output_folder_path / hostapp_headers_output,
@@ -58,7 +56,7 @@ namespace CodeGeneration
                 enclave_headers.vtl1_developer_impls_header_content);
 
             SaveFileToOutputFolder(
-                std::format("{}.def", m_edl.m_name),
+                c_output_module_def_file_name,
                 trusted_location,
                 enclave_headers.vtl1_enclave_module_defintiion_content);
 
