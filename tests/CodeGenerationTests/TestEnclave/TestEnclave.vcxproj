@@ -203,19 +203,12 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="dllmain.cpp" />
-    <ClCompile Include="HostAppToEnclaveFunctions.cpp" />
-    <ClCompile Include="VbsEnclaveGenerated\Enclave\VTL1_Stubs.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="EnclaveBuild.targets" />
     <None Include="packages.config" />
-    <None Include="VbsEnclaveGenerated\Enclave\vbsenclave.def" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="BaseHeader.h" />
-    <ClInclude Include="VbsEnclaveGenerated\Enclave\ParameterVerifiers.h" />
-    <ClInclude Include="VbsEnclaveGenerated\Enclave\VTL1_Implementations.h" />
-    <ClInclude Include="VbsEnclaveGenerated\Shared\EnclaveDeveloperTypes.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

@@ -1,7 +1,10 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
-#include "BaseHeader.h"
+// Imported through vbsenclavetooling nuget package.
+// Any cpp files must make this header the first header
+// file included.
+#include <wil\enclave\wil_for_enclaves.h>
 
 extern "C" const IMAGE_ENCLAVE_CONFIG __enclave_config = {
     sizeof(IMAGE_ENCLAVE_CONFIG),
