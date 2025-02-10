@@ -2,7 +2,7 @@
 
 #pragma once
 
-#include "wil/enclave/wil_for_enclaves.h"
+#include "../veil_enclave_wil_inc/wil/enclave/wil_for_enclaves.h"
 //#include <winenclave.h>
 
 #include <atomic>

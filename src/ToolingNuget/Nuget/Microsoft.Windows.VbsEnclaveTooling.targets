@@ -7,7 +7,10 @@
          -->
         <VbsEnclavePackageDir>$([System.IO.Path]::GetFullPath($(MSBuildThisFileDirectory)))..\..\</VbsEnclavePackageDir>
         <VbsEnclaveExeFilePath>$(VbsEnclavePackageDir)bin\$(Platform)\vbsenclavetooling.exe</VbsEnclaveExeFilePath>
-        <VbsEnclavePackageSdkPath>$(VbsEnclavePackageDir)src\VbsEnclaveSDK</VbsEnclavePackageSdkPath>
+        <VbsEnclavePackageEnclaveAbiPath>$(VbsEnclavePackageDir)src\VbsEnclaveABI</VbsEnclavePackageEnclaveAbiPath>
+        <VbsEnclaveDeveloperEdlFileName>$([System.IO.Path]::GetFileName('$(VbsEnclaveEdlPath)'))</VbsEnclaveDeveloperEdlFileName>
+        <VbsEnclaveGeneratedFilesDir>$(ProjectDir)</VbsEnclaveGeneratedFilesDir>
+        <VbsEnclaveCppSupportLib>$(VbsEnclavePackageDir)lib\native\$(Platform)\veil_enclave_cpp_support_lib.lib</VbsEnclaveCppSupportLib>
     </PropertyGroup>
 
     <!-- The below targets/Items are ran at build time for any project that consumes the VbsEnclaveTooling nuget package. -->
@@ -22,14 +25,11 @@
         <!-- Ensure that the Edl file exists -->
         <Error Condition="!Exists('$(VbsEnclaveEdlPath)')" Text="The specified .edl file '$(VbsEnclaveEdlPath)' does not exist. Make sure the path to the .edl file is valid and inside the 'VbsEnclaveEdlPath' attribute in the packages .targets file." />
         <Error Condition="!Exists('$(VbsEnclaveExeFilePath)')" Text="Couldn't find tooling executable file '$(VbsEnclaveExeFilePath)'. Make sure the path to the executable file is valid and inside the 'VbsEnclaveExeFilePath' attribute in the packages .targets file." />
-
-        <!-- Create output directory if it doesn't already exist -->
-        <MakeDir Directories="$(VbsEnclaveGeneratedFilesDir)" />
-            
+  
         <!-- Generate the codegen files using the vbsenclavetooling-->
         <PropertyGroup> 
         <VbsEnclaveToolingExecutionCommand>
-            "$(VbsEnclaveExeFilePath)" --Language "$(VbsEnclaveCodeGenLanguage)" --EdlPath "$(VbsEnclaveEdlPath)" --ErrorHandling "$(VbsEnclaveErrorHandling)" --OutputDirectory "$(VbsEnclaveGeneratedFilesDir)"
+            "$(VbsEnclaveExeFilePath)" --Language "$(VbsEnclaveCodeGenLanguage)" --EdlPath "$(VbsEnclaveEdlPath)" --ErrorHandling "$(VbsEnclaveErrorHandling)" --OutputDirectory $(VbsEnclaveGeneratedFilesDir)
         </VbsEnclaveToolingExecutionCommand>
         </PropertyGroup>
 
@@ -37,26 +37,16 @@
         <Message Text="Generated '$(VbsEnclaveCodeGenLanguage)' code in output directory: '$(VbsEnclaveGeneratedFilesDir)'" Importance="high" />
     </Target>
 
-    <!-- 
-        Add the VbsEnclaveSDK include and sources files to the consuming project.
-        See VS section on wildcards: https://learn.microsoft.com/cpp/build/reference/vcxproj-files-and-wildcards?view=msvc-170#move-wildcard-items-to-a-target-body
-    -->
-    <ItemDefinitionGroup Condition="Exists('$(VbsEnclavePackageSdkPath)')">
+  
+    <ItemDefinitionGroup Condition="Exists('$(VbsEnclavePackageEnclaveAbiPath)')">
+        <!-- Add the enclave ABI headers and also the generated headers to the consuming projects include path-->
         <ClCompile>
-            <AdditionalIncludeDirectories>$(VbsEnclavePackageDir)src\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+            <AdditionalIncludeDirectories>$(VbsEnclavePackageDir)src\;$(VbsEnclaveGeneratedFilesDir);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
         </ClCompile>
+        
+        <!-- Make sure our cpp support static library is added as an enclaves linker dependency -->
+        <Link Condition="$(VirtualTrustLayer) == 'Enclave' ">
+            <AdditionalDependencies>$(VbsEnclaveCppSupportLib);%(AdditionalDependencies)</AdditionalDependencies>
+        </Link>
     </ItemDefinitionGroup>
-    <ItemGroup Condition="Exists('$(VbsEnclavePackageSdkPath)')">
-        <_WildCardClCompileFor_Cpp Include="$(VbsEnclavePackageSdkPath)\Sources\*.cpp" />
-        <_WildCardClCompileFor_C Include="$(VbsEnclavePackageSdkPath)\Sources\*.c" />
-    </ItemGroup>
-    <Target 
-        Name="AddWildCardSources"
-        AfterTargets="BuildGenerateSources"
-        Condition="Exists('$(VbsEnclavePackageSdkPath)')">
-        <ItemGroup>
-            <ClCompile Include="@(_WildCardClCompileFor_Cpp)" />
-            <ClCompile Include="@(_WildCardClCompileFor_C)" />
-        </ItemGroup>
-    </Target>
 </Project>

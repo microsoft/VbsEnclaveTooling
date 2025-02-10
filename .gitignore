@@ -423,6 +423,7 @@ vsix/LICENSE
 *.binlog
 temp
 _build
+VbsEnclaveGenerated
 
 # Config
 src/VbsEnclaveSDK/samples/sample_enclave/ConfigOverrides.props
