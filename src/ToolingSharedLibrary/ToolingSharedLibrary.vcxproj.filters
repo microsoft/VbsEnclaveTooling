@@ -48,16 +48,22 @@
     <ClInclude Include="Includes\CodeGeneration\CodeGenerationHelpers.h">
       <Filter>Source Files</Filter>
     </ClInclude>
-    <ClInclude Include="Includes\VbsEnclaveABI\Shared\VbsEnclaveMemoryHelpers.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="Includes\VbsEnclaveABI\Enclave\EnclaveHelpers.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Includes\VbsEnclaveABI\Shared\VbsEnclaveAbiBase.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Includes\VbsEnclaveABI\Host\VbsEnclaveHostHelpers.h">
+    <ClInclude Include="Includes\VbsEnclaveABI\Host\HostHelpers.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Includes\VbsEnclaveABI\Enclave\MemoryChecks.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Includes\VbsEnclaveABI\Enclave\MemoryAllocation.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Includes\VbsEnclaveABI\Enclave\Vtl0Pointers.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

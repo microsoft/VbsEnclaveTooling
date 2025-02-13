@@ -68,6 +68,7 @@ namespace EdlProcessor
         { EdlTypeKind::WChar, "wchar_t" },
         { EdlTypeKind::Void, "void" },
         { EdlTypeKind::Enum, "enum" },
+        { EdlTypeKind::HRESULT, "HRESULT" },
         { EdlTypeKind::AnonymousEnum, EDL_ANONYMOUS_ENUM_KEYWORD},
         { EdlTypeKind::Struct, "struct" },
         { EdlTypeKind::Ptr, "*" },
@@ -91,6 +92,7 @@ namespace EdlProcessor
         { "uint64_t", EdlTypeKind::UInt64 },
         { "wchar_t", EdlTypeKind::WChar },
         { "void", EdlTypeKind::Void },
+        { "HRESULT", EdlTypeKind::HRESULT },
         { "enum", EdlTypeKind::Enum },
         { EDL_ANONYMOUS_ENUM_KEYWORD, EdlTypeKind::AnonymousEnum },
         { "struct", EdlTypeKind::Struct },
@@ -158,4 +160,25 @@ namespace EdlProcessor
 
         return true;
     }
+
+    static std::unordered_set<EdlTypeKind, EdlTypeToHash> m_types_that_require_size_for_pointers
+    {
+        EdlTypeKind::Bool,
+        EdlTypeKind::Char,
+        EdlTypeKind::Float,
+        EdlTypeKind::Double,
+        EdlTypeKind::Int8,
+        EdlTypeKind::Int16,
+        EdlTypeKind::Int32,
+        EdlTypeKind::Int64,
+        EdlTypeKind::UInt8,
+        EdlTypeKind::UInt16,
+        EdlTypeKind::UInt32,
+        EdlTypeKind::UInt64,
+        EdlTypeKind::WChar,
+        EdlTypeKind::Void,
+        EdlTypeKind::SizeT,
+        EdlTypeKind::Enum,
+        EdlTypeKind::Ptr,
+    };
 }

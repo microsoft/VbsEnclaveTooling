@@ -6,6 +6,7 @@
 // file included.
 #include <wil\enclave\wil_for_enclaves.h>
 
+
 extern "C" const IMAGE_ENCLAVE_CONFIG __enclave_config = {
     sizeof(IMAGE_ENCLAVE_CONFIG),
     IMAGE_ENCLAVE_MINIMUM_CONFIG_SIZE,

@@ -1,9 +1,16 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
-#pragma once 
-#include <wil\result_macros.h>
 
-namespace VbsEnclaveABI
+// __ENCLAVE_PROJECT__ must be defined inside the enclave project only.
+#ifdef __ENCLAVE_PROJECT__
+
+#pragma once 
+#include <VbsEnclaveABI\Shared\VbsEnclaveAbiBase.h>
+#include <VbsEnclaveABI\Enclave\MemoryAllocation.h>
+
+using namespace VbsEnclaveABI::Enclave::EnclaveMemoryAllocation;
+
+namespace VbsEnclaveABI::Enclave::Pointers
 {
     template <typename T>
     struct vtl0_ptr
@@ -33,9 +40,21 @@ namespace VbsEnclaveABI
             T* m_memory;
     };
 
+    template <typename T>
+    struct EnclaveHeapFreeVtl0Deleter
+    {
+        void operator()(T* type) noexcept
+        {
+            if (type)
+            {
+                LOG_IF_FAILED(DeallocateVtl0Memory(type));
+            }
+        }
+    };
+
     // Class used when VTL0 memory is allocated with HeapAlloc. This smart pointer will
     // free the memory using HeapFree
-    template <typename T>
+    template <typename T, typename DeleterT = EnclaveHeapFreeVtl0Deleter<T>>
     struct vtl0_memory_ptr
     {
         vtl0_memory_ptr() = default;
@@ -43,14 +62,22 @@ namespace VbsEnclaveABI
         // Memory should always be VTL0 memory created with HeapAlloc
         // This class owns the memory it points to.
         explicit vtl0_memory_ptr(T* memory) noexcept
-            : m_memory(memory)
+            : m_memory(memory), m_memory_size(sizeof(T))
+        {
+        }
+
+        explicit vtl0_memory_ptr(T* memory, size_t memory_size) noexcept
+            : m_memory(memory), m_memory_size(memory_size)
         {
         }
 
         ~vtl0_memory_ptr() noexcept
         {
-            free_memory(m_memory);
-            m_memory = nullptr;
+            if (m_memory)
+            {
+                LOG_IF_FAILED(DeallocateVtl0Memory(m_memory));
+                m_memory = nullptr;
+            }
         }
 
         // Disallow copy for now
@@ -62,22 +89,23 @@ namespace VbsEnclaveABI
         {
             if (this != &other)
             {
+                auto size = other.m_memory_size;
                 m_memory(other.release());
+                m_memory_size = size;
             }
 
             return *this;
         }
 
-        vtl0_memory_ptr(const vtl0_memory_ptr&& other) :
-            m_memory(other.release())
+        vtl0_memory_ptr(const vtl0_memory_ptr&& other)
         {
+            auto size = other.m_memory_size;
+            m_memory(other.release());
+            m_memory_size = size;
         }
 
         void reset()
         {
-            T* memory = m_memory;
-            m_memory = nullptr;
-
             if (m_memory)
             {
                 release();
@@ -92,12 +120,17 @@ namespace VbsEnclaveABI
 
         vtl0_memory_ptr& operator=(T* other)
         {
-            auto ptr = m_memory;
-            m_memory = other;
-           
-            if (ptr)
+            if (m_memory != other) // Prevent self-assignment
             {
-                ptr->release();
+                // Release any previously allocated memory
+                if (m_memory)
+                {
+                    release();
+                }
+
+                // Assign the new raw pointer
+                m_memory = other;
+                m_memory_size = sizeof(T);
             }
             return *this;
         }
@@ -126,20 +159,14 @@ namespace VbsEnclaveABI
         {
             T* memory = m_memory;
             m_memory = nullptr;
+            m_memory_size = 0;
 
             return memory;
         }
 
         private:
-            static void free_memory(T* memory)
-            {
-                if (memory)
-                {
-                    SecureZeroMemory(memory, sizeof(T));
-                    ::HeapFree(::GetProcessHeap(), 0, memory);
-                }
-            }
-
             T* m_memory{};
+            size_t m_memory_size{};
     };
 }
+#endif // end __ENCLAVE_PROJECT__

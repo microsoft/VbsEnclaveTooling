@@ -16,54 +16,108 @@ namespace CodeGeneration
     CppCodeGenerator::CppCodeGenerator(
         const Edl& edl,
         const std::filesystem::path& output_path,
-        ErrorHandlingKind error_handling)
-        :   m_edl(edl), m_output_folder_path(output_path), m_error_handling(error_handling)
+        ErrorHandlingKind error_handling,
+        VirtualTrustLayerKind trust_layer,
+        std::string_view generated_namespace_name,
+        std::string_view generated_vtl0_class_name)
+        :   m_edl(edl),
+            m_output_folder_path(output_path),
+            m_error_handling(error_handling),
+            m_virtual_trust_layer_kind(trust_layer),
+            m_generated_namespace_name(generated_namespace_name),
+            m_generated_vtl0_class_name(generated_vtl0_class_name)
     {
+        if (m_output_folder_path.empty())
+        {
+            // Make output directory current directory by default if not provided.
+            m_output_folder_path = std::filesystem::current_path();
+        }
+
+        if (m_generated_namespace_name.empty())
+        {
+            m_generated_namespace_name = edl.m_name;
+        }
+
+        if (m_generated_vtl0_class_name.empty())
+        {
+            m_generated_vtl0_class_name = std::move(std::format(c_vtl0_enclave_class_name, edl.m_name));
+        }
     }
 
     void CppCodeGenerator::Generate()
     {
         std::string enclave_headers_output = std::format(c_output_folder_for_generated_trusted_functions, m_edl.m_name);
         std::string hostapp_headers_output = std::format(c_output_folder_for_generated_untrusted_functions, m_edl.m_name);
+        auto enclave_headers_location = m_output_folder_path / enclave_headers_output;
+        auto hostapp_headers_location = m_output_folder_path / hostapp_headers_output;
 
+        // Create developer types. This is shared between
+        // the HostApp and the enclave.
         auto enclave_types_header = BuildDeveloperTypesHeader(m_edl.m_developer_types);
 
-        // Save the developer types to a header file in the output location
-        SaveFileToOutputFolder(
-            c_developer_types_header,
-            m_output_folder_path / c_output_folder_for_shared_files,
-            enclave_types_header);
+        // Process content from the trusted content.
+        auto host_to_enclave_content = BuildHostToEnclaveFunctions(
+            m_generated_namespace_name,
+            m_edl.m_trusted_functions);
 
-        if (!m_edl.m_trusted_functions.empty())
+        // Process the content from the untrusted functions
+        auto enclave_to_host_content = BuildEnclaveToHostFunctions(m_edl.m_untrusted_functions);
+
+        if (m_virtual_trust_layer_kind == VirtualTrustLayerKind::Enclave)
         {
-            auto enclave_headers = BuildHostToEnclaveFunctions(m_edl.m_name, m_edl.m_trusted_functions);
-
-            SaveFileToOutputFolder(
-                c_untrusted_vtl0_stubs_header,
-                m_output_folder_path / hostapp_headers_output,
-                enclave_headers.vtl0_class_header_content);
-
-            auto trusted_location = m_output_folder_path / enclave_headers_output;
-
             SaveFileToOutputFolder(
                 c_trust_vtl1_stubs_header,
-                trusted_location,
-                enclave_headers.vtl1_stub_functions_header_content);
-
-            SaveFileToOutputFolder(
-                c_trusted_vtl1_impl_header,
-                trusted_location,
-                enclave_headers.vtl1_developer_impls_header_content);
+                enclave_headers_location,
+                host_to_enclave_content.m_vtl1_stub_functions_header_content);
 
             SaveFileToOutputFolder(
                 c_output_module_def_file_name,
-                trusted_location,
-                enclave_headers.vtl1_enclave_module_defintiion_content);
+                enclave_headers_location,
+                host_to_enclave_content.m_vtl1_enclave_module_definition_content);
+
+            auto vtl1_impl_header = CombineAndBuildVtl1ImplementationsHeader(
+               m_generated_namespace_name,
+               host_to_enclave_content.m_vtl1_developer_declaration_functions,
+               enclave_to_host_content.m_vtl1_side_of_vtl0_callback_functions,
+               host_to_enclave_content.m_vtl1_abi_impl_functions);
 
             SaveFileToOutputFolder(
-                c_parameter_verifier_header,
-                trusted_location,
-                enclave_headers.vtl1_verifiers_header_content);
+                c_trusted_vtl1_impl_header,
+                enclave_headers_location,
+                vtl1_impl_header);
+
+            SaveFileToOutputFolder(
+                c_developer_types_header,
+                enclave_headers_location,
+                enclave_types_header);
+        }
+        else if (m_virtual_trust_layer_kind == VirtualTrustLayerKind::HostApp)
+        {
+            // Add the register callbacks abi function and combine the two streams
+            // that contain the vtl0 public class methods.
+            enclave_to_host_content.m_vtl0_class_public_content 
+                << c_vtl0_register_callbacks_abi_function
+                << host_to_enclave_content.m_vtl0_class_public_content.str();
+
+            auto vtl0_class_header = CombineAndBuildHostAppEnclaveClass(
+                m_generated_vtl0_class_name,
+                m_generated_namespace_name,
+                enclave_to_host_content.m_vtl0_class_public_content,
+                enclave_to_host_content.m_vtl0_class_private_content);
+
+            SaveFileToOutputFolder(
+                c_untrusted_vtl0_stubs_header,
+                hostapp_headers_location,
+                vtl0_class_header);
+
+            SaveFileToOutputFolder(
+                c_developer_types_header,
+                hostapp_headers_location,
+                enclave_types_header);
+        }
+        else
+        {
+            throw CodeGenerationException(ErrorId::VirtualTrustLayerInvalidType);
         }
     }
 

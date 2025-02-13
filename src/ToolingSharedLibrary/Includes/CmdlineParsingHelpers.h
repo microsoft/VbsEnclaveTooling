@@ -17,15 +17,20 @@ namespace CmdlineParsingHelpers
         std::cout
             << "\n"
             << "Usage: vbsenclavetooling.exe --Language <cpp> --EdlPath <filePath.edl> --ErrorHandling [ErrorCode | Exception]\n"
-            << "--OutputDirectory <DirectoryPath>\n"
+            << "--OutputDirectory <DirectoryPath> --VirtualTrustLayer [HostApp | Enclave] --Vtl0ClassName <name_of_class> \n"
+            << "--Namespace <name_of_class>\n"
+            << "\n"
             << "Mandatory arguments:\n"
             << "  --Language [cpp]                          The progamming language that will be used in the generated code\n"
             << "  --EdlPath <filePath.edl>                  Absolute path to the .edl file that we should use to generate code in the language outlined in '--language'\n"
             << "  --ErrorHandling [ErrorCode | Exception]   The error handling the generated code should use\n"
-            << "  --OutputDirectory <DirectoryPath>         Absolute path to directory where all generated files should be placed.\n"
+            << "  --VirtualTrustLayer [HostApp | Enclave]   The virtual trust layer that the code should be generated for.\n"
             << "\n"
             << "Optional arguments:\n"
             << "  -h, --help                                Print this help message\n"
+            << "  --OutputDirectory <DirectoryPath>         Absolute path to directory where all generated files should be placed. (By default this is the current directory)\n"
+            << "  --Vtl0ClassName <name_of_class>           name of the vtl0 class that will be generated for use by the hostapp. (By default this is the name of the .edl file with the word 'Wrapper' appended to it.\n"
+            << "  --Namespace <name_of_class>               name of the namespace that all generated code will be encapsulated in. (By default this is the name os the .edl file.\n"
             << std::endl;
     }
 
@@ -40,6 +45,13 @@ namespace CmdlineParsingHelpers
     {
         Unknown,
         Cpp,
+    };
+
+    enum class VirtualTrustLayerKind : std::uint32_t
+    {
+        Unknown,
+        HostApp,
+        Enclave,
     };
 
     static ErrorId inline GetSupportedLanguageForCodeGen(
@@ -108,13 +120,6 @@ namespace CmdlineParsingHelpers
             PRINT_AND_RETURN_ERROR(ErrorId::OutputDirNoMoreArgs);
         }
 
-        std::filesystem::path item_path(args[index]);
-        std::error_code error_code{};
-        if (!std::filesystem::is_directory(item_path, error_code))
-        {
-            PRINT_AND_RETURN_ERROR(ErrorId::OutputDirNotADirectory, item_path.generic_string(), error_code.value());
-        }
-
         directory = args[index];
         return ErrorId::Success;
     }
@@ -145,5 +150,33 @@ namespace CmdlineParsingHelpers
         }
         
         PRINT_AND_RETURN_ERROR(ErrorId::ErrorHandlingInvalidType, error_handling);
+    }
+
+    static inline ErrorId GetVirtualTrustLayerFromArg(
+        std::uint32_t index,
+        char* args[],
+        std::uint32_t args_size,
+        VirtualTrustLayerKind& layer_kind)
+    {
+        layer_kind = VirtualTrustLayerKind::Unknown;
+        if (index >= args_size)
+        {
+            PRINT_AND_RETURN_ERROR(ErrorId::VirtualTrustLayerNoMoreArgs);
+        }
+
+        std::string error_handling(args[index]);
+
+        if (error_handling == "HostApp")
+        {
+            layer_kind = VirtualTrustLayerKind::HostApp;
+            return ErrorId::Success;
+        }
+        else if (error_handling == "Enclave")
+        {
+            layer_kind = VirtualTrustLayerKind::Enclave;
+            return ErrorId::Success;
+        }
+
+        PRINT_AND_RETURN_ERROR(ErrorId::VirtualTrustLayerInvalidType, error_handling);
     }
 }

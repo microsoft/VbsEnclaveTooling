@@ -18,10 +18,7 @@
     <ClCompile Include="dllmain.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="VbsEnclaveGenerated\Enclave\VTL1_Stubs.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="HostAppToEnclaveFunctions.cpp">
+    <ClCompile Include="Vtl1ExportsImplementations.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -31,22 +28,5 @@
   <ItemGroup>
     <None Include="EnclaveBuild.targets" />
     <None Include="packages.config" />
-    <None Include="VbsEnclaveGenerated\Enclave\vbsenclave.def">
-      <Filter>Source Files</Filter>
-    </None>
-  </ItemGroup>
-  <ItemGroup>
-    <ClInclude Include="VbsEnclaveGenerated\Enclave\ParameterVerifiers.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="VbsEnclaveGenerated\Enclave\VTL1_Implementations.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="VbsEnclaveGenerated\Shared\EnclaveDeveloperTypes.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="BaseHeader.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
   </ItemGroup>
 </Project>

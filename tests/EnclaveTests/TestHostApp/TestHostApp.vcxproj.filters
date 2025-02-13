@@ -15,7 +15,13 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="TestHostApp.cpp">
+    <ClCompile Include="TestEnclaveTaefTests.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="TestEnclaveTestModuleProperties.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Vtl0CallbackImplementations.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -26,13 +32,7 @@
     <Natvis Include="$(MSBuildThisFileDirectory)..\..\natvis\wil.natvis" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="HostAppTests.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="VbsEnclaveGenerated\HostApp\VTL0_Stubs.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="VbsEnclaveGenerated\Shared\EnclaveDeveloperTypes.h">
+    <ClInclude Include="TestHelpers.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

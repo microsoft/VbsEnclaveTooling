@@ -16,13 +16,13 @@
         <VbsEnclaveToolingLocalPackageDir>$(SolutionDir)\packages\Microsoft.Windows.VbsEnclaveTooling.0.0.0</VbsEnclaveToolingLocalPackageDir>
 
         <!-- Make sure the VirtualTrustLayer is set to Enclave so the enclave generated files get added at compile time -->
-        <VirtualTrustLayer>Enclave</VirtualTrustLayer>
+        <VbsEnclaveVirtualTrustLayer>Enclave</VbsEnclaveVirtualTrustLayer>
     </PropertyGroup>
     <Target
       Name="TestSignEnclaves"
       AfterTargets="Build">
         <Message Importance="high" Text="Signing $(EnclaveSignTargetName) for enclave use with test cert"/>
-        <Exec Command="signtool sign /ph /a /fd SHA256 /r &quot;$(EnclaveSignRootCertName)&quot; &quot;$(EnclaveSignTargetName)&quot;"/>
+        <Exec Command="signtool sign /ph /a /fd SHA256 /r  &quot;$(EnclaveSignRootCertName)&quot; /sha1 3BE4B390ADF5E9625478B4A663940E13EB4AD581 &quot;$(EnclaveSignTargetName)&quot;"/>
     </Target>
 
     <!-- 

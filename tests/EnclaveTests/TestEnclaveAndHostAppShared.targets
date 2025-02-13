@@ -9,8 +9,10 @@
             package is consumed.
         -->
         <VbsEnclaveEdlPath>$(ProjectDir)..\CodeGenTestFunctions.edl</VbsEnclaveEdlPath>
+        <VbsEnclaveVtl0ClassName>TestEnclave</VbsEnclaveVtl0ClassName>
+        <VbsEnclaveNamespace>VbsEnclave</VbsEnclaveNamespace>
     </PropertyGroup>
-
+    
     <!-- 
         Runs nuget restore on the project file. In conjuction with the package.config  in the project. Nuget restore should
         see the VbsEnclaveTooling.0.0.0 package in $(SolutionDir)\_build and add install it into the default package location

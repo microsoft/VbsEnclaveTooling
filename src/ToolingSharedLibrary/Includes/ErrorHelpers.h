@@ -26,7 +26,6 @@ namespace ErrorHelpers
         EdlDoesNotExist,
         NotAnEdlFile,
         OutputDirNoMoreArgs,
-        OutputDirNotADirectory,
         ErrorHandlingNoMoreArgs,
         ErrorHandlingInvalidType,
         InvalidArgument,
@@ -54,7 +53,7 @@ namespace ErrorHelpers
         EdlTypenameInvalid,
         EdlArrayDimensionIdentifierInvalid,
         EdlPointerSizeAttributeMissing,
-        EdlVoidAndCharPointersSizeMustBeAnnotated,
+        EdlNonStructsAndStringsMustBeAnnotated,
         EdlPointerMustBeAnnotatedWithDirection,
         EdlPointerToArrayNotAllowed,
         EdlSizeOrCountAttributeNotFound,
@@ -66,8 +65,12 @@ namespace ErrorHelpers
         EdlEnumNameDuplicated,
         EdlDuplicateFieldOrParameter,
         EdlSizeAndCountNotValidForNonPointer,
+        EdlReturnValuesCannotBePointers,
         CodeGenUnableToOpenOutputFile,
         CodeGenUnableToCreateHeaderFile,
+        VirtualTrustLayerNoMoreArgs,
+        VirtualTrustLayerInvalidType,
+        GeneralFailure,
     };
 
     struct ErrorIdHash
@@ -88,12 +91,13 @@ namespace ErrorHelpers
         { ErrorId::EdlDoesNotExist,"The path to the provided .edl file '{}' does not exist." },
         { ErrorId::NotAnEdlFile,"The path '{}' must be a path to a .edl file." },
         { ErrorId::OutputDirNoMoreArgs,"Unable to find output directory. No more commandline arguments available to find output directory." },
-        { ErrorId::OutputDirNotADirectory,"The path '{}' must be a directory that exists. Error code : '{}'" },
         { ErrorId::ErrorHandlingNoMoreArgs,"Unable to find error handling argument. No more commandline arguments available." },
         { ErrorId::ErrorHandlingInvalidType,"Error handling type '{}' invalid." },
         { ErrorId::InvalidArgument,"Unknown argument: {}" },
-        { ErrorId::IncorrectNonHelpArgsProvided,"VbsEnclaveTooling.exe expects '{}' arguments when '-h' is not used. Only found: '{}'" },
+        { ErrorId::IncorrectNonHelpArgsProvided,"VbsEnclaveTooling.exe expects at least '{}' arguments. found: '{}'" },
         { ErrorId::MissingArgument,"Missing arguments. Use '-h' for usage." },
+        { ErrorId::VirtualTrustLayerNoMoreArgs, "Unable to find virtual trust layer argument. No more commandline arguments available." },
+        { ErrorId::VirtualTrustLayerInvalidType, "Virtual trust layer type invalid. Only 'Enclave' and 'HostApp' can be used." },
 
 
         // Edl file lexical analysis errors
@@ -119,7 +123,7 @@ namespace ErrorHelpers
         { ErrorId::EdlPointerToPointerInvalid, "VbsEnclaveTooling .edl files do not support pointer to pointer declarations." },
         { ErrorId::EdlTypenameInvalid, "Reached end of file and no definition was found for type '{}'." },
         { ErrorId::EdlArrayDimensionIdentifierInvalid, "'{}' not supported within array brackets. Arrays in VbsEnclaveTooling .edl files only support arrays with an integer literal '[5]' and arrays with string literals previously declared in the edl file e.g. '[int_max]'." },
-        { ErrorId::EdlVoidAndCharPointersSizeMustBeAnnotated, "void, char and wchat_t pointers must be annotated with the size or count attribute." },
+        { ErrorId::EdlNonStructsAndStringsMustBeAnnotated, "Pointers to non struct or the 'string' keyword must be annotated with the size or count attribute." },
         { ErrorId::EdlPointerSizeAttributeMissing, "Pointer for '{}' on line '{}', column '{}' does not have a size or count attribute. The codegen layer will copy only 'sizeof({})' when copying the field/parameter this pointer points to." },
         { ErrorId::EdlPointerMustBeAnnotatedWithDirection, "Pointers must have a pointer direction. Use the 'in' or 'out' attribute." },
         { ErrorId::EdlPointerToArrayNotAllowed, "VbsEnclaveTooling .edl files do not support the pointers to arrays." },
@@ -132,10 +136,14 @@ namespace ErrorHelpers
         { ErrorId::EdlEnumNameDuplicated, "'{}' enum value already defined." },
         { ErrorId::EdlDuplicateFieldOrParameter, "duplicate name '{}' found in '{}'." },
         { ErrorId::EdlSizeAndCountNotValidForNonPointer, "Size/count attributes are only valid for pointer types. Found type '{}'" },
+        { ErrorId::EdlReturnValuesCannotBePointers, "Function '{}' cannot return a pointer for a primitive type. Instead return a struct that contains the pointer and its size." },
 
         // CodeGen errors
         { ErrorId::CodeGenUnableToOpenOutputFile, "Failed to open '{}' for writing." },
         { ErrorId::CodeGenUnableToCreateHeaderFile, "Failed to create '{}'." },
+
+        // General
+        { ErrorId::GeneralFailure, "VbeEnclaveTooling.exe returned the following HRESULT: 0x{}." },
     };
 
     template<typename... Args>
@@ -173,5 +181,10 @@ namespace ErrorHelpers
 
         // format the error and its arguments
         PrintStatus(Status::Error, GetErrorMessageById(id, std::forward<Args>(args)...));
+    }
+
+    static void inline PrintError(std::string_view error_message)
+    {
+        PrintStatus(Status::Error, error_message.data());
     }
 }

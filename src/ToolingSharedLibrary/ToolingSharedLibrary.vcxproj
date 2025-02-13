@@ -95,7 +95,7 @@
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>_DEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_DEBUG;_LIB;%(PreprocessorDefinitions);</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
@@ -171,8 +171,10 @@
     <ClInclude Include="Includes\CmdlineArgumentsParser.h" />
     <ClInclude Include="Includes\CmdlineParsingHelpers.h" />
     <ClInclude Include="Includes\VbsEnclaveABI\Enclave\EnclaveHelpers.h" />
+    <ClInclude Include="Includes\VbsEnclaveABI\Enclave\MemoryAllocation.h" />
+    <ClInclude Include="Includes\VbsEnclaveABI\Enclave\MemoryChecks.h" />
+    <ClInclude Include="Includes\VbsEnclaveABI\Enclave\Vtl0Pointers.h" />
     <ClInclude Include="Includes\VbsEnclaveABI\Host\HostHelpers.h" />
-    <ClInclude Include="Includes\VbsEnclaveABI\Shared\VbsEnclaveMemoryHelpers.h" />
     <Text Include="Includes\Edl\LexicalAnalyzer.h">
       <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</DeploymentContent>
     </Text>

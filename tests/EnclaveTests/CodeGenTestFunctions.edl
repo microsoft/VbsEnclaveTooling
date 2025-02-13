@@ -1,0 +1,197 @@
+// Copyright (c) Microsoft Corporation.
+// Licensed under the MIT License.
+// File used for testing purposes
+
+enclave
+{
+    /***************************************************************************************************
+    *    Note about the count and size attribute on function parameters and struct fields:             *
+    *                                                                                                  *
+    *    [count=<value>] :  Is used to tell the codegen to copy count * sizeof(type) bytes of data     *
+    *                       when copying a parameter/field  between VTLs                               *
+    *    [size=<value>]  :  Is used to tell the codegen to copy size amount of data in bytes when      *    
+    *                       copying a parameter/field between VTLs                                     *
+    *                                                                                                  *
+    ****************************************************************************************************/
+
+    // Anonymous enum
+    enum
+    {
+        value1 = 10,
+        value2 = 50,
+    };
+
+    // Normal named enum
+     enum HexEnum 
+     {
+        Hex_val1 = 0x01,
+        Hex_val2,
+        Hex_val3,
+    };
+
+    enum DecimalEnum 
+     {
+        Deci_val1,
+        Deci_val2,
+        Deci_val3,
+    };
+
+    struct NextedStructNoPointers
+    {
+        int64_t value_in_nested_struct;
+    };
+
+    struct StructWithNoPointers
+    {
+        bool bool_val;
+        int8_t int8_val;
+        int16_t int16_val;
+        int32_t int32_val;
+        int64_t int64_val;
+        uint8_t uint8_val;
+        uint16_t uint16_val;
+        uint32_t uint32_val;
+        uint64_t uint64_val;
+
+        HexEnum hex_val;
+        DecimalEnum deci_val;
+
+        NextedStructNoPointers nested_struct_val;
+
+        HRESULT result;
+    };
+
+    struct Int8PtrAndSize
+    {
+        [count=size_field] int8_t* int8_val;
+        size_t size_field;
+    };
+
+    // Host to enclave functions
+    trusted
+    {
+        HRESULT TestPassingPrimitivesAsValues_To_Enclave(
+            bool bool_val,
+            DecimalEnum enum_val,
+            int8_t int8_val);
+
+        // Pointers to primitives must be given a size or count attribute or parsing will fail.
+        // They must also have an in or out direction.
+        HRESULT TestPassingPrimitivesAsInPointers_To_Enclave(
+            [count=abitrary_size_1, in] uint8_t* uint8_val,
+            [count=abitrary_size_2, in] uint16_t* uint16_val,
+            [count=abitrary_size_1, in] uint32_t* uint32_val,
+            size_t abitrary_size_1,
+            size_t abitrary_size_2);
+
+        // Pointers to primitives must be given a size or count attribute or parsing will fail.
+        // They must also have an in or out direction.
+        HRESULT TestPassingPrimitivesAsInOutPointers_To_Enclave(
+            [count=abitrary_size_1, in, out] int8_t* int8_val,
+            [count=abitrary_size_2, in, out] int16_t* int16_val,
+            [count=abitrary_size_1, in, out] int32_t* int32_val,
+            size_t abitrary_size_1,
+            size_t abitrary_size_2);
+
+        // Pointers to primitives must be given a size or count attribute or parsing will fail.
+        // They must also have an in or out direction.
+        HRESULT TestPassingPrimitivesAsOutPointers_To_Enclave(
+            [count=abitrary_size_1, out] bool* bool_val,
+            [count=abitrary_size_2, out] DecimalEnum* enum_val,
+            [count=abitrary_size_1, out] uint64_t* uint64_val,
+            size_t abitrary_size_1,
+            size_t abitrary_size_2); 
+
+        // Example of returning a pointer since we don't allow return pointers of primitives, 
+        // only structs. Pointer marhaling works the same way for primitive so we only need a test
+        // for one.
+        Int8PtrAndSize ReturnInt8ValPtr_From_Enclave();
+
+        // We don't allow return pointers of primitives, only structs and strings.
+        // Pointer marhaling works the same way for primitive so we only need a test
+        // for one.
+        uint64_t ReturnUint64Val_From_Enclave();
+
+        // Returning a more complex struct
+        StructWithNoPointers ReturnStructWithValues_From_Enclave();
+
+
+        StructWithNoPointers ComplexPassingofTypes_To_Enclave(
+            StructWithNoPointers arg1,
+            [in, out]StructWithNoPointers arg2,
+            [out] StructWithNoPointers* arg3,
+            [out] StructWithNoPointers arg4,
+            [size=abitrary_size_1, out] uint64_t* uint64_val,
+            size_t abitrary_size_1);
+
+        // Vtl1 can't test vtl0 callbacks unless we start them from vtl0. These functions
+        // are just used to allow us to start the callback tests.
+        HRESULT Start_TestPassingPrimitivesAsValues_To_HostApp_Callback_Test();
+        HRESULT Start_TestPassingPrimitivesAsInPointers_To_HostApp_Callback_Test();
+        HRESULT Start_TestPassingPrimitivesAsInOutPointers_To_HostApp_Callback_Test();
+        HRESULT Start_TestPassingPrimitivesAsOutPointers_To_HostApp_Callback_Test(); 
+        HRESULT Start_ReturnInt8ValPtr_From_HostApp_Callback_Test();
+        HRESULT Start_ReturnUint64Val_From_HostApp_Callback_Test();
+        HRESULT Start_ReturnStructWithValues_From_HostApp_Callback_Test();
+        HRESULT Start_ComplexPassingofTypes_To_HostApp_Callback_Test();
+    };
+
+    // Functions are the same but these are for the opposite direction.
+    // (Enclave to host).
+    untrusted
+    {
+        HRESULT TestPassingPrimitivesAsValues_To_HostApp(
+            bool bool_val,
+            DecimalEnum enum_val,
+            int8_t int8_val);
+
+        // Pointers to primitives must be given a size or count attribute or parsing will fail.
+        // They must also have an in or out direction.
+        HRESULT TestPassingPrimitivesAsInPointers_To_HostApp(
+            [count=abitrary_size_1, in] uint8_t* uint8_val,
+            [count=abitrary_size_2, in] uint16_t* uint16_val,
+            [count=abitrary_size_1, in] uint32_t* uint32_val,
+            size_t abitrary_size_1,
+            size_t abitrary_size_2);
+
+        // Pointers to primitives must be given a size or count attribute or parsing will fail.
+        // They must also have an in or out direction.
+        HRESULT TestPassingPrimitivesAsInOutPointers_To_HostApp(
+            [count=abitrary_size_1, in, out] int8_t* int8_val,
+            [count=abitrary_size_2, in, out] int16_t* int16_val,
+            [count=abitrary_size_1, in, out] int32_t* int32_val,
+            size_t abitrary_size_1,
+            size_t abitrary_size_2);
+
+        // Pointers to primitives must be given a size or count attribute or parsing will fail.
+        // They must also have an in or out direction.
+        HRESULT TestPassingPrimitivesAsOutPointers_To_HostApp(
+            [count=abitrary_size_1, out] bool* bool_val,
+            [count=abitrary_size_2, out] DecimalEnum* enum_val,
+            [count=abitrary_size_1, out] uint64_t* uint64_val,
+            size_t abitrary_size_1,
+            size_t abitrary_size_2); 
+
+        // Example of returning a pointer since we don't allow return pointers of primitives, 
+        // only structs. Pointer marhaling works the same way for primitive so we only need a test
+        // for one.
+        Int8PtrAndSize ReturnInt8ValPtr_From_HostApp();
+
+        // We don't allow return pointers of primitives, only structs and strings.
+        // Pointer marhaling works the same way for primitive so we only need a test
+        // for one.
+        uint64_t ReturnUint64Val_From_HostApp();
+
+        // Returning a more complex struct
+        StructWithNoPointers ReturnStructWithValues_From_HostApp();
+
+
+        StructWithNoPointers ComplexPassingofTypes_To_HostApp(
+            StructWithNoPointers arg1,
+            [in, out]StructWithNoPointers arg2,
+            [out] StructWithNoPointers* arg3,
+            [out] StructWithNoPointers arg4,
+            [size=abitrary_size_1, out] uint64_t* uint64_val,
+            size_t abitrary_size_1);
+    };
+};
