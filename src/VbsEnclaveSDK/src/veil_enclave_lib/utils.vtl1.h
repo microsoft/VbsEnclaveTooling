@@ -4,11 +4,21 @@
 #pragma once
 
 #include <span>
+#include <string>
+#include <string_view>
 
 #include <wil/resource.h>
 
 #include <winenclaveapi.h>
 
+#define VEIL_THROW(hr) \
+    { \
+        volatile int x = 1; \
+        if (x == 1) \
+        { \
+            THROW_HR(hr); \
+        } \
+    } \
 
 #define UNREFERENCED_PARAMETER_PACK(Ts, x) veil::vtl1::implementation::details::ignore_parameter_pack(std::forward<Ts>(x)...)
 
@@ -39,6 +49,30 @@ namespace veil::vtl1
             return false;
         }
         return memcmp(a.data(), b.data(), a.size()) == 0;
+    }
+
+    inline std::vector<uint8_t> to_data(std::wstring_view str)
+    {
+        auto x = std::span<uint8_t const>((const uint8_t*)str.data(), str.size() * sizeof(std::wstring_view::traits_type::char_type));
+        auto vec = std::vector<uint8_t>();
+        vec.assign(x.begin(), x.end());
+        return vec;
+    }
+
+    inline std::span<uint8_t const> as_data_span(std::wstring_view str)
+    {
+        return {reinterpret_cast<const uint8_t*>(str.data()), str.size() * sizeof(std::wstring_view::traits_type::char_type)};
+    }
+
+    inline std::wstring to_wstring(std::span<const uint8_t> buffer)
+    {
+        return std::wstring((wchar_t*)buffer.data(), buffer.size() / sizeof(wchar_t));
+    }
+
+    inline void copy_span(std::span<uint8_t const> source, std::span<uint8_t> destination)
+    {
+        THROW_WIN32_IF(ERROR_INCORRECT_SIZE, destination.size() != source.size());
+        std::copy(source.begin(), source.end(), destination.begin());
     }
 }
 

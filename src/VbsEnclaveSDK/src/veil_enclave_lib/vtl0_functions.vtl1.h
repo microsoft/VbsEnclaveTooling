@@ -83,7 +83,7 @@ namespace veil::vtl1::vtl0_functions
             template <typename... Args>
             static void call(STRSAFE_LPSTR outString, PCSTR formatString, Args&&... args)
             {
-                THROW_IF_FAILED(::StringCchPrintfA(outString, MAX_PATH, formatString, std::forward<Args>(args)...));
+                THROW_IF_FAILED(::StringCchPrintfA(outString, 1000, formatString, std::forward<Args>(args)...));
             }
         };
 
@@ -93,7 +93,7 @@ namespace veil::vtl1::vtl0_functions
             template <typename... Args>
             static void call(STRSAFE_LPWSTR outString, PCWSTR formatString, Args&&... args)
             {
-                THROW_IF_FAILED(::StringCchPrintfW(outString, MAX_PATH, formatString, std::forward<Args>(args)...));
+                THROW_IF_FAILED(::StringCchPrintfW(outString, 1000, formatString, std::forward<Args>(args)...));
             }
         };
 
@@ -104,7 +104,7 @@ namespace veil::vtl1::vtl0_functions
             template <typename... Args>
             static string_type call(const typename string_type::value_type* formatString, Args&&... args)
             {
-                std::array<typename string_type::value_type, MAX_PATH> outString;
+                std::array<typename string_type::value_type, 1000> outString;
                 StringCchPrintf<string_type>::call(outString.data(), formatString, std::forward<Args>(args)...);
                 return { outString.data() };
             }

@@ -47,6 +47,20 @@ namespace veil
         return hr_to_pvoid(__hr); \
     } \
 
+#define VEIL_ABI_FUNCTION_SIMPLIFIED(__name) \
+    void* __name(void* __args) noexcept \
+    try \
+    { \
+        simplified::__name(reinterpret_cast<veil::any::implementation::args::__name*>(__args)); \
+        return hr_to_pvoid(S_OK); \
+    } \
+    catch (...) \
+    { \
+        HRESULT __hr = wil::ResultFromCaughtException(); \
+        LOG_IF_FAILED(__hr); \
+        return hr_to_pvoid(__hr); \
+    } \
+
 #define ENCLAVE_RESULT_WMESSAGE_SIZE 512
 
 namespace veil
@@ -72,6 +86,12 @@ namespace veil
             taskpool_delete,
             taskpool_schedule_task,
             taskpool_cancel_queued_tasks,
+            hellokeys_create_or_open_hello_key,
+            hellokeys_close_handle_vtl1_ncrypt_key,
+            hellokeys_get_challenge,
+            hellokeys_send_attestation_report,
+            hellokeys_finalize_key,
+            hellokeys_send_ngc_request,
             __count__ // keep as last entry
         };
 

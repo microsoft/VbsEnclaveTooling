@@ -6,3 +6,5 @@ EXPORTS
 
         ; AppEnclave exports here
         RunTaskpoolExample
+        RunHelloSecuredEncryptionKeyExample_CreateEncryptionKey
+        RunHelloSecuredEncryptionKeyExample_LoadEncryptionKey

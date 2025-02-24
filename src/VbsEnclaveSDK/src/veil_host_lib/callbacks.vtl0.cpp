@@ -10,6 +10,7 @@
 #include "veil.any.h"
 
 #include "callbacks.vtl0.h"
+#include "hello.vtl0.h"
 #include "taskpool.vtl0.h"
 #include "utils.vtl0.h"
 
@@ -29,6 +30,12 @@ namespace veil::vtl0::implementation::callbacks
         &taskpool_delete,
         &taskpool_schedule_task,
         &taskpool_cancel_queued_tasks,
+        &hellokeys_create_or_open_hello_key,
+        &hellokeys_close_handle_vtl1_ncrypt_key,
+        &hellokeys_get_challenge,
+        &hellokeys_send_attestation_report,
+        &hellokeys_finalize_key,
+        &hellokeys_send_ngc_request,
     };
 }
 

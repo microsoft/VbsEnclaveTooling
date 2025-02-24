@@ -14,16 +14,29 @@ int
 wmain([[maybe_unused]] _In_ int argc, [[maybe_unused]] _In_reads_(argc) wchar_t** argv)
 try
 {
-    if (argc <= 1)
+    if (argc != 2)
+    {
+        std::wcerr << L"Usage: " << argv[0] << L"--taskpool | --hello " << std::endl;
+        THROW_HR(E_INVALIDARG);
+    }
+
+    std::wstring_view arg = argv[1];
+
+    if (arg == L"--taskpool")
     {
         Samples::Taskpool::main();
     }
+    else if (arg == L"--hello")
+    {
+        Samples::HelloSecuredEncryptionKey::main();
+    }
     else
     {
-        THROW_HR_MSG(E_INVALIDARG, "Specify a sample");
+        std::wcerr << L"Invalid argument. Use --taskpool or --hello." << std::endl;
+        THROW_HR(E_INVALIDARG);
     }
-    std::wcout << std::endl;
 
+    std::wcout << std::endl;
     std::cout << "Press any key to continue...";
     std::cin.get();
     return 0;

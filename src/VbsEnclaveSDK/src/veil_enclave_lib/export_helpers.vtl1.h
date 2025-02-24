@@ -52,6 +52,16 @@ namespace veil::vtl1::implementation::export_helpers
         return last;
     }
 
+    inline std::optional<enclave_error> get_back_thread_enclave_error(DWORD tid)
+    {
+        auto lock = g_enclaveErrorsMutex.lock_exclusive();
+        if (g_enclaveErrors[tid].empty())
+        {
+            return std::nullopt;
+        }
+        return g_enclaveErrors[tid].back();
+    }
+
     struct enclave_error_populator
     {
         enclave_error& m_errorReference;
