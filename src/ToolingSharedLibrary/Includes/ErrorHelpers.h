@@ -136,14 +136,14 @@ namespace ErrorHelpers
         { ErrorId::EdlEnumNameDuplicated, "'{}' enum value already defined." },
         { ErrorId::EdlDuplicateFieldOrParameter, "duplicate name '{}' found in '{}'." },
         { ErrorId::EdlSizeAndCountNotValidForNonPointer, "Size/count attributes are only valid for pointer types. Found type '{}'" },
-        { ErrorId::EdlReturnValuesCannotBePointers, "Function '{}' cannot return a pointer for a primitive type. Instead return a struct that contains the pointer and its size." },
+        { ErrorId::EdlReturnValuesCannotBePointers, "Functions cannot return a pointer. Instead return a struct that contains the pointer and the size of the data it points to." },
 
         // CodeGen errors
         { ErrorId::CodeGenUnableToOpenOutputFile, "Failed to open '{}' for writing." },
         { ErrorId::CodeGenUnableToCreateHeaderFile, "Failed to create '{}'." },
 
         // General
-        { ErrorId::GeneralFailure, "VbeEnclaveTooling.exe returned the following HRESULT: 0x{}." },
+        { ErrorId::GeneralFailure, "VbeEnclaveTooling.exe returned the following HRESULT: {}." },
     };
 
     template<typename... Args>
@@ -186,5 +186,12 @@ namespace ErrorHelpers
     static void inline PrintError(std::string_view error_message)
     {
         PrintStatus(Status::Error, error_message.data());
+    }
+
+    static void inline PrintHresult(ErrorId id, HRESULT hr)
+    {
+        std::stringstream string_stream;
+        string_stream << "0x" << std::hex << hr;
+        PrintError(ErrorId::GeneralFailure, string_stream.str());
     }
 }

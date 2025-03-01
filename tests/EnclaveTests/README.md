@@ -34,13 +34,6 @@ Your developer inner loop can be something like this:
     [Vtl0CallbackImplementations](.\TestHostApp\Vtl0CallbackImplementations.cpp) and 
     [TestEnclaveTaefTests](.\TestHostApp\TestEnclaveTaefTests.cpp) files with new code based on what was
     generated.
-  - `Tip:` If you're working on updating the code produced by the codegen, and the code produced leaves either or both
-     projects in an uncompilable state. You can use the `ToolingExecutable` project to quickly run
-     `VbsEnclaveTooling.exe` to generate code using either projects `Generated Files` folder as the
-     output directory. This will allow you to generate code without needing to build the projects, so
-     you can get it back to a compilable state. See: [ToolingExecutable's readme](..\..\src\ToolingExecutable\README.md)
-     `TODO:` See if there is a way to generate the code before the test projects attempt to compile. Since using the `BeforeTarget=Compile;Build`
-     in the nuget packages target file does not work in our case.
 - Connect to the remote machine using TShell:<br>
    `tshell.cmd` or `tshell.ps1` or `tshell` if its available in you `%Path%` environment variable.<br>
    Then: <br> 

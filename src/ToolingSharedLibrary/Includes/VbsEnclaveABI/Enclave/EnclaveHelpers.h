@@ -141,17 +141,17 @@ namespace VbsEnclaveABI::Enclave
             sizeof(EnclaveFunctionContext))));
 
         // Make sure returned params are freed before we leave the function.
-        auto vtl0_return_params_ptr = 
+        auto vtl0_return_params_ptr =
             reinterpret_cast<ReturnParamsT*>(vtl1_incoming_context.m_returned_parameters.buffer);
 
         auto vtl0_return_params = vtl0_memory_ptr<ReturnParamsT>(vtl0_return_params_ptr);
-        
+
         // return parameters should have a value e.g ParameterContainer<SomeType>
         // TODO: should create custom hresult to differentiate from others, here.
         RETURN_HR_IF_NULL(E_INVALIDARG, vtl0_return_params.get());
 
         wil::unique_process_heap_ptr<ReturnParamsT> vtl1_returned_parameters {
-           static_cast<ReturnParamsT*>(AllocateMemory(sizeof(ReturnParamsT)))};
+           reinterpret_cast<ReturnParamsT*>(AllocateMemory(sizeof(ReturnParamsT)))};
         RETURN_IF_NULL_ALLOC(vtl1_returned_parameters.get());
 
         RETURN_IF_FAILED(EnclaveCopyIntoEnclave(
@@ -160,7 +160,7 @@ namespace VbsEnclaveABI::Enclave
             sizeof(ReturnParamsT)));
 
         // Should be be freed by the generated code in vtl1.
-        callback_result.m_returned_parameters = 
+        callback_result.m_returned_parameters =
             reinterpret_cast<ReturnParamsT*>(vtl1_returned_parameters.release());
         return S_OK;
     }
@@ -175,85 +175,137 @@ namespace VbsEnclaveABI::Enclave
             callbacks.data(),
             params.buffer,
             sizeof(std::uint64_t) * params.buffer_size));
-        
+
         RETURN_IF_FAILED(AddVtl0FunctionsToTable(callbacks));
         auto result = ParameterContainer<HRESULT>(S_OK);
 
-        // Caller original vtl1 caller will free.
+        // Original vtl1 caller will free.
         void* new_return_params_ptr = AllocateMemory(sizeof(result));
-        memcpy(new_return_params_ptr, &result, sizeof(result));
+        RETURN_IF_NULL_ALLOC(new_return_params_ptr);
+        memcpy_s(new_return_params_ptr, sizeof(result), &result, sizeof(result));
         *return_params = reinterpret_cast<ParameterContainer<HRESULT>*>(new_return_params_ptr);
 
         return S_OK;
     }
 
     template <typename T>
-    inline void PerformVTL0AllocationAndCopy(T** desc, T* src, size_t size)
+    inline void PerformVTL0AllocationAndCopy(
+        _Out_writes_bytes_(number_of_bytes) T** desc,
+        _In_reads_bytes_(number_of_bytes) T* src,
+        _In_ size_t number_of_bytes)
     {
+        if (!desc)
+        {
+            LOG_HR_IF_NULL(E_INVALIDARG, desc);
+            return;
+        }
+
         if (!src)
         {
             *desc = nullptr;
             return;
         }
 
-        THROW_IF_FAILED(AllocateVtl0Memory(desc, size));
+        THROW_IF_FAILED(AllocateVtl0Memory(desc, number_of_bytes));
         wil::unique_process_heap_ptr<T> input_params {*desc};
-        THROW_IF_FAILED(EnclaveCopyOutOfEnclave(*desc, src, size));
+        THROW_IF_FAILED(EnclaveCopyOutOfEnclave(*desc, src, number_of_bytes));
         input_params.release();
     }
 
     template <typename T>
-    inline void PerformVTL0AllocationAndCopy(T** desc, const T* src, size_t size)
+    inline void PerformVtl0AllocationForOutParam(
+        _Out_writes_bytes_(number_of_bytes) T*** desc,
+        _In_ size_t number_of_bytes)
     {
+        THROW_IF_FAILED(AllocateVtl0Memory(desc, number_of_bytes));
+        THROW_IF_NULL_ALLOC(desc);
+    }
+
+    template <typename T>
+    inline void PerformVTL1AllocationAndCopy(
+        _Out_writes_bytes_(number_of_bytes) T** desc,
+        _In_reads_bytes_(number_of_bytes) T* src,
+        _In_ size_t number_of_bytes)
+    {
+        if (!desc)
+        {
+            LOG_HR_IF_NULL(E_INVALIDARG, desc);
+            return;
+        }
+
         if (!src)
         {
             *desc = nullptr;
             return;
         }
 
-        THROW_IF_FAILED(AllocateVtl0Memory(desc, size));
+        *desc  = static_cast<T*>(AllocateMemory(number_of_bytes));
         wil::unique_process_heap_ptr<T> input_params {*desc};
-        THROW_IF_FAILED(EnclaveCopyOutOfEnclave(*desc, src, size));
+        THROW_IF_FAILED(EnclaveCopyIntoEnclave(*desc, src, number_of_bytes));
         input_params.release();
     }
 
     template <typename T>
-    inline void PerformVTL1AllocationAndCopy(T** desc, T* src, size_t size)
+    static inline void UpdateParamPtr(
+        _Out_writes_bytes_(number_of_bytes) T** desc,
+        _In_reads_bytes_(number_of_bytes) T* src,
+        _In_ size_t number_of_bytes)
     {
+        if (!desc)
+        {
+            LOG_HR_IF_NULL(E_INVALIDARG, desc);
+            return;
+        }
+
         if (!src)
         {
             *desc = nullptr;
             return;
         }
 
-        *desc  = reinterpret_cast<T*>(AllocateMemory(size));
-        THROW_IF_FAILED(EnclaveCopyIntoEnclave(*desc, src, size));
+        THROW_IF_FAILED(EnclaveCopyIntoEnclave(*desc, src, number_of_bytes));
     }
 
     template <typename T>
-    static inline void UpdateOutParamPtr(T** assignee, T* value_to_assign, size_t size)
+    static inline void UpdateParamPtr(
+        _Out_writes_bytes_(number_of_bytes) T* desc,
+        _In_reads_bytes_(number_of_bytes) T* src,
+        _In_ size_t number_of_bytes)
     {
-        THROW_IF_NULL_ALLOC(assignee);
-        if (!value_to_assign)
+        if (!desc)
         {
-            *assignee = value_to_assign;
+            LOG_HR_IF_NULL(E_INVALIDARG, desc);
             return;
         }
 
-        THROW_IF_FAILED(EnclaveCopyIntoEnclave(*assignee, value_to_assign, size));
+        if (!src)
+        {
+            desc = nullptr;
+            return;
+        }
+
+        THROW_IF_FAILED(EnclaveCopyIntoEnclave(desc, src, number_of_bytes));
     }
 
     template <typename T>
-    static inline void UpdateInOutParamPtr(T* assignee, T* value_to_assign, size_t size)
+    static inline void UpdateVtl0ParamPtr(
+        _Out_writes_bytes_(number_of_bytes) T** desc,
+        _In_reads_bytes_(number_of_bytes) T* src,
+        _In_ size_t number_of_bytes)
     {
-        THROW_IF_NULL_ALLOC(assignee);
-        if (!value_to_assign)
+        if (!desc)
         {
-            assignee = value_to_assign;
+            LOG_HR_IF_NULL(E_INVALIDARG, desc);
             return;
         }
 
-        THROW_IF_FAILED(EnclaveCopyIntoEnclave(assignee, value_to_assign, size));
+        if (!src)
+        {
+            *desc = nullptr;
+            return;
+        }
+
+        THROW_IF_FAILED(EnclaveCopyOutOfEnclave(*desc, src, number_of_bytes));
     }
 }
 

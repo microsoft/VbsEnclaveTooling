@@ -79,15 +79,31 @@ While our .edl parser is based on Open Enclaves implementation of intels .edl pa
 - Vbs enclaves do not support the concept of "switchless calls" calls so therefore this keyword is unsupported.
 - Calling conventions (like cdecl, stdcall, fastcall) are not supported.
 - Ability to import C headers into a .edl file to allow for types defined outside the .edl file is not supported. Only types defined in the .edl are supported.
-- The word "string" is a supported type keyword within an .edl file. Using the word "string" as an attribute is not supported.
+- The words `string`  and `wstring` are supported type keywords within an .edl file. Using the word `string` or `wstring` as an attribute is not supported.
 - Only the following attributes are supported [in], [out], [size], [count] are supported.
-- Pointers are supported but pointers to pointers and pointers to arrays are not supported.
-- Pointers must have an [in] or [out] direction attribute.
+- Pointers are supported but pointers to pointers and pointers to arrays are not supported. *However*, if you have an 
+  [out] parameter that is a pointer, the generated code will produce this as a double Pointer. So `[out, count=1] int64_t* my_ptr`
+  will become `std::int64_t** my_ptr` in the generated functions parameter.
+- Pointers must have an [in] or [out] direction attribute. [in] means the parameter is expected to only be used in 
+  the function as input, while out means the function is expected to update the parameter before it exits for use 
+  by the calling function.
 - The const keyword is not supported.
+- Functions are not permitted to return pointers as function return values directly. It is expected that pointer
+  values contain a respective size value for the data the pointer points. This is so the ABI layer can copy the 
+  data correctly between trust boundary layers. What this means for functions is that if a pointer value 
+  is expected to be returned the developer must return a struct that contains the pointer and a
+  field for the size of the data the pointer points to. Alternatively the pointer could be returned via an out 
+  parameter for the function which also requires being annotated with the size/count attributes. 
+- For function parameters, all pointers to data types outside of structs must be annotated with a [size] or 
+  [count] attribute. The only case where it is not strictly necessary is for structs. If a pointer to a struct 
+  parameter is not annotated with either a [size] or [count] attribute then the `sizeof(your__struct)` will be
+  used when the ABI layer copies the pointer data between the trust boundaries.
 
-### .edl built in Data types supported
+### .edl built in Data types supported in both structs and functions
 - string
+- wstring
 - char
+- wchar_t
 - float
 - double
 - size_t
@@ -101,3 +117,55 @@ While our .edl parser is based on Open Enclaves implementation of intels .edl pa
 - uint64_t
 - enum
 - struct
+- HRESULT
+- Arrays in the form of type[value] e.g uint8_t[10]
+
+Note: Arrays can contain a non numeric value within the edl file. The only value it supports other than
+explicitly numbers is a value from an anonymous enum. Arrays are generated as an `std::array` during
+code generation.
+
+```C++
+enum
+{
+    my_number = 50
+};
+
+struct
+{
+    uint32_t[my_number] my_array;
+}
+```
+### What are the count and size attributes used for
+Both attributes are used to provide the code generator with the value it should use when copying the
+parameter or field between trust boundaries:
+
+[count] : This is used to tell the code generator that the parameter or field should be copied using
+          `sizeof(parameter_type) * count` in bytes. This is useful if you have a function or struct that contains
+          a variable length array of a certain type.
+```
+ trusted {
+        // If int8_array_size contained the value of 10 then we will copy sizeof(int8_t) multiplied by 10 when 
+        // copying the int8_array into and out vtl1. This behavior is the same regardless of whether the function
+        // is 'trusted' or 'untrusted'.
+        void ExampleFunction(
+            [in, count=int8_array_size] int8_t* int8_array,
+            size_t int8_array_size
+        );
+    };
+```
+
+[size] : This is used to tell the code generator that the parameter or field should be copied using
+          `size` in bytes. This is useful if you had a function or struct that contains
+          a blob of data that isn't an array and you just want to copy the raw bytes between the trust
+          boundary.
+```
+ trusted {
+        // If blob_size contained the value of 10 then we will copy exactly 10 bytes when copying the 
+        // int8_blob into and out vtl1. This behavior is the same regardless of whether the function
+        // is 'trusted' or 'untrusted'.
+        void ExampleFunction(
+            [in, count=blob_size] int8_t* int8_blob,
+            size_t blob_size
+        );
+    };
+```

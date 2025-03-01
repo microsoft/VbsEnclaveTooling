@@ -26,14 +26,14 @@
     </Target>
 
     <!-- 
-        Before the build starts delete the Microsoft.Windows.VbsEnclaveTooling.0.0.0 package so it can be restored with any new content if it
+        Before the build starts delete the Microsoft.Windows.VbsEnclaveTooling.0.0.0 package so it can be reinstalled with any new content if it
         exists.
     -->
     <Target
       Name="DeleteTestVbsEnclavePackage"
       Condition="Exists('$(VbsEnclaveToolingLocalPackageDir)')"
       BeforeTargets="AddLocalNuGetPackageBeforeBuild">
-        <Message Importance="high" Text="Deleting the local $(VbsEnclaveToolingLocalPackageDir) folder so it can be restored by nuget."/>
+        <Message Importance="high" Text="Deleting the local $(VbsEnclaveToolingLocalPackageDir) folder so it can be reinstalled by nuget."/>
         <RemoveDir Directories="$(VbsEnclaveToolingLocalPackageDir)" />
     </Target>
 </Project>

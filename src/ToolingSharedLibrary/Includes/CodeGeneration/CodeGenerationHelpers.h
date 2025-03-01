@@ -13,24 +13,18 @@ using namespace ToolingExceptions;
 
 namespace CodeGeneration
 {
-    enum class CodeGenFunctionKind : std::uint32_t
+    // For us to distinguish who we expect to call the function.
+    // based on this info we will generate the function differently.
+    enum class FunctionCallInitiator : std::uint32_t
     {
         Developer,
         Abi,
     };
 
-    enum class FunctionDirection : std::uint32_t
+    enum class CallFlowDirection : std::uint32_t
     {
         HostAppToEnclave,
         EnclaveToHostApp,
-    };
-
-    enum class ParamModifier : std::uint32_t
-    {
-        ConstReference,
-        Reference,
-        ConstOnly,
-        NoConstNoReference
     };
 
     static inline std::string uint64_to_hex(uint64_t value)
@@ -72,13 +66,13 @@ namespace CodeGeneration
     }
 
     static inline std::string GetSizeForCopy(
-        const ParsedAttributeInfo& attribute,
-        std::string_view parameter_name,
+        const std::optional<ParsedAttributeInfo>& attribute_optional,
         std::string_view parameter_type)
     {
         // Size and count attributes are only for pointers
-        if (attribute.IsSizeOrCountPresent())
+        if (attribute_optional.has_value())
         {
+            auto attribute = attribute_optional.value();
             auto& size_or_count_token = (attribute.m_count_info.IsEmpty()) 
                 ? attribute.m_size_info 
                 : attribute.m_count_info;
@@ -101,11 +95,13 @@ namespace CodeGeneration
                 // by the count value.
                 return std::format(c_count_statement, parameter_type, size_or_count);
             }
-
-            // For size attribute. We see this as copying the raw value in bytes.
-            // e.g [size=50] on a function parameter or struct field for example 
-            // tells us to copy 50 bytes of data.
-            return size_or_count;
+            else if (!attribute.m_size_info.IsEmpty())
+            {
+                // For size attribute. We see this as copying the raw value in bytes.
+                // e.g [size=50] on a function parameter or struct field for example 
+                // tells us to copy 50 bytes of data.
+                return size_or_count;
+            }
         }
 
         // No size or count attribute so use sizeof(parameter). 
@@ -114,95 +110,150 @@ namespace CodeGeneration
         return std::format(c_copy_value_func_size_t_param, parameter_type);
     };
 
-    enum class ParamCopyDirection : std::uint32_t
+    enum class ParamCopyCase : std::uint32_t
     {
-        ForReturnCase_InsideVtl0CopyVtl0HeapParamToVariable,
-        ForReturnCase_InsideVtl1CopyVtl1ParamToVtl0Heap,
-        ForReturnCase_InsideVtl1CopyVtl0HeapParamToVariable,
-        ForReturnCase_InsideVtl0CopyVtl0ParamToVtl0Heap,
-        ForForwardingCase_InsideVtl1CopyVtl1ParamToVtl0Heap,
+        CallToVtl1FromVtl0_CopyVtl0ParametersIntoVtl1Parameters,
+        ReturnFromVtl1ToVtl0_CopyVtl1ParametersToVtl0Parameters,
+        CallToVtl0FromVtl1_CopyVtl1ParametersToVtl0Parameters,
+        ReturnFromVtl0ToVtl1_CopyVtl0ParametersIntoVtl1Parameters,
     };
 
     static inline std::string GetCopyStatement(
-        bool has_pointer, 
-        const ParsedAttributeInfo& attribute,
+        Declaration parameter,
         std::string_view param_type,
-        std::string_view assignee,
-        std::string_view value_to_assign,
-        ParamCopyDirection direction)
+        std::string_view size_to_copy,
+        std::string_view desc_name,
+        std::string_view src_name,
+        ParamCopyCase copy_case)
     {
-        auto size = GetSizeForCopy(attribute, value_to_assign, param_type);
-        bool is_in_out = attribute.m_in_and_out_present && attribute.m_out_present;
-        bool is_out = attribute.m_out_present;
-        if (has_pointer)
+        if (parameter.HasPointer())
         {
-            std::ostringstream copy_with_deallocation_str{};
+            auto& attribute = parameter.m_attribute_info.value();
+            bool is_in_out = attribute.m_in_and_out_present && attribute.m_out_present;
+            bool is_out = attribute.m_out_present;
+            bool is_in = !is_in_out && !is_out;
 
-            // The following create copy statements are used inside the entry point functions in the HostApp -> enclave call
+            // The following copy statements are used inside the entry point functions in the HostApp -> enclave call
             // flow. By entry point we mean the initial abi function the developer calls in (vtl0) and the abi function that 
             // calls its vtl1 impl counterpart.
-            if (is_in_out && direction == ParamCopyDirection::ForReturnCase_InsideVtl0CopyVtl0HeapParamToVariable)
-            {
-                // Developer must deallocate.
-                return std::format(c_copy_in_out_param_without_allocation, assignee, value_to_assign, size);
-            }
-            else if (is_out && direction == ParamCopyDirection::ForReturnCase_InsideVtl0CopyVtl0HeapParamToVariable)
-            {
-                // Developer must deallocate.
-                return std::format(c_copy_out_param_without_allocation, assignee, value_to_assign, size);
-            }
-            else if (is_in_out && direction == ParamCopyDirection::ForReturnCase_InsideVtl1CopyVtl1ParamToVtl0Heap)
-            {
-                // No deallocation needed, developer on vtl0 side must deallocate.
-                return std::format(c_copy_in_out_param_into_vtl0_heap, assignee, value_to_assign, size);
-            }
-            else if (is_out && direction == ParamCopyDirection::ForReturnCase_InsideVtl1CopyVtl1ParamToVtl0Heap)
-            {
-                // No deallocation needed, developer on vtl0 side must deallocate.
-                return std::format(c_copy_out_param_into_vtl0_heap_from_vtl1, assignee, value_to_assign, size);
-            }
 
-            // The following create copy statements for the entry function functions in the Enclave -> HostApp call flow.
-            // By entry point we mean the initial abi function the developer calls (vtl1) and their actual impl callback function (vtl0).
-            if (is_in_out && direction == ParamCopyDirection::ForReturnCase_InsideVtl1CopyVtl0HeapParamToVariable)
+            // Case where we're in a vtl1 function and need to copy the vtl0 parameter to a vtl1 heap to forward it
+            // to a vtl1 function. Vtl1 abi func -> Vtl1 developer impl. Original parameters sent by vtl0.
+            if ((is_in || is_in_out)
+                && copy_case == ParamCopyCase::CallToVtl1FromVtl0_CopyVtl0ParametersIntoVtl1Parameters)
             {
-                // copy the vtl0 memory to vtl1 and then deallocate it. Developer must free vtl1 allocated memory.
-                copy_with_deallocation_str << std::format(c_copy_in_out_param_without_allocation, assignee, value_to_assign, size);
-                copy_with_deallocation_str << std::format(c_deallocate_vtl0_in_out_mem_from_vtl1, value_to_assign);
-                return copy_with_deallocation_str.str();
-            }
-            else if (is_out && direction == ParamCopyDirection::ForReturnCase_InsideVtl1CopyVtl0HeapParamToVariable)
-            {
-                // copy the vtl0 memory to vtl1 and then deallocate it. Developer must free vtl1 allocated memory.
-                copy_with_deallocation_str << std::format(c_copy_out_param_without_allocation, assignee, value_to_assign, size);
-                copy_with_deallocation_str << std::format(c_deallocate_vtl0_out_mem_from_vtl1, value_to_assign);
-                return copy_with_deallocation_str.str();
-            }
-            else if (is_in_out && direction == ParamCopyDirection::ForReturnCase_InsideVtl0CopyVtl0ParamToVtl0Heap)
-            {
-                // Vtl1 side will deallocate
-                return std::format(c_copy_in_out_param_into_vtl0_heap, assignee, value_to_assign, size);
-            }
-            else if (is_out && direction == ParamCopyDirection::ForReturnCase_InsideVtl0CopyVtl0ParamToVtl0Heap)
-            {
-                // Vtl1 side will deallocate
-                return std::format(c_copy_out_param_into_vtl0_heap, assignee, value_to_assign, size);
-            }
-
-            // case where this is vtl1 and the in param has a pointer.
-            if (direction == ParamCopyDirection::ForForwardingCase_InsideVtl1CopyVtl1ParamToVtl0Heap)
-            {
-                // No deallocation needed, developer on vtl0 side must deallocate. But in the future
-                // we could add smart pointers to the developer function impl to allow fow lifetime managment.
                 return std::format(
-                    c_copy_in_param_into_vtl0_heap_from_vtl1, 
-                    assignee,
-                    value_to_assign,
-                    size);
+                    c_copy_param_into_vtl1_heap_from_vtl0,
+                    desc_name,
+                    src_name,
+                    size_to_copy,
+                    param_type,
+                    parameter.m_name,
+                    desc_name);
+
+            }
+            else if (is_out && copy_case == ParamCopyCase::CallToVtl1FromVtl0_CopyVtl0ParametersIntoVtl1Parameters)
+            {
+                return std::format(c_copy_out_param_into_vtl1_heap_from_vtl0,
+                    desc_name,
+                    parameter.m_name,
+                    param_type,
+                    parameter.m_name,
+                    desc_name);
+            }
+            // Return case where we're in a vtl1 function and returning in-out/out/return values back to a vtl0 function.
+            else if (is_in_out && copy_case == ParamCopyCase::ReturnFromVtl1ToVtl0_CopyVtl1ParametersToVtl0Parameters)
+            {
+                return std::format(c_copy_vtl1_param_ptr_into_vtl0_no_alloc, desc_name, src_name, size_to_copy);
+            }
+            else if (is_out && copy_case == ParamCopyCase::ReturnFromVtl1ToVtl0_CopyVtl1ParametersToVtl0Parameters)
+            {
+                return std::format(
+                    c_copy_vtl1_out_param_ptr_into_vtl0_no_alloc,
+                    parameter.m_name,
+                    param_type,
+                    parameter.m_name,
+                    parameter.m_name,
+                    src_name,
+                    size_to_copy,
+                    parameter.m_name,
+                    parameter.m_name);
+            }
+
+            // The following copy statements are for the entry functions in the Enclave -> HostApp call flow.
+            // By entry point we mean the initial abi function the developer calls (vtl1) when wanting to invoke
+            // their actual impl callback function in vtl0.
+
+            // Case where we're in a vtl1 function and need to copy the vtl1 parameters into the vtl0 heap 
+            // then forward them to the vtl0 callback.
+            if ((is_in || is_in_out) &&
+                (copy_case == ParamCopyCase::CallToVtl0FromVtl1_CopyVtl1ParametersToVtl0Parameters))
+            {
+                return std::format(
+                    c_allocate_vtl0_param_and_copy_vtl1_memory_into_it,
+                    desc_name,
+                    src_name,
+                    size_to_copy,
+                    param_type,
+                    parameter.m_name,
+                    desc_name);
+            }
+            else if (is_out && copy_case == ParamCopyCase::CallToVtl0FromVtl1_CopyVtl1ParametersToVtl0Parameters)
+            {
+                return std::format(c_allocate_vtl0_out_param_and_copy_vtl1_memory_into_it,
+                    desc_name,
+                    param_type,
+                    desc_name,
+                    param_type,
+                    param_type,
+                    parameter.m_name,
+                    desc_name);
+            }
+
+            // Case where we're returning back from a vtl1 function after a vtl0 callback invocation,
+            // so we need to copy the return vtl0 memory back into the vtl1 in-out/out/ params.
+            if (is_in_out && copy_case == ParamCopyCase::ReturnFromVtl0ToVtl1_CopyVtl0ParametersIntoVtl1Parameters)
+            {
+                return std::format(c_copy_param_without_allocation, desc_name, src_name, size_to_copy);
+            }
+            if (is_out && copy_case == ParamCopyCase::ReturnFromVtl0ToVtl1_CopyVtl0ParametersIntoVtl1Parameters)
+            {
+                return std::format(
+                    c_copy_out_param_with_allocation,
+                    desc_name,
+                    param_type,
+                    parameter.m_name,
+                    param_type,
+                    size_to_copy,
+                    parameter.m_name,
+                    parameter.m_name,
+                    src_name,
+                    size_to_copy,
+                    desc_name,
+                    parameter.m_name);
             }
         }
 
-        // non pointer value.
-        return std::format(c_copy_value_param_function, assignee, value_to_assign, size);
+        // non pointer value. Note: We don't need to worry about allocating and copying memory for value types inside the
+        // generated function. This is because these are copied by default using memcpy in the HostHelpers.h 'CallVtl*"
+        // functions or the enclave memory accessors functions implicitly in the EnclaveHelpers.h 'CallVtl*' functions.
+        return std::format(c_copy_value_param_function, desc_name, src_name, size_to_copy);
+    }
+
+    inline std::string CopyReturnTupleValuesIntoParameters(
+        const std::vector<std::pair<std::string, size_t>>& return_tuple_data)
+    {
+        std::ostringstream copy_statements_for_return_tuple;
+
+        for (auto&& [param_name, index] : return_tuple_data)
+        {
+            auto get_value_in_tuple = std::format(c_get_return_tuple_value, index);
+            copy_statements_for_return_tuple << std::format(
+                c_assign_tuple_value_to_parameter,
+                param_name,
+                get_value_in_tuple);
+        }
+
+        return copy_statements_for_return_tuple.str();
     }
 }

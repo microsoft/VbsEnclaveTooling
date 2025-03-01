@@ -130,6 +130,8 @@ struct EnclaveTestClass
     TEST_METHOD(ReturnInt8ValPtr_From_Enclave_Test)
     {
         auto generated_enclave_class = TestEnclave(m_enclave);
+
+        // Note: Int8PtrAndSize is returned by vtl1, and copied to vtl0 then returned to this function.
         Int8PtrAndSize result = generated_enclave_class.ReturnInt8ValPtr_From_Enclave();
         VERIFY_IS_NOT_NULL(result.int8_val);
         VERIFY_ARE_EQUAL(result.size_field, sizeof(std::int8_t) * c_data_size);
@@ -140,6 +142,8 @@ struct EnclaveTestClass
     TEST_METHOD(ReturnUint64Val_From_Enclave_Test)
     {
         auto generated_enclave_class = TestEnclave(m_enclave);
+
+        // Note: std::uint64_t is returned by vtl1, and copied to vtl0 then returned to this function.
         std::uint64_t result = generated_enclave_class.ReturnUint64Val_From_Enclave();
         VERIFY_ARE_EQUAL(result, std::numeric_limits<std::uint64_t>::max());
     }
@@ -147,6 +151,8 @@ struct EnclaveTestClass
     TEST_METHOD(ReturnStructWithValues_From_Enclave_Test)
     {
         auto generated_enclave_class = TestEnclave(m_enclave);
+
+        // Note: struct is returned by vtl1, and copied to vtl0 then returned to this function.
         StructWithNoPointers result = generated_enclave_class.ReturnStructWithValues_From_Enclave();
         VERIFY_IS_TRUE(CompareStructWithNoPointers(result, CreateStructWithNoPointers()));
     }
@@ -156,6 +162,7 @@ struct EnclaveTestClass
     {
         auto generated_enclave_class = TestEnclave(m_enclave);
 
+        // Note: Hresult is returned by vtl1, and copied to vtl0 then returned to this function.
         VERIFY_SUCCEEDED(generated_enclave_class.TestPassingPrimitivesAsValues_To_Enclave(
             true,
             DecimalEnum::Deci_val2,
@@ -173,6 +180,7 @@ struct EnclaveTestClass
         std::uint32_t uint32_val[c_arbitrary_size_1];
         std::copy(c_uint32_array.begin(), c_uint32_array.end(), uint32_val);
 
+        // Note: Hresult is return by vtl1, and copied to vtl0 then returned to this function.
         VERIFY_SUCCEEDED(generated_enclave_class.TestPassingPrimitivesAsInPointers_To_Enclave(
             uint8_val,
             uint16_val,
@@ -190,7 +198,8 @@ struct EnclaveTestClass
         std::copy(c_int16_array.begin(), c_int16_array.end(), int16_val);
         std::int32_t int32_val[c_arbitrary_size_1];
         std::copy(c_int32_array.begin(), c_int32_array.end(), int32_val);
-
+        
+        // Note: Hresult is returned by vtl1, and copied to vtl0 then returned to this function.
         VERIFY_SUCCEEDED(generated_enclave_class.TestPassingPrimitivesAsInOutPointers_To_Enclave(
             int8_val,
             int16_val,
@@ -198,6 +207,8 @@ struct EnclaveTestClass
             c_arbitrary_size_1,
             c_arbitrary_size_2));
 
+        // The in-out parameters should have been filled in by the abi in vtl1 based on the result from
+        // the vtl1 version of the function
         VerifyNumericArray(int8_val, c_arbitrary_size_1);
         VerifyNumericArray(int16_val, c_arbitrary_size_2);
         VerifyNumericArray(int32_val, c_arbitrary_size_1);
@@ -209,13 +220,22 @@ struct EnclaveTestClass
         bool* bool_val = nullptr;
         DecimalEnum* enum_val = nullptr;
         std::uint64_t* uint64_val = nullptr;
+
+        // Note: Hresult is returned by vtl1, and copied to vtl0 then returned to this function.
         VERIFY_SUCCEEDED(generated_enclave_class.TestPassingPrimitivesAsOutPointers_To_Enclave(
             &bool_val,
             &enum_val,
             &uint64_val,
             c_arbitrary_size_1,
             c_arbitrary_size_2));
+        
+        // Make sure the vtl0 allocated memory is freed when function goes out of scope
+        wil::unique_process_heap_ptr<bool> bool_val_ptr {bool_val};
+        wil::unique_process_heap_ptr<DecimalEnum> enum_val_ptr {enum_val};
+        wil::unique_process_heap_ptr<std::uint64_t> uint64_val_ptr {uint64_val};
 
+        // The out parameters should have been filled in by the abi in vtl1 based on the result from
+        // the vtl1 version of the function
         VerifyContainsSameValuesArray(bool_val, c_arbitrary_size_1, true);
         VerifyContainsSameValuesArray(enum_val, c_arbitrary_size_2, DecimalEnum::Deci_val3);
         VerifyNumericArray(uint64_val, c_arbitrary_size_1);
@@ -227,10 +247,12 @@ struct EnclaveTestClass
         auto expected_struct_values = CreateStructWithNoPointers();
         StructWithNoPointers struct_no_pointers_1 = expected_struct_values;
         StructWithNoPointers struct_no_pointers_2 {};
-        StructWithNoPointers* struct_no_pointers_3 = &struct_no_pointers_1;
+        StructWithNoPointers* struct_no_pointers_3;
         StructWithNoPointers struct_no_pointers_4 {};
         std::uint64_t* uint64_val = nullptr;
         size_t size_for_uint64_val = sizeof(std::uint64_t);
+
+        // Note: Hresult is returned by vtl1, and copied to vtl0 then returned to this function.
         auto result = generated_enclave_class.ComplexPassingofTypes_To_Enclave(
             struct_no_pointers_1,
             struct_no_pointers_2,
@@ -239,6 +261,12 @@ struct EnclaveTestClass
             &uint64_val,
             size_for_uint64_val);
 
+        // Make sure the vtl0 allocated memory is freed when function goes out of scope
+        wil::unique_process_heap_ptr<StructWithNoPointers> struct_no_pointers_3_ptr {struct_no_pointers_3};
+        wil::unique_process_heap_ptr<std::uint64_t> uint64_val_ptr {uint64_val};
+
+        // The out parameters should have been filled in by the abi in vtl1 based on the result from
+        // the vtl1 version of the function
         VERIFY_IS_TRUE(CompareStructWithNoPointers(result, expected_struct_values));
         VERIFY_IS_TRUE(CompareStructWithNoPointers(struct_no_pointers_2, expected_struct_values));
         VERIFY_IS_NOT_NULL(struct_no_pointers_3);
@@ -260,41 +288,57 @@ struct EnclaveTestClass
     TEST_METHOD(Start_TestPassingPrimitivesAsValues_To_HostApp_Callback_Test)
     {
         auto generated_enclave_class = TestEnclave(m_enclave);
+
+        // Note: Hresult is returned by vtl1, and copied to vtl0 then returned to this function.
         VERIFY_SUCCEEDED(generated_enclave_class.Start_TestPassingPrimitivesAsValues_To_HostApp_Callback_Test());
     }
     TEST_METHOD(Start_TestPassingPrimitivesAsInPointers_To_HostApp_Callback_Test)
     {
         auto generated_enclave_class = TestEnclave(m_enclave);
+
+        // Note: Hresult is returned by vtl1, and copied to vtl0 then returned to this function.
         VERIFY_SUCCEEDED(generated_enclave_class.Start_TestPassingPrimitivesAsInPointers_To_HostApp_Callback_Test());
     }
     TEST_METHOD(Start_TestPassingPrimitivesAsInOutPointers_To_HostApp_Callback_Test)
     {
         auto generated_enclave_class = TestEnclave(m_enclave);
+
+        // Note: Hresult is returned by vtl1, and copied to vtl0 then returned to this function.
         VERIFY_SUCCEEDED(generated_enclave_class.Start_TestPassingPrimitivesAsInOutPointers_To_HostApp_Callback_Test());
     }
     TEST_METHOD(Start_TestPassingPrimitivesAsOutPointers_To_HostApp_Callback_Test)
     {
         auto generated_enclave_class = TestEnclave(m_enclave);
+
+        // Note: Hresult is returned by vtl1, and copied to vtl0 then returned to this function.
         VERIFY_SUCCEEDED(generated_enclave_class.Start_TestPassingPrimitivesAsOutPointers_To_HostApp_Callback_Test());
     }
     TEST_METHOD(Start_ReturnInt8ValPtr_From_HostApp_Callback_Test)
     {
         auto generated_enclave_class = TestEnclave(m_enclave);
+
+        // Note: Hresult is returned by vtl1, and copied to vtl0 then returned to this function.
         VERIFY_SUCCEEDED(generated_enclave_class.Start_ReturnInt8ValPtr_From_HostApp_Callback_Test());
     }
     TEST_METHOD(Start_ReturnUint64Val_From_HostApp_Callback_Test)
     {
         auto generated_enclave_class = TestEnclave(m_enclave);
+
+        // Note: Hresult is returned by vtl1, and copied to vtl0 then returned to this function.
         VERIFY_SUCCEEDED(generated_enclave_class.Start_ReturnUint64Val_From_HostApp_Callback_Test());
     }
     TEST_METHOD(Start_ReturnStructWithValues_From_HostApp_Callback_Test)
     {
         auto generated_enclave_class = TestEnclave(m_enclave);
+
+        // Note: Hresult is returned by vtl1, and copied to vtl0 then returned to this function.
         VERIFY_SUCCEEDED(generated_enclave_class.Start_ReturnStructWithValues_From_HostApp_Callback_Test());
     }
     TEST_METHOD(Start_ComplexPassingofTypes_To_HostApp_Callback_Test)
     {
         auto generated_enclave_class = TestEnclave(m_enclave);
+
+        // Note: Hresult is returned by vtl1, and copied to vtl0 then returned to this function.
         VERIFY_SUCCEEDED(generated_enclave_class.Start_ComplexPassingofTypes_To_HostApp_Callback_Test());
     }
 

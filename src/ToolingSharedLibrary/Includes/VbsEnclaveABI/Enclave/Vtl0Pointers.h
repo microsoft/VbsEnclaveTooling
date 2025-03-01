@@ -43,11 +43,11 @@ namespace VbsEnclaveABI::Enclave::Pointers
     template <typename T>
     struct EnclaveHeapFreeVtl0Deleter
     {
-        void operator()(T* type) noexcept
+        void operator()(T* memory) noexcept
         {
-            if (type)
+            if (memory)
             {
-                LOG_IF_FAILED(DeallocateVtl0Memory(type));
+                LOG_IF_FAILED(DeallocateVtl0Memory(memory));
             }
         }
     };
@@ -59,8 +59,6 @@ namespace VbsEnclaveABI::Enclave::Pointers
     {
         vtl0_memory_ptr() = default;
 
-        // Memory should always be VTL0 memory created with HeapAlloc
-        // This class owns the memory it points to.
         explicit vtl0_memory_ptr(T* memory) noexcept
             : m_memory(memory), m_memory_size(sizeof(T))
         {
@@ -71,12 +69,11 @@ namespace VbsEnclaveABI::Enclave::Pointers
         {
         }
 
-        ~vtl0_memory_ptr() noexcept
+        ~vtl0_memory_ptr()
         {
             if (m_memory)
             {
-                LOG_IF_FAILED(DeallocateVtl0Memory(m_memory));
-                m_memory = nullptr;
+                m_deleter(m_memory); 
             }
         }
 
@@ -122,10 +119,10 @@ namespace VbsEnclaveABI::Enclave::Pointers
         {
             if (m_memory != other) // Prevent self-assignment
             {
-                // Release any previously allocated memory
+                // Delete any previously allocated memory
                 if (m_memory)
                 {
-                    release();
+                    m_deleter(m_memory);
                 }
 
                 // Assign the new raw pointer
@@ -167,6 +164,27 @@ namespace VbsEnclaveABI::Enclave::Pointers
         private:
             T* m_memory{};
             size_t m_memory_size{};
+            DeleterT m_deleter{};
     };
+
+    // Simple deleter for freeing vtl0 T** from vtl1.
+    template <typename T>
+    struct Vtl0DoublePtrDeleter
+    {
+        void operator()(T** memory) noexcept
+        {
+            if (memory)
+            {
+                if (*memory)
+                {
+                    LOG_IF_FAILED(DeallocateVtl0Memory(*memory));
+                }
+
+                LOG_IF_FAILED(DeallocateVtl0Memory(memory));
+            }
+        }
+    };
+
+
 }
 #endif // end __ENCLAVE_PROJECT__

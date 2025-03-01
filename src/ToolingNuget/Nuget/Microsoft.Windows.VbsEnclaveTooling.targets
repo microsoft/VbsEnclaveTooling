@@ -1,4 +1,4 @@
-<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<Project InitialTargets="VbsEnclaveCodeGeneration" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
     <PropertyGroup>
         <!-- 
             When other projects include a nuget package (e.g this one) to their vs project it is placed in <ProjectRoot>\packages\<name of nuget package>.
@@ -18,10 +18,8 @@
     <!-- Only run the VbsEnclaveCodeGeneration target if the developer passed in a value for <VbsEnclaveEdlPath> -->
     <Target
         Name="VbsEnclaveCodeGeneration"
-        BeforeTargets="Compile;Link"
         Condition="'$(VbsEnclaveEdlPath)' != ''">
         <Message Text="Generating enclave code using '$(VbsEnclaveCodeGenLanguage)'" Importance="high" />
-
         <!-- Ensure that the Edl file exists -->
         <Error Condition="!Exists('$(VbsEnclaveEdlPath)')" Text="The specified .edl file '$(VbsEnclaveEdlPath)' does not exist. Make sure the path to the .edl file is valid and inside the 'VbsEnclaveEdlPath' attribute in the packages .targets file." />
         <Error Condition="!Exists('$(VbsEnclaveExeFilePath)')" Text="Couldn't find tooling executable file '$(VbsEnclaveExeFilePath)'. Make sure the path to the executable file is valid and inside the 'VbsEnclaveExeFilePath' attribute in the packages .targets file." />
@@ -47,24 +45,15 @@
         <!-- Make sure our cpp support static library is added as an enclaves linker dependency -->
         <Link Condition="$(VbsEnclaveVirtualTrustLayer) == 'Enclave' ">
             <AdditionalDependencies>$(VbsEnclaveCppSupportLib);%(AdditionalDependencies)</AdditionalDependencies>
+            <ModuleDefinitionFile>$(VbsEnclaveGeneratedFilesDir)\VbsEnclave\Enclave\vbsenclave.def</ModuleDefinitionFile>
         </Link>
     </ItemDefinitionGroup>
 
     <!-- Make sure the generated cpp files are added to build without the developer needing to explicitly add them to their project. -->
     <ItemGroup>
         <_WildCardClCompileFor_Cpp Include="$(VbsEnclaveGeneratedFilesDir)\VbsEnclave\**\*.cpp" />
-        <ClCompile Include="@(_WildCardClCompileFor_Cpp)" />
+        <_WildCardClCompileFor_Cpp_h Include="$(VbsEnclaveGeneratedFilesDir)\VbsEnclave\**\*.h" />
+        <ClCompile Include="@(_WildCardClCompileFor_Cpp)"  />
+        <ClCompile Include="@(_WildCardClCompileFor_Cpp_h)"  />
     </ItemGroup>
-
-    <Target
-        Name="AddCppGeneratedLinkerContent"
-        BeforeTargets="Link"
-        AfterTargets="VbsEnclaveCodeGeneration"
-        Condition="'$(VbsEnclaveEdlPath)' != ''">
-        <ItemGroup>
-            <Link Condition="$(VbsEnclaveVirtualTrustLayer) == 'Enclave' ">
-                <ModuleDefinitionFile>$(VbsEnclaveGeneratedFilesDir)\VbsEnclave\Enclave\vbsenclave.def</ModuleDefinitionFile>
-            </Link>
-        </ItemGroup>
-    </Target>
 </Project>

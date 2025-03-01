@@ -408,12 +408,12 @@ namespace EdlProcessor
         ThrowIfTokenNotIdentifier(function_name_token, ErrorId::EdlFunctionIdentifierNotFound);
         function.m_name = function_name_token.ToString();
 
-        // Return of pointers aren't allowed unless the type is a struct or our string type,
-        // This is because it is impossible for us to know in the codegen layer the size for
-        // a void * or a uint32_t* when copying data into and out of the enclave without a size.
-        // Developers can return a struct that contains a size and the pointer instead.
+        // Return of pointers aren't allowed. Only primitive types and structs as values. Pointers
+        // in structs must have a an associated size/count attribute, so by preventing the return of pointers directly
+        // developers must enclose them in structs. This way the abi layer can properly copy the underlying memory to 
+        // the appropriate virtual trust layer as it will know the size of the data the pointer points to.
         auto return_kind = function.m_return_info.m_type_kind;
-        if (function.m_return_info.is_pointer && m_types_that_require_size_for_pointers.contains(return_kind))
+        if (function.m_return_info.is_pointer)
         {
             throw EdlAnalysisException(
                 ErrorId::EdlReturnValuesCannotBePointers,

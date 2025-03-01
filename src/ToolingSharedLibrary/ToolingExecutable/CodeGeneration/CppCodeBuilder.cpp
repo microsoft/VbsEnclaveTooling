@@ -85,11 +85,9 @@ namespace CodeGeneration
         return std::format("\n{}{}{}", enum_header.str(), enum_body.str(), enum_footer.str());
     }
 
-    std::string CppCodeBuilder::GetTypeInfoForFunction(
-        const Declaration& declaration,
-        ParamModifier modifier)
+    std::string CppCodeBuilder::GetTypeInfoForFunction(const Declaration& declaration)
     {
-        std::string type = GetSimpleTypeInfo(declaration.m_edl_type_info);;
+        std::string type = GetSimpleTypeInfo(declaration.m_edl_type_info);
 
         if (!declaration.m_array_dimensions.empty())
         {
@@ -97,34 +95,31 @@ namespace CodeGeneration
             type = BuildStdArrayType(type_info, declaration.m_array_dimensions);
         }        
 
-        std::string pointer = (declaration.HasPointer()) ? "*" : "";
-        bool should_add_reference = (modifier == ParamModifier::Reference || modifier == ParamModifier::ConstReference);
-        std::string punctuator = (should_add_reference && pointer.empty()) ? "&" : pointer;
-
         if (declaration.m_attribute_info)
         {
             ParsedAttributeInfo attribute = declaration.m_attribute_info.value();
-            if (attribute.m_in_present && attribute.m_out_present)
+            if ((attribute.m_in_and_out_present || attribute.m_out_present) && !declaration.HasPointer())
             {
-                return std::format("{}{}", type, punctuator);
+                return std::format("{}&", type);
             }
-            else if (attribute.m_out_present && !declaration.HasPointer())
+            else if (attribute.m_in_and_out_present && declaration.HasPointer())
             {
-                return std::format("{}{}", type, punctuator);
+                return std::format("{}*", type);
             }
             else if (attribute.m_out_present && declaration.HasPointer())
             {
-                // TODO: Update to use smart pointers so abi controls lifetime.
-                return std::format("{}{}{}", type, ASTERISK, ASTERISK);
+                return std::format("{}**", type);
             }
         }
 
-        if (modifier == ParamModifier::ConstReference || modifier == ParamModifier::ConstOnly)
+        // just an in param but developer did not specify attributes e.g by default we implicitly will see these
+        // as in parameters. Or the developer did specify an attribut but it was an in param.
+        if (declaration.HasPointer()) 
         {
-            return std::format("const {}{}", type, punctuator);
+            return std::format("{}*", type);
         }
-
-        return std::format("{}{}", type, punctuator);
+        
+        return std::format("{}", type);
     }
 
     std::string CppCodeBuilder::GetSimpleTypeInfo(const EdlTypeInfo& info)
@@ -142,9 +137,17 @@ namespace CodeGeneration
                 return std::format("std::{}", info.m_name);
             case EdlTypeKind::String:
                 return c_enclave_string_type.data();
+            case EdlTypeKind::WString:
+                return c_enclave_wstring_type.data();
             default:
                 return info.m_name;
         }
+    }
+
+    std::string CppCodeBuilder::GetSimpleTypeInfoWithPointerInfo(const EdlTypeInfo& info)
+    {
+        std::string pointer = info.is_pointer ? "*" : "";
+        return GetSimpleTypeInfo(info) + pointer;
     }
 
     std::string CppCodeBuilder::BuildStdArrayType(
@@ -161,14 +164,9 @@ namespace CodeGeneration
         return std::format("{}{}, {}>", c_array_initializer, array_string, dimensions[index]);
     }
 
-    std::string CppCodeBuilder::BuildArrayType(const Declaration& declaration)
+    std::string CppCodeBuilder::BuildArrayType(
+        const Declaration& declaration)
     {
-        if (declaration.m_parent_kind == DeclarationParentKind::Function)
-        {
-            std::string type = GetTypeInfoForFunction(declaration, ParamModifier::ConstReference);
-            return std::format("{} {}", type, declaration.m_name);
-        }
-
         auto type_info = GetSimpleTypeInfo(declaration.m_edl_type_info);
         auto array_info = BuildStdArrayType(type_info, declaration.m_array_dimensions);
         return std::format("{} {}", array_info, declaration.m_name);
@@ -176,14 +174,7 @@ namespace CodeGeneration
 
     std::string CppCodeBuilder::BuildNonArrayType(const Declaration& declaration)
     {
-        if (declaration.m_parent_kind == DeclarationParentKind::Function)
-        {
-            std::string type = GetTypeInfoForFunction(declaration, ParamModifier::ConstReference);
-            return std::format("{} {}", type, declaration.m_name);
-        }
-
-        auto pointer = declaration.HasPointer() ? "*" : "";
-        return std::format("{}{} {}", GetSimpleTypeInfo(declaration.m_edl_type_info), pointer, declaration.m_name);
+        return std::format("{} {}", GetSimpleTypeInfoWithPointerInfo(declaration.m_edl_type_info), declaration.m_name);
     }
 
     std::string CppCodeBuilder::BuildStructFieldOrFunctionParameter(const Declaration& declaration)
@@ -233,17 +224,21 @@ namespace CodeGeneration
 
     std::string  CppCodeBuilder::BuildFunctionParameters(
         const Function& function,
-        CodeGenFunctionKind function_kind,
-        const FunctionParameterInfo& param_info)
+        FunctionCallInitiator initiator,
+        bool is_entry_point_function,
+        const FunctionParametersInfo& param_info)
     {
         std::ostringstream function_parameters;
         function_parameters << "(";
-        
+
         for (auto i = 0U; i < function.m_parameters.size(); i++)
         {
             Declaration declaration = function.m_parameters[i];
-            auto parameter = BuildStructFieldOrFunctionParameter(declaration);
-            auto complete_parameter = AddSalToParameter(declaration, parameter);
+            auto parameter = GetTypeInfoForFunction(declaration);
+            bool is_out_param_ptr = declaration.IsOutParameterOnly() && declaration.HasPointer();
+
+            auto partially_complete_parameter = std::format("{} {}", parameter, declaration.m_name);
+            auto complete_parameter = AddSalToParameter(declaration, partially_complete_parameter);
 
             if (i + 1U < function.m_parameters.size())
             {
@@ -255,7 +250,10 @@ namespace CodeGeneration
             }
         }
 
-        if (function_kind == CodeGenFunctionKind::Abi && param_info.m_are_return_params_needed)
+        // The abi version of the developers function will contain an out parameter that has all it In/Out,
+        // Out and return values for the actual developers function. This is what will be sent back the the
+        // other Virtual trust layer at the end of the call.
+        if (initiator == FunctionCallInitiator::Abi && param_info.m_are_return_params_needed)
         {
             auto param_container = std::format(
                 c_parameter_container_type,
@@ -264,7 +262,7 @@ namespace CodeGeneration
             auto separator = (function.m_parameters.empty()) ? "" : ", ";
             function_parameters << std::format(c_abi_return_param_declaration, separator, param_container);
         }
-        
+
         function_parameters << ")";
 
         return function_parameters.str();
@@ -272,174 +270,198 @@ namespace CodeGeneration
 
     void CppCodeBuilder::SetupCopyOfReturnParameterStatements(
         const Declaration& parameter,
-        const std::uint32_t index,
-        FunctionParameterInfo& param_info,
-        FunctionDirection direction)
+        const size_t index,
+        std::string_view parameter_type,
+        std::string_view size_to_copy,
+        FunctionParametersInfo& param_info,
+        CallFlowDirection call_direction)
     {
-        auto& attribute = parameter.m_attribute_info.value();
         std::string tuple_into_parameter {};
-        std::string parameter_into_tuple{};
-        auto get_tuple_value = std::format(c_std_get_tuple_value, index);
-        bool has_pointer = parameter.HasPointer();
-        auto param_type = GetSimpleTypeInfo(parameter.m_edl_type_info);
+        std::string get_tuple_value {};
 
-        if (direction == FunctionDirection::HostAppToEnclave)
+        if (call_direction == CallFlowDirection::HostAppToEnclave)
         {
-            // Copy the returned tuple value into the developers actual parameter.           
-            tuple_into_parameter = GetCopyStatement(
-                has_pointer,
-                attribute,
-                param_type,
-                parameter.m_name,
-                get_tuple_value,
-                ParamCopyDirection::ForReturnCase_InsideVtl0CopyVtl0HeapParamToVariable);
+            get_tuple_value = std::format(c_std_get_vtl0_input_tuple_value_for_host_to_enclave, index);
 
-            // Copy actual parameter that was passed into the developers impl function into the
-            // return tuple value.
-            parameter_into_tuple = GetCopyStatement(
-                has_pointer,
-                attribute,
-                param_type,
+            // Copy the returned tuple value into the developers actual vtl0 parameter.           
+            tuple_into_parameter = GetCopyStatement(
+                parameter,
+                parameter_type,
+                size_to_copy,
+                parameter.m_name,
+                get_tuple_value,
+                ParamCopyCase::ReturnFromVtl1ToVtl0_CopyVtl1ParametersToVtl0Parameters);
+        }
+        else if (call_direction == CallFlowDirection::EnclaveToHostApp)
+        {
+            get_tuple_value = std::format(c_std_get_vtl1_input_tuple_value_for_enclave_to_host, index);
+
+            // Copy the returned tuple value into the developers actual vtl1 parameter.           
+            tuple_into_parameter = GetCopyStatement(
+                parameter,
+                parameter_type,
+                size_to_copy,
+                parameter.m_name,
+                get_tuple_value,
+                ParamCopyCase::ReturnFromVtl0ToVtl1_CopyVtl0ParametersIntoVtl1Parameters);
+        }
+
+        param_info.m_copy_updated_values_into_original_function_parameters << tuple_into_parameter;
+    }
+
+    void CppCodeBuilder::SetupCopyOfForwardParameterStatements(
+        const Declaration& parameter,
+        const size_t index,
+        std::string_view parameter_type,
+        std::string_view size_to_copy,
+        FunctionParametersInfo& param_info,
+        CallFlowDirection call_direction)
+    {
+        std::string parameter_copied_into_tuple {};
+        std::string get_tuple_value {};
+
+        if (call_direction == CallFlowDirection::HostAppToEnclave)
+        {
+            get_tuple_value = std::format(c_std_get_vtl0_input_tuple_value_for_host_to_enclave, index);
+
+            // Copy the vtl0 input param value into the vtl1 heap version so we can forward it
+            // to the vtl1 function.      
+            parameter_copied_into_tuple = GetCopyStatement(
+                parameter,
+                parameter_type,
+                size_to_copy,
                 get_tuple_value,
                 parameter.m_name,
-                ParamCopyDirection::ForReturnCase_InsideVtl1CopyVtl1ParamToVtl0Heap);
+                ParamCopyCase::CallToVtl1FromVtl0_CopyVtl0ParametersIntoVtl1Parameters);
+
+            param_info.m_copy_vtl0_parameters_into_vtl1_heap_tuple << parameter_copied_into_tuple;
         }
         else
         {
-            // Copy the returned tuple value into the developers actual parameter.           
-            tuple_into_parameter = GetCopyStatement(
-                has_pointer,
-                attribute,
-                param_type,
-                parameter.m_name,
-                get_tuple_value,
-                ParamCopyDirection::ForReturnCase_InsideVtl1CopyVtl0HeapParamToVariable);
+            get_tuple_value = std::format(c_std_get_vtl1_input_tuple_value_for_enclave_to_host, index);
 
-            // Copy actual parameter that was passed into the developers impl function into the
-            // return tuple value.
-            parameter_into_tuple = GetCopyStatement(
-                has_pointer,
-                attribute,
-                param_type,
+            // Copy the vtl1 input param value into the vtl0 heap version so we can forward it
+            // to the vtl0 function.          
+            parameter_copied_into_tuple = GetCopyStatement(
+                parameter,
+                parameter_type,
+                size_to_copy,
                 get_tuple_value,
                 parameter.m_name,
-                ParamCopyDirection::ForReturnCase_InsideVtl0CopyVtl0ParamToVtl0Heap);
-        }
+                ParamCopyCase::CallToVtl0FromVtl1_CopyVtl1ParametersToVtl0Parameters);
 
-        param_info.m_copy_tuple_values_into_parameters << tuple_into_parameter;
-        param_info.m_copy_parameters_into_tuple_values << parameter_into_tuple;
-    }
-
-    void CppCodeBuilder::SetupCopyOfForwardedParameterStatements(
-        const Declaration& parameter,
-        const std::uint32_t index,
-        FunctionParameterInfo& param_info,
-        FunctionDirection direction)
-    {
-        auto& attribute = parameter.m_attribute_info.value();
-        std::string parameter_into_tuple {};
-        auto get_tuple_value = std::format(c_std_get_vtl1_input_tuple_value, index);
-        bool has_pointer = parameter.HasPointer();
-        auto param_type = GetSimpleTypeInfo(parameter.m_edl_type_info);
-
-        // VTL0 can't read vtl1 memory, so build a copy statement to copy all parameters
-        // that need to be forwarded from vtl1 to vtl0.
-        if (has_pointer && direction == FunctionDirection::EnclaveToHostApp)
-        {
-            // Copy the input param value into the vtl0 heap version.           
-            parameter_into_tuple = GetCopyStatement(
-                has_pointer,
-                attribute,
-                param_type,
-                get_tuple_value,
-                parameter.m_name,
-                ParamCopyDirection::ForForwardingCase_InsideVtl1CopyVtl1ParamToVtl0Heap);
-
-            param_info.m_copy_vtl1_parameters_into_vtl0_heap_tuple << parameter_into_tuple;
+            param_info.m_copy_vtl1_parameters_into_vtl0_heap_tuple << parameter_copied_into_tuple;
         }
     }
 
-    CppCodeBuilder::FunctionParameterInfo CppCodeBuilder::GetParametersAndTupleInformation(
+    CppCodeBuilder::FunctionParametersInfo CppCodeBuilder::GetParametersAndTupleInformation(
         const Function& function,
-        FunctionDirection direction)
+        CallFlowDirection call_direction)
     {
-        FunctionParameterInfo param_info {};
-        std::string in_out_separator {};
-        auto in_out_parm_index = 0U;
+        FunctionParametersInfo param_info {};
+        std::string separator {};
+        size_t inout_out_return_tuple_index = 0U;
 
-        // We copy enclave parameters inside a tuple so we can forward them to an abi function or
-        // to the developers impl function. To do this we need to capture the types for
+        // We copy function parameters into a tuple so we can forward them to a developer impl
+        // function across the virtual trust boundary in one go. To do this we need to capture the types for
         // the parameters to forward, their names, and the types of parameters that need
-        // to be returned e.g function return values, Out and InOut values. Indexes are used to index
-        // the correct tuple value in relation to a forwarded parameter or In/Out/return value.
-        for (auto params_index = 0U; params_index < function.m_parameters.size(); params_index++)
+        // to be returned e.g a function return value, in-out or out values. Indexes are used to index
+        // the correct tuple value in relation to a forwarded parameter or in-out/out/return value.
+        for (size_t params_index = 0U; params_index < function.m_parameters.size(); params_index++)
         {
             auto list_ender = (params_index + 1U < function.m_parameters.size()) ? "," : "";
-            Declaration param = function.m_parameters[params_index];
-            std::string type_info = GetTypeInfoForFunction(param, ParamModifier::ConstOnly);
-            param_info.m_names_list << std::format("{}{}", param.m_name, list_ender);
+            Declaration param_declaration = function.m_parameters[params_index];
+            std::string type_without_pointer = GetSimpleTypeInfo(param_declaration.m_edl_type_info);
+            auto type_info = GetTypeInfoForFunction(param_declaration);
 
-            // For vtl1 to vtl0 parameter passing we need to copy parameters to a vtl0 tuple
-            // and forward that to vtl0. [In] parameters will have a const value so we need
-            // to remove the const so we can copy them without the const part.
-            if (param.HasPointer() && !param.IsInOutOrOutParameter() && direction == FunctionDirection::EnclaveToHostApp)
-            {
-                std::string type_info_no_const = GetTypeInfoForFunction(param, ParamModifier::NoConstNoReference);
-                param_info.m_types_list << std::format("(const_cast<{}>({})){}", type_info_no_const, param.m_name, list_ender);
-                param_info.m_types_in_tuple << std::format("{}{}", type_info_no_const, list_ender);
-            }
-            else
-            {
-                // We copy by value for in parameters or parameters without pointers. For HostApp to enclave calls 
-                // we do not need to copy the parameters to an intermediary object, we can forward them vtl1 as is
-                // who can then copy them into vtl1 memory.
-                param_info.m_types_in_tuple << std::format("{}{}", type_info, list_ender);
-                param_info.m_types_list << std::format("{}{}", param.m_name, list_ender);
-            }
+            // We copy by value for in parameters or parameters without pointers.
+            param_info.m_param_names_to_add_to_parameter_container << std::format(
+                "{}{}",
+                param_declaration.m_name,
+                list_ender);
 
-            // Pointer parameters need to be copied if from vtl1 memory into vtl0 memory before passing them
-            // through abi to vtl0.
-            if (param.HasPointer() && direction == FunctionDirection::EnclaveToHostApp)
+            param_info.m_param_names_to_add_to_initial_callers_parameter_container << std::format(
+                "{}{}",
+                param_declaration.m_name,
+                list_ender);
+
+            // remove the reference at the end of the type if it exists. We only need it to create function parameters,
+            // otherwise we just need the type without the reference for parameters forwarding.
+            if (type_info.back() == '&')
             {
-                SetupCopyOfForwardedParameterStatements(param, params_index, param_info, direction);
+                type_info.pop_back();
             }
 
-            // Build the statements to copy the updated InOut/Out/return values to the abi functions return
-            // object.
-            if (param.IsInOutOrOutParameter())
-            {
-                SetupCopyOfReturnParameterStatements(param, in_out_parm_index, param_info, direction);
-                in_out_separator = (in_out_parm_index == 0) ? "" : ",";
-                param_info.m_types_to_return_in_tuple << std::format("{}{}", in_out_separator, type_info);
-                param_info.m_names_to_return_in_tuple << std::format("{}{}", in_out_separator, param.m_name);
+            param_info.m_types_in_tuple << std::format("{}{}", type_info, list_ender);
+            param_info.m_param_names_to_forward_to_dev_impl << std::format("{}{}", param_declaration.m_name, list_ender);
+            std::string param_copy_size = GetSizeForCopy(param_declaration.m_attribute_info, type_without_pointer);
 
-                in_out_parm_index++;
+            // The data pointer parameters need to be copied into the correct virtual trust layer when we're initiating
+            // a call that will pass function parameters across the boundary.
+            SetupCopyOfForwardParameterStatements(
+                param_declaration,
+                params_index,
+                type_without_pointer,
+                param_copy_size,
+                param_info,
+                call_direction);
+
+            if (param_declaration.IsInOutOrOutParameter())
+            {
+                auto out_param_allocation_statement = std::format(
+                    c_allocate_memory_for_out_param,
+                    param_declaration.m_name,
+                    type_without_pointer,
+                    param_copy_size,
+                    param_declaration.m_name);
+
+                // Build the statements to copy in-out/out parameters into/out of the original parameter. E.g If we have a vtl1
+                // function parameter that we copied and forwarded to vtl0. We have to copy the vtl0 result back into the
+                // original vtl1 parameter.
+                SetupCopyOfReturnParameterStatements(
+                    param_declaration,
+                    params_index,
+                    type_without_pointer,
+                    param_copy_size,
+                    param_info,
+                    call_direction);
+
+                // For reference parameters (in-out or out non pointer params) we need to copy the value into a return tuple
+                // in the callee. Then in the caller copy the value from the returned tuple into the reference parameter.
+                if (!param_declaration.HasPointer())
+                {
+                    separator = (inout_out_return_tuple_index) == 0 ? "" : ",";
+                    param_info.m_types_to_return_in_tuple << std::format("{}{}", separator, type_without_pointer);
+                    param_info.m_names_to_return_in_tuple << std::format("{}{}", separator, param_declaration.m_name);
+                    param_info.m_return_tuple_param_indexes.push_back(
+                        {param_declaration.m_name, inout_out_return_tuple_index}
+                    );
+
+                    inout_out_return_tuple_index++;
+                }
             }
         }
 
-        auto pointer = (function.m_return_info.is_pointer) ? "*" : "";
-        param_info.m_function_return_value = std::format("{}{}", GetSimpleTypeInfo(function.m_return_info), pointer);
+        param_info.m_function_return_value = std::format("{}", GetSimpleTypeInfoWithPointerInfo(function.m_return_info));
 
         bool is_void_function = function.m_return_info.m_type_kind == EdlTypeKind::Void;
-        param_info.m_are_return_params_needed = (!is_void_function || (in_out_parm_index > 0));
+        param_info.m_are_return_params_needed = (!is_void_function || (inout_out_return_tuple_index > 0));
         param_info.m_function_return_type_void = is_void_function;
 
-        // Finally add return value as the last function return parameter
-        in_out_separator = (in_out_parm_index == 0) ? "" : ",";
-
+        // Finally add return value as the last value of the return tuple
         if (!is_void_function)
         {
             param_info.m_types_to_return_in_tuple << std::format(
                 "{}{}",
-                in_out_separator,
+                separator,
                 param_info.m_function_return_value);
 
             param_info.m_names_to_return_in_tuple <<
-                std::format("{}{}", 
-                in_out_separator,
+                std::format("{}{}",
+                separator,
                 c_return_variable_name);
         }
-        
+
         return param_info;
     }
 
@@ -453,71 +475,148 @@ namespace CodeGeneration
         return std::format("{}{}", original_name, abi_function_index++);
     }
 
-    std::string CppCodeBuilder::BuildInitialCallerFunction(
+    std::string CppCodeBuilder::BuildHostToEnclaveInitialCallerFunction(
         const Function& function,
         std::string_view abi_function_to_call,
-        const FunctionParameterInfo& param_info,
-        FunctionDirection direction,
-        bool should_be_static)
+        const FunctionParametersInfo& param_info)
     {
-        auto static_keyword = should_be_static ? c_static_keyword.data() : "";
         auto function_declaration = std::format(
-            "{}{} {}{}",
-            static_keyword,
+            "{} {}{}",
             param_info.m_function_return_value,
             function.m_name,
-            BuildFunctionParameters(function, CodeGenFunctionKind::Developer, param_info));
+            BuildFunctionParameters(function, FunctionCallInitiator::Developer, true, param_info));
 
-        std::string parameters_using_statement = std::format(
-            c_parameter_container,
-            param_info.m_types_in_tuple.str(),
-            param_info.m_types_list.str());
-
+        // First create the using statments so we can use the type for forwarding parameters
+        // and the type for returning parameters throughout the generated code.
         std::string return_parameters_using_statement = std::format(
-            c_parameter_container_type,
+            c_parameter_container_using_statement,
             param_info.m_types_to_return_in_tuple.str());
 
-        std::string vtl1_input_params_copied_to_vtl0{};
-        if (direction == FunctionDirection::EnclaveToHostApp)
-        {
-            // copy vtl1 input params to vtl0 buffer. Developer must free.
-            vtl1_input_params_copied_to_vtl0 = std::format(
-                c_vtl1_copy_input_params_to_vtl0_buffer,
-                param_info.m_copy_vtl1_parameters_into_vtl0_heap_tuple.str());
-        }
+        std::string parameters_using_statement = std::format(
+            c_parameter_container_for_initial_host_to_enclave_call,
+            param_info.m_types_in_tuple.str(),
+            param_info.m_param_names_to_add_to_initial_callers_parameter_container.str());
+
+        std::ostringstream copy_and_using_statements;
+
+        // Allocate memory first for out params. The developer must free these.
+        copy_and_using_statements << parameters_using_statement << return_parameters_using_statement;
 
         auto return_statement = c_empty_return;
+        if (!param_info.m_function_return_type_void)
+        {
+            return_statement = c_return_value_to_initial_caller;
+        }
+
         std::string final_part_of_function {};
+
+        if (param_info.m_are_return_params_needed)
+        {
+            // Copy all in-out/out values out of the return tuple and into the actual reference parameter.
+            // Note: these are never pointers, only value types since we don't pass references between virtual
+            // trust layers.
+            std::ostringstream copy_statements_for_return_tuple;
+            copy_statements_for_return_tuple <<
+                CopyReturnTupleValuesIntoParameters(param_info.m_return_tuple_param_indexes);
+
+            copy_statements_for_return_tuple << return_statement;
+            final_part_of_function = std::format(
+                c_setup_return_params_tuple_for_vtl0_hostapp_to_enclave,
+                copy_statements_for_return_tuple.str());
+        }
+        else
+        {
+            // no in-out/out parameters to copy out of the return tuple.
+            final_part_of_function = return_statement;
+        }
+
+        return std::format(
+            c_initial_caller_function_body,
+            function_declaration,
+            copy_and_using_statements.str(),
+            abi_function_to_call,
+            final_part_of_function);
+    }
+
+    std::string CppCodeBuilder::BuildEnclaveToHostInitialCallerFunction(
+        const Function& function,
+        std::string_view abi_function_to_call,
+        const FunctionParametersInfo& param_info)
+    {
+        auto function_declaration = std::format(
+            "{}{} {}{}",
+            c_static_keyword,
+            param_info.m_function_return_value,
+            function.m_name,
+            BuildFunctionParameters(function, FunctionCallInitiator::Developer, true, param_info));
+
+        // First create the using statments so we can use the type for forwarding parameters
+        // and the type for returning parameters throughout the generated code.
+        std::string parameters_using_statement = std::format(
+            c_parameter_container_for_initial_enclave_to_host_call,
+            param_info.m_types_in_tuple.str());
+
+        std::string return_parameters_using_statement = std::format(
+            c_parameter_container_using_statement,
+            param_info.m_types_to_return_in_tuple.str());
+
+        std::ostringstream copy_and_using_statements;
+
+        copy_and_using_statements << parameters_using_statement << return_parameters_using_statement;
+
+        // For the enclave to hostapp case we need to create a vtl0 heap and copy the vtl1
+        // parameters into it before forwarding them to vtl0.
+        copy_and_using_statements <<
+            param_info.m_copy_vtl1_parameters_into_vtl0_heap_tuple.str();
+
+        auto return_statement = c_empty_return;
 
         if (!param_info.m_function_return_type_void)
         {
             return_statement = c_return_value_to_initial_caller;
         }
 
+        std::string final_part_of_function {};
+
         if (param_info.m_are_return_params_needed)
         {
+            // Copy all in-out/out values out of the return tuple and into the actual reference parameter.
+            // Note: these are never pointers, only value types since we don't pass references between virtual
+            // trust layers.
+            std::ostringstream copy_statements_for_return_tuple;
+            copy_statements_for_return_tuple <<
+                CopyReturnTupleValuesIntoParameters(param_info.m_return_tuple_param_indexes);
+
+            // Vtl1 must copy the updated vtl0 tuple values into its vtl1 function parameters. Note: values
+            // in the vtl0 tuple were forwarded to a vtl0 function who then updated them in the callback call.
+            copy_statements_for_return_tuple 
+                << param_info.m_copy_updated_values_into_original_function_parameters.str();
+
             final_part_of_function = std::format(
-                c_setup_return_params_tuple,
-                param_info.m_copy_tuple_values_into_parameters.str(),
+                c_setup_return_params_tuple_for_vtl0_enclave_to_host,
+                copy_statements_for_return_tuple.str(),
                 return_statement);
+        }
+        else
+        {
+            // no in-out/out parameters to copy out of the return tuple.
+            final_part_of_function = return_statement;
         }
 
         return std::format(
             c_initial_caller_function_body,
             function_declaration,
-            parameters_using_statement,
-            return_parameters_using_statement,
-            vtl1_input_params_copied_to_vtl0,
+            copy_and_using_statements.str(),
             abi_function_to_call,
             final_part_of_function);
     }
 
-    std::string CppCodeBuilder::BuildAbiBoundaryFunction(
+    std::string CppCodeBuilder::BuildTrustBoundaryFunction(
         const Function& function,
         std::string_view boundary_function_name,
         std::string_view abi_function_to_call,
         bool is_vtl0_callback,
-        const FunctionParameterInfo& param_info)
+        const FunctionParametersInfo& param_info)
     {
         std::string params_using_statement = std::format(
             c_parameter_container_type,
@@ -542,48 +641,105 @@ namespace CodeGeneration
             inner_body);
     }
 
-    std::string CppCodeBuilder::BuildAbiImplFunction(
+    std::string CppCodeBuilder::BuildVtl0AbiImplFunctionForEnclaveToHost(
         const Function& function,
         std::string_view abi_function_name,
         std::string_view call_impl_str,
-        const FunctionParameterInfo& param_info)
+        const FunctionParametersInfo& param_info)
     {
-        auto abi_parameters = BuildFunctionParameters(function, CodeGenFunctionKind::Abi, param_info);
-        std::string call_developer_impl_declaration {};
+        auto abi_parameters = BuildFunctionParameters(function, FunctionCallInitiator::Abi, false, param_info);
+        std::string params_to_forward = param_info.m_param_names_to_forward_to_dev_impl.str();
+        std::ostringstream function_body {};
 
-        std::ostringstream copy_in_out_param_statements {};
+        std::ostringstream return_parameters_for_enclave_to_host {};
 
         if (param_info.m_are_return_params_needed)
         {
-            copy_in_out_param_statements << std::format(
-                c_copy_parameters_into_tuple,
+            return_parameters_for_enclave_to_host << std::format(
+                c_setup_copy_of_return_parameters_enclave_to_host,
                 param_info.m_types_to_return_in_tuple.str(),
-                param_info.m_names_to_return_in_tuple.str(),
-                param_info.m_copy_parameters_into_tuple_values.str());
+                param_info.m_names_to_return_in_tuple.str());
         }
 
         if (param_info.m_function_return_type_void)
         {
-            call_developer_impl_declaration = std::format(
+            function_body << std::format(
                 c_abi_func_return_null_when_void,
                 call_impl_str,
-                param_info.m_names_list.str(),
-               copy_in_out_param_statements.str());
+                params_to_forward,
+                return_parameters_for_enclave_to_host.str());
         }
         else
         {
-            call_developer_impl_declaration = std::format(
+            function_body << std::format(
                 c_abi_func_return_value,
                 call_impl_str,
-                param_info.m_names_list.str(),
-               copy_in_out_param_statements.str());
+                params_to_forward,
+                return_parameters_for_enclave_to_host.str());
         }
 
         return std::format(
             c_generated_abi_impl_function,
             abi_function_name,
             abi_parameters,
-            call_developer_impl_declaration);
+            function_body.str());
+    }
+
+    std::string CppCodeBuilder::BuildVtl1AbiImplFunctionForHostToEnclave(
+        const Function& function,
+        std::string_view abi_function_name,
+        std::string_view call_impl_str,
+        const FunctionParametersInfo& param_info)
+    {
+        auto abi_parameters = BuildFunctionParameters(function, FunctionCallInitiator::Abi, false, param_info);
+        std::ostringstream function_body {};
+
+        // When we call the developer's vtl1 impl function we have to do work to copy
+        // the vtl0 parameters into vtl1 then forward these vtl1 parameters to the impl.
+        function_body << std::format(
+            c_parameter_container_for_initial_host_to_enclave_call,
+            param_info.m_types_in_tuple.str(),
+            param_info.m_param_names_to_add_to_parameter_container.str());
+
+        // Copy vtl0 input params to vtl1.
+        function_body
+            << c_vtl1_copy_input_params_to_vtl1_buffer
+            << param_info.m_copy_vtl0_parameters_into_vtl1_heap_tuple.str();
+
+        std::string params_to_forward = std::format(c_vtl1_parameter_tuple_name_to_forward, function.m_name);
+        std::ostringstream return_parameters_for_host_to_enclave {};
+
+        if (param_info.m_are_return_params_needed)
+        {
+            return_parameters_for_host_to_enclave << std::format(
+                c_setup_copy_of_return_parameters_host_to_enclave,
+                param_info.m_types_to_return_in_tuple.str(),
+                param_info.m_copy_updated_values_into_original_function_parameters.str(),
+                param_info.m_names_to_return_in_tuple.str());
+        }
+
+        if (param_info.m_function_return_type_void)
+        {
+            function_body << std::format(
+                c_abi_func_return_null_when_void,
+                call_impl_str,
+                params_to_forward,
+                return_parameters_for_host_to_enclave.str());
+        }
+        else
+        {
+            function_body << std::format(
+                c_abi_func_return_value,
+                call_impl_str,
+                params_to_forward,
+                return_parameters_for_host_to_enclave.str());
+        }
+
+        return std::format(
+            c_generated_abi_impl_function,
+            abi_function_name,
+            abi_parameters,
+            function_body.str());
     }
 
     std::string CppCodeBuilder::BuildEnclaveModuleDefinitionFile(std::string_view exported_functions)
@@ -625,7 +781,7 @@ namespace CodeGeneration
 
         for (auto&& [name, function] : functions)
         {
-            auto param_info = GetParametersAndTupleInformation(function, FunctionDirection::HostAppToEnclave);
+            auto param_info = GetParametersAndTupleInformation(function, CallFlowDirection::HostAppToEnclave);
             auto abi_function_name = GetFunctionNameForAbi(function.m_name);
             auto vtl1_exported_func_name = std::format(c_generated_stub_name, abi_function_name);
             auto vtl0_call_to_vtl1_export = std::format(
@@ -634,12 +790,10 @@ namespace CodeGeneration
 
             // This is the vtl0 abi function that the developer will call into to start the flow
             // of calling their vtl1 enclave function impl.
-            vtl0_side_of_vtl1_developer_impl_functions << BuildInitialCallerFunction(
+            vtl0_side_of_vtl1_developer_impl_functions << BuildHostToEnclaveInitialCallerFunction(
                 function,
                 vtl0_call_to_vtl1_export,
-                param_info,
-                FunctionDirection::HostAppToEnclave,
-                false);
+                param_info);
 
             auto vtl1_call_to_vtl1_export = std::format(
                 c_vtl1_call_to_vtl1_export,
@@ -648,30 +802,28 @@ namespace CodeGeneration
 
             // This is the vtl0 function that is exported by the enclave and called via a
             // CallEnclave call by the abi.
-            vtl1_abi_boundary_functions << BuildAbiBoundaryFunction(
+            vtl1_abi_boundary_functions << BuildTrustBoundaryFunction(
                 function,
                 abi_function_name,
                 vtl1_call_to_vtl1_export,
                 false,
                 param_info);
 
-            auto call_developer_impl_str = std::format(c_vtl1_call_developer_impl, function.m_name);
-
             // This is the vtl1 abi function that will call the developers vtl1 function implementation.
-            std::string vtl1_abi_impl_definition = BuildAbiImplFunction(
-                    function,
-                    abi_function_name,
-                    call_developer_impl_str,
-                    param_info);
+            std::string vtl1_abi_impl_definition = BuildVtl1AbiImplFunctionForHostToEnclave(
+                function,
+                abi_function_name,
+                c_vtl1_abi_function_call_to_dev_impl,
+                param_info);
 
-                // VTL1 enclave function that the developer will implement. It is called by the vtl1
-                // abi function impl for this particular function.
+            // VTL1 enclave function that the developer will implement. It is called by the vtl1
+            // abi function impl for this particular function.
             vtl1_developer_declaration_functions << std::format(
                 c_function_declaration,
                 param_info.m_function_return_value,
                 function.m_name,
-                BuildFunctionParameters(function, CodeGenFunctionKind::Developer, param_info));
-            
+                BuildFunctionParameters(function, FunctionCallInitiator::Developer, false, param_info));
+
             vtl1_abi_impl_functions << vtl1_abi_impl_definition;
 
             vtl1_generated_module_exports << std::format(c_exported_function_in_module, abi_function_name);
@@ -707,10 +859,10 @@ namespace CodeGeneration
 
         std::ostringstream vtl1_callback_functions {};
 
-        std::ostringstream vtl0_abi_boundary_functions{};
+        std::ostringstream vtl0_abi_boundary_functions {};
         vtl0_abi_boundary_functions << c_vtl0_abi_boundary_functions_comment;
 
-        std::ostringstream vtl0_abi_impl_callback_functions{};
+        std::ostringstream vtl0_abi_impl_callback_functions {};
         vtl0_abi_impl_callback_functions << c_vtl0_abi_impl_callback_functions_comment;
 
         std::ostringstream vtl0_developer_declaration_functions {};
@@ -718,7 +870,7 @@ namespace CodeGeneration
 
         std::ostringstream vtl1_side_of_vtl0_callback_functions {};
         vtl1_side_of_vtl0_callback_functions << c_vtl1_side_of_vtl0_developer_callback_functions_comment;
-        
+
         // Add allocate vtl0 memory function from ABI base file.
         std::ostringstream vtl0_class_method_addresses;
         auto parameter_separator = (number_of_functions == 0) ? "" : ",";;
@@ -737,21 +889,19 @@ namespace CodeGeneration
             // Update name so there are no conflicts if the same name is used for a trusted function.
             function.m_name = std::format(c_untrusted_function_name, function.m_name);
             auto abi_function_name = GetFunctionNameForAbi(function.m_name);
-            auto param_info = GetParametersAndTupleInformation(function, FunctionDirection::EnclaveToHostApp);
+            auto param_info = GetParametersAndTupleInformation(function, CallFlowDirection::EnclaveToHostApp);
 
             auto vtl1_call_to_vtl0_callback = std::format(
                 c_vtl1_call_to_vtl0_callback,
                 vtl1_map_function_index++);
 
             // This is the vtl1 static function that the developer will call into from vtl1 with the
-            // same parameters as their vtl0 impl function. This initiates the abi call from vtl1 
+            // same parameters as their vtl0 callabck function. This initiates the abi call from vtl1 
             // to the vtl0 abi boundary function for this specific function.
-            vtl1_side_of_vtl0_callback_functions << BuildInitialCallerFunction(
+            vtl1_side_of_vtl0_callback_functions << BuildEnclaveToHostInitialCallerFunction(
                 function,
                 vtl1_call_to_vtl0_callback,
-                param_info,
-                FunctionDirection::EnclaveToHostApp,
-                true);
+                param_info);
 
             auto vtl0_call_to_vtl0_callback = std::format(
                 c_vtl0_call_to_vtl0_callback,
@@ -760,7 +910,7 @@ namespace CodeGeneration
 
             // This is the vtl0 callback that will call into our abi vtl0 callback implementation.
             // This callback is what vtl1 will call with CallEnclave.
-            vtl0_abi_boundary_functions << BuildAbiBoundaryFunction(
+            vtl0_abi_boundary_functions << BuildTrustBoundaryFunction(
                 function,
                 abi_function_name,
                 vtl0_call_to_vtl0_callback,
@@ -769,7 +919,7 @@ namespace CodeGeneration
 
             // This is our vtl0 abi callback implementation that will finally pass the parameters
             // to the developers vtl0 impl function.
-            vtl0_abi_impl_callback_functions << BuildAbiImplFunction(
+            vtl0_abi_impl_callback_functions << BuildVtl0AbiImplFunctionForEnclaveToHost(
                 function,
                 abi_function_name,
                 function.m_name,
@@ -781,7 +931,7 @@ namespace CodeGeneration
                 c_static_declaration,
                 param_info.m_function_return_value,
                 function.m_name,
-                BuildFunctionParameters(function, CodeGenFunctionKind::Developer, param_info));         
+                BuildFunctionParameters(function, FunctionCallInitiator::Developer, false, param_info));         
 
             // capture the addresses for each developer callback so we can pass them to vtl1 later.
             vtl0_class_method_addresses << std::format(

@@ -19,7 +19,7 @@ namespace VbsEnclaveABI::Enclave
         extern wil::srwlock s_vtl0_function_table_lock;
         extern bool s_are_functions_registered;
         extern std::unordered_map<std::uint32_t, std::uint64_t> s_vtl0_function_table;
-        constexpr size_t minimum_number_of_callbacks = 2;
+        static constexpr size_t minimum_number_of_callbacks = 2;
 
         static inline HRESULT AddVtl0FunctionsToTable(_In_ const std::vector<std::uint64_t>& stub_functions)
         {
@@ -77,7 +77,25 @@ namespace VbsEnclaveABI::Enclave
                 &returned_vtl0_memory));
 
             RETURN_IF_NULL_ALLOC(returned_vtl0_memory);
-            *vtl0_memory = reinterpret_cast<T*>(returned_vtl0_memory);
+            *vtl0_memory = static_cast<T*>(returned_vtl0_memory);
+            return S_OK;
+        }
+
+        template <typename T>
+        static inline HRESULT AllocateVtl0Memory(_Out_ T*** vtl0_memory, _In_ size_t size)
+        {
+            *vtl0_memory = nullptr;
+            RETURN_HR_IF_NULL_MSG(E_INVALIDARG, s_vtl0_allocation_function, "VTL0 allocation function not registered.");
+
+            void* returned_vtl0_memory;
+            RETURN_IF_WIN32_BOOL_FALSE(CallEnclave(
+                s_vtl0_allocation_function,
+                reinterpret_cast<void*>(size),
+                TRUE,
+                &returned_vtl0_memory));
+
+            RETURN_IF_NULL_ALLOC(returned_vtl0_memory);
+            *vtl0_memory = static_cast<T**>(returned_vtl0_memory);
             return S_OK;
         }
 

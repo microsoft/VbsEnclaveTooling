@@ -21,7 +21,7 @@ int main(int argc, char* argv[])
     if (!argument_parser.ParseSuccessful())
     {
         PrintUsage();
-        PrintError(ErrorId::GeneralFailure, E_INVALIDARG);
+        PrintHresult(ErrorId::GeneralFailure, E_INVALIDARG);
         return E_INVALIDARG;
     }
 
@@ -30,7 +30,7 @@ int main(int argc, char* argv[])
         PrintUsage();
         return S_OK;
     }
-    
+
     try
     {
         auto edl_parser = EdlParser(argument_parser.EdlFilePath());
@@ -49,13 +49,13 @@ int main(int argc, char* argv[])
     {
         PrintError(exception.what());
         auto hr = wil::ResultFromCaughtException();
-        PrintError(ErrorId::GeneralFailure, hr);
+        PrintHresult(ErrorId::GeneralFailure, hr);
         return hr;
     }
     catch (...)
     {
         auto hr = wil::ResultFromCaughtException();
-        PrintError(ErrorId::GeneralFailure, hr);
+        PrintHresult(ErrorId::GeneralFailure, hr);
         return hr;
     }
 

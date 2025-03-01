@@ -126,6 +126,7 @@ namespace EdlProcessor
         Ptr,
         SizeT,
         String,
+        WString,
         HRESULT,
     };
 
@@ -191,22 +192,27 @@ namespace EdlProcessor
             return m_edl_type_info.is_pointer;
         }
 
-        bool IsInOutOrOutParameter()
+        bool IsInOutOrOutParameter() const
         {
-            return InOutParameter() || OutParameter();
+            return IsInOutParameter() || IsOutParameter();
         }
 
-        bool InOutParameter()
+        bool IsInOutParameter() const 
         {
             return HasAttributesAndIsForFunction() && m_attribute_info.value().m_in_and_out_present;
         }
 
-        bool OutParameter()
+        bool IsOutParameter() const
         {
             return HasAttributesAndIsForFunction() && m_attribute_info.value().m_out_present;
         }
 
-        bool HasAttributesAndIsForFunction()
+        bool IsOutParameterOnly() const
+        {
+            return IsOutParameter() && !IsInOutParameter();
+        }
+
+        bool HasAttributesAndIsForFunction() const
         {
             return m_attribute_info && m_parent_kind == DeclarationParentKind::Function;
         }

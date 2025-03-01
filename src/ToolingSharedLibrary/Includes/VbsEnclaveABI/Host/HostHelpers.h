@@ -12,14 +12,14 @@ namespace VbsEnclaveABI::HostApp
     static inline std::string_view c_register_callbacks_abi_name = "__AbiRegisterVtl0Callbacks__";
 
     // VTL0 allocation callback
-    static inline void* AllocateVtl0Memory(_In_ void* context)
+    static inline void* AllocateVtl0MemoryCallback(_In_ void* context)
     {
         auto size = reinterpret_cast<size_t>(context);
         return Shared::AllocateMemory(size);
     }
 
     // VTL0 deallocation callback
-    static inline void* DeallocateVtl0Memory(_In_ void* memory)
+    static inline void* DeallocateVtl0MemoryCallback(_In_ void* memory)
     {
         RETURN_HR_AS_PVOID(Shared::DeallocateMemory(memory));
     }
@@ -104,42 +104,68 @@ namespace VbsEnclaveABI::HostApp
     }
 
     template <typename T>
-    inline void PerformVTL0AllocationAndCopy(T** desc, T* src, size_t size)
+    inline void PerformVTL0AllocationAndCopy(
+        _Out_writes_bytes_(number_of_bytes) T** desc,
+        _In_reads_bytes_(number_of_bytes) T* src,
+        _In_ size_t number_of_bytes)
     {
-        THROW_IF_NULL_ALLOC(desc);
+        if (!desc)
+        {
+            LOG_HR_IF_NULL(E_INVALIDARG, desc);
+            return;
+        }
+
         if (!src)
         {
             *desc = src;
             return;
         }
 
-        *desc = reinterpret_cast<T*>(AllocateMemory(size));
-        memcpy(*desc, src, size);
+        *desc = static_cast<T*>(AllocateMemory(number_of_bytes));
+        THROW_IF_NULL_ALLOC(*desc);
+        memcpy_s(*desc, number_of_bytes, src, number_of_bytes);
     }
 
     template <typename T>
-    static inline void UpdateOutParamPtr(T** assignee, T* value_to_assign, size_t size)
+    static inline void UpdateParamPtr(
+        _Out_writes_bytes_(number_of_bytes) T** desc,
+        _In_reads_bytes_(number_of_bytes) T* src,
+        _In_ size_t number_of_bytes)
     {
-        THROW_IF_NULL_ALLOC(assignee);
-        if (!value_to_assign)
+        if (!desc)
         {
-            *assignee = value_to_assign;
+            LOG_HR_IF_NULL(E_INVALIDARG, desc);
             return;
         }
 
-        memcpy(*assignee, value_to_assign, size);
+        if (!src)
+        {
+            *desc = nullptr;
+            return;
+        }
+
+        THROW_IF_NULL_ALLOC(*desc);
+        memcpy_s(*desc, number_of_bytes, src, number_of_bytes);
     }
 
     template <typename T>
-    static inline void UpdateInOutParamPtr(T* assignee, T* value_to_assign, size_t size)
+    static inline void UpdateParamPtr(
+        _Out_writes_bytes_(number_of_bytes) T* desc,
+        _In_reads_bytes_(number_of_bytes) T* src,
+        _In_ size_t number_of_bytes)
     {
-        THROW_IF_NULL_ALLOC(assignee);
-        if (!value_to_assign)
+        if (!desc)
         {
-            assignee = value_to_assign;
+            LOG_HR_IF_NULL(E_INVALIDARG, desc);
             return;
         }
 
-        memcpy(assignee, value_to_assign, size);
+        if (!src)
+        {
+            desc = nullptr;
+            return;
+        }
+
+        memcpy_s(desc, number_of_bytes, src, number_of_bytes);
     }
 }
