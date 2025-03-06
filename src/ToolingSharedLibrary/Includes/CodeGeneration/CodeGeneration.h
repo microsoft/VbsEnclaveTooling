@@ -81,7 +81,7 @@ namespace CodeGeneration
 
         std::string BuildArrayType(const Declaration& declaration);
 
-        std::string GetTypeInfoForFunction(const Declaration& declaration);
+        std::string GetTypeInfoForFunction(const Declaration& declaration, ParameterModifier modifier);
 
         std::string GetSimpleTypeInfoWithPointerInfo(const EdlTypeInfo& info);
 
@@ -101,8 +101,8 @@ namespace CodeGeneration
         std::string BuildFunctionParameters(
             const Function& function,
             FunctionCallInitiator initiator,
-            bool is_entry_point_function,
-            const FunctionParametersInfo& param_info);
+            const FunctionParametersInfo& param_info,
+            ParameterModifier modifier = ParameterModifier::NoConst);
 
         std::string BuildDeveloperTypesHeader(
             const std::unordered_map<std::string, std::shared_ptr<DeveloperType>>& developer_types);

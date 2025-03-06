@@ -135,6 +135,9 @@ namespace EdlProcessor
         edl.m_name = m_file_name.generic_string();
         ThrowIfExpectedTokenNotNext(RIGHT_CURLY_BRACKET);
 
+        status = std::format("Completed parsing {} successfully", m_file_name.generic_string());
+        PrintStatus(Status::Info, status);
+
         return std::move(edl);
     }
 
@@ -689,20 +692,21 @@ namespace EdlProcessor
                m_cur_line,
                m_cur_column,
                declaration.m_edl_type_info.m_name);
-
+        
+        bool is_void_ptr = declaration.m_edl_type_info.m_type_kind == EdlTypeKind::Void;
+        
         if (!declaration.m_attribute_info)
         {
-            // Everything else is a primitive type. For these e.g char*, wchar_t*
-            // uint8_t* etc, we need the developer to provide a size or count attribute.
-            // For structs and our string type we can use sizeof(T) if no size/count are
-            // provided.
-            if (m_types_that_require_size_for_pointers.contains(declaration.m_edl_type_info.m_type_kind))
+            // Disallow void*'s that do not contain a size attribute. For all other pointer
+            // types that don't contain an attribute, the code gen layer will copy sizeof(type)
+            // when copying the pointer between virtual trust layers.
+            if (is_void_ptr)
             {
                 throw EdlAnalysisException(
-                ErrorId::EdlNonStructsAndStringsMustBeAnnotated,
-                m_file_name,
-                m_cur_line,
-                m_cur_column);
+                    ErrorId::EdlPointerToVoidMustBeAnnotated,
+                    m_file_name,
+                    m_cur_line,
+                    m_cur_column);
             }
 
             PrintStatus(Status::Warning, message);
@@ -711,6 +715,15 @@ namespace EdlProcessor
 
         // Make sure pointer declarations are annotated with a size
         auto attribute_info = declaration.m_attribute_info.value();
+
+        if (is_void_ptr && attribute_info.m_size_info.IsEmpty())
+        {
+            throw EdlAnalysisException(
+               ErrorId::EdlPointerToVoidMustBeAnnotated,
+               m_file_name,
+               m_cur_line,
+               m_cur_column);
+        }
 
         if (!attribute_info.IsSizeOrCountPresent())
         {

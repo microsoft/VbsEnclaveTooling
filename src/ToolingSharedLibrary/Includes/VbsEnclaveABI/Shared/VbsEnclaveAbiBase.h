@@ -201,19 +201,11 @@ namespace VbsEnclaveABI::Shared
     }
 
     template <typename T>
-    static inline void UpdateValue(
-        _Out_writes_bytes_(number_of_bytes) T* desc,
-        _In_reads_bytes_(number_of_bytes) const T* src,
-        _In_ size_t number_of_bytes)
-    {
-        memcpy_s(desc, number_of_bytes, src, number_of_bytes);
-    }
-
-    template <typename T>
     inline void PerformAllocationForOutParam(
         _Out_writes_bytes_(number_of_bytes) T*** desc,
         _In_ size_t number_of_bytes)
     {
+        THROW_IF_NULL_ALLOC(desc);
         *desc = static_cast<T**>(AllocateMemory(number_of_bytes));
         THROW_IF_NULL_ALLOC(*desc);
         **desc = nullptr;

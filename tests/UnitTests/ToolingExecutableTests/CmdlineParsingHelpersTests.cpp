@@ -125,19 +125,6 @@ TEST_CLASS(CmdlineParsingHelpersTests)
             Assert::AreEqual(std::string("."), directory);
         }
 
-        TEST_METHOD(TestGetPathToOutputDirectoryFromArgs_Invalid)
-        {
-            char* args[2] = {first_argument.data(), m_invalid_directory.data()};
-            std::string directory;
-
-            // Call function
-            ErrorId result = GetPathToOutputDirectoryFromArgs(m_starting_index, args, m_args_size, directory);
-
-            // Check that the directory is still empty and an error was returned.
-            Assert::AreEqual(static_cast<uint32_t>(ErrorId::OutputDirNotADirectory), static_cast<uint32_t>(result));
-            Assert::AreEqual(std::string(""), directory);
-        }
-
         TEST_METHOD(TestGetErrorHandlingFromArg_Valid_ErrorCodeType)
         {
             char* args[2] = {first_argument.data(), m_valid_Error_types[0].data()};

@@ -42,9 +42,9 @@ StructWithNoPointers TestEnclave::ReturnStructWithValues_From_HostApp_callback()
 }
 
 HRESULT TestEnclave::TestPassingPrimitivesAsValues_To_HostApp_callback(
-    _In_ bool bool_val,
-    _In_ DecimalEnum enum_val,
-    _In_ std::int8_t int8_val)
+    _In_ const bool bool_val,
+    _In_ const DecimalEnum enum_val,
+    _In_ const std::int8_t int8_val)
 {
     // Confirm vtl1 parameters were correctly copied to vtl0 memory.
     THROW_HR_IF(E_INVALIDARG, bool_val != true);
@@ -55,11 +55,11 @@ HRESULT TestEnclave::TestPassingPrimitivesAsValues_To_HostApp_callback(
 }
 
 HRESULT TestEnclave::TestPassingPrimitivesAsInPointers_To_HostApp_callback(
-    _In_ std::uint8_t* uint8_val,
-    _In_ std::uint16_t* uint16_val,
-    _In_ std::uint32_t* uint32_val,
-    _In_ size_t abitrary_size_1,
-    _In_ size_t abitrary_size_2)
+    _In_ const std::uint8_t* uint8_val,
+    _In_ const std::uint16_t* uint16_val,
+    _In_ const std::uint32_t* uint32_val,
+    _In_ const size_t abitrary_size_1,
+    _In_ const size_t abitrary_size_2)
 {
     // Confirm vtl1 parameters were correctly copied to vtl0 memory.
     THROW_IF_FAILED(CompareArrays(uint8_val, c_uint8_array.data(), c_uint8_array.size()));
@@ -74,14 +74,14 @@ HRESULT TestEnclave::TestPassingPrimitivesAsInPointers_To_HostApp_callback(
 HRESULT TestEnclave::TestPassingPrimitivesAsInOutPointers_To_HostApp_callback(
     _Inout_ std::int8_t* int8_val,
     _Inout_ std::int16_t* int16_val,
-    _Inout_ std::int32_t* int32_val,
-    _In_ size_t abitrary_size_1,
-    _In_ size_t abitrary_size_2)
+    _Inout_ std::int32_t* int32_val_ptr,
+    _In_ const size_t abitrary_size_1,
+    _In_ const size_t abitrary_size_2)
 {
     // Confirm vtl1 parameters were correctly copied to vtl0 memory.
     THROW_IF_FAILED(CompareArrays(int8_val, c_int8_array.data(), c_int8_array.size()));
     THROW_IF_FAILED(CompareArrays(int16_val, c_int16_array.data(), c_int16_array.size()));
-    THROW_IF_FAILED(CompareArrays(int32_val, c_int32_array.data(), c_int32_array.size()));
+    THROW_HR_IF(E_INVALIDARG, c_expected_int32_val != *int32_val_ptr);
     THROW_HR_IF(E_INVALIDARG, abitrary_size_1 != c_arbitrary_size_1);
     THROW_HR_IF(E_INVALIDARG, abitrary_size_2 != c_arbitrary_size_2);
 
@@ -93,8 +93,7 @@ HRESULT TestEnclave::TestPassingPrimitivesAsInOutPointers_To_HostApp_callback(
     auto int16_data = CreateVector<std::int16_t>(abitrary_size_2);
     memcpy(int16_val, int16_data.data(), int16_data.size() * sizeof(std::int16_t));
 
-    auto int32_data = CreateVector<std::int32_t>(abitrary_size_1);
-    memcpy(int32_val, int32_data.data(), int32_data.size() * sizeof(std::int32_t));
+    *int32_val_ptr = std::numeric_limits<std::int32_t>::max();
 
     return S_OK;
 }
@@ -103,8 +102,8 @@ HRESULT TestEnclave::TestPassingPrimitivesAsOutPointers_To_HostApp_callback(
     _Out_ bool** bool_val,
     _Out_ DecimalEnum** enum_val,
     _Out_ std::uint64_t** uint64_val,
-    _In_ size_t abitrary_size_1,
-    _In_ size_t abitrary_size_2)
+    _In_ const size_t abitrary_size_1,
+    _In_ const size_t abitrary_size_2)
 {
     *bool_val = nullptr;
     *enum_val = nullptr;
@@ -135,12 +134,12 @@ HRESULT TestEnclave::TestPassingPrimitivesAsOutPointers_To_HostApp_callback(
 }
 
 StructWithNoPointers TestEnclave::ComplexPassingofTypes_To_HostApp_callback(
-    _In_ StructWithNoPointers arg1,
+    _In_ const StructWithNoPointers& arg1,
     _Inout_ StructWithNoPointers& arg2,
     _Out_ StructWithNoPointers** arg3,
     _Out_ StructWithNoPointers& arg4,
     _Out_ std::uint64_t** uint64_val,
-    _In_ size_t abitrary_size_1)
+    _In_ const size_t abitrary_size_1)
 {
     *arg3 = nullptr;
     *uint64_val = nullptr;

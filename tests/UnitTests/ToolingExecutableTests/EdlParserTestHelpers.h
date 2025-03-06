@@ -82,7 +82,7 @@ namespace VbsEnclaveToolingTests
         Edl edl = edl_parser.Parse();
 
         // Verify function name
-        Assert::AreEqual(edl.m_name, test_file_name.generic_string());
+        Assert::AreEqual(edl.m_name, test_file_name.stem().generic_string());
 
         auto expected_signature = test_func_signatures.at(function_name);
         Function function;
@@ -125,7 +125,7 @@ namespace VbsEnclaveToolingTests
             }
 
             // Confirm return type is correct
-            auto actual_return_type_string = c_edlTypes_to_string_map.at(function.m_return_info->m_type_kind);
+            auto actual_return_type_string = c_edlTypes_to_string_map.at(function.m_return_info.m_type_kind);
             auto expected_return_type_string = c_edlTypes_to_string_map.at(expected_return_type);
             Assert::AreEqual(expected_return_type_string, actual_return_type_string);
         }

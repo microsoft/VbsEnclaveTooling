@@ -11,7 +11,7 @@ VTL0/VTL1, passing only the copy with the correct memory type to the developers 
 
 ### Here is how it works
 
-1. Developer creates an .edl file like [see example edl here](../src/UnitTests/TestFiles/EnclaveFunctionsCodeGen.edl).
+1. Developer creates an .edl file like [example edl](../tests/EnclaveTests/CodeGenTestFunctions.edl).
    For some background on our edl support see: [more on edl here](./Edl.md).
 1. Developer Adds nuget package to both their enclave visual studio project and their hostapp visual studio project. 
    Following the `Using VbsEnclaveTooling.exe from within your own Visual Studio project to generate code` section
@@ -94,22 +94,27 @@ hostApp or vice versa:
 1. `EnclaveHelpers.h`    -  Contains function that the generated abi functions will use when making calls into the enclave
                            (HostApp -> Enclave) and out of the enclave (Enclave -> HostApp). The functions in this 
                             file use the Win32 enclave accessor functions `EnclaveCopyOutOfEnclave` and 
-                           `EnclaveCopyIntoEnclave`to copy data into and out of the enclave. This is where the `CallEnclave`
-                            call happens in the `EnclaveToHostApp` scenario below.
+                           `EnclaveCopyIntoEnclave`to copy data into and out of the enclave. 
+                            Note: `CallVtl0CallbackFromVtl1` uses the `CallEnclave` Win32 api to call into a generated vtl0 callback
+                            function which then forwards the function parameters to the developers vtl0 callback impl function.
+                            See the `Enclave -> HostApp scenario` and `Call flow Enclave -> HostApp` below for more details.
 1. `Vtl0Pointers.h`      - Contains smart pointers that the abi used when dealing vtl0 memory.
 1. `MemoryAllocation.h`  - Contains code necessary to allocate vtl0 memory from vtl1.
 1. `MemoryChecks.h.h`    - Contains code necessary to check and verify vtl0 and vtl1 memory bounds.
 
-`Note 4:` an enclave project must include a macro called `__ENCLAVE_PROJECT__` for the content of these files to be
+`Note 4:` an enclave project must include a preprocessor macro called `__ENCLAVE_PROJECT__` for the content of these files to be
           available to the project.
 
 #### Available only to HostApp
 
 1. `HostHelpers` - Similiar to `EnclaveHelpers.h` but for the vtl0 side. It contains functions to forward parameters from 
-                   from the abi layer in vtl1 to a vtl0 function and return that functions return value back to the vtl1.
-                   It also handles the opposite case where a function in vtl1 needs to be called from vtl0 by calling the
-                   generated enclave export vtl1 function associated with the vtl0 function using the vtl0 parameters as input.
-                   This is where the `CallEnclave` call happens in the `HostAppToEnclave` scenario below.
+                   from the abi layer in vtl1 to a vtl0 function and return that functions return value back to vtl1.
+                   It also handles the opposite case where a function in vtl1 is called from vtl0. In this case there is a
+                   generated vtl0 function which is associated with the developers implementation of a `trusted` vtl1 
+                   function.
+                   Note: `CallVtl1ExportFromVtl0` uses the `CallEnclave` Win32 api to call into a generated vtl1 export
+                   function which then forwards the function parameters to the developers vtl1 impl function.
+                   See the `HostApp -> Enclave scenario` and `Call flow HostApp -> Enclave` below for more details.
 
 #### How to access files
 
@@ -186,7 +191,7 @@ std::cout <<  enclave_str.ToStdString() << std::endl;
 ```
 
 `Note: 5` Regardless of whether or not a developer add functions to the 'trusted' or the 'untrusted' scopes in the .edl
-file there will be a 'RegisterVtl0Callbacks' function that is generated. This function will register the 
+file there will be a `RegisterVtl0Callbacks` function that is generated. This function will register the 
 `AllocateVtl0MemoryCallback` and `DeallocateVtl0MemoryCallback` function to the vtl1 callback tabled. This
 is needed for the ABI layer to function properly. So the `RegisterVtl0Callbacks` function must be called at
 least once for the lifetime of then enclave before attempting to use the methods in the generated enclave class.
@@ -215,34 +220,34 @@ a `size_t` as fields.
 
 Continuing on, the developer could implement the declaration as follows:
 ```C++
-EnclaveString VTL1_Declarations::TestPassingPrimitivesAsValues_To_Enclave(_Out_ std::int8_t** int8_array, _In_ size_t int8_array_size)
+EnclaveString VTL1_Declarations::TrustedExample(_Out_ std::int8_t** int8_array, _In_ size_t int8_array_size)
 {
     *int8_array = nullptr;
     int8_array_size = 10;
-    size_t array_size_in_bytes = std::int8_t) * int8_array_size;
+    size_t array_size_in_bytes = sizeof(std::int8_t) * int8_array_size;
     std::vector<std::int8_t> int8_vector(int8_array_size);
     std::iota(int8_vector.begin(), int8_vector.end(), 0);
 
     // Abi provided function to allocate vtl1/vtl0 memory depending on which side of the trust boundary its called.
     // in this case it will allocate vtl1 memory.
     // The abi layer is responsible for freeing this memory and coping it into the vtl0 memory of the caller.
-    *int8_array = reinterpret_cast<std::int8_t*>(AllocateMemory(array_size_in_bytes);
+    *int8_array = reinterpret_cast<std::int8_t*>(AllocateMemory(array_size_in_bytes));
     memcpy_s(*int8_array, array_size_in_bytes, int8_vector.data(), array_size_in_bytes);
 
     // TODO: when deep copy of internal structs support is added, we shouldn't need to allocate vtl0 memory
     // directly, and should be able to allocate only vtl1 memory and have the abi layer take care of the conversion 
     // for us. So, the developer shouldn't need to use the 'EnclaveCopyOutOfEnclave' Win32 api directly.
 
-    std::string return_from_enclave = "We returned this string from the enclave."
+    std::string return_from_enclave = "We returned this string from the enclave.";
     char * ret_char_array = nullptr;
     size_t str_size_in_bytes = sizeof(char) * return_from_enclave.size();
 
     // The abi layer catches exceptions, but the developer can catch them too.
-    THROW_IF_FAILED(AllocateVtl0Memory(&ret_char_array, str_size_in_bytes);
+    THROW_IF_FAILED(AllocateVtl0Memory(&ret_char_array, str_size_in_bytes));
     THROW_IF_NULL_ALLOC(ret_char_array);
 
     // free memory if the line below throws. vtl0_memory_ptr smart pointer is provided by the abi.
-    vtl0_memory_ptr<char> str_mem_ptr (ret_char_array); 
+    vtl0_memory_ptr<char> str_mem_ptr { ret_char_array }; 
     THROW_IF_FAILED(EnclaveCopyOutOfEnclave(ret_char_array, return_from_enclave.data(), str_size_in_bytes));
     str_mem_ptr.release(); // vtl0 caller to free
 

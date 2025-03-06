@@ -8,9 +8,10 @@ enclave
     *    Note about the count and size attribute on function parameters and struct fields:             *
     *                                                                                                  *
     *    [count=<value>] :  Is used to tell the codegen to copy count * sizeof(type) bytes of data     *
-    *                       when copying a parameter/field  between VTLs                               *
+    *                       when copying a parameter/field  between virtual trust layers.              *
+    *                                                                                                  *
     *    [size=<value>]  :  Is used to tell the codegen to copy size amount of data in bytes when      *    
-    *                       copying a parameter/field between VTLs                                     *
+    *                       copying a parameter/field between virtual trust layers.                    *
     *                                                                                                  *
     ****************************************************************************************************/
 
@@ -21,7 +22,7 @@ enclave
         value2 = 50,
     };
 
-    // Normal named enum
+    // Hexidecimal enum example
      enum HexEnum 
      {
         Hex_val1 = 0x01,
@@ -29,6 +30,7 @@ enclave
         Hex_val3,
     };
 
+    // Decimal enum example
     enum DecimalEnum 
      {
         Deci_val1,
@@ -75,8 +77,7 @@ enclave
             DecimalEnum enum_val,
             int8_t int8_val);
 
-        // Pointers to primitives must be given a size or count attribute or parsing will fail.
-        // They must also have an in or out direction.
+        // Pointers must have an in or out direction.
         HRESULT TestPassingPrimitivesAsInPointers_To_Enclave(
             [count=abitrary_size_1, in] uint8_t* uint8_val,
             [count=abitrary_size_2, in] uint16_t* uint16_val,
@@ -84,17 +85,15 @@ enclave
             size_t abitrary_size_1,
             size_t abitrary_size_2);
 
-        // Pointers to primitives must be given a size or count attribute or parsing will fail.
-        // They must also have an in or out direction.
+        // Pointers must have an in or out direction.
         HRESULT TestPassingPrimitivesAsInOutPointers_To_Enclave(
             [count=abitrary_size_1, in, out] int8_t* int8_val,
             [count=abitrary_size_2, in, out] int16_t* int16_val,
-            [count=abitrary_size_1, in, out] int32_t* int32_val,
+            [in, out] int32_t* int32_val_ptr, // only sizeof(int32_t) will be copied by abi layer
             size_t abitrary_size_1,
             size_t abitrary_size_2);
 
-        // Pointers to primitives must be given a size or count attribute or parsing will fail.
-        // They must also have an in or out direction.
+        // Pointers must have an in or out direction.
         HRESULT TestPassingPrimitivesAsOutPointers_To_Enclave(
             [count=abitrary_size_1, out] bool* bool_val,
             [count=abitrary_size_2, out] DecimalEnum* enum_val,
@@ -145,8 +144,7 @@ enclave
             DecimalEnum enum_val,
             int8_t int8_val);
 
-        // Pointers to primitives must be given a size or count attribute or parsing will fail.
-        // They must also have an in or out direction.
+        // Pointers must have an in or out direction.
         HRESULT TestPassingPrimitivesAsInPointers_To_HostApp(
             [count=abitrary_size_1, in] uint8_t* uint8_val,
             [count=abitrary_size_2, in] uint16_t* uint16_val,
@@ -154,17 +152,15 @@ enclave
             size_t abitrary_size_1,
             size_t abitrary_size_2);
 
-        // Pointers to primitives must be given a size or count attribute or parsing will fail.
-        // They must also have an in or out direction.
+        // Pointers must have an in or out direction.
         HRESULT TestPassingPrimitivesAsInOutPointers_To_HostApp(
             [count=abitrary_size_1, in, out] int8_t* int8_val,
             [count=abitrary_size_2, in, out] int16_t* int16_val,
-            [count=abitrary_size_1, in, out] int32_t* int32_val,
+            [in, out] int32_t* int32_val_ptr, // only sizeof(int32_t) will be copied by abi layer
             size_t abitrary_size_1,
             size_t abitrary_size_2);
 
-        // Pointers to primitives must be given a size or count attribute or parsing will fail.
-        // They must also have an in or out direction.
+        // Pointers must have an in or out direction.
         HRESULT TestPassingPrimitivesAsOutPointers_To_HostApp(
             [count=abitrary_size_1, out] bool* bool_val,
             [count=abitrary_size_2, out] DecimalEnum* enum_val,

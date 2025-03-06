@@ -27,6 +27,19 @@ namespace CodeGeneration
         EnclaveToHostApp,
     };
 
+    enum class ParameterModifier : std::uint32_t
+    {
+        NoConst,
+        InParameterConst,
+    };
+
+    static std::unordered_set<EdlTypeKind, EdlTypeToHash> const_ref_types
+    {
+        EdlTypeKind::String,
+        EdlTypeKind::WString,
+        EdlTypeKind::Struct,
+    };
+
     static inline std::string uint64_to_hex(uint64_t value)
     {
         std::stringstream string_stream;
@@ -70,7 +83,7 @@ namespace CodeGeneration
         std::string_view parameter_type)
     {
         // Size and count attributes are only for pointers
-        if (attribute_optional.has_value())
+        if (attribute_optional.has_value() && attribute_optional.value().IsSizeOrCountPresent())
         {
             auto attribute = attribute_optional.value();
             auto& size_or_count_token = (attribute.m_count_info.IsEmpty()) 
@@ -171,13 +184,8 @@ namespace CodeGeneration
                 return std::format(
                     c_copy_vtl1_out_param_ptr_into_vtl0_no_alloc,
                     parameter.m_name,
-                    param_type,
-                    parameter.m_name,
-                    parameter.m_name,
                     src_name,
-                    size_to_copy,
-                    parameter.m_name,
-                    parameter.m_name);
+                    size_to_copy);
             }
 
             // The following copy statements are for the entry functions in the Enclave -> HostApp call flow.
@@ -219,18 +227,10 @@ namespace CodeGeneration
             if (is_out && copy_case == ParamCopyCase::ReturnFromVtl0ToVtl1_CopyVtl0ParametersIntoVtl1Parameters)
             {
                 return std::format(
-                    c_copy_out_param_with_allocation,
-                    desc_name,
-                    param_type,
-                    parameter.m_name,
-                    param_type,
-                    size_to_copy,
-                    parameter.m_name,
+                    c_copy_out_param_with_allocation_vtl1,
                     parameter.m_name,
                     src_name,
-                    size_to_copy,
-                    desc_name,
-                    parameter.m_name);
+                    size_to_copy);
             }
         }
 

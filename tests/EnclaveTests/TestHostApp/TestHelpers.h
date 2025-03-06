@@ -16,9 +16,12 @@
 #include <limits>
 #include <algorithm>
 
-constexpr std::uint32_t c_data_size = 5;
-constexpr std::uint32_t c_arbitrary_size_1 = 5;
+constexpr size_t c_data_size = 5;
+constexpr size_t c_arbitrary_size_1 = 5;
 constexpr size_t c_arbitrary_size_2 = 2;
+static size_t c_non_const_arbitrary_size_1 = 5;
+static size_t c_non_const_arbitrary_size_2 = 2;
+static std::uint32_t c_expected_int32_val = 90;
 
 template <typename T>
 inline std::vector<T> CreateVector(size_t count)

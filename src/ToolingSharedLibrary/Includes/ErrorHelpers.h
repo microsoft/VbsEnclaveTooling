@@ -3,6 +3,7 @@
 
 #pragma once
 #include <pch.h>
+#include <winerror.h>
 
 namespace ErrorHelpers
 {
@@ -53,7 +54,7 @@ namespace ErrorHelpers
         EdlTypenameInvalid,
         EdlArrayDimensionIdentifierInvalid,
         EdlPointerSizeAttributeMissing,
-        EdlNonStructsAndStringsMustBeAnnotated,
+        EdlPointerToVoidMustBeAnnotated,
         EdlPointerMustBeAnnotatedWithDirection,
         EdlPointerToArrayNotAllowed,
         EdlSizeOrCountAttributeNotFound,
@@ -81,7 +82,6 @@ namespace ErrorHelpers
         }
     };
 
-    // When updating these make sure you update ErrorHelpersTests.cpp as well.
     static const std::unordered_map<ErrorId, std::string, ErrorIdHash> c_error_messages =
     {
         // Command line parsing errors
@@ -123,8 +123,8 @@ namespace ErrorHelpers
         { ErrorId::EdlPointerToPointerInvalid, "VbsEnclaveTooling .edl files do not support pointer to pointer declarations." },
         { ErrorId::EdlTypenameInvalid, "Reached end of file and no definition was found for type '{}'." },
         { ErrorId::EdlArrayDimensionIdentifierInvalid, "'{}' not supported within array brackets. Arrays in VbsEnclaveTooling .edl files only support arrays with an integer literal '[5]' and arrays with string literals previously declared in the edl file e.g. '[int_max]'." },
-        { ErrorId::EdlNonStructsAndStringsMustBeAnnotated, "Pointers to non struct or the 'string' keyword must be annotated with the size or count attribute." },
-        { ErrorId::EdlPointerSizeAttributeMissing, "Pointer for '{}' on line '{}', column '{}' does not have a size or count attribute. The codegen layer will copy only 'sizeof({})' when copying the field/parameter this pointer points to." },
+        { ErrorId::EdlPointerToVoidMustBeAnnotated, "Pointers to void must be annotated with the size attribute." },
+        { ErrorId::EdlPointerSizeAttributeMissing, "Pointer for '{}' on line '{}', column '{}' does not have a size or count attribute. The codegen layer will copy only 'sizeof({})' when copying the data this pointer points to between virtual trust layers." },
         { ErrorId::EdlPointerMustBeAnnotatedWithDirection, "Pointers must have a pointer direction. Use the 'in' or 'out' attribute." },
         { ErrorId::EdlPointerToArrayNotAllowed, "VbsEnclaveTooling .edl files do not support the pointers to arrays." },
         { ErrorId::EdlSizeOrCountAttributeNotFound, "Could not find '{}' size/count declaration in '{}'." },

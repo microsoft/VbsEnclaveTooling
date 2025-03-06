@@ -162,25 +162,4 @@ namespace EdlProcessor
 
         return true;
     }
-
-    static std::unordered_set<EdlTypeKind, EdlTypeToHash> m_types_that_require_size_for_pointers
-    {
-        EdlTypeKind::Bool,
-        EdlTypeKind::Char,
-        EdlTypeKind::Float,
-        EdlTypeKind::Double,
-        EdlTypeKind::Int8,
-        EdlTypeKind::Int16,
-        EdlTypeKind::Int32,
-        EdlTypeKind::Int64,
-        EdlTypeKind::UInt8,
-        EdlTypeKind::UInt16,
-        EdlTypeKind::UInt32,
-        EdlTypeKind::UInt64,
-        EdlTypeKind::WChar,
-        EdlTypeKind::Void,
-        EdlTypeKind::SizeT,
-        EdlTypeKind::Enum,
-        EdlTypeKind::Ptr,
-    };
 }

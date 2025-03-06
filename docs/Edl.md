@@ -16,7 +16,7 @@ pass data between the hostApp and the enclave. The marshaling is handled within 
 
 Note: This section was adapted from Open Enclaves [Edger8rGettingStarted.md](https://github.com/openenclave/openenclave/blob/master/docs/GettingStartedDocs/Edger8rGettingStarted.md?plain=1).
 Which provides a great intro to the .edl file format. Here are the most notable aspects of the format that a developer
-needs to know.
+needs to know for our uses of the format.
 
 ```edl
 enclave {
@@ -87,17 +87,17 @@ While our .edl parser is based on Open Enclaves implementation of intels .edl pa
 - Pointers must have an [in] or [out] direction attribute. [in] means the parameter is expected to only be used in 
   the function as input, while out means the function is expected to update the parameter before it exits for use 
   by the calling function.
-- The const keyword is not supported.
+- The const keyword is not supported. The codegen layer will generate all non struct `[in]` parameters as `const <type>` and all struct `[in]` parameters
+  `const <type>&`. All other attributes (`inout` and `out`) are generated without the const modifier. If the `[out]` attribute is used with a non pointer type
+  then it will be generated as `<type>&`.
 - Functions are not permitted to return pointers as function return values directly. It is expected that pointer
   values contain a respective size value for the data the pointer points. This is so the ABI layer can copy the 
   data correctly between trust boundary layers. What this means for functions is that if a pointer value 
-  is expected to be returned the developer must return a struct that contains the pointer and a
-  field for the size of the data the pointer points to. Alternatively the pointer could be returned via an out 
-  parameter for the function which also requires being annotated with the size/count attributes. 
-- For function parameters, all pointers to data types outside of structs must be annotated with a [size] or 
-  [count] attribute. The only case where it is not strictly necessary is for structs. If a pointer to a struct 
-  parameter is not annotated with either a [size] or [count] attribute then the `sizeof(your__struct)` will be
-  used when the ABI layer copies the pointer data between the trust boundaries.
+  is expected to be returned directly via a return statement, the developer must return a struct that contains the pointer and a
+  field for the size of the data the pointer points to. Alternatively the developer could also use an out parameter.
+- For function parameters, it is recommended that pointers to data types be annotated with a [size] or 
+  [count] attribute. If the pointer type is not annotated the codegen layer will only copy `sizeof(<type>)` when copying the parameter between virtual trust
+  layers. `void*` pointers must have an associated `size` attribute, since void is not a type that we can use `sizeof()` on.
 
 ### .edl built in Data types supported in both structs and functions
 - string
@@ -117,12 +117,13 @@ While our .edl parser is based on Open Enclaves implementation of intels .edl pa
 - uint64_t
 - enum
 - struct
+- pointers in the form of `*`
 - HRESULT
-- Arrays in the form of type[value] e.g uint8_t[10]
+- Arrays in the form of `type[value]` e.g `uint8_t[10]`
 
 Note: Arrays can contain a non numeric value within the edl file. The only value it supports other than
-explicitly numbers is a value from an anonymous enum. Arrays are generated as an `std::array` during
-code generation.
+numeric values is a value from an anonymous enum. Arrays are considered fixed sized and are generated as
+an `std::array` during code generation.
 
 ```C++
 enum
@@ -132,7 +133,7 @@ enum
 
 struct
 {
-    uint32_t[my_number] my_array;
+    uint32_t[my_number] my_array; // This also works in a function declaration.
 }
 ```
 ### What are the count and size attributes used for
@@ -145,11 +146,20 @@ parameter or field between trust boundaries:
 ```
  trusted {
         // If int8_array_size contained the value of 10 then we will copy sizeof(int8_t) multiplied by 10 when 
-        // copying the int8_array into and out vtl1. This behavior is the same regardless of whether the function
+        // copying the int8_array into vtl1. This behavior is the same regardless of whether the function
         // is 'trusted' or 'untrusted'.
-        void ExampleFunction(
+        string ExampleFunction(
             [in, count=int8_array_size] int8_t* int8_array,
             size_t int8_array_size
+        );
+
+        // The difference here is the callee (developers implementation of ExampleFunction2 in vtl1) will
+        // allocate memory for int8_array, update it with some values and update int8_array_size with its size,
+        // so that the caller in vtl0 can use it. See CodeGeneration.md for how the abi layer does the copying
+        // between vtl0 and vtl1 for the developer.
+        void ExampleFunction2(
+            [out, count=int8_array_size] int8_t* int8_array,
+            [out] size_t int8_array_size
         );
     };
 ```

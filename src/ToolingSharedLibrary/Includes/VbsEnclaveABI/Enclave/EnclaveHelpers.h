@@ -30,6 +30,8 @@ namespace VbsEnclaveABI::Enclave
                 _In_ SIZE_T NumberOfBytes
             )
         {
+            RETURN_IF_FAILED(CheckForVTL1Buffer(EnclaveAddress, NumberOfBytes));
+            RETURN_IF_FAILED(CheckForVTL0Buffer(UnsecureAddress, NumberOfBytes));
             memcpy_s(EnclaveAddress, NumberOfBytes, UnsecureAddress, NumberOfBytes);
             return S_OK;
         }
@@ -42,6 +44,8 @@ namespace VbsEnclaveABI::Enclave
                 _In_ SIZE_T NumberOfBytes
             )
         {
+            RETURN_IF_FAILED(CheckForVTL1Buffer(EnclaveAddress, NumberOfBytes));
+            RETURN_IF_FAILED(CheckForVTL0Buffer(UnsecureAddress, NumberOfBytes));
             memcpy_s(UnsecureAddress, NumberOfBytes, EnclaveAddress, NumberOfBytes);
             return S_OK;
         }
@@ -194,11 +198,7 @@ namespace VbsEnclaveABI::Enclave
         _In_reads_bytes_(number_of_bytes) T* src,
         _In_ size_t number_of_bytes)
     {
-        if (!desc)
-        {
-            LOG_HR_IF_NULL(E_INVALIDARG, desc);
-            return;
-        }
+        THROW_IF_NULL_ALLOC(desc);
 
         if (!src)
         {
@@ -227,11 +227,7 @@ namespace VbsEnclaveABI::Enclave
         _In_reads_bytes_(number_of_bytes) T* src,
         _In_ size_t number_of_bytes)
     {
-        if (!desc)
-        {
-            LOG_HR_IF_NULL(E_INVALIDARG, desc);
-            return;
-        }
+        THROW_IF_NULL_ALLOC(desc);
 
         if (!src)
         {
@@ -239,7 +235,7 @@ namespace VbsEnclaveABI::Enclave
             return;
         }
 
-        *desc  = static_cast<T*>(AllocateMemory(number_of_bytes));
+        *desc = static_cast<T*>(AllocateMemory(number_of_bytes));
         wil::unique_process_heap_ptr<T> input_params {*desc};
         THROW_IF_FAILED(EnclaveCopyIntoEnclave(*desc, src, number_of_bytes));
         input_params.release();
@@ -251,11 +247,7 @@ namespace VbsEnclaveABI::Enclave
         _In_reads_bytes_(number_of_bytes) T* src,
         _In_ size_t number_of_bytes)
     {
-        if (!desc)
-        {
-            LOG_HR_IF_NULL(E_INVALIDARG, desc);
-            return;
-        }
+        THROW_IF_NULL_ALLOC(desc);
 
         if (!src)
         {
@@ -272,11 +264,7 @@ namespace VbsEnclaveABI::Enclave
         _In_reads_bytes_(number_of_bytes) T* src,
         _In_ size_t number_of_bytes)
     {
-        if (!desc)
-        {
-            LOG_HR_IF_NULL(E_INVALIDARG, desc);
-            return;
-        }
+        THROW_IF_NULL_ALLOC(desc);
 
         if (!src)
         {
@@ -293,11 +281,7 @@ namespace VbsEnclaveABI::Enclave
         _In_reads_bytes_(number_of_bytes) T* src,
         _In_ size_t number_of_bytes)
     {
-        if (!desc)
-        {
-            LOG_HR_IF_NULL(E_INVALIDARG, desc);
-            return;
-        }
+        THROW_IF_NULL_ALLOC(desc);
 
         if (!src)
         {

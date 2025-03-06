@@ -161,12 +161,12 @@ struct EnclaveTestClass
     TEST_METHOD(TestPassingPrimitivesAsValues_To_Enclave_Test)
     {
         auto generated_enclave_class = TestEnclave(m_enclave);
+        auto in_bool = true;
+        auto in_enum = DecimalEnum::Deci_val2;
+        auto in_int8 = std::numeric_limits<std::int8_t>::max();
 
         // Note: Hresult is returned by vtl1, and copied to vtl0 then returned to this function.
-        VERIFY_SUCCEEDED(generated_enclave_class.TestPassingPrimitivesAsValues_To_Enclave(
-            true,
-            DecimalEnum::Deci_val2,
-            std::numeric_limits<std::int8_t>::max()));
+        VERIFY_SUCCEEDED(generated_enclave_class.TestPassingPrimitivesAsValues_To_Enclave(in_bool, in_enum, in_int8));
     }
 
     
@@ -185,8 +185,8 @@ struct EnclaveTestClass
             uint8_val,
             uint16_val,
             uint32_val,
-            c_arbitrary_size_1,
-            c_arbitrary_size_2));
+            c_non_const_arbitrary_size_1,
+            c_non_const_arbitrary_size_2));
     }
 
     TEST_METHOD(TestPassingPrimitivesAsInOutPointers_To_Enclave_Test)
@@ -196,22 +196,22 @@ struct EnclaveTestClass
         std::copy(c_int8_array.begin(), c_int8_array.end(), int8_val);
         std::int16_t int16_val[c_arbitrary_size_2];
         std::copy(c_int16_array.begin(), c_int16_array.end(), int16_val);
-        std::int32_t int32_val[c_arbitrary_size_1];
-        std::copy(c_int32_array.begin(), c_int32_array.end(), int32_val);
+        std::int32_t int32_val = c_expected_int32_val;
+        std::int32_t* int32_val_ptr = &int32_val;
         
         // Note: Hresult is returned by vtl1, and copied to vtl0 then returned to this function.
         VERIFY_SUCCEEDED(generated_enclave_class.TestPassingPrimitivesAsInOutPointers_To_Enclave(
             int8_val,
             int16_val,
-            int32_val,
-            c_arbitrary_size_1,
-            c_arbitrary_size_2));
+            int32_val_ptr,
+            c_non_const_arbitrary_size_1,
+            c_non_const_arbitrary_size_2));
 
         // The in-out parameters should have been filled in by the abi in vtl1 based on the result from
         // the vtl1 version of the function
         VerifyNumericArray(int8_val, c_arbitrary_size_1);
         VerifyNumericArray(int16_val, c_arbitrary_size_2);
-        VerifyNumericArray(int32_val, c_arbitrary_size_1);
+        VERIFY_ARE_EQUAL(std::numeric_limits<std::int32_t>::max(), *int32_val_ptr);
     }
 
     TEST_METHOD(TestPassingPrimitivesAsOutPointers_To_Enclave_Test)
@@ -226,8 +226,8 @@ struct EnclaveTestClass
             &bool_val,
             &enum_val,
             &uint64_val,
-            c_arbitrary_size_1,
-            c_arbitrary_size_2));
+            c_non_const_arbitrary_size_1,
+            c_non_const_arbitrary_size_2));
         
         // Make sure the vtl0 allocated memory is freed when function goes out of scope
         wil::unique_process_heap_ptr<bool> bool_val_ptr {bool_val};

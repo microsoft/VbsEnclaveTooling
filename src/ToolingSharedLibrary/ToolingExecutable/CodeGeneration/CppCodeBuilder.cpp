@@ -37,11 +37,11 @@ namespace CodeGeneration
 
         if (identifier_name.empty())
         {
-            definition.m_header << std::format("{}\n", type_name);
+            definition.m_header << std::format("{}", type_name);
         }
         else
         {
-            definition.m_header << std::format("{} {}\n", type_name, identifier_name);
+            definition.m_header << std::format("{} {}", type_name, identifier_name);
         }
 
         definition.m_body << std::format("{}\n", LEFT_CURLY_BRACKET);
@@ -85,7 +85,9 @@ namespace CodeGeneration
         return std::format("\n{}{}{}", enum_header.str(), enum_body.str(), enum_footer.str());
     }
 
-    std::string CppCodeBuilder::GetTypeInfoForFunction(const Declaration& declaration)
+    std::string CppCodeBuilder::GetTypeInfoForFunction(
+        const Declaration& declaration,
+        ParameterModifier modifier = ParameterModifier::NoConst)
     {
         std::string type = GetSimpleTypeInfo(declaration.m_edl_type_info);
 
@@ -112,14 +114,21 @@ namespace CodeGeneration
             }
         }
 
+        auto const_str = (modifier == ParameterModifier::InParameterConst) ? "const " : "";
+
         // just an in param but developer did not specify attributes e.g by default we implicitly will see these
         // as in parameters. Or the developer did specify an attribut but it was an in param.
         if (declaration.HasPointer()) 
         {
-            return std::format("{}*", type);
+            return std::format("{}{}*", const_str, type);
+        }
+
+        if (!declaration.HasPointer() && const_ref_types.contains(declaration.m_edl_type_info.m_type_kind))
+        {
+            return std::format("{}{}&", const_str, type);
         }
         
-        return std::format("{}", type);
+        return std::format("{}{}", const_str, type);
     }
 
     std::string CppCodeBuilder::GetSimpleTypeInfo(const EdlTypeInfo& info)
@@ -225,8 +234,8 @@ namespace CodeGeneration
     std::string  CppCodeBuilder::BuildFunctionParameters(
         const Function& function,
         FunctionCallInitiator initiator,
-        bool is_entry_point_function,
-        const FunctionParametersInfo& param_info)
+        const FunctionParametersInfo& param_info,
+        ParameterModifier modifier)
     {
         std::ostringstream function_parameters;
         function_parameters << "(";
@@ -234,9 +243,7 @@ namespace CodeGeneration
         for (auto i = 0U; i < function.m_parameters.size(); i++)
         {
             Declaration declaration = function.m_parameters[i];
-            auto parameter = GetTypeInfoForFunction(declaration);
-            bool is_out_param_ptr = declaration.IsOutParameterOnly() && declaration.HasPointer();
-
+            auto parameter = GetTypeInfoForFunction(declaration, modifier);
             auto partially_complete_parameter = std::format("{} {}", parameter, declaration.m_name);
             auto complete_parameter = AddSalToParameter(declaration, partially_complete_parameter);
 
@@ -484,7 +491,7 @@ namespace CodeGeneration
             "{} {}{}",
             param_info.m_function_return_value,
             function.m_name,
-            BuildFunctionParameters(function, FunctionCallInitiator::Developer, true, param_info));
+            BuildFunctionParameters(function, FunctionCallInitiator::Developer, param_info));
 
         // First create the using statments so we can use the type for forwarding parameters
         // and the type for returning parameters throughout the generated code.
@@ -548,7 +555,7 @@ namespace CodeGeneration
             c_static_keyword,
             param_info.m_function_return_value,
             function.m_name,
-            BuildFunctionParameters(function, FunctionCallInitiator::Developer, true, param_info));
+            BuildFunctionParameters(function, FunctionCallInitiator::Developer, param_info));
 
         // First create the using statments so we can use the type for forwarding parameters
         // and the type for returning parameters throughout the generated code.
@@ -647,7 +654,7 @@ namespace CodeGeneration
         std::string_view call_impl_str,
         const FunctionParametersInfo& param_info)
     {
-        auto abi_parameters = BuildFunctionParameters(function, FunctionCallInitiator::Abi, false, param_info);
+        auto abi_parameters = BuildFunctionParameters(function, FunctionCallInitiator::Abi, param_info);
         std::string params_to_forward = param_info.m_param_names_to_forward_to_dev_impl.str();
         std::ostringstream function_body {};
 
@@ -672,7 +679,7 @@ namespace CodeGeneration
         else
         {
             function_body << std::format(
-                c_abi_func_return_value,
+                c_abi_func_return_value_for_enclave_to_host,
                 call_impl_str,
                 params_to_forward,
                 return_parameters_for_enclave_to_host.str());
@@ -691,7 +698,7 @@ namespace CodeGeneration
         std::string_view call_impl_str,
         const FunctionParametersInfo& param_info)
     {
-        auto abi_parameters = BuildFunctionParameters(function, FunctionCallInitiator::Abi, false, param_info);
+        auto abi_parameters = BuildFunctionParameters(function, FunctionCallInitiator::Abi, param_info);
         std::ostringstream function_body {};
 
         // When we call the developer's vtl1 impl function we have to do work to copy
@@ -729,7 +736,7 @@ namespace CodeGeneration
         else
         {
             function_body << std::format(
-                c_abi_func_return_value,
+                c_abi_func_return_value_for_host_enclave,
                 call_impl_str,
                 params_to_forward,
                 return_parameters_for_host_to_enclave.str());
@@ -822,7 +829,7 @@ namespace CodeGeneration
                 c_function_declaration,
                 param_info.m_function_return_value,
                 function.m_name,
-                BuildFunctionParameters(function, FunctionCallInitiator::Developer, false, param_info));
+                BuildFunctionParameters(function, FunctionCallInitiator::Developer, param_info, ParameterModifier::InParameterConst));
 
             vtl1_abi_impl_functions << vtl1_abi_impl_definition;
 
@@ -931,7 +938,7 @@ namespace CodeGeneration
                 c_static_declaration,
                 param_info.m_function_return_value,
                 function.m_name,
-                BuildFunctionParameters(function, FunctionCallInitiator::Developer, false, param_info));         
+                BuildFunctionParameters(function, FunctionCallInitiator::Developer, param_info, ParameterModifier::InParameterConst));
 
             // capture the addresses for each developer callback so we can pass them to vtl1 later.
             vtl0_class_method_addresses << std::format(
@@ -976,14 +983,15 @@ namespace CodeGeneration
         auto [vtl0_class_header, vtl0_class_body, vtl0_class_footer] = BuildStartOfDefinition(
             EDL_STRUCT_KEYWORD,
             vtl0_class_name);
-
-        auto full_class = std::format("{}{}{}{}{}{}",
-           vtl0_class_header.str(),
-           vtl0_class_body.str(),
-           std::format(c_vtl0_class_constructor, vtl0_class_name),
-           vtl0_class_public_content.str(),
-           vtl0_class_private_content.str(),
-           vtl0_class_footer.str());
+        
+        auto full_class = std::format(
+            c_vtl0_class_structure,
+            vtl0_class_header.str(),
+            vtl0_class_body.str(),
+            std::format(c_vtl0_class_constructor, vtl0_class_name),
+            vtl0_class_public_content.str(),
+            vtl0_class_private_content.str(),
+            vtl0_class_footer.str());
 
         auto vtl0_class_in_namespace = std::format(
             c_vtl0_class_hostapp_namespace,
