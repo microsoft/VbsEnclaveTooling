@@ -38,6 +38,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "docs", "docs", "{890A5ACE-4
 	ProjectSection(SolutionItems) = preProject
 		docs\CodeGeneration.md = docs\CodeGeneration.md
 		docs\Edl.md = docs\Edl.md
+		docs\VbsEnclaveToolingAbi.md = docs\VbsEnclaveToolingAbi.md
 	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "TestEnclave", "tests\EnclaveTests\TestEnclave\TestEnclave.vcxproj", "{F4A39F44-E333-48A9-B793-B97366FE00AF}"

@@ -222,7 +222,7 @@ namespace CodeGeneration
             // so we need to copy the return vtl0 memory back into the vtl1 in-out/out/ params.
             if (is_in_out && copy_case == ParamCopyCase::ReturnFromVtl0ToVtl1_CopyVtl0ParametersIntoVtl1Parameters)
             {
-                return std::format(c_copy_param_without_allocation, desc_name, src_name, size_to_copy);
+                return std::format(c_copy_vtl0_param_into_vtl1_without_allocation, desc_name, src_name, size_to_copy);
             }
             if (is_out && copy_case == ParamCopyCase::ReturnFromVtl0ToVtl1_CopyVtl0ParametersIntoVtl1Parameters)
             {

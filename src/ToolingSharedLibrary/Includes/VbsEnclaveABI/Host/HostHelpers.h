@@ -30,11 +30,11 @@ namespace VbsEnclaveABI::HostApp
     static inline HRESULT CallVtl1ExportFromVtl0(
         _In_ void* enclave_instance,
         _In_ std::string_view function_name,
-        _In_ ParamsT& function_params,
+        _In_ ParamsT& params_container,
         _Inout_ FunctionResult<ReturnParamsT>& return_params)
     {
         EnclaveFunctionContext function_context {};
-        function_context.m_forwarded_parameters.buffer = &function_params;
+        function_context.m_forwarded_parameters.buffer = &params_container;
         function_context.m_forwarded_parameters.buffer_size = sizeof(ParamsT);
         function_context.m_returned_parameters.buffer = nullptr;
         function_context.m_returned_parameters.buffer_size = 0;
@@ -101,71 +101,5 @@ namespace VbsEnclaveABI::HostApp
         
         // There should be only one value in the tuple, our return hresult.
         return std::get<0>(function_result.m_returned_parameters->m_members);
-    }
-
-    template <typename T>
-    inline void PerformVTL0AllocationAndCopy(
-        _Out_writes_bytes_(number_of_bytes) T** desc,
-        _In_reads_bytes_(number_of_bytes) T* src,
-        _In_ size_t number_of_bytes)
-    {
-        if (!desc)
-        {
-            LOG_HR_IF_NULL(E_INVALIDARG, desc);
-            return;
-        }
-
-        if (!src)
-        {
-            *desc = src;
-            return;
-        }
-
-        *desc = static_cast<T*>(AllocateMemory(number_of_bytes));
-        THROW_IF_NULL_ALLOC(*desc);
-        memcpy_s(*desc, number_of_bytes, src, number_of_bytes);
-    }
-
-    template <typename T>
-    static inline void UpdateParamPtr(
-        _Out_writes_bytes_(number_of_bytes) T** desc,
-        _In_reads_bytes_(number_of_bytes) T* src,
-        _In_ size_t number_of_bytes)
-    {
-        if (!desc)
-        {
-            LOG_HR_IF_NULL(E_INVALIDARG, desc);
-            return;
-        }
-
-        if (!src)
-        {
-            *desc = nullptr;
-            return;
-        }
-
-        THROW_IF_NULL_ALLOC(*desc);
-        memcpy_s(*desc, number_of_bytes, src, number_of_bytes);
-    }
-
-    template <typename T>
-    static inline void UpdateParamPtr(
-        _Out_writes_bytes_(number_of_bytes) T* desc,
-        _In_reads_bytes_(number_of_bytes) T* src,
-        _In_ size_t number_of_bytes)
-    {
-        if (!desc)
-        {
-            LOG_HR_IF_NULL(E_INVALIDARG, desc);
-            return;
-        }
-
-        if (!src)
-        {
-            desc = nullptr;
-            return;
-        }
-
-        memcpy_s(desc, number_of_bytes, src, number_of_bytes);
     }
 }

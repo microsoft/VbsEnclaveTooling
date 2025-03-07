@@ -709,7 +709,7 @@ namespace EdlProcessor
                     m_cur_column);
             }
 
-            PrintStatus(Status::Warning, message);
+            PrintStatus(Status::Info, message);
             return;
         }
 
@@ -727,7 +727,7 @@ namespace EdlProcessor
 
         if (!attribute_info.IsSizeOrCountPresent())
         {
-            PrintStatus(Status::Warning, message);
+            PrintStatus(Status::Info, message);
         }
 
         bool in_or_out_present = (attribute_info.m_in_present) || (attribute_info.m_out_present);

@@ -4,7 +4,10 @@
 
 // Must be the first header included for enclave dll's
 #ifdef __ENCLAVE_PROJECT__
+#pragma warning(push)
+#pragma warning(disable : 5260) // the constant variable has external\internal linkage: wistd_functional.h(278,28)
 #include <wil/enclave/wil_for_enclaves.h>
+#pragma warning(pop)
 #endif
 
 // end
@@ -20,8 +23,11 @@
 #include <unordered_map>
 #include <vector>
 #include <variant>
+#pragma warning(push)
+#pragma warning(disable : 5260) // the constant variable has external\internal linkage:  wistd_functional.h(278,28)
 #include <wil\resource.h>
 #include <wil\result_macros.h>
+#pragma warning(pop)
 
 #define HRESULT_TO_PVOID(hr) (PVOID)((ULONG_PTR)(hr) & 0x00000000FFFFFFFF)
 #ifndef RETURN_HR_AS_PVOID
@@ -101,6 +107,8 @@ namespace VbsEnclaveABI::Shared
     struct ParameterContainer
     {
         std::tuple<Args...> m_members;
+        static_assert(((std::is_standard_layout_v<Args>) && ...), "Arguments must have standard layouts");
+
         ParameterContainer(Args... args) : m_members(std::make_tuple(args...)) {}
 
         ParameterContainer() = default;

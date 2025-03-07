@@ -193,103 +193,36 @@ namespace VbsEnclaveABI::Enclave
     }
 
     template <typename T>
-    inline void PerformVTL0AllocationAndCopy(
-        _Out_writes_bytes_(number_of_bytes) T** desc,
-        _In_reads_bytes_(number_of_bytes) T* src,
+    inline void CopyVTL1MemoryIntoVTL0AllocatedMemory(
+        _Out_writes_bytes_(number_of_bytes) T** vtl0_desc,
+        _In_reads_bytes_(number_of_bytes) T* vtl1_src,
         _In_ size_t number_of_bytes)
     {
-        THROW_IF_NULL_ALLOC(desc);
-
-        if (!src)
-        {
-            *desc = nullptr;
-            return;
-        }
-
-        THROW_IF_FAILED(AllocateVtl0Memory(desc, number_of_bytes));
-        wil::unique_process_heap_ptr<T> input_params {*desc};
-        THROW_IF_FAILED(EnclaveCopyOutOfEnclave(*desc, src, number_of_bytes));
+        THROW_IF_FAILED(AllocateVtl0Memory(vtl0_desc, number_of_bytes));
+        wil::unique_process_heap_ptr<T> input_params {*vtl0_desc};
+        THROW_IF_FAILED(EnclaveCopyOutOfEnclave(*vtl0_desc, vtl1_src, number_of_bytes));
         input_params.release();
     }
 
     template <typename T>
     inline void PerformVtl0AllocationForOutParam(
-        _Out_writes_bytes_(number_of_bytes) T*** desc,
+        _Out_writes_bytes_(number_of_bytes) T*** vtl0_desc,
         _In_ size_t number_of_bytes)
     {
-        THROW_IF_FAILED(AllocateVtl0Memory(desc, number_of_bytes));
-        THROW_IF_NULL_ALLOC(desc);
+        THROW_IF_FAILED(AllocateVtl0Memory(vtl0_desc, number_of_bytes));
+        THROW_IF_NULL_ALLOC(vtl0_desc);
     }
 
     template <typename T>
-    inline void PerformVTL1AllocationAndCopy(
-        _Out_writes_bytes_(number_of_bytes) T** desc,
-        _In_reads_bytes_(number_of_bytes) T* src,
+    inline void CopyVTL0MemoryIntoVTL1AllocatedMemory(
+        _Out_writes_bytes_(number_of_bytes) T** vtl1_desc,
+        _In_reads_bytes_(number_of_bytes) T* vtl0_src,
         _In_ size_t number_of_bytes)
     {
-        THROW_IF_NULL_ALLOC(desc);
-
-        if (!src)
-        {
-            *desc = nullptr;
-            return;
-        }
-
-        *desc = static_cast<T*>(AllocateMemory(number_of_bytes));
-        wil::unique_process_heap_ptr<T> input_params {*desc};
-        THROW_IF_FAILED(EnclaveCopyIntoEnclave(*desc, src, number_of_bytes));
+        *vtl1_desc = static_cast<T*>(AllocateMemory(number_of_bytes));
+        wil::unique_process_heap_ptr<T> input_params {*vtl1_desc};
+        THROW_IF_FAILED(EnclaveCopyIntoEnclave(*vtl1_desc, vtl0_src, number_of_bytes));
         input_params.release();
-    }
-
-    template <typename T>
-    static inline void UpdateParamPtr(
-        _Out_writes_bytes_(number_of_bytes) T** desc,
-        _In_reads_bytes_(number_of_bytes) T* src,
-        _In_ size_t number_of_bytes)
-    {
-        THROW_IF_NULL_ALLOC(desc);
-
-        if (!src)
-        {
-            *desc = nullptr;
-            return;
-        }
-
-        THROW_IF_FAILED(EnclaveCopyIntoEnclave(*desc, src, number_of_bytes));
-    }
-
-    template <typename T>
-    static inline void UpdateParamPtr(
-        _Out_writes_bytes_(number_of_bytes) T* desc,
-        _In_reads_bytes_(number_of_bytes) T* src,
-        _In_ size_t number_of_bytes)
-    {
-        THROW_IF_NULL_ALLOC(desc);
-
-        if (!src)
-        {
-            desc = nullptr;
-            return;
-        }
-
-        THROW_IF_FAILED(EnclaveCopyIntoEnclave(desc, src, number_of_bytes));
-    }
-
-    template <typename T>
-    static inline void UpdateVtl0ParamPtr(
-        _Out_writes_bytes_(number_of_bytes) T** desc,
-        _In_reads_bytes_(number_of_bytes) T* src,
-        _In_ size_t number_of_bytes)
-    {
-        THROW_IF_NULL_ALLOC(desc);
-
-        if (!src)
-        {
-            *desc = nullptr;
-            return;
-        }
-
-        THROW_IF_FAILED(EnclaveCopyOutOfEnclave(*desc, src, number_of_bytes));
     }
 }
 

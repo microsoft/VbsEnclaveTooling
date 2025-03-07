@@ -378,7 +378,7 @@ R"(     {}_Generated_Stub
     static inline constexpr std::string_view c_vtl1_copy_input_params_to_vtl0_buffer = R"(
 
         ParamsT* vtl0_parameters = nullptr;
-        PerformVTL0AllocationAndCopy(&vtl0_parameters, &forward_parameters, sizeof(forward_parameters));
+        CopyVTL1MemoryIntoVTL0AllocatedMemory(&vtl0_parameters, &forward_parameters, sizeof(forward_parameters));
         vtl0_memory_ptr<ParamsT> input_params {{ vtl0_parameters }};
         {}
 )";
@@ -392,7 +392,7 @@ R"(            ParamsT vtl1_parameters = ParamsT();
     static inline constexpr std::string_view c_vtl1_parameter_tuple_name_to_forward = "VTL1_Declarations::{}, vtl1_parameters.m_members";
 
     static inline constexpr std::string_view c_copy_param_into_vtl1_heap_from_vtl0 = R"(
-            PerformVTL1AllocationAndCopy(&{}, {}, {});
+            CopyVTL0MemoryIntoVTL1AllocatedMemory(&{}, {}, {});
             wil::unique_process_heap_ptr<{}> free_{}_vtl1 {{ {} }};
 )";
 
@@ -409,23 +409,23 @@ R"(            ParamsT vtl1_parameters = ParamsT();
 )";
 
     static inline constexpr std::string_view c_copy_vtl1_param_ptr_into_vtl0_no_alloc = R"(
-            UpdateVtl0ParamPtr(&{}, {}, {});
+            THROW_IF_FAILED(EnclaveCopyOutOfEnclave({}, {}, {}));
 )";
 
     static inline constexpr std::string_view c_copy_vtl1_out_param_ptr_into_vtl0_no_alloc = R"(
-            PerformVTL0AllocationAndCopy({}, *{}, {});
+            CopyVTL1MemoryIntoVTL0AllocatedMemory({}, *{}, {});
 )";
 
-    static inline constexpr std::string_view c_copy_param_without_allocation = R"(
-            UpdateParamPtr({}, {}, {});
+    static inline constexpr std::string_view c_copy_vtl0_param_into_vtl1_without_allocation = R"(
+            THROW_IF_FAILED(EnclaveCopyIntoEnclave({}, {}, {}));
 )";
 
     static inline constexpr std::string_view c_copy_out_param_with_allocation_vtl1 = R"(
-            PerformVTL1AllocationAndCopy({}, *{}, {});
+            CopyVTL0MemoryIntoVTL1AllocatedMemory({}, *{}, {});
 )";
 
     static inline constexpr std::string_view c_allocate_vtl0_param_and_copy_vtl1_memory_into_it = R"(
-            PerformVTL0AllocationAndCopy(&{}, {}, {});
+            CopyVTL1MemoryIntoVTL0AllocatedMemory(&{}, {}, {});
             vtl0_memory_ptr<{}> free_{}_vtl0 {{ {} }};
 )";
 
