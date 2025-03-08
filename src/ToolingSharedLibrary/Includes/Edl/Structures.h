@@ -217,6 +217,11 @@ namespace EdlProcessor
             return m_attribute_info && m_parent_kind == DeclarationParentKind::Function;
         }
 
+        bool IsEdlType(EdlTypeKind type_kind) const
+        {
+            return m_edl_type_info.m_type_kind == type_kind;
+        }
+
         std::string GenerateTypeInfoString()
         {
             std::string info_string = m_edl_type_info.m_name;
@@ -262,6 +267,9 @@ namespace EdlProcessor
         std::uint64_t m_declared_position{};
 
         bool m_is_hex{ false };
+
+        // first value is always the default.
+        bool m_is_default_value {};
     };
 
     // DeveloperTypes can be one of two things
@@ -269,9 +277,15 @@ namespace EdlProcessor
     // 2. Or An Enum
     struct DeveloperType
     {
+        DeveloperType() = default;
         DeveloperType(std::string name, EdlTypeKind type)
             : m_name(name), m_type_kind(type)
         {
+        }
+
+        bool IsEdlType(EdlTypeKind type_kind) const
+        {
+            return m_type_kind == type_kind;
         }
 
         std::string m_name;
@@ -311,7 +325,7 @@ namespace EdlProcessor
         }
 
         std::string m_name{};
-        EdlTypeInfo m_return_info{};
+        Declaration m_return_info {DeclarationParentKind::Function};
         std::vector<Declaration> m_parameters{};
     private:
         std::string m_signature{};
@@ -320,7 +334,8 @@ namespace EdlProcessor
     struct Edl
     {
         std::string m_name{};
-        std::unordered_map<std::string, std::shared_ptr<DeveloperType>> m_developer_types{};
+        std::unordered_map<std::string, DeveloperType> m_developer_types{};
+        std::vector<DeveloperType> m_developer_types_insertion_order_list {};
         std::unordered_map<std::string, Function> m_trusted_functions{};
         std::unordered_map<std::string, Function> m_untrusted_functions{};
     };

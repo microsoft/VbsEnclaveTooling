@@ -74,6 +74,11 @@ bool CmdlineArgumentsParser::ParseArguments(int argc, char* argv[])
             m_vtl0_class_name = argv[++i];
             args_found++;
         }
+        else if (arg == "--FlatbuffersCompilerPath")
+        {
+            CHECK_SUCCESS(GetFlatbuffersCompilerPathFromArgs(++i, argv, argc, m_flatbuffer_compiler_path));
+            args_found++;
+        }
         else
         {
             PrintError(ErrorId::InvalidArgument, arg);

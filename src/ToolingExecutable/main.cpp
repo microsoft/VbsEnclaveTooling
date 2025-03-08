@@ -41,7 +41,8 @@ int main(int argc, char* argv[])
             argument_parser.ErrorHandling(),
             argument_parser.VirtualTrustLayer(),
             argument_parser.GeneratedNamespace(),
-            argument_parser.Vtl0ClassName());
+            argument_parser.Vtl0ClassName(),
+            argument_parser.FlatbufferCompiler());
 
         cpp_code_generator.Generate();
     }

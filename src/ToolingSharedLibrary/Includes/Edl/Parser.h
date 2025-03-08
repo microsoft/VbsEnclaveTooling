@@ -45,7 +45,7 @@ namespace EdlProcessor
             const char list_ending_character,
             const char list_item_separator_character);
 
-        void AddDeveloperType(const std::shared_ptr<DeveloperType>& new_type);
+        void AddDeveloperType(const DeveloperType& new_type);
 
         void ValidateSizeAndCountAttributeDeclarations(
             const std::string& parent_name,
@@ -87,8 +87,8 @@ namespace EdlProcessor
         std::uint32_t m_cur_line {};
         std::uint32_t m_cur_column {};
 
-        std::unordered_map<std::string, std::vector<EdlTypeInfo>> m_unresolved_type_names {};
-        std::unordered_map<std::string, std::shared_ptr<DeveloperType>> m_developer_types;
+        std::vector<DeveloperType> m_developer_types_insertion_order_list {};
+        std::unordered_map<std::string, DeveloperType> m_developer_types;
         std::unordered_map<std::string, Function> m_trusted_functions;
         std::unordered_map<std::string, Function> m_untrusted_functions;
     };

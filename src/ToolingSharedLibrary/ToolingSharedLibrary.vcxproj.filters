@@ -66,6 +66,12 @@
     <ClInclude Include="Includes\VbsEnclaveABI\Enclave\Vtl0Pointers.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="Includes\CodeGeneration\Flatbuffers\Contants.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Includes\CodeGeneration\Flatbuffers\BuilderHelpers.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp">
@@ -86,10 +92,14 @@
     <ClCompile Include="ToolingExecutable\CodeGeneration\CppCodeBuilder.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="ToolingExecutable\CodeGeneration\Flatbuffers\BuilderHelpers.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
     <None Include="README.md" />
+    <None Include="vcpkg.json" />
   </ItemGroup>
   <ItemGroup>
     <Text Include="Includes\Edl\LexicalAnalyzer.h">

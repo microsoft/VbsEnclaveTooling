@@ -88,7 +88,7 @@ $msbuildPath = & "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vsw
 Try 
 {
     $solutionName = "VbsEnclaveTooling"
-    $nuspecFile = "$BaseRepositoryDirectory\src\VbsEnclaveToolingNuget\nuget\Microsoft.Windows.$solutionName.nuspec"
+    $nuspecFile = "$BaseRepositoryDirectory\src\ToolingNuget\nuget\Microsoft.Windows.$solutionName.nuspec"
     $nugetPackProperties = "target_version=$BuildTargetVersion;"
 
     # Build
@@ -122,6 +122,8 @@ Try
         $nugetPackProperties += "vbsenclavetooling_host_$platform"+"_lib=$veilHostLibPath;"
         $veilAnyIncPath = "$BaseRepositoryDirectory\_build\$platform\$configuration\veil_any_inc"
         $nugetPackProperties += "vbsenclavetooling_any_$platform"+"_inc=$veilAnyIncPath;"
+        $nugetPackProperties += "vcpkg_sources=$BaseRepositoryDirectory\src\ToolingSharedLibrary\vcpkg_installed\$platform-windows-static\$platform-windows-static;";
+        $nugetPackProperties += "vcpkg_tools=$BaseRepositoryDirectory\src\ToolingSharedLibrary\vcpkg_installed\$platform-windows-static\$platform-windows\tools;";
       }
     }
 

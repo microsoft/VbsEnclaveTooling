@@ -162,4 +162,6 @@ namespace EdlProcessor
 
         return true;
     }
+
+    static std::unordered_map<std::string, std::uint64_t> s_anonymous_enum_values_map;
 }
