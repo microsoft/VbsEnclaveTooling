@@ -29,6 +29,8 @@ namespace CmdlineParsingHelpers
 
         SupportedLanguageKind SupportedLanguage() const { return m_supported_language; }
 
+        std::string_view FlatbufferCompiler() const { return m_flatbuffer_compiler_path; }
+
         bool ParseSuccessful() const { return m_parse_successful; }
 
     private:
@@ -38,6 +40,7 @@ namespace CmdlineParsingHelpers
         bool m_parse_successful = false;
         std::string m_edl_path {};
         std::string m_out_directory {};
+        std::string m_flatbuffer_compiler_path {};
         ErrorHandlingKind m_error_handling_kind = ErrorHandlingKind::Unknown;
         VirtualTrustLayerKind m_virtual_trust_layer_kind = VirtualTrustLayerKind::Unknown;
         std::string m_vtl0_class_name{};

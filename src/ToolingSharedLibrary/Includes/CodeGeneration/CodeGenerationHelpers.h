@@ -7,6 +7,7 @@
 #include <Edl\Utils.h>
 #include <CodeGeneration\Contants.h>
 #include <Exceptions.h>
+#include "Flatbuffers\Contants.h"
 
 using namespace EdlProcessor;
 using namespace ToolingExceptions;
@@ -255,5 +256,20 @@ namespace CodeGeneration
         }
 
         return copy_statements_for_return_tuple.str();
+    }
+
+    void inline InvokeFlatbufferCompiler(std::string_view compiler_path, std::string_view args)
+    {
+        PrintStatus(Status::Info, Flatbuffers::c_failed_to_compile_flatbuffer_msg.data());
+        std::string complete_argument = std::format("{} {}", compiler_path, args);
+        auto result = std::system(complete_argument.c_str());
+
+        if (result)
+        {
+            // The flatbuffer compiler prints out the actual error message to stdout.
+            throw CodeGenerationException(ErrorId::FlatbufferCompilerError, result);
+        }
+
+        PrintStatus(Status::Info, Flatbuffers::c_succeeded_compiling_flatbuffer_msg.data());
     }
 }

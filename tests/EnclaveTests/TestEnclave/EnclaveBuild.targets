@@ -23,7 +23,7 @@
       Condition="$(EnclaveSignRootCertName) != ''"
       AfterTargets="Build">
         <Message Importance="high" Text="Signing $(EnclaveSignTargetName) for enclave use with test cert"/>
-        <Exec Command="signtool sign /ph /a /fd SHA256 /r  &quot;$(EnclaveSignRootCertName)&quot;  &quot;$(EnclaveSignTargetName)&quot;"/>
+        <Exec Command="signtool sign /ph /a /fd SHA256 /r  &quot;$(EnclaveSignRootCertName)&quot; &quot;$(EnclaveSignTargetName)&quot;"/>
     </Target>
 
     <!-- 
