@@ -138,13 +138,14 @@ namespace EdlProcessor
         status = std::format("Completed parsing {} successfully", m_file_name.generic_string());
         PrintStatus(Status::Info, status);
 
-        return std::move(edl);
+        return edl;
     }
 
     Edl EdlParser::ParseBody()
     {
         while (PeekAtCurrentToken() != RIGHT_CURLY_BRACKET && PeekAtCurrentToken() != END_OF_FILE_CHARACTER)
         {
+            
             Token token = GetCurrentTokenAndMoveToNextToken();
 
             if (token == EDL_TRUSTED_KEYWORD)
@@ -172,6 +173,7 @@ namespace EdlProcessor
                     token.m_column_number,
                     token.ToString());
             }
+            
         }
 
         PerformFinalValidations();
@@ -179,26 +181,15 @@ namespace EdlProcessor
         return Edl{
             m_file_name.generic_string(),
             m_developer_types,
+            m_developer_types_insertion_order_list,
             m_trusted_functions,
             m_untrusted_functions };
     }
 
     void EdlParser::AddDeveloperType(const std::shared_ptr<DeveloperType>& new_type)
     {
-
-        if (m_unresolved_type_names.contains(new_type->m_name))
-        {
-            // update all unresolved types from EdlTypeKind::Unknown to their correct
-            // types if the type was defined after we first saw it.
-            for (auto& type_info : m_unresolved_type_names.at(new_type->m_name))
-            {
-                type_info.m_type_kind = new_type->m_type_kind;;
-            }
-
-            m_unresolved_type_names.erase(new_type->m_name);
-        }
-
         m_developer_types.emplace(new_type->m_name, new_type);
+        m_developer_types_insertion_order_list.push_back(new_type);
     }
 
     void EdlParser::ParseEnum()
@@ -232,6 +223,7 @@ namespace EdlProcessor
 
         std::uint64_t cur_enum_value_position = 0;
         bool was_previous_value_hex = false;
+        bool is_default_value = true; // first value is always the default
 
         while (PeekAtCurrentToken() != RIGHT_CURLY_BRACKET)
         {
@@ -251,6 +243,7 @@ namespace EdlProcessor
             std::optional<Token> actual_enum_value = {};
             auto enum_type = EnumType(value_name, cur_enum_value_position);
             enum_type.m_is_hex = was_previous_value_hex;
+            enum_type.m_is_default_value = is_default_value;
 
             // Enum value definitions don't need to have the '=' sign and an associated
             // integer value. For these cases we'll simply move on to the next one and
@@ -314,6 +307,12 @@ namespace EdlProcessor
 
             new_enum_type->m_items.emplace(value_name, enum_type);
             cur_enum_value_position++;
+            is_default_value = false;
+
+            if (is_anonymous_enum)
+            {
+                s_anonymous_enum_values_map[value_name] = enum_type.m_declared_position;
+            }
         }
 
         ThrowIfExpectedTokenNotNext(RIGHT_CURLY_BRACKET);
@@ -334,6 +333,15 @@ namespace EdlProcessor
         while (PeekAtCurrentToken() != list_ending_character)
         {
             Declaration declaration = ParseDeclaration(parent_kind);
+
+            if (parent_kind == DeclarationParentKind::Function && !declaration.m_attribute_info)
+            {
+                // make [in] attribute the default for all function parameters if the
+                // developer does not provide it in the edl.
+                declaration.m_attribute_info = ParsedAttributeInfo{ true };
+            }
+
+
             ValidatePointers(declaration);
             ThrowIfDuplicateFieldOrParamName(param_names, declaration_parent_name, declaration);
             field_or_parameter_list.push_back(declaration);
@@ -382,7 +390,7 @@ namespace EdlProcessor
             : m_untrusted_functions;
 
         while (PeekAtCurrentToken() != RIGHT_CURLY_BRACKET)
-        {
+        {            
             Function parsed_function = ParseFunctionDeclaration();
             std::string function_signature = parsed_function.GetDeclarationSignature();
 
@@ -406,17 +414,23 @@ namespace EdlProcessor
     Function EdlParser::ParseFunctionDeclaration()
     {
         Function function{};
-        function.m_return_info = ParseDeclarationTypeInfo();
+        function.m_return_info.m_edl_type_info = ParseDeclarationTypeInfo();
+        ParsedAttributeInfo attribute_info {};
+        attribute_info.m_out_present = true;
+        attribute_info.m_in_present = false;
+        attribute_info.m_in_and_out_present = false;
+        function.m_return_info.m_attribute_info = attribute_info;
+        function.m_return_info.m_name = "_return_value_";
+
         Token function_name_token = GetCurrentTokenAndMoveToNextToken();
         ThrowIfTokenNotIdentifier(function_name_token, ErrorId::EdlFunctionIdentifierNotFound);
         function.m_name = function_name_token.ToString();
-
+        
         // Return of pointers aren't allowed. Only primitive types and structs as values. Pointers
         // in structs must have a an associated size/count attribute, so by preventing the return of pointers directly
         // developers must enclose them in structs. This way the abi layer can properly copy the underlying memory to 
         // the appropriate virtual trust layer as it will know the size of the data the pointer points to.
-        auto return_kind = function.m_return_info.m_type_kind;
-        if (function.m_return_info.is_pointer)
+        if (function.m_return_info.m_edl_type_info.is_pointer)
         {
             throw EdlAnalysisException(
                 ErrorId::EdlReturnValuesCannotBePointers,
@@ -593,10 +607,20 @@ namespace EdlProcessor
         auto type_name = type_token.ToString();
         auto type_info = EdlTypeInfo(type_name);
 
-        // Check if keyword type is a type we support out of the box by default.
+        // Check if type is a keyword for a type we support out of the box by default within
+        // function parameters and structs. E.g uint8_t
         if (c_string_to_edltype_map.contains(type_name))
         {
-            type_info.m_type_kind = c_string_to_edltype_map.at(type_name);
+            auto type_kind = c_string_to_edltype_map.at(type_name);
+
+            if (type_kind == EdlTypeKind::Vector)
+            {
+                type_info = ParseVector();
+            }
+            else
+            {
+                type_info.m_type_kind = c_string_to_edltype_map.at(type_name);
+            }
         }
         else if (m_developer_types.contains(type_name))
         {
@@ -606,8 +630,12 @@ namespace EdlProcessor
         else
         {
             // Custom type that isn't defined yet.
-            type_info.m_type_kind = EdlTypeKind::Unknown;
-            m_unresolved_type_names[type_name].push_back(type_info);
+            throw EdlAnalysisException(
+                ErrorId::EdlDeveloperTypesMustBeDefinedBeforeUse,
+                m_file_name,
+                m_cur_line,
+                m_cur_column,
+                type_name);
         }
 
         // Add the pointer if it exists.
@@ -639,9 +667,22 @@ namespace EdlProcessor
         {
             return dimensions;
         }
+        
+        // Only support single dimension arrays for now as it requires more thought
+        // on marshaling/unmarshaling.
+        std::uint32_t dimensions_found = 0;
 
-        while (PeekAtCurrentToken() == LEFT_SQUARE_BRACKET)
+        while (PeekAtCurrentToken() == LEFT_SQUARE_BRACKET )
         {
+            if (dimensions_found >= 1)
+            {
+                throw EdlAnalysisException(
+                    ErrorId::EdlOnlySingleDimensionsSupported,
+                    m_file_name,
+                    m_cur_line,
+                    m_cur_column);
+            }
+
             // Move past '[' to get value within it.
             GetCurrentTokenAndMoveToNextToken();
             Token array_value_token = GetCurrentTokenAndMoveToNextToken();
@@ -672,10 +713,72 @@ namespace EdlProcessor
             }
 
             dimensions.push_back(array_value_token.ToString());
+            dimensions_found++;
             ThrowIfExpectedTokenNotNext(RIGHT_SQUARE_BRACKET);
         }
 
         return dimensions;
+    }
+
+    EdlTypeInfo EdlParser::ParseVector()
+    {
+        EdlTypeInfo vector_info {};
+        vector_info.m_type_kind = EdlTypeKind::Vector;
+        vector_info.m_name = "vector";
+
+        if (PeekAtCurrentToken() != LEFT_ANGLE_BRACKET)
+        {
+            throw EdlAnalysisException(
+                ErrorId::EdlVectorDoesNotStartWithAngleBracket,
+                m_file_name,
+                m_cur_line,
+                m_cur_column);
+        }
+
+        while (PeekAtCurrentToken() == LEFT_ANGLE_BRACKET)
+        {
+            // Move past '<' to get value within it.
+            GetCurrentTokenAndMoveToNextToken();
+            Token vector_value_token = GetCurrentTokenAndMoveToNextToken();
+            ThrowIfTokenNotIdentifier(vector_value_token, ErrorId::EdlVectorNameIdentifierNotFound);
+            auto token_name = vector_value_token.ToString();
+
+            if (c_string_to_edltype_map.contains(token_name))
+            {
+                auto edl_type = c_string_to_edltype_map.at(token_name);
+
+                if (edl_type == EdlTypeKind::Vector)
+                {
+                    throw EdlAnalysisException(
+                        ErrorId::EdlOnlySingleDimensionsSupported,
+                        m_file_name,
+                        m_cur_line,
+                        m_cur_column);
+                }
+
+                vector_info.inner_type = std::make_shared<EdlTypeInfo>(token_name, edl_type);
+            }
+            else if (m_developer_types.contains(token_name))
+            {
+                auto dev_type = m_developer_types.at(token_name);
+                vector_info.inner_type = std::make_shared<EdlTypeInfo>(
+                    dev_type->m_name,
+                    dev_type->m_type_kind);
+            }
+            else
+            {
+                throw EdlAnalysisException(
+                    ErrorId::EdlTypeInVectorMustBePreviouslyDefined,
+                    m_file_name,
+                    m_cur_line,
+                    m_cur_column,
+                    token_name);
+            }
+
+            ThrowIfExpectedTokenNotNext(RIGHT_ANGLE_BRACKET);
+        }
+
+        return vector_info;
     }
 
     void EdlParser::ValidatePointers(const Declaration& declaration)
@@ -692,9 +795,9 @@ namespace EdlProcessor
                m_cur_line,
                m_cur_column,
                declaration.m_edl_type_info.m_name);
-        
+         
         bool is_void_ptr = declaration.m_edl_type_info.m_type_kind == EdlTypeKind::Void;
-        
+
         if (!declaration.m_attribute_info)
         {
             // Disallow void*'s that do not contain a size attribute. For all other pointer
@@ -709,7 +812,6 @@ namespace EdlProcessor
                     m_cur_column);
             }
 
-            PrintStatus(Status::Info, message);
             return;
         }
 
@@ -725,28 +827,21 @@ namespace EdlProcessor
                m_cur_column);
         }
 
-        if (!attribute_info.IsSizeOrCountPresent())
-        {
-            PrintStatus(Status::Info, message);
-        }
-
         bool in_or_out_present = (attribute_info.m_in_present) || (attribute_info.m_out_present);
 
         if (declaration.m_parent_kind == DeclarationParentKind::Function)
         {
-            // Ponters in functions must have an associated in or out attribute.
-            if (!in_or_out_present)
+            // Pointers to arrays are not valid in the edl file.
+            if (in_or_out_present && !declaration.m_array_dimensions.empty())
             {
                 throw EdlAnalysisException(
-                    ErrorId::EdlPointerMustBeAnnotatedWithDirection,
+                    ErrorId::EdlPointerToArrayNotAllowed,
                     m_file_name,
                     m_cur_line,
                     m_cur_column);
 
             }
-
-            // Pointers to arrays are not valid in the edl file.
-            if (in_or_out_present && !declaration.m_array_dimensions.empty())
+            if (in_or_out_present && declaration.IsEdlType(EdlTypeKind::Vector))
             {
                 throw EdlAnalysisException(
                     ErrorId::EdlPointerToArrayNotAllowed,
@@ -817,20 +912,6 @@ namespace EdlProcessor
 
     void EdlParser::PerformFinalValidations()
     {
-        // Confirm there are no developer types that are without definitions
-        for (const auto& [type_name, unresolved_list] : m_unresolved_type_names)
-        {
-            if (!unresolved_list.empty())
-            {
-                throw EdlAnalysisException(
-                    ErrorId::EdlTypenameInvalid,
-                    m_file_name,
-                    m_cur_line,
-                    m_cur_column,
-                    type_name);
-            }
-        }
-
         // now that we've finished parsing the function declarations and structs 
         // Make sure the size/count attributes are validated.
         for (const auto& [function_name, function] : m_trusted_functions)

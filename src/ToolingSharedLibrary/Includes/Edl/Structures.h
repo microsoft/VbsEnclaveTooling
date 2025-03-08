@@ -128,6 +128,7 @@ namespace EdlProcessor
         String,
         WString,
         HRESULT,
+        Vector,
     };
 
     struct ParsedAttributeInfo
@@ -140,6 +141,45 @@ namespace EdlProcessor
         bool IsInOutOrOutParameter() const
         {
             return m_in_and_out_present || m_out_present;
+        }
+
+        bool IsSizeMoreThanOne() const
+        {
+            if (m_size_info.IsIdentifier())
+            {
+                // developer using a variable for the size. In this case we'll
+                // return true by default since it can change at runtime to any number.
+                return true; 
+            }
+
+            if (m_size_info.IsUnsignedInteger() && std::stoull(m_size_info.ToString()) > 1)
+            {
+                return true;
+            }
+
+            return false;
+        }
+
+        bool IsCountMoreThanOne() const
+        {
+            if (m_count_info.IsIdentifier())
+            {
+                // developer using a variable for the size. In this case we'll
+                // return true by default since it can change at runtime to any number.
+                return true;
+            }
+
+            if (m_count_info.IsUnsignedInteger() && std::stoull(m_count_info.ToString()) > 1)
+            {
+                return true;
+            }
+
+            return false;
+        }
+
+        bool IsCountOrSizeMoreThanOne() const
+        {
+            return IsCountMoreThanOne() || IsSizeMoreThanOne();
         }
 
         bool m_in_present{};
@@ -167,6 +207,7 @@ namespace EdlProcessor
 
         bool is_pointer{};
         std::string m_name{};
+        std::shared_ptr<EdlTypeInfo> inner_type;
     };
 
     typedef std::vector<std::string> ArrayDimensions;
@@ -192,6 +233,66 @@ namespace EdlProcessor
             return m_edl_type_info.is_pointer;
         }
 
+        bool HasPointerAndIsPointerToArray() const
+        {
+            if (m_attribute_info && m_attribute_info.value().IsCountOrSizeMoreThanOne())
+            {
+                return HasPointer();
+            }
+
+            return false;
+        }
+
+        bool IsSizeOrCountAttributeAnIdentifier() const
+        {
+            if (m_attribute_info)
+            {
+                return m_attribute_info.value().m_size_info.IsIdentifier() ||
+                    m_attribute_info.value().m_count_info.IsIdentifier();
+            }
+
+            return false;
+        }
+
+        std::string GetSizeOrCountAttribute() const
+        {
+            std::string size_or_count{};
+            if (TryGetSizeAttributeValue(size_or_count))
+            {
+                return size_or_count;
+            }
+            else
+            {
+                TryGetCountAttributeValue(size_or_count);
+            }
+
+            return size_or_count;
+        }
+
+        bool TryGetSizeAttributeValue(std::string& value) const
+        {
+            value = "";
+
+            if (m_attribute_info && m_attribute_info.value().IsSizeMoreThanOne())
+            {
+                value = m_attribute_info.value().m_size_info.ToString();
+                return true;
+            }
+
+            return false;
+        }
+
+        bool TryGetCountAttributeValue(std::string& value) const
+        {
+            if (m_attribute_info && m_attribute_info.value().IsCountMoreThanOne())
+            {
+                value = m_attribute_info.value().m_count_info.ToString();
+                return true;
+            }
+
+            return false;
+        }
+
         bool IsInOutOrOutParameter() const
         {
             return IsInOutParameter() || IsOutParameter();
@@ -212,9 +313,42 @@ namespace EdlProcessor
             return IsOutParameter() && !IsInOutParameter();
         }
 
+        bool IsInParameter() const
+        {
+            bool attribute_present_case = HasAttributesAndIsForFunction() && m_attribute_info.value().m_in_present;
+            bool attribute_not_present_case = !m_attribute_info && m_parent_kind == DeclarationParentKind::Function;
+            return attribute_present_case || attribute_not_present_case;
+        }
+
+        bool IsInParameterOnly() const
+        {
+            return IsInParameter() && !IsOutParameter();
+        }
+
+        bool IsVoidPtr() const
+        {
+            return HasPointer() && m_edl_type_info.m_type_kind == EdlTypeKind::Void;
+        }
+
         bool HasAttributesAndIsForFunction() const
         {
             return m_attribute_info && m_parent_kind == DeclarationParentKind::Function;
+        }
+
+        bool IsEdlType(EdlTypeKind type_kind) const
+        {
+            return m_edl_type_info.m_type_kind == type_kind;
+        }
+
+        bool IsInnerEdlType(EdlTypeKind type_kind) const
+        {
+            auto inner_type = m_edl_type_info.inner_type;
+            if (!inner_type)
+            {
+                return false;
+            }
+            
+            return inner_type->m_type_kind == type_kind;
         }
 
         std::string GenerateTypeInfoString()
@@ -262,6 +396,9 @@ namespace EdlProcessor
         std::uint64_t m_declared_position{};
 
         bool m_is_hex{ false };
+
+        // first value is always the default.
+        bool m_is_default_value {};
     };
 
     // DeveloperTypes can be one of two things
@@ -272,6 +409,11 @@ namespace EdlProcessor
         DeveloperType(std::string name, EdlTypeKind type)
             : m_name(name), m_type_kind(type)
         {
+        }
+
+        bool IsEdlType(EdlTypeKind type_kind) const
+        {
+            return m_type_kind == type_kind;
         }
 
         std::string m_name;
@@ -310,9 +452,9 @@ namespace EdlProcessor
             return m_signature;
         }
 
-        std::string m_name{};
-        EdlTypeInfo m_return_info{};
-        std::vector<Declaration> m_parameters{};
+        std::string m_name {};
+        Declaration m_return_info {DeclarationParentKind::Function};
+        std::vector<Declaration> m_parameters {};
     private:
         std::string m_signature{};
     };
@@ -321,6 +463,7 @@ namespace EdlProcessor
     {
         std::string m_name{};
         std::unordered_map<std::string, std::shared_ptr<DeveloperType>> m_developer_types{};
+        std::vector<std::shared_ptr<DeveloperType>> m_developer_types_insertion_order_list {};
         std::unordered_map<std::string, Function> m_trusted_functions{};
         std::unordered_map<std::string, Function> m_untrusted_functions{};
     };

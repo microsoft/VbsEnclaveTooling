@@ -51,11 +51,18 @@ namespace ErrorHelpers
         EdlDuplicateAttributeFound,
         EdlSizeOrCountAttributeValueMissing,
         EdlPointerToPointerInvalid,
+        EdlDeveloperTypesMustBeDefinedBeforeUse,
         EdlTypenameInvalid,
         EdlArrayDimensionIdentifierInvalid,
+        EdlVectorMustHaveAValidType,
+        EdlVectorNameIdentifierNotFound,
+        EdlVectorDoesNotStartWithAngleBracket,
+        EdlOnlySingleDimensionsSupported,
+        EdlTypeInVectorMustBePreviouslyDefined,
         EdlPointerSizeAttributeMissing,
         EdlPointerToVoidMustBeAnnotated,
         EdlPointerMustBeAnnotatedWithDirection,
+        EdlVoidTypeNotSupported,
         EdlPointerToArrayNotAllowed,
         EdlSizeOrCountAttributeNotFound,
         EdlSizeOrCountForArrayNotValid,
@@ -72,6 +79,11 @@ namespace ErrorHelpers
         VirtualTrustLayerNoMoreArgs,
         VirtualTrustLayerInvalidType,
         GeneralFailure,
+        FlatbufferCompilerNoMoreArgs,
+        FlatbufferCompilerDoesNotExist,
+        FlatbufferCompilerError,
+        FlatbufferTypeNotCompatibleWithEdlType,
+        NotAFile,
     };
 
     struct ErrorIdHash
@@ -98,7 +110,9 @@ namespace ErrorHelpers
         { ErrorId::MissingArgument,"Missing arguments. Use '-h' for usage." },
         { ErrorId::VirtualTrustLayerNoMoreArgs, "Unable to find virtual trust layer argument. No more commandline arguments available." },
         { ErrorId::VirtualTrustLayerInvalidType, "Virtual trust layer type invalid. Only 'Enclave' and 'HostApp' can be used." },
-
+        { ErrorId::FlatbufferCompilerNoMoreArgs,"Unable to find flatbuffers compiler file path. No more commandline arguments available to find the path to the flatbuffer compiler file." },
+        { ErrorId::FlatbufferCompilerDoesNotExist,"The path to the provided flatbuffer compiler file '{}' does not exist." },
+        { ErrorId::NotAFile, "The path '{}' must be to a valid file." },
 
         // Edl file lexical analysis errors
         { ErrorId::EdlCommentEndingNotFound, "EOF while looking for '*/' to match the '/*'" },
@@ -123,10 +137,9 @@ namespace ErrorHelpers
         { ErrorId::EdlPointerToPointerInvalid, "VbsEnclaveTooling .edl files do not support pointer to pointer declarations." },
         { ErrorId::EdlTypenameInvalid, "Reached end of file and no definition was found for type '{}'." },
         { ErrorId::EdlArrayDimensionIdentifierInvalid, "'{}' not supported within array brackets. Arrays in VbsEnclaveTooling .edl files only support arrays with an integer literal '[5]' and arrays with string literals previously declared in the edl file e.g. '[int_max]'." },
-        { ErrorId::EdlPointerToVoidMustBeAnnotated, "Pointers to void must be annotated with the size attribute." },
-        { ErrorId::EdlPointerSizeAttributeMissing, "Pointer for '{}' on line '{}', column '{}' does not have a size or count attribute. The codegen layer will copy only 'sizeof({})' when copying the data this pointer points to between virtual trust layers." },
+        { ErrorId::EdlPointerSizeAttributeMissing, "Pointer for '{}' on line '{}', column '{}' does not have a count attribute. The codegen layer will copy only 'sizeof({})' when copying the data this pointer points to between virtual trust layers." },
         { ErrorId::EdlPointerMustBeAnnotatedWithDirection, "Pointers must have a pointer direction. Use the 'in' or 'out' attribute." },
-        { ErrorId::EdlPointerToArrayNotAllowed, "VbsEnclaveTooling .edl files do not support the pointers to arrays." },
+        { ErrorId::EdlPointerToArrayNotAllowed, "VbsEnclaveTooling .edl files do not support the pointers to arrays or vectors." },
         { ErrorId::EdlSizeOrCountAttributeNotFound, "Could not find '{}' size/count declaration in '{}'." },
         { ErrorId::EdlSizeOrCountForArrayNotValid, "Found size/count attributes for an array in '{}'. This is not supported, only unsigned types are supported." },
         { ErrorId::EdlSizeOrCountInvalidType, "size/count attributes not supported for the '{}' type, found in '{}'. Only unsigned types are supported." },
@@ -137,13 +150,27 @@ namespace ErrorHelpers
         { ErrorId::EdlDuplicateFieldOrParameter, "duplicate name '{}' found in '{}'." },
         { ErrorId::EdlSizeAndCountNotValidForNonPointer, "Size/count attributes are only valid for pointer types. Found type '{}'" },
         { ErrorId::EdlReturnValuesCannotBePointers, "Functions cannot return a pointer. Instead return a struct that contains the pointer and the size of the data it points to." },
+        { ErrorId::EdlPointerToVoidMustBeAnnotated, "Pointers to void must be annotated with the size attribute." },
+        { ErrorId::EdlOnlySingleDimensionsSupported, "Only linear arrays and vectors are supported." },
+        { ErrorId::EdlVoidTypeNotSupported, "The void type is not supported for struct fields or function parameters." },
+        { ErrorId::EdlVectorMustHaveAValidType, "Vector must contain a valid type." },
+        { ErrorId::EdlVectorNameIdentifierNotFound, "Expected an identifier name for a vector but found '{}'" },
+        { ErrorId::EdlTypeInVectorMustBePreviouslyDefined, "Types in vectors must be previously defined. Found '{}'" },
+        { ErrorId::EdlPointerToPointerInvalid, "* is not supported. Use the uintptr_t type instead. The data these pointers point to will not be copied, only the pointer address." },
+        { ErrorId::EdlDeveloperTypesMustBeDefinedBeforeUse, "Developer types must be defined before using. Found '{}'" },
+        { ErrorId::EdlVectorDoesNotStartWithAngleBracket, "Vectors must be declared with <T>. where T is the type" },
+
 
         // CodeGen errors
         { ErrorId::CodeGenUnableToOpenOutputFile, "Failed to open '{}' for writing." },
         { ErrorId::CodeGenUnableToCreateHeaderFile, "Failed to create '{}'." },
 
         // General
-        { ErrorId::GeneralFailure, "VbeEnclaveTooling.exe returned the following HRESULT: {}." },
+        { ErrorId::GeneralFailure, "VbsEnclaveTooling.exe returned the following HRESULT: {}." },
+
+        // Flatbuffer errors
+        { ErrorId::FlatbufferCompilerError, "Flatbuffer schema failed to compile with error code: {}" }, // The compiler outputs the error message to the cmdline so we just print the error code it exits with.
+        { ErrorId::FlatbufferTypeNotCompatibleWithEdlType, "Edl type '{}' found for '{}' not compatible with flatbuffers" },
     };
 
     template<typename... Args>

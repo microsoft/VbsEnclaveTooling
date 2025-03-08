@@ -32,8 +32,8 @@ enclave
             // Use anonymous enum value for array size for this
             // parameter.
             [in] Color arg2[Nine],
-            [in,out] Color arg3[5][5],
-            [out] Color arg4[1][1][1],
+            [in,out] Color arg3[5],
+            [out] Color arg4[1],
 
             // count = 1
             [in] Color* arg5,
@@ -71,8 +71,8 @@ enclave
             Color arg1,
 
             [in] Color arg2[5],
-            [in,out] Color arg3[5][5],
-            [out] Color arg4[1][1][1],
+            [in,out] Color arg3[5],
+            [out] Color arg4[1],
 
             // count = 1
             [in] Color* arg5,

@@ -29,10 +29,19 @@
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
-    <Natvis Include="$(MSBuildThisFileDirectory)..\..\natvis\wil.natvis" />
-  </ItemGroup>
-  <ItemGroup>
     <ClInclude Include="TestHelpers.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Generated Files\VbsEnclave\HostApp\DeveloperTypes.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Generated Files\VbsEnclave\HostApp\Stubs.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Generated Files\VbsEnclave\HostApp\vbsenclave_flatbuffer_support_generated.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="HostTestHelpers.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

@@ -19,6 +19,7 @@
 #include <memory>
 #include <optional>
 #include <string>
+#include <stdexcept>
 #include <tuple>
 #include <unordered_map>
 #include <vector>
@@ -28,6 +29,11 @@
 #include <wil\resource.h>
 #include <wil\result_macros.h>
 #pragma warning(pop)
+
+#include <span>
+#undef max // prevent windows max macro from conflicting with flatbuffers macro
+#include <flatbuffers/verifier.h>
+#include <flatbuffers/flatbuffer_builder.h>
 
 #define HRESULT_TO_PVOID(hr) (PVOID)((ULONG_PTR)(hr) & 0x00000000FFFFFFFF)
 #ifndef RETURN_HR_AS_PVOID
@@ -262,5 +268,47 @@ namespace VbsEnclaveABI::Shared
             T** m_memory {};
             DeleterT m_deleter {};
     };
+
+    // Given a flatbuffer table type, validates the content of a span as being a valid flatbuffer,
+    // then unpacks it into the native table type. Throws invalid-argument if the buffer is not
+    // valid. Returns default-constructed type if the buffer is empty.
+    template <typename T>
+    typename T UnpackFlatbuffer(std::span<uint8_t> data)
+    {
+        if (data.empty())
+        {
+            return {};
+        }
+        THROW_HR_IF(E_INVALIDARG, data.size() < sizeof(uint32_t));
+
+        flatbuffers::Verifier verifier(data.data(), data.size());
+        using tableType = typename T::TableType;
+        auto root = flatbuffers::GetRoot<tableType>(data.data());
+        THROW_HR_IF_NULL(E_INVALIDARG, root);
+        THROW_HR_IF(E_INVALIDARG, !root->Verify(verifier));
+
+        T table;
+        root->UnPackTo(&table);
+
+        return table;
+    }
+
+    template <typename T>
+    typename T UnpackFlatbufferWithSize(std::uint8_t* data, size_t size)
+    {
+        return UnpackFlatbuffer<T>(std::span<uint8_t>(data, size));
+    }
+
+    constexpr const size_t c_flatbufferInitialDefaultSizeBytes = 4096;
+
+    // Given a flatbuffer table type, packs the native table type into a FlatBufferBuilder
+    template <typename T>
+    flatbuffers::FlatBufferBuilder PackFlatbuffer(T const& nativeTable)
+    {
+        using tableType = typename T::TableType;
+        flatbuffers::FlatBufferBuilder builder(c_flatbufferInitialDefaultSizeBytes);
+        builder.Finish(tableType::Pack(builder, &nativeTable));
+        return builder;
+    }
 }
 

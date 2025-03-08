@@ -82,6 +82,7 @@
       <ConformanceMode>true</ConformanceMode>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
+      <LanguageStandard>stdcpp20</LanguageStandard>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -115,6 +116,7 @@
       <ConformanceMode>true</ConformanceMode>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
+      <LanguageStandard>stdcpp20</LanguageStandard>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -122,6 +124,11 @@
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
     </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|ARM64'">
+    <ClCompile>
+      <LanguageStandard>stdcpp20</LanguageStandard>
+    </ClCompile>
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="TestEnclaveTestModuleProperties.cpp" />
@@ -132,6 +139,10 @@
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Generated Files\VbsEnclave\HostApp\DeveloperTypes.h" />
+    <ClInclude Include="Generated Files\VbsEnclave\HostApp\Stubs.h" />
+    <ClInclude Include="Generated Files\VbsEnclave\HostApp\vbsenclave_flatbuffer_support_generated.h" />
+    <ClInclude Include="HostTestHelpers.h" />
     <ClInclude Include="TestHelpers.h" />
   </ItemGroup>
   <!-- Make sure the VirtualTrustLayer is set to HostApp so the hostApp generated files get added at compile time -->

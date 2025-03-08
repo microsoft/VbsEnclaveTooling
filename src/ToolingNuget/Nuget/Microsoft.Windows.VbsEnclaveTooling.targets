@@ -14,6 +14,10 @@
         <VbsEnclaveSDKSrc>$(VbsEnclavePackageDir)src\VbsEnclaveSDK</VbsEnclaveSDKSrc>
         <VbsEnclaveNugetPackEnclaveLibPath>$(VbsEnclavePackageDir)lib\native\$(Platform)\veil_enclave_lib.lib</VbsEnclaveNugetPackEnclaveLibPath>
         <VbsEnclaveNugetPackHostLibPath>$(VbsEnclavePackageDir)lib\native\$(Platform)\veil_host_lib.lib</VbsEnclaveNugetPackHostLibPath>
+        <VcpkgSupportDir>$(VbsEnclavePackageDir)vcpkg</VcpkgSupportDir>
+        <FlatbuffersSupportLib>$(VcpkgSupportDir)\lib\flatbuffers.lib</FlatbuffersSupportLib>
+        <FlatbuffersCompiler>$(VcpkgSupportDir)\tools\flatbuffers\flatc.exe</FlatbuffersCompiler>
+        <VcpkgIncludesDir>$(VcpkgSupportDir)\include</VcpkgIncludesDir>
     </PropertyGroup>
 
     <!-- The below targets/Items are ran at build time for any project that consumes the VbsEnclaveTooling nuget package. -->
@@ -31,7 +35,7 @@
         <!-- Generate the codegen files using the vbsenclavetooling-->
         <PropertyGroup>
             <VbsEnclaveToolingExecutionCommand>
-                "$(VbsEnclaveExeFilePath)" --Language "$(VbsEnclaveCodeGenLanguage)" --EdlPath "$(VbsEnclaveEdlPath)" --ErrorHandling "$(VbsEnclaveErrorHandling)" --OutputDirectory "$(VbsEnclaveGeneratedFilesDir)" --VirtualTrustLayer "$(VbsEnclaveVirtualTrustLayer)" --Vtl0ClassName "$(VbsEnclaveVtl0ClassName)" --Namespace "$(VbsEnclaveNamespace)"
+                "$(VbsEnclaveExeFilePath)" --Language "$(VbsEnclaveCodeGenLanguage)" --EdlPath "$(VbsEnclaveEdlPath)" --ErrorHandling "$(VbsEnclaveErrorHandling)" --OutputDirectory "$(VbsEnclaveGeneratedFilesDir)" --VirtualTrustLayer "$(VbsEnclaveVirtualTrustLayer)" --Vtl0ClassName "$(VbsEnclaveVtl0ClassName)" --Namespace "$(VbsEnclaveNamespace)" --FlatbuffersCompilerPath "$(FlatbuffersCompiler)"
             </VbsEnclaveToolingExecutionCommand>
         </PropertyGroup>
 
@@ -39,11 +43,10 @@
         <Message Text="Generated '$(VbsEnclaveCodeGenLanguage)' code in output directory: '$(VbsEnclaveGeneratedFilesDir)'" Importance="high" />
     </Target>
 
-
-    <ItemDefinitionGroup Condition="Exists('$(VbsEnclavePackageEnclaveAbiPath)')">
+    <ItemDefinitionGroup>
         <!-- Add the enclave ABI headers and also the generated headers to the consuming projects include path-->
         <ClCompile>
-            <AdditionalIncludeDirectories>$(VbsEnclavePackageDir)src\;$(VbsEnclaveGeneratedFilesDir);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+            <AdditionalIncludeDirectories>$(VcpkgIncludesDir);$(VbsEnclavePackageDir)src\;$(VbsEnclaveGeneratedFilesDir);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
         </ClCompile>
 
         <!-- Make sure our cpp support static library is added as an enclaves linker dependency -->
@@ -56,6 +59,10 @@
         </Link>
         <Link Condition="$(VbsEnclaveVirtualTrustLayer) == 'Enclave' AND '$(VbsEnclaveEdlPath)' != ''">
             <ModuleDefinitionFile>$(VbsEnclaveGeneratedFilesDir)\VbsEnclave\Enclave\vbsenclave.def</ModuleDefinitionFile>
+        </Link>
+
+        <Link Condition="'$(VbsEnclaveVirtualTrustLayer)' == 'Enclave' Or '$(VbsEnclaveVirtualTrustLayer)' == 'HostApp'">
+            <AdditionalDependencies>$(FlatbuffersSupportLib);%(AdditionalDependencies)</AdditionalDependencies>
         </Link>
     </ItemDefinitionGroup>
 

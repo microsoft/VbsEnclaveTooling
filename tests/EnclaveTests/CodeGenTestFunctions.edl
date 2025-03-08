@@ -38,12 +38,17 @@ enclave
         Deci_val3,
     };
 
-    struct NextedStructNoPointers
+    struct NestedStructWithArray
     {
-        int64_t value_in_nested_struct;
+        int64_t array1[value1];
     };
 
-    struct StructWithNoPointers
+    struct NestedStructWithVectors
+    {
+        vector<NestedStructWithArray> value_in_nested_struct;
+    };
+
+    struct TestStruct1
     {
         bool bool_val;
         int8_t int8_val;
@@ -54,140 +59,153 @@ enclave
         uint16_t uint16_val;
         uint32_t uint32_val;
         uint64_t uint64_val;
-
+        
         HexEnum hex_val;
         DecimalEnum deci_val;
-
-        NextedStructNoPointers nested_struct_val;
+        int64_t array1[5];
 
         HRESULT result;
     };
 
-    struct Int8PtrAndSize
+    struct TestStruct2
     {
-        [count=size_field] int8_t* int8_val;
-        size_t size_field;
+        NestedStructWithArray field1;
+        NestedStructWithVectors field2;
+    };
+
+    struct TestStruct3
+    {
+        TestStruct1 field1;
+        TestStruct2 field2;
+        vector<TestStruct2> field3;
+        TestStruct1 field4[value2];
+        TestStruct2 field5;
     };
 
     // Host to enclave functions
     trusted
     {
-        HRESULT TestPassingPrimitivesAsValues_To_Enclave(
+        HRESULT PassingPrimitivesAsValues_To_Enclave(
             bool bool_val,
             DecimalEnum enum_val,
             int8_t int8_val);
 
-        // Pointers must have an in or out direction.
-        HRESULT TestPassingPrimitivesAsInPointers_To_Enclave(
-            [count=abitrary_size_1, in] uint8_t* uint8_val,
-            [count=abitrary_size_2, in] uint16_t* uint16_val,
-            [count=abitrary_size_1, in] uint32_t* uint32_val,
-            size_t abitrary_size_1,
-            size_t abitrary_size_2);
-
-        // Pointers must have an in or out direction.
-        HRESULT TestPassingPrimitivesAsInOutPointers_To_Enclave(
-            [count=abitrary_size_1, in, out] int8_t* int8_val,
-            [count=abitrary_size_2, in, out] int16_t* int16_val,
-            [in, out] int32_t* int32_val_ptr, // only sizeof(int32_t) will be copied by abi layer
-            size_t abitrary_size_1,
-            size_t abitrary_size_2);
-
-        // Pointers must have an in or out direction.
-        HRESULT TestPassingPrimitivesAsOutPointers_To_Enclave(
-            [count=abitrary_size_1, out] bool* bool_val,
-            [count=abitrary_size_2, out] DecimalEnum* enum_val,
-            [count=abitrary_size_1, out] uint64_t* uint64_val,
-            size_t abitrary_size_1,
-            size_t abitrary_size_2); 
-
-        // Example of returning a pointer since we don't allow return pointers of primitives, 
-        // only structs. Pointer marhaling works the same way for primitive so we only need a test
-        // for one.
-        Int8PtrAndSize ReturnInt8ValPtr_From_Enclave();
-
-        // We don't allow return pointers of primitives, only structs and strings.
-        // Pointer marhaling works the same way for primitive so we only need a test
-        // for one.
         uint64_t ReturnUint64Val_From_Enclave();
 
-        // Returning a more complex struct
-        StructWithNoPointers ReturnStructWithValues_From_Enclave();
+        TestStruct1 ReturnStructWithValues_From_Enclave();
 
+        vector<TestStruct1> ReturnObjectInVector_From_Enclave();
 
-        StructWithNoPointers ComplexPassingofTypes_To_Enclave(
-            StructWithNoPointers arg1,
-            [in, out]StructWithNoPointers arg2,
-            [out] StructWithNoPointers* arg3,
-            [out] StructWithNoPointers arg4,
-            [size=abitrary_size_1, out] uint64_t* uint64_val,
-            size_t abitrary_size_1);
+        HRESULT PassingPrimitivesInVector_To_Enclave(
+            [in] vector<int8_t> arg1,
+            [in] vector<int16_t> arg2,
+            [in] vector<int32_t> arg3,
+            [in, out] vector<int8_t> arg4,
+            [in, out] vector<int16_t> arg5,
+            [in, out] vector<int32_t> arg6,
+            [out] vector<int8_t> arg7,
+            [out] vector<int16_t> arg8,
+            [out] vector<int32_t> arg9);
+
+        TestStruct2 ComplexPassingofTypes_To_Enclave(
+            TestStruct1 arg1,
+            [in, out]TestStruct2 arg2,
+            [out] TestStruct3 arg3,
+            [in] vector<TestStruct1> arg4,
+            [in, out] vector<TestStruct2> arg5,
+            [out] vector<TestStruct3> arg6);
+
+        string PassingStringTypes_To_Enclave(
+            string arg1,
+            [in, out]string arg2,
+            [out] string arg3,
+            [in] vector<string> arg4,
+            [in, out] vector<string> arg5,
+            [out] vector<string> arg6);
+
+        wstring PassingWStringTypes_To_Enclave(
+            wstring arg1,
+            [in, out]wstring arg2,
+            [out] wstring arg3,
+            [in] vector<wstring> arg4,
+            [in, out] vector<wstring> arg5,
+            [out] vector<wstring> arg6);
+
+        NestedStructWithArray PassingArrayTypes_To_Enclave(
+            TestStruct1 arg1[2],
+            [in, out]string arg2[2],
+            [out] wstring arg3[2],
+            [in, out]TestStruct2 arg4[2],
+            [out]TestStruct3 arg5[2]);
 
         // Vtl1 can't test vtl0 callbacks unless we start them from vtl0. These functions
         // are just used to allow us to start the callback tests.
-        HRESULT Start_TestPassingPrimitivesAsValues_To_HostApp_Callback_Test();
-        HRESULT Start_TestPassingPrimitivesAsInPointers_To_HostApp_Callback_Test();
-        HRESULT Start_TestPassingPrimitivesAsInOutPointers_To_HostApp_Callback_Test();
-        HRESULT Start_TestPassingPrimitivesAsOutPointers_To_HostApp_Callback_Test(); 
-        HRESULT Start_ReturnInt8ValPtr_From_HostApp_Callback_Test();
-        HRESULT Start_ReturnUint64Val_From_HostApp_Callback_Test();
+        HRESULT Start_PassingPrimitivesAsValues_To_HostApp_Callback_Test();
         HRESULT Start_ReturnStructWithValues_From_HostApp_Callback_Test();
+        HRESULT Start_ReturnObjectInVector_From_HostApp_Callback_Test();
+        HRESULT Start_ReturnUint64Val_From_HostApp_Callback_Test();
+        HRESULT Start_PassingPrimitivesInVector_To_HostApp_Callback_Test();
         HRESULT Start_ComplexPassingofTypes_To_HostApp_Callback_Test();
+        HRESULT Start_PassingStringTypes_To_HostApp_Callback_Test();
+        HRESULT Start_PassingWStringTypes_To_HostApp_Callback_Test();
+        HRESULT Start_PassingArrayTypes_To_HostApp_Callback_Test();
     };
 
     // Functions are the same but these are for the opposite direction.
     // (Enclave to host).
     untrusted
     {
-        HRESULT TestPassingPrimitivesAsValues_To_HostApp(
+        HRESULT PassingPrimitivesAsValues_To_HostApp(
             bool bool_val,
             DecimalEnum enum_val,
             int8_t int8_val);
 
-        // Pointers must have an in or out direction.
-        HRESULT TestPassingPrimitivesAsInPointers_To_HostApp(
-            [count=abitrary_size_1, in] uint8_t* uint8_val,
-            [count=abitrary_size_2, in] uint16_t* uint16_val,
-            [count=abitrary_size_1, in] uint32_t* uint32_val,
-            size_t abitrary_size_1,
-            size_t abitrary_size_2);
+        TestStruct1 ReturnStructWithValues_From_HostApp();
 
-        // Pointers must have an in or out direction.
-        HRESULT TestPassingPrimitivesAsInOutPointers_To_HostApp(
-            [count=abitrary_size_1, in, out] int8_t* int8_val,
-            [count=abitrary_size_2, in, out] int16_t* int16_val,
-            [in, out] int32_t* int32_val_ptr, // only sizeof(int32_t) will be copied by abi layer
-            size_t abitrary_size_1,
-            size_t abitrary_size_2);
+        vector<TestStruct1> ReturnObjectInVector_From_HostApp();
 
-        // Pointers must have an in or out direction.
-        HRESULT TestPassingPrimitivesAsOutPointers_To_HostApp(
-            [count=abitrary_size_1, out] bool* bool_val,
-            [count=abitrary_size_2, out] DecimalEnum* enum_val,
-            [count=abitrary_size_1, out] uint64_t* uint64_val,
-            size_t abitrary_size_1,
-            size_t abitrary_size_2); 
-
-        // Example of returning a pointer since we don't allow return pointers of primitives, 
-        // only structs. Pointer marhaling works the same way for primitive so we only need a test
-        // for one.
-        Int8PtrAndSize ReturnInt8ValPtr_From_HostApp();
-
-        // We don't allow return pointers of primitives, only structs and strings.
-        // Pointer marhaling works the same way for primitive so we only need a test
-        // for one.
         uint64_t ReturnUint64Val_From_HostApp();
 
-        // Returning a more complex struct
-        StructWithNoPointers ReturnStructWithValues_From_HostApp();
+        HRESULT PassingPrimitivesInVector_To_HostApp(
+            [in] vector<int8_t> arg1,
+            [in] vector<int16_t> arg2,
+            [in] vector<int32_t> arg3,
+            [in, out] vector<int8_t> arg4,
+            [in, out] vector<int16_t> arg5,
+            [in, out] vector<int32_t> arg6,
+            [out] vector<int8_t> arg7,
+            [out] vector<int16_t> arg8,
+            [out] vector<int32_t> arg9);
 
+        TestStruct2 ComplexPassingofTypes_To_HostApp(
+            TestStruct1 arg1,
+            [in, out]TestStruct2 arg2,
+            [out] TestStruct3 arg3,
+            [in] vector<TestStruct1> arg4,
+            [in, out] vector<TestStruct2> arg5,
+            [out] vector<TestStruct3> arg6);
 
-        StructWithNoPointers ComplexPassingofTypes_To_HostApp(
-            StructWithNoPointers arg1,
-            [in, out]StructWithNoPointers arg2,
-            [out] StructWithNoPointers* arg3,
-            [out] StructWithNoPointers arg4,
-            [size=abitrary_size_1, out] uint64_t* uint64_val,
-            size_t abitrary_size_1);
+        string PassingStringTypes_To_HostApp(
+            string arg1,
+            [in, out]string arg2,
+            [out] string arg3,
+            [in] vector<string> arg4,
+            [in, out] vector<string> arg5,
+            [out] vector<string> arg6);
+
+        wstring PassingWStringTypes_To_HostApp(
+            wstring arg1,
+            [in, out]wstring arg2,
+            [out] wstring arg3,
+            [in] vector<wstring> arg4,
+            [in, out] vector<wstring> arg5,
+            [out] vector<wstring> arg6);
+
+        NestedStructWithArray PassingArrayTypes_To_HostApp(
+            TestStruct1 arg1[2],
+            [in, out]string arg2[2],
+            [out] wstring arg3[2],
+            [in, out]TestStruct2 arg4[2],
+            [out]TestStruct3 arg5[2]);
     };
 };

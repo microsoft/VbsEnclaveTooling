@@ -33,38 +33,33 @@ HRESULT inline VerifyContainsSameValuesArray(T* data, size_t size, T value)
     return S_OK;
 }
 
-#pragma region VTL1 Enclave developer implementation functions
-
-// TODO: when deep copy support is added for structs, the developer won't need
-// to allocate vtl0 memory directly from within vtl1 for internal
-// pointers inside structs. The ABI layer should be able to create
-// the vtl0 memory, copy the vtl1 data into it and return it to vtl0.
-Int8PtrAndSize VTL1_Declarations::ReturnInt8ValPtr_From_Enclave()
+template <typename T>
+HRESULT inline VerifyContainsSameValuesArray(const T* data, size_t size, T value)
 {
-    auto int8s = CreateVector<std::int8_t>(c_data_size);
-    size_t size_for_int8s = sizeof(std::int8_t) * c_data_size;
-    Int8PtrAndSize ret_vtl1 {};
-    THROW_IF_FAILED(AllocateVtl0Memory(&ret_vtl1.int8_val, size_for_int8s));
-    vtl0_memory_ptr<std::int8_t> mem_ptr (ret_vtl1.int8_val);
-    THROW_IF_FAILED(EnclaveCopyOutOfEnclave(ret_vtl1.int8_val, int8s.data(), size_for_int8s));
-    ret_vtl1.size_field = size_for_int8s;
-    mem_ptr.release();
-    return ret_vtl1;
+    THROW_HR_IF_NULL(E_INVALIDARG, data);
+    for (size_t i = 0; i < size; ++i)
+    {
+        THROW_HR_IF(E_INVALIDARG, data[i] != value);
+    }
+
+    return S_OK;
 }
+
+#pragma region VTL1 Enclave developer implementation functions
 
 std::uint64_t VTL1_Declarations::ReturnUint64Val_From_Enclave()
 {
     return std::numeric_limits<std::uint64_t>::max();
 }
 
-StructWithNoPointers VTL1_Declarations::ReturnStructWithValues_From_Enclave()
+TestStruct1 VTL1_Declarations::ReturnStructWithValues_From_Enclave()
 {
-    return CreateStructWithNoPointers();
+    return CreateTestStruct1();
 }
 
-HRESULT VTL1_Declarations::TestPassingPrimitivesAsValues_To_Enclave(
-    _In_ const bool bool_val, 
-    _In_ const DecimalEnum enum_val, 
+HRESULT VTL1_Declarations::PassingPrimitivesAsValues_To_Enclave(
+    _In_ const bool bool_val,
+    _In_ const DecimalEnum enum_val,
     _In_ const std::int8_t int8_val)
 {
     // Confirm vtl0 parameters were correctly copied to vtl1 memory.
@@ -75,140 +70,96 @@ HRESULT VTL1_Declarations::TestPassingPrimitivesAsValues_To_Enclave(
     return S_OK;
 }
 
-HRESULT VTL1_Declarations::TestPassingPrimitivesAsInPointers_To_Enclave(
-    _In_ const std::uint8_t* uint8_val,
-    _In_ const std::uint16_t* uint16_val,
-    _In_ const std::uint32_t* uint32_val,
-    _In_ const size_t abitrary_size_1,
-    _In_ const size_t abitrary_size_2)
+std::vector<TestStruct1> VTL1_Declarations::ReturnObjectInVector_From_Enclave()
 {
-    // Confirm vtl0 parameters were correctly copied to vtl1 memory.
-    THROW_IF_FAILED(CompareArrays(uint8_val, c_uint8_array.data(), c_uint8_array.size()));
-    THROW_IF_FAILED(CompareArrays(uint16_val, c_uint16_array.data(), c_uint16_array.size()));
-    THROW_IF_FAILED(CompareArrays(uint32_val, c_uint32_array.data(), c_uint32_array.size()));
-    THROW_HR_IF(E_INVALIDARG, abitrary_size_1 != c_arbitrary_size_1);
-    THROW_HR_IF(E_INVALIDARG, abitrary_size_2 != c_arbitrary_size_2);
-
-    return S_OK;
+    return {5 , CreateTestStruct1()};
 }
 
-HRESULT VTL1_Declarations::TestPassingPrimitivesAsInOutPointers_To_Enclave(
-    _Inout_ std::int8_t* int8_val,
-    _Inout_ std::int16_t* int16_val,
-    _Inout_ std::int32_t* int32_val_ptr, 
-    _In_ const size_t abitrary_size_1,
-    _In_ const size_t abitrary_size_2)
+HRESULT VTL1_Declarations::PassingPrimitivesInVector_To_Enclave(
+    _In_ const std::vector<std::int8_t>& arg1,
+    _In_ const std::vector<std::int16_t>& arg2,
+    _In_ const std::vector<std::int32_t>& arg3,
+    _Inout_  std::vector<std::int8_t>& arg4,
+    _Inout_  std::vector<std::int16_t>& arg5,
+    _Inout_  std::vector<std::int32_t>& arg6,
+    _Out_  std::vector<std::int8_t>& arg7,
+    _Out_  std::vector<std::int16_t>& arg8,
+    _Out_  std::vector<std::int32_t>& arg9)
 {
-    // Confirm vtl0 parameters were correctly copied to vtl1 memory.
-    THROW_IF_FAILED(CompareArrays(int8_val, c_int8_array.data(), c_int8_array.size()));
-    THROW_IF_FAILED(CompareArrays(int16_val, c_int16_array.data(), c_int16_array.size()));
-    THROW_HR_IF(E_INVALIDARG, c_expected_int32_val != *int32_val_ptr);
-    THROW_HR_IF(E_INVALIDARG, abitrary_size_1 != c_arbitrary_size_1);
-    THROW_HR_IF(E_INVALIDARG, abitrary_size_2 != c_arbitrary_size_2);
+    // Confirm vtl1 parameters were correctly copied to vtl0 memory.
+    VerifyContainsSameValuesArray(arg1.data(), c_data_size, std::numeric_limits<std::int8_t>::max()); // in param shouldn't have changed.
+    VerifyContainsSameValuesArray(arg2.data(), c_data_size, std::numeric_limits<std::int16_t>::max());// in param shouldn't have changed.
+    VerifyContainsSameValuesArray(arg3.data(), c_data_size, std::numeric_limits<std::int32_t>::max());// in param shouldn't have changed.
+    VerifyContainsSameValuesArray(arg4.data(), c_data_size, std::numeric_limits<std::int8_t>::max()); // in param shouldn't have changed.
+    VerifyContainsSameValuesArray(arg5.data(), c_data_size, std::numeric_limits<std::int16_t>::max());// in param shouldn't have changed.
+    VerifyContainsSameValuesArray(arg6.data(), c_data_size, std::numeric_limits<std::int32_t>::max());// in param shouldn't have changed.
 
-    // Copy data into the in-out buffers. Abi will copy these into vtl0 memory and return
+    // Copy data into the in-out buffers. Abi will copy these into vtl01 memory and return
     // them to caller.
-    auto int8_data = CreateVector<std::int8_t>(abitrary_size_1);
-    memcpy(int8_val, int8_data.data(), int8_data.size() * sizeof(std::int8_t));
+    auto int8_data = CreateVector<int8_t>(c_arbitrary_size_1);
+    arg4.assign(int8_data.begin(), int8_data.end());
+    arg7.assign(int8_data.begin(), int8_data.end());
 
-    auto int16_data = CreateVector<std::int16_t>(abitrary_size_2);
-    memcpy(int16_val, int16_data.data(), int16_data.size() * sizeof(std::int16_t));
+    auto int16_data = CreateVector<std::int16_t>(c_arbitrary_size_2);
+    arg5.assign(int16_data.begin(), int16_data.end());
+    arg8.assign(int16_data.begin(), int16_data.end());
 
-    *int32_val_ptr = std::numeric_limits<std::int32_t>::max();
+    auto int32_data = CreateVector<std::int32_t>(c_arbitrary_size_1);
+    arg6.assign(int32_data.begin(), int32_data.end());
+    arg9.assign(int32_data.begin(), int32_data.end());
 
     return S_OK;
 }
 
-HRESULT VTL1_Declarations::TestPassingPrimitivesAsOutPointers_To_Enclave(
-    _Out_ bool** bool_val,
-    _Out_ DecimalEnum** enum_val,
-    _Out_ std::uint64_t** uint64_val,
-    _In_  const size_t abitrary_size_1,
-    _In_  const size_t abitrary_size_2)
+TestStruct2 VTL1_Declarations::ComplexPassingofTypes_To_Enclave(
+    _In_ const TestStruct1& arg1,
+    _Inout_  TestStruct2& arg2,
+    _Out_  TestStruct3& arg3,
+    _In_ const std::vector<TestStruct1>& arg4,
+    _Inout_  std::vector<TestStruct2>& arg5,
+    _Out_  std::vector<TestStruct3>& arg6)
 {
-    *bool_val = nullptr;
-    *enum_val = nullptr;
-    *uint64_val = nullptr;
-
-    auto bool_data = CreateBoolReturnPtr(abitrary_size_1);
-    size_t size_for_bools = sizeof(bool) * abitrary_size_1;
-
-    // Make sure we create out parameters inner pointer. Abi will free, but developer must
-    // free the vtl0 copy of this out parameter when it returns to original caller
-    *bool_val = reinterpret_cast<bool*>(AllocateMemory(sizeof(StructWithNoPointers)));
-    memcpy(*bool_val, bool_data.get(), size_for_bools);
-    auto enums = CreateVector<DecimalEnum>(abitrary_size_2);
-    size_t size_for_enums = sizeof(DecimalEnum) * abitrary_size_2;
-
-    // Make sure we create out parameters inner pointer. Abi will free, but developer must
-    // free the vtl0 copy of this out parameter when it returns to original caller
-    *enum_val = reinterpret_cast<DecimalEnum*>(AllocateMemory(sizeof(StructWithNoPointers)));
-    memcpy(*enum_val, enums.data(), size_for_enums);
-
-    // Make sure we create out parameters inner pointer. Abi will free, but developer must
-    // free the vtl0 copy of this out parameter when it returns to original caller
-    *uint64_val = reinterpret_cast<std::uint64_t*>(AllocateMemory(sizeof(StructWithNoPointers)));
-    auto uint64s = CreateVector<std::uint64_t>(abitrary_size_1);
-    size_t size_for_uint64s = sizeof(std::uint64_t) * abitrary_size_1;
-
-    memcpy(*uint64_val, uint64s.data(), size_for_uint64s);
-    return S_OK;
+    return CreateTestStruct2();
 }
 
-StructWithNoPointers VTL1_Declarations::ComplexPassingofTypes_To_Enclave(
-    _In_ const StructWithNoPointers& arg1,
-    _Inout_ StructWithNoPointers& arg2,
-    _Out_ StructWithNoPointers** arg3,
-    _Out_ StructWithNoPointers& arg4,
-    _Out_ std::uint64_t** uint64_val,
-    _In_ const size_t abitrary_size_1)
+std::string VTL1_Declarations::PassingStringTypes_To_Enclave(
+    _In_ const std::string& arg1,
+    _Inout_  std::string& arg2,
+    _Out_  std::string& arg3,
+    _In_ const std::vector<std::string>& arg4,
+    _Inout_  std::vector<std::string>& arg5,
+    _Out_  std::vector<std::string>& arg6)
 {
-    *arg3 = nullptr;
-    *uint64_val = nullptr;
-
-    auto struct_to_return = CreateStructWithNoPointers();
-    THROW_HR_IF(E_INVALIDARG, !CompareStructWithNoPointers(arg1, struct_to_return));
-    arg2 = struct_to_return;
-
-    // Make sure we create out parameters inner pointer. Abi will free, but developer must
-    // free the vtl0 copy of this out parameter when it returns to original caller
-    *arg3 = reinterpret_cast<StructWithNoPointers*>(AllocateMemory(sizeof(StructWithNoPointers)));
-    memcpy(*arg3, &struct_to_return, sizeof(StructWithNoPointers));
-    memcpy(&arg4, &struct_to_return, sizeof(StructWithNoPointers));
-
-    std::uint64_t uint64_max = std::numeric_limits<std::uint64_t>::max();
-
-    // Make sure we create out parameters inner pointer. Abi will free, but developer must
-    // free the vtl0 copy of this out parameter when it returns to original caller
-    *uint64_val = reinterpret_cast<std::uint64_t*>(AllocateMemory(abitrary_size_1));
-    memcpy(*uint64_val, &uint64_max, abitrary_size_1);
-
-    return struct_to_return;
+    return {};
 }
+
+std::wstring VTL1_Declarations::PassingWStringTypes_To_Enclave(
+    _In_ const std::wstring& arg1,
+    _Inout_  std::wstring& arg2,
+    _Out_  std::wstring& arg3,
+    _In_ const std::vector<std::wstring>& arg4,
+    _Inout_  std::vector<std::wstring>& arg5,
+    _Out_  std::vector<std::wstring>& arg6)
+{
+    return {};
+}
+
+NestedStructWithArray VTL1_Declarations::PassingArrayTypes_To_Enclave(
+    _In_ const std::array<TestStruct1, 2>& arg1,
+    _Inout_  std::array<std::string, 2>& arg2,
+    _Out_  std::array<std::wstring, 2>& arg3,
+    _Inout_  std::array<TestStruct2, 2>& arg4,
+    _Out_  std::array<TestStruct3, 2>& arg5)
+{
+    return CreateNestedStructWithArray();
+}
+
 #pragma endregion
 
 #pragma region Enclave to HostApp Tests
 
 // For testing vtl0 callbacks we use HRESULTS as our success/failure metrics since we can't use TAEF in the
 // enclave.
-
-HRESULT VTL1_Declarations::Start_ReturnInt8ValPtr_From_HostApp_Callback_Test()
-{
-    // Note: struct is returned by vtl1, and copied to vtl0 then returned to this function.
-    Int8PtrAndSize result = VTL0_Callbacks::ReturnInt8ValPtr_From_HostApp_callback();
-    THROW_HR_IF_NULL(E_INVALIDARG, result.int8_val);
-    THROW_HR_IF(E_INVALIDARG, result.size_field != (sizeof(std::int8_t) * c_data_size));
-    THROW_IF_FAILED(VerifyNumericArray(result.int8_val, result.size_field));
-
-    // Make sure the vtl0 memory is freed.
-    // TODO: when deep copy support is added, we shouldn't need to free the vtl0 memory since
-    // all callbacks should only return vtl1 memory as the ABi will copy the vtl0 memory returned
-    // by the callback into vtl1 memory and return the copy instead. So in the end this will
-    // use the wil::unique_process_heap_ptr to free vtl1 memory instead of vtl0_memory_ptr.
-    vtl0_memory_ptr<std::int8_t> int8_ptr(result.int8_val);
-
-    return S_OK;
-}
 
 HRESULT VTL1_Declarations::Start_ReturnUint64Val_From_HostApp_Callback_Test()
 {
@@ -222,132 +173,213 @@ HRESULT VTL1_Declarations::Start_ReturnUint64Val_From_HostApp_Callback_Test()
 HRESULT VTL1_Declarations::Start_ReturnStructWithValues_From_HostApp_Callback_Test()
 {
     // Note: struct is returned by vtl0, and copied to vtl1 then returned to this function.
-    StructWithNoPointers result = VTL0_Callbacks::ReturnStructWithValues_From_HostApp_callback();
-    THROW_HR_IF(E_INVALIDARG, !(CompareStructWithNoPointers(result, CreateStructWithNoPointers())));
+    TestStruct1 result = VTL1_Declarations::ReturnStructWithValues_From_Enclave();
+    auto expected = CreateTestStruct1();
+    THROW_HR_IF(E_INVALIDARG, CompareTestStruct1(result, expected));
 
     return S_OK;
 }
 
-HRESULT VTL1_Declarations::Start_TestPassingPrimitivesAsValues_To_HostApp_Callback_Test()
+HRESULT VTL1_Declarations::Start_PassingPrimitivesAsValues_To_HostApp_Callback_Test()
 {
     // Note: Hresult is returned by vtl0, and copied to vtl1 then returned to this function.
     auto in_bool = true;
     auto in_enum = DecimalEnum::Deci_val2;
     auto in_int8 = std::numeric_limits<std::int8_t>::max();
 
-    THROW_IF_FAILED(VTL0_Callbacks::TestPassingPrimitivesAsValues_To_HostApp_callback(in_bool, in_enum, in_int8));
+    THROW_IF_FAILED(VTL0_Callbacks::PassingPrimitivesAsValues_To_HostApp_callback(in_bool, in_enum, in_int8));
 
     return S_OK;
 }
 
-HRESULT VTL1_Declarations::Start_TestPassingPrimitivesAsInPointers_To_HostApp_Callback_Test()
+HRESULT VTL1_Declarations::Start_ReturnObjectInVector_From_HostApp_Callback_Test()
 {
-    std::uint8_t uint8_val[c_arbitrary_size_1];
-    std::copy(c_uint8_array.begin(), c_uint8_array.end(), uint8_val);
-    std::uint16_t uint16_val[c_arbitrary_size_2];
-    std::copy(c_uint16_array.begin(), c_uint16_array.end(), uint16_val);
-    std::uint32_t uint32_val[c_arbitrary_size_1];
-    std::copy(c_uint32_array.begin(), c_uint32_array.end(), uint32_val);
+    std::vector<TestStruct1> result_expected(5, CreateTestStruct1());
 
-    // Note: Hresult is returned by vtl0, and copied to vtl1 then returned to this function.
-    THROW_IF_FAILED(VTL0_Callbacks::TestPassingPrimitivesAsInPointers_To_HostApp_callback(
-        uint8_val,
-        uint16_val,
-        uint32_val,
-        c_non_const_arbitrary_size_1,
-        c_non_const_arbitrary_size_2));
-
+    auto result = VTL0_Callbacks::ReturnObjectInVector_From_HostApp_callback();
+    THROW_HR_IF(E_INVALIDARG, result.size() != 5);
+    THROW_HR_IF(E_INVALIDARG, !std::equal(result.begin(), result.end(), result_expected.begin(), CompareTestStruct1));
     return S_OK;
 }
 
-HRESULT VTL1_Declarations::Start_TestPassingPrimitivesAsInOutPointers_To_HostApp_Callback_Test()
+HRESULT VTL1_Declarations::Start_PassingPrimitivesInVector_To_HostApp_Callback_Test()
 {
-    std::int8_t int8_val[c_arbitrary_size_1];
-    std::copy(c_int8_array.begin(), c_int8_array.end(), int8_val);
-    std::int16_t int16_val[c_arbitrary_size_2];
-    std::copy(c_int16_array.begin(), c_int16_array.end(), int16_val);
-    std::int32_t int32_val = c_expected_int32_val;
-    std::int32_t* int32_val_ptr = &int32_val;
+    std::vector<std::int8_t> arg1(c_data_size, std::numeric_limits<std::int8_t>::max());
+    std::vector<std::int16_t> arg2(c_data_size, std::numeric_limits<std::int16_t>::max());
+    std::vector<std::int32_t> arg3(c_data_size, std::numeric_limits<std::int32_t>::max());
+    std::vector<std::int8_t> arg4(c_data_size, std::numeric_limits<std::int8_t>::max());
+    std::vector<std::int16_t> arg5(c_data_size, std::numeric_limits<std::int16_t>::max());
+    std::vector<std::int32_t> arg6(c_data_size, std::numeric_limits<std::int32_t>::max());
+    std::vector<std::int8_t> arg7;
+    std::vector<std::int16_t> arg8;
+    std::vector<std::int32_t> arg9;
 
     // Note: Hresult is returned by vtl0, and copied to vtl1 then returned to this function.
-    THROW_IF_FAILED(VTL0_Callbacks::TestPassingPrimitivesAsInOutPointers_To_HostApp_callback(
-        int8_val,
-        int16_val,
-        int32_val_ptr,
-        c_non_const_arbitrary_size_1,
-        c_non_const_arbitrary_size_2));
+    THROW_IF_FAILED(VTL0_Callbacks::PassingPrimitivesInVector_To_HostApp_callback(
+        arg1,
+        arg2,
+        arg3,
+        arg4,
+        arg5,
+        arg6,
+        arg7,
+        arg8,
+        arg9));
 
     // The in-out parameters should have been filled in by the abi in vtl1 based on the result from
     // the vtl0 version of the function
-    THROW_IF_FAILED(VerifyNumericArray(int8_val, c_arbitrary_size_1));
-    THROW_IF_FAILED(VerifyNumericArray(int16_val, c_arbitrary_size_2));
-    THROW_HR_IF(E_INVALIDARG, std::numeric_limits<std::int32_t>::max() != *int32_val_ptr);
-
-    return S_OK;
-}
-HRESULT VTL1_Declarations::Start_TestPassingPrimitivesAsOutPointers_To_HostApp_Callback_Test()
-{
-    bool* bool_val = nullptr;
-    DecimalEnum* enum_val = nullptr;
-    std::uint64_t* uint64_val = nullptr;
-
-    // Note: Hresult is returned by vtl0, and copied to vtl1 then returned to this function.
-    THROW_IF_FAILED(VTL0_Callbacks::TestPassingPrimitivesAsOutPointers_To_HostApp_callback(
-        &bool_val,
-        &enum_val,
-        &uint64_val,
-        c_non_const_arbitrary_size_1,
-        c_non_const_arbitrary_size_2));
-
-    // Make sure the vtl1 allocated memory is freed when function goes out of scope
-    wil::unique_process_heap_ptr<bool> bool_val_ptr {bool_val};
-    wil::unique_process_heap_ptr<DecimalEnum> enum_val_ptr {enum_val};
-    wil::unique_process_heap_ptr<std::uint64_t> uint64_val_ptr {uint64_val};
-
-    // The out parameters should have been filled in by the abi in vtl1 based on the result from
-    // the vtl0 version of the function
-    THROW_IF_FAILED(VerifyContainsSameValuesArray(bool_val, c_arbitrary_size_1, true));
-    THROW_IF_FAILED(VerifyContainsSameValuesArray(enum_val, c_arbitrary_size_2, DecimalEnum::Deci_val3));
-    THROW_IF_FAILED(VerifyNumericArray(uint64_val, c_arbitrary_size_1));
+    VerifyContainsSameValuesArray(arg1.data(), c_data_size, std::numeric_limits<std::int8_t>::max()); // in param shouldn't have changed.
+    VerifyContainsSameValuesArray(arg2.data(), c_data_size, std::numeric_limits<std::int16_t>::max());// in param shouldn't have changed.
+    VerifyContainsSameValuesArray(arg3.data(), c_data_size, std::numeric_limits<std::int32_t>::max());// in param shouldn't have changed.
+    VerifyNumericArray(arg4.data(), c_arbitrary_size_1); // inout param updated.
+    VerifyNumericArray(arg5.data(), c_arbitrary_size_2); // inout param updated.
+    VerifyNumericArray(arg6.data(), c_arbitrary_size_1); // inout param updated.
+    VerifyContainsSameValuesArray(arg7.data(), c_data_size, std::numeric_limits<std::int8_t>::max()); // out param updated.
+    VerifyContainsSameValuesArray(arg8.data(), c_data_size, std::numeric_limits<std::int16_t>::max());// out param updated.
+    VerifyContainsSameValuesArray(arg9.data(), c_data_size, std::numeric_limits<std::int32_t>::max());// out param updated.
 
     return S_OK;
 }
 
 HRESULT VTL1_Declarations::Start_ComplexPassingofTypes_To_HostApp_Callback_Test()
 {
-    auto expected_struct_values = CreateStructWithNoPointers();
-    StructWithNoPointers struct_no_pointers_1 = expected_struct_values;
-    StructWithNoPointers struct_no_pointers_2 {};
-    StructWithNoPointers* struct_no_pointers_3;
-    StructWithNoPointers struct_no_pointers_4 {};
-    std::uint64_t* uint64_val = nullptr;
-    size_t size_for_uint64_val = sizeof(std::uint64_t);
+    auto expect_val1 = CreateTestStruct1();
+    auto expect_val2 = CreateTestStruct2();
+    auto expect_val3 = CreateTestStruct3();
+    TestStruct1 arg1 = expect_val1;
+    TestStruct2 arg2 {};
+    TestStruct3 arg3 {};
+    std::vector<TestStruct1> arg4_expected(5, expect_val1);
+    std::vector<TestStruct1> arg4 = arg4_expected;
+    std::vector<TestStruct2> arg5_expected(5, expect_val2);
+    std::vector<TestStruct2> arg5(1, expect_val2);
+    std::vector<TestStruct3> arg6_expected(5, expect_val3);
+    std::vector<TestStruct3> arg6 {};
 
-    // Note: Hresult is returned by vtl0, and copied to vtl1 then returned to this function.
+    // Note: TestStruct2 is returned by vtl0, and copied to vtl1 then returned to this function.
     auto result = VTL0_Callbacks::ComplexPassingofTypes_To_HostApp_callback(
-        struct_no_pointers_1,
-        struct_no_pointers_2,
-        &struct_no_pointers_3,
-        struct_no_pointers_4,
-        &uint64_val,
-        size_for_uint64_val);
-
-    // Make sure the vtl1 allocated memory is freed when function goes out of scope
-    wil::unique_process_heap_ptr<StructWithNoPointers> struct_no_pointers_3_ptr {struct_no_pointers_3};
-    wil::unique_process_heap_ptr<std::uint64_t> uint64_val_ptr {uint64_val};
+        arg1,
+        arg2,
+        arg3,
+        arg4,
+        arg5,
+        arg6);
 
     // The out parameters should have been filled in by the abi in vtl1 based on the result from
     // the vtl0 version of the function
-    THROW_HR_IF(E_INVALIDARG, !(CompareStructWithNoPointers(result, CreateStructWithNoPointers())));
-    THROW_HR_IF(E_INVALIDARG, !CompareStructWithNoPointers(result, expected_struct_values));
-    THROW_HR_IF(E_INVALIDARG, !CompareStructWithNoPointers(struct_no_pointers_2, expected_struct_values));
-    THROW_HR_IF_NULL(E_INVALIDARG, struct_no_pointers_3);
-    THROW_HR_IF(E_INVALIDARG, !CompareStructWithNoPointers(*struct_no_pointers_3, expected_struct_values));
-    THROW_HR_IF(E_INVALIDARG, !CompareStructWithNoPointers(struct_no_pointers_4, expected_struct_values));
-    THROW_HR_IF_NULL(E_INVALIDARG, uint64_val);
-    THROW_HR_IF(E_INVALIDARG, *uint64_val != std::numeric_limits<std::uint64_t>::max());
+    THROW_HR_IF(E_INVALIDARG, !CompareTestStruct1(arg1, expect_val1));
+    THROW_HR_IF(E_INVALIDARG, !CompareTestStruct2(arg2, expect_val2));
+    THROW_HR_IF(E_INVALIDARG, !CompareTestStruct3(arg3, expect_val3));
+    THROW_HR_IF(E_INVALIDARG, !std::equal(arg4.begin(), arg4.end(), arg4_expected.begin(), CompareTestStruct1));
+    THROW_HR_IF(E_INVALIDARG, !std::equal(arg5.begin(), arg5.end(), arg5_expected.begin(), CompareTestStruct2));
+    THROW_HR_IF(E_INVALIDARG, !std::equal(arg6.begin(), arg6.end(), arg6_expected.begin(), CompareTestStruct3));
 
     return S_OK;
 }
 
+HRESULT VTL1_Declarations::Start_PassingStringTypes_To_HostApp_Callback_Test()
+{
+    std::string arg1 = "test";
+    std::string arg2 = "test2";
+    std::string arg3 {};
+    std::vector<std::string> arg4_expected(5, "test");
+    std::vector<std::string> arg4 = arg4_expected;
+    std::vector<std::string> arg5_expected(5, "test2 was updated");
+    std::vector<std::string> arg5(5, "test2");
+    std::vector<std::string> arg6_expected(5, "test3 was returned as out");
+
+    std::vector<std::string> arg6 {};
+
+    // Note: string is returned by vtl0, and copied to vtl1 then returned to this function.
+    auto result = VTL0_Callbacks::PassingStringTypes_To_HostApp_callback(
+         arg1,
+        arg2,
+        arg3,
+        arg4,
+        arg5,
+        arg6);
+
+    // The out parameters should have been filled in by the abi in vtl1 based on the result from
+    // the vtl0 version of the function
+    THROW_HR_IF(E_INVALIDARG, "return result" != result);
+    THROW_HR_IF(E_INVALIDARG, "test" != arg1);
+    THROW_HR_IF(E_INVALIDARG, "test2 updated" != arg2);
+    THROW_HR_IF(E_INVALIDARG, "test3 returned" != arg3);
+    THROW_HR_IF(E_INVALIDARG, !std::equal(arg4.begin(), arg4.end(), arg4_expected.begin()));
+    THROW_HR_IF(E_INVALIDARG, !std::equal(arg5.begin(), arg5.end(), arg5_expected.begin()));
+    THROW_HR_IF(E_INVALIDARG, !std::equal(arg6.begin(), arg6.end(), arg6_expected.begin()));
+
+    return S_OK;
+}
+
+HRESULT VTL1_Declarations::Start_PassingWStringTypes_To_HostApp_Callback_Test()
+{
+    std::wstring arg1 = L"test";
+    std::wstring arg2 = L"test2";
+    std::wstring arg3 {};
+    std::vector<std::wstring> arg4_expected(5, L"test");
+    std::vector<std::wstring> arg4 = arg4_expected;
+    std::vector<std::wstring> arg5_expected(5, L"test2 was updated");
+    std::vector<std::wstring> arg5(5, L"test2");
+    std::vector<std::wstring> arg6_expected(5, L"test3 was returned as out");
+
+    std::vector<std::wstring> arg6 {};
+
+    // Note: wstring is returned by vtl0, and copied to vtl1 then returned to this function.
+    auto result = VTL0_Callbacks::PassingWStringTypes_To_HostApp_callback(
+         arg1,
+        arg2,
+        arg3,
+        arg4,
+        arg5,
+        arg6);
+
+    // The out parameters should have been filled in by the abi in vtl1 based on the result from
+    // the vtl0 version of the function
+    THROW_HR_IF(E_INVALIDARG, L"return result" != result);
+    THROW_HR_IF(E_INVALIDARG, L"test" != arg1);
+    THROW_HR_IF(E_INVALIDARG, L"test2 updated" != arg2);
+    THROW_HR_IF(E_INVALIDARG, L"test3 returned"!= arg3);
+    THROW_HR_IF(E_INVALIDARG, !std::equal(arg4.begin(), arg4.end(), arg4_expected.begin()));
+    THROW_HR_IF(E_INVALIDARG, !std::equal(arg5.begin(), arg5.end(), arg5_expected.begin()));
+    THROW_HR_IF(E_INVALIDARG, !std::equal(arg6.begin(), arg6.end(), arg6_expected.begin()));
+
+    return S_OK;
+}
+
+HRESULT VTL1_Declarations::Start_PassingArrayTypes_To_HostApp_Callback_Test()
+{
+    std::array<TestStruct1, 2> arg1 = {CreateTestStruct1(), CreateTestStruct1()};
+    std::array<TestStruct1, 2> arg1_expected = {CreateTestStruct1(), CreateTestStruct1()};
+    std::array<std::string, 2> arg2 = {"test2", "test2"};
+    std::array<std::string, 2> arg2_expected = {"test2 updated", "test2 updated"};
+    std::array<std::wstring, 2> arg3 {};
+    std::array<std::wstring, 2> arg3_expected = {L"test2 updated", L"test2 updated"};
+    std::array<TestStruct2, 2> arg4 = {CreateTestStruct2(), CreateTestStruct2()};
+    auto arg4_expect_val = CreateTestStruct2();
+    arg4_expect_val.field1.array1 = {10, 9, 8, 7, 6, 5, 4, 3, 2, 1};
+    std::array<TestStruct2, 2> arg4_expected = {arg4_expect_val, arg4_expect_val};
+    std::array<TestStruct3, 2> arg5 {};
+    std::array<TestStruct3, 2> arg5_expected = {CreateTestStruct3(), CreateTestStruct3()};
+    NestedStructWithArray nested_array_result = CreateNestedStructWithArray();
+
+    // Note: NestedStructWithArray is returned by vtl1, and copied to vtl0 then returned to this function.
+    auto result = VTL0_Callbacks::PassingArrayTypes_To_HostApp_callback(
+         arg1,
+        arg2,
+        arg3,
+        arg4,
+        arg5);
+
+    // The out parameters should have been filled in by the abi in vtl1 based on the result from
+    // the vtl1 version of the function
+    THROW_HR_IF(E_INVALIDARG, !CompareNestedStructWithArray(result, nested_array_result));
+    THROW_HR_IF(E_INVALIDARG, !std::equal(arg1.begin(), arg1.end(), arg1_expected.begin(), CompareTestStruct1));
+    THROW_HR_IF(E_INVALIDARG, !std::equal(arg2.begin(), arg2.end(), arg2_expected.begin()));
+    THROW_HR_IF(E_INVALIDARG, !std::equal(arg3.begin(), arg3.end(), arg3_expected.begin()));
+    THROW_HR_IF(E_INVALIDARG, !std::equal(arg4.begin(), arg4.end(), arg4_expected.begin(), CompareTestStruct2));
+    THROW_HR_IF(E_INVALIDARG, !std::equal(arg5.begin(), arg5.end(), arg5_expected.begin(), CompareTestStruct3));
+    
+    return S_OK;
+}
 #pragma endregion

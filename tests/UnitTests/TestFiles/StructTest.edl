@@ -33,8 +33,8 @@ enclave
 
             // Array of structs
             [in] MyStruct1 arg2[5],
-            [in, out] MyStruct1 arg3[5][5],
-            [out] MyStruct1 arg4[1][1][1],
+            [in, out] MyStruct1 arg3[5],
+            [out] MyStruct1 arg4[1],
             
             [in] MyStruct1* arg5,
             [in, out] MyStruct1* arg6,
@@ -68,8 +68,8 @@ enclave
 
             // Array of structs
             [in] MyStruct1 arg2[5],
-            [in, out] MyStruct1 arg3[5][5],
-            [out] MyStruct1 arg4[1][1][1],
+            [in, out] MyStruct1 arg3[5],
+            [out] MyStruct1 arg4[1],
             
             [in] MyStruct1* arg5,
             [in, out] MyStruct1* arg6,

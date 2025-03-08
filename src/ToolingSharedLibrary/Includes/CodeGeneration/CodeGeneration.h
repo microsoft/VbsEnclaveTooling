@@ -7,6 +7,7 @@
 #include <CmdlineParsingHelpers.h>
 #include <CmdlineArgumentsParser.h>
 #include "CodeGenerationHelpers.h"
+#include <span>
 
 using namespace CmdlineParsingHelpers;
 using namespace EdlProcessor;
@@ -41,7 +42,7 @@ namespace CodeGeneration
 
         struct FunctionParametersInfo
         {
-            // Contains data needed to package parameters into a tuple so 
+            // Contains data needed to package parameters into a struct so 
             // we can forward them to the developer impl functions.
             std::ostringstream m_types_in_tuple {};
             std::ostringstream m_param_names_to_add_to_parameter_container {};
@@ -57,12 +58,18 @@ namespace CodeGeneration
             // last tuple value in m_types_to_return_in_tuple.
             std::ostringstream m_types_to_return_in_tuple {};
             std::ostringstream m_names_to_return_in_tuple {};
-            std::vector<std::pair<std::string, size_t>> m_return_tuple_param_indexes{};
+            std::vector<std::pair<std::string, size_t>> m_return_tuple_param_indexes {};
 
             // These are used to copy forwarded parameters sent between a vtl1 function
             // to a vtl0 function and vice versa.
             std::ostringstream m_copy_vtl1_parameters_into_vtl0_heap_tuple{};
             std::ostringstream m_copy_vtl0_parameters_into_vtl1_heap_tuple {};
+
+            // Used to moving parameters through trust boundary TODO: remove unneeded ones above.
+            std::ostringstream m_all_param_names {};
+            std::ostringstream m_in_inout_param_names {};
+            std::ostringstream m_copy_values_from_out_struct_to_original_args {};
+            std::ostringstream m_params_to_forward_to_dev_impl {};
 
             // General info about function that can affect how the the 
             // generated code to copy parameters in the abi layer.
@@ -77,35 +84,58 @@ namespace CodeGeneration
 
         std::string BuildEnumDefinition(const DeveloperType& developer_types);
 
-        std::string GetSimpleTypeInfo(const EdlTypeInfo& info);
-
         std::string BuildArrayType(const Declaration& declaration);
 
         std::string GetTypeInfoForFunction(const Declaration& declaration, ParameterModifier modifier);
 
         std::string GetSimpleTypeInfoWithPointerInfo(const EdlTypeInfo& info);
 
-        std::string BuildStructFieldOrFunctionParameter(const Declaration& declaration);
+        std::string BuildStructField(const Declaration& declaration);
 
-        std::string BuildStructDefinition(const DeveloperType& developer_types);
+        std::string BuildStructDefinitionForDeveloperType(
+            std::string_view struct_name,
+            const std::vector<Declaration>& fields);
+
+        std::string BuildStructDefinitionForFunctionParams(
+            std::string_view struct_name,
+            const std::vector<Declaration>& fields,
+            const CppCodeBuilder::FunctionParametersInfo& params_info = {});
 
         std::string BuildStdArrayType(
             std::string_view type,
             const ArrayDimensions& dimensions,
             std::uint32_t index = 0);
 
-        std::string BuildNonArrayType(const Declaration& declaration);
+        std::string AddAddressDeclaratorIfNecessary(const Declaration& declaration);
 
-        std::string BuildDeveloperType(const DeveloperType& type);
+        std::string GetTypeInfoForFunctionParameter(const Declaration& declaration);
+
+        void CaptureInformationAboutInParameter(
+            const Function function,
+            const Declaration& declaration,
+            std::string_view all_params_separator,
+            std::string_view in_and_inout_params_separator,
+            FunctionParametersInfo& param_info);
+
+        void CaptureInformationAboutInOutParameter(
+            const Declaration& declaration,
+            std::string_view all_params_separator,
+            std::string_view in_and_inout_params_separator,
+            FunctionParametersInfo& param_info);
+
+        void CaptureInformationAboutOutParameter(
+            const Declaration& declaration,
+            std::string_view all_params_separator,
+            FunctionParametersInfo& param_info);
 
         std::string BuildFunctionParameters(
             const Function& function,
-            FunctionCallInitiator initiator,
-            const FunctionParametersInfo& param_info,
-            ParameterModifier modifier = ParameterModifier::NoConst);
+            const FunctionParametersInfo& param_info);
 
-        std::string BuildDeveloperTypesHeader(
-            const std::unordered_map<std::string, std::shared_ptr<DeveloperType>>& developer_types);
+        std::ostringstream CreateDeveloperTypeStructs(
+            const std::vector<std::shared_ptr<DeveloperType>>& developer_types_insertion_list);
+
+        std::string BuildTypesHeader(const std::ostringstream& types);
 
         // Used to gather all needed function parameter information to allow multiple
         // CodeGen functions to reuse saved metadata about a functions parameters without
@@ -134,10 +164,18 @@ namespace CodeGeneration
             FunctionParametersInfo& param_info,
             CallFlowDirection call_direction);
 
+        // Used to gather all needed function parameter information to allow multiple
+        // CodeGen functions to reuse saved metadata about a functions parameters without
+        // needing to recompute them.
+        FunctionParametersInfo GetInformationAboutParameters(
+            const Function& function,
+            std::string_view abi_function_name);
+
         // These functions are what the developer will call from 
         // within the enclave to access the hostApps callback function.
         std::string BuildEnclaveToHostInitialCallerFunction(
             const Function& function,
+            std::string_view vtl0_generated_abi_function_name,
             std::string_view abi_function_to_call,
             const FunctionParametersInfo& param_info);
 
@@ -146,6 +184,7 @@ namespace CodeGeneration
         // These are within the vtl0 generated class.
         std::string BuildHostToEnclaveInitialCallerFunction(
             const Function& function,
+            std::string_view vtl1_generated_abi_function_name,
             std::string_view abi_function_to_call,
             const FunctionParametersInfo& param_info);
 
@@ -178,9 +217,15 @@ namespace CodeGeneration
         
         HostToEnclaveContent BuildHostToEnclaveFunctions(
             std::string_view generated_namespace,
+            std::ostringstream& flatbuffer_content,
+            std::ostringstream& developer_structs,
+            const std::unordered_map<std::string, std::shared_ptr<DeveloperType>>& developer_types,
             std::unordered_map<std::string, Function>& functions);
 
         EnclaveToHostContent BuildEnclaveToHostFunctions(
+            std::ostringstream& flatbuffer_content,
+            std::ostringstream& developer_structs,
+            const std::unordered_map<std::string, std::shared_ptr<DeveloperType>>& developer_types,
             std::unordered_map<std::string, Function>& functions);
 
         std::string CombineAndBuildHostAppEnclaveClass(
@@ -204,7 +249,8 @@ namespace CodeGeneration
             ErrorHandlingKind error_handling,
             VirtualTrustLayerKind trust_layer,
             std::string_view generated_namespace_name,
-            std::string_view generated_vtl0_class_name);
+            std::string_view generated_vtl0_class_name,
+            std::string_view flatbuffer_compiler_path);
 
         void Generate();
 
@@ -215,11 +261,16 @@ namespace CodeGeneration
             const std::filesystem::path& output_folder,
             std::string_view file_content);
 
+        void SaveAndCompileFlatbufferFile(
+            std::filesystem::path save_location,
+            std::ostringstream flatbuffer_schema);
+
         Edl m_edl {};
         ErrorHandlingKind m_error_handling {};
         std::string_view m_generated_namespace_name{};
         std::string_view m_generated_vtl0_class_name {};
         VirtualTrustLayerKind m_virtual_trust_layer_kind{};
         std::filesystem::path m_output_folder_path {};
+        std::filesystem::path m_flatbuffer_compiler_path {};
     };
 }

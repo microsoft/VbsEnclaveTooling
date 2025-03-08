@@ -9,6 +9,9 @@
         <VbsEnclaveNugetPackEnclaveLibPath>$(OutDir)veil_enclave_lib.lib</VbsEnclaveNugetPackEnclaveLibPath>
         <VbsEnclaveNugetPackHostLibPath>$(OutDir)veil_host_lib\veil_host_lib.lib</VbsEnclaveNugetPackHostLibPath>
         <VbsEnclaveNugetPackProperties>target_version=$(VbsEnclaveNugetPackVersionNumber);vbsenclavetooling_$(Platform)_exe=$(VbsEnclaveNugetPackExePath);vbsenclavetooling_cpp_support_$(Platform)_lib=$(VbsEnclaveNugetPackCppSupportPath);vbsenclavetooling_enclave_$(Platform)_lib=$(VbsEnclaveNugetPackEnclaveLibPath);vbsenclavetooling_host_$(Platform)_lib=$(VbsEnclaveNugetPackHostLibPath)</VbsEnclaveNugetPackProperties>
+        <VcpkgSupportPath>$(SolutionDir)src\ToolingSharedLibrary\vcpkg_installed\$(Platform)-windows-static\$(Platform)-windows-static</VcpkgSupportPath>
+        <VcpkgToolsPath>$(SolutionDir)src\ToolingSharedLibrary\vcpkg_installed\$(Platform)-windows-static\$(Platform)-windows\tools</VcpkgToolsPath>
+        <VbsEnclaveNugetPackProperties>target_version=$(VbsEnclaveNugetPackVersionNumber);vbsenclavetooling_$(Platform)_exe=$(VbsEnclaveNugetPackExePath);vbsenclavetooling_cpp_support_$(Platform)_lib=$(VbsEnclaveNugetPackCppSupportPath);vcpkg_sources=$(VcpkgSupportPath);vcpkg_tools=$(VcpkgToolsPath)</VbsEnclaveNugetPackProperties>
         <VbsEnclaveNugetPackOutputDirectory>$(SolutionDir)_build</VbsEnclaveNugetPackOutputDirectory>
         <VbsEnclaveNugetPackScriptFile>$(SolutionDir)buildScripts\PackageNuget.ps1</VbsEnclaveNugetPackScriptFile>
     </PropertyGroup>

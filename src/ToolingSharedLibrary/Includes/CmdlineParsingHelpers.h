@@ -18,7 +18,7 @@ namespace CmdlineParsingHelpers
             << "\n"
             << "Usage: vbsenclavetooling.exe --Language <cpp> --EdlPath <filePath.edl> --ErrorHandling [ErrorCode | Exception]\n"
             << "--OutputDirectory <DirectoryPath> --VirtualTrustLayer [HostApp | Enclave] --Vtl0ClassName <name_of_class> \n"
-            << "--Namespace <name_of_class>\n"
+            << "--Namespace <name_of_class> --FlatbuffersCompilerPath <absolute_path_to_file>\n"
             << "\n"
             << "Mandatory arguments:\n"
             << "  --Language [cpp]                          The progamming language that will be used in the generated code\n"
@@ -29,8 +29,9 @@ namespace CmdlineParsingHelpers
             << "Optional arguments:\n"
             << "  -h, --help                                Print this help message\n"
             << "  --OutputDirectory <DirectoryPath>         Absolute path to directory where all generated files should be placed. (By default this is the current directory)\n"
-            << "  --Vtl0ClassName <name_of_class>           name of the vtl0 class that will be generated for use by the hostapp. (By default this is the name of the .edl file with the word 'Wrapper' appended to it.\n"
-            << "  --Namespace <name_of_class>               name of the namespace that all generated code will be encapsulated in. (By default this is the name os the .edl file.\n"
+            << "  --Vtl0ClassName <name_of_class>           name of the vtl0 class that will be generated for use by the hostapp. (By default this is the name of the .edl file with the word 'Wrapper' appended to it).\n"
+            << "  --Namespace <name_of_class>               name of the namespace that all generated code will be encapsulated in. (By default this is the name of the .edl file).\n"
+            << "  --FlatbuffersCompilerPath <absolute_path_to_file> Absolute path to the flatbuffer compiler for the language provided in '--Language'. (By default this is the current directory.) \n"
             << std::endl;
     }
 
@@ -178,5 +179,40 @@ namespace CmdlineParsingHelpers
         }
 
         PRINT_AND_RETURN_ERROR(ErrorId::VirtualTrustLayerInvalidType, error_handling);
+    }
+
+    static ErrorId inline GetFlatbuffersCompilerPathFromArgs(
+        std::uint32_t index,
+        char* args[],
+        std::uint32_t args_size,
+        std::string& flatbuffers_compiler_path)
+    {
+        flatbuffers_compiler_path = "";
+        if (index >= args_size)
+        {
+            PRINT_AND_RETURN_ERROR(ErrorId::FlatbufferCompilerNoMoreArgs);
+        }
+
+        std::filesystem::path item_path(args[index]);
+
+        // Check if the item exists
+        if (!std::filesystem::exists(item_path))
+        {
+            PRINT_AND_RETURN_ERROR(ErrorId::FlatbufferCompilerDoesNotExist, item_path.generic_string());
+        }
+
+        // Check if the file is a regular file (not a directory) and at least has the name of the 
+        // official compiler exe.
+        if (!std::filesystem::is_regular_file(item_path) || item_path.filename().generic_string() != "flatc.exe")
+        {
+            PRINT_AND_RETURN_ERROR(ErrorId::NotAFile, item_path.generic_string());
+        }
+
+        // We will eventually invoke the file with CreateProcess so if it actually isn't an executable
+        // it should error out. And if it is one but isn't the flatbuffer compiler then it won't produce
+        // the necessary structs/enum types our generated code relies on, which will ultimately make them
+        // not compile. So, we're ok with the 3 checks above.
+        flatbuffers_compiler_path = args[index];
+        return ErrorId::Success;
     }
 }

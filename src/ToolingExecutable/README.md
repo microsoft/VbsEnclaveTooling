@@ -11,7 +11,7 @@ arguments to the exe do the following:
 1. Navigate to the `Debugging` section under `Configuration Properties` and set the following properties:
 1. Command: `$(TargetPath)`
 1. Command Arguments: This should have the arguments you want to pass to `ToolingExecutable`.
-   1. e.g `"--Language" "C++" "--EdlPath" "C:\Users\Public\Documents\test.edl" "--ErrorHandling" "ErrorCode" "--OutputDirectory" "C:\Users\Public\Documents" "--VirtualTrustLayer" "HostApp" "--Vtl0ClassName" "MyEnclaveClass" "--Namespace" "MyGeneratedNamespace"`
+   1. e.g `"--Language" "C++" "--EdlPath" "C:\Users\Public\Documents\test.edl" "--ErrorHandling" "ErrorCode" "--OutputDirectory" "C:\Users\Public\Documents" "--VirtualTrustLayer" "HostApp" "--Vtl0ClassName" "MyEnclaveClass" "--Namespace" "MyGeneratedNamespace" "--FlatbuffersCompilerPath" "C:\flatbuffers\flatc.exe"`
 1. Working Directory: `$(ProjectDir)`
 
 ### Note 1:

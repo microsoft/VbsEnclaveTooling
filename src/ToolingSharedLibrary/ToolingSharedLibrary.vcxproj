@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="..\..\packages\Microsoft.Windows.SDK.CPP.arm64.10.0.26100.2454\build\native\Microsoft.Windows.SDK.cpp.arm64.props" Condition="Exists('..\..\packages\Microsoft.Windows.SDK.CPP.arm64.10.0.26100.2454\build\native\Microsoft.Windows.SDK.cpp.arm64.props')" />
   <Import Project="..\..\packages\Microsoft.Windows.SDK.CPP.x64.10.0.26100.2454\build\native\Microsoft.Windows.SDK.cpp.x64.props" Condition="Exists('..\..\packages\Microsoft.Windows.SDK.CPP.x64.10.0.26100.2454\build\native\Microsoft.Windows.SDK.cpp.x64.props')" />
@@ -76,20 +76,39 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <IncludePath>$(VC_IncludePath);$(WindowsSDK_IncludePath);$(ProjectDir);$(SolutionDir)src\ToolingSharedLibrary\Includes</IncludePath>
+    <IncludePath>$(ProjectDir)vcpkg_installed\$(Platform)-windows-static\$(Platform)-windows-static\include;$(VC_IncludePath);$(WindowsSDK_IncludePath);$(ProjectDir);$(SolutionDir)src\ToolingSharedLibrary\Includes</IncludePath>
     <TargetName>ToolingSharedLibrary</TargetName>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|ARM64'">
-    <IncludePath>$(VC_IncludePath);$(WindowsSDK_IncludePath);$(ProjectDir);$(SolutionDir)src\ToolingSharedLibrary\Includes</IncludePath>
+    <IncludePath>$(ProjectDir)vcpkg_installed\$(Platform)-windows-static\$(Platform)-windows-static\include;$(VC_IncludePath);$(WindowsSDK_IncludePath);$(ProjectDir);$(SolutionDir)src\ToolingSharedLibrary\Includes</IncludePath>
     <TargetName>ToolingSharedLibrary</TargetName>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <IncludePath>$(VC_IncludePath);$(WindowsSDK_IncludePath);$(ProjectDir);$(SolutionDir)src\ToolingSharedLibrary\Includes</IncludePath>
+    <IncludePath>$(ProjectDir)vcpkg_installed\$(Platform)-windows-static\$(Platform)-windows-static\include;$(VC_IncludePath);$(WindowsSDK_IncludePath);$(ProjectDir);$(SolutionDir)src\ToolingSharedLibrary\Includes</IncludePath>
     <TargetName>ToolingSharedLibrary</TargetName>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|ARM64'">
-    <IncludePath>$(VC_IncludePath);$(WindowsSDK_IncludePath);$(ProjectDir);$(SolutionDir)src\ToolingSharedLibrary\Includes</IncludePath>
+    <IncludePath>$(ProjectDir)vcpkg_installed\$(Platform)-windows-static\$(Platform)-windows-static\include;$(VC_IncludePath);$(WindowsSDK_IncludePath);$(ProjectDir);$(SolutionDir)src\ToolingSharedLibrary\Includes</IncludePath>
     <TargetName>ToolingSharedLibrary</TargetName>
+  </PropertyGroup>
+  <PropertyGroup Label="Vcpkg" Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <VcpkgUseStatic>true</VcpkgUseStatic>
+    <VcpkgUseMD>false</VcpkgUseMD>
+  </PropertyGroup>
+  <PropertyGroup Label="Vcpkg">
+    <VcpkgEnableManifest>true</VcpkgEnableManifest>
+  </PropertyGroup>
+  <PropertyGroup Label="Vcpkg" Condition="'$(Configuration)|$(Platform)'=='Debug|ARM64'">
+    <VcpkgUseStatic>true</VcpkgUseStatic>
+    <VcpkgUseMD>false</VcpkgUseMD>
+  </PropertyGroup>
+  <PropertyGroup Label="Vcpkg" Condition="'$(Configuration)|$(Platform)'=='Release|ARM64'">
+    <VcpkgUseStatic>true</VcpkgUseStatic>
+    <VcpkgUseMD>false</VcpkgUseMD>
+  </PropertyGroup>
+  <PropertyGroup Label="Vcpkg" Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <VcpkgUseStatic>true</VcpkgUseStatic>
+    <VcpkgUseMD>false</VcpkgUseMD>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
@@ -170,6 +189,8 @@
   <ItemGroup>
     <ClInclude Include="Includes\CmdlineArgumentsParser.h" />
     <ClInclude Include="Includes\CmdlineParsingHelpers.h" />
+    <ClInclude Include="Includes\CodeGeneration\Flatbuffers\Contants.h" />
+    <ClInclude Include="Includes\CodeGeneration\Flatbuffers\BuilderHelpers.h" />
     <ClInclude Include="Includes\VbsEnclaveABI\Enclave\EnclaveHelpers.h" />
     <ClInclude Include="Includes\VbsEnclaveABI\Enclave\MemoryAllocation.h" />
     <ClInclude Include="Includes\VbsEnclaveABI\Enclave\MemoryChecks.h" />
@@ -201,12 +222,14 @@
     </ClInclude>
     <ClCompile Include="ToolingExecutable\CodeGeneration\CppCodeBuilder.cpp" />
     <ClCompile Include="ToolingExecutable\CodeGeneration\CppCodeGenerator.cpp" />
+    <ClCompile Include="ToolingExecutable\CodeGeneration\Flatbuffers\BuilderHelpers.cpp" />
     <ClCompile Include="ToolingExecutable\Edl\LexicalAnalyzer.cpp" />
     <ClCompile Include="ToolingExecutable\Edl\Parser.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
     <None Include="README.md" />
+    <None Include="vcpkg.json" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

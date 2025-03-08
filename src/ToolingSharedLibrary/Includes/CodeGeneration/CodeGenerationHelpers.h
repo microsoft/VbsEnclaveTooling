@@ -7,7 +7,9 @@
 #include <Edl\Utils.h>
 #include <CodeGeneration\Contants.h>
 #include <Exceptions.h>
-
+#include <windows.h>
+#include <wil\result_macros.h>
+#include "Flatbuffers\Contants.h"
 using namespace EdlProcessor;
 using namespace ToolingExceptions;
 
@@ -33,7 +35,20 @@ namespace CodeGeneration
         InParameterConst,
     };
 
+    enum class CodeGenStructKind : std::uint32_t
+    {
+        DeveloperStruct,
+        NonDeveloperAbiStruct,
+    };
+
     static std::unordered_set<EdlTypeKind, EdlTypeToHash> const_ref_types
+    {
+        EdlTypeKind::String,
+        EdlTypeKind::WString,
+        EdlTypeKind::Struct,
+    };
+
+    static std::unordered_set<EdlTypeKind, EdlTypeToHash> s_complex_types
     {
         EdlTypeKind::String,
         EdlTypeKind::WString,
@@ -85,7 +100,7 @@ namespace CodeGeneration
         // Size and count attributes are only for pointers
         if (attribute_optional.has_value() && attribute_optional.value().IsSizeOrCountPresent())
         {
-            auto attribute = attribute_optional.value();
+            auto& attribute = attribute_optional.value();
             auto& size_or_count_token = (attribute.m_count_info.IsEmpty()) 
                 ? attribute.m_size_info 
                 : attribute.m_count_info;
@@ -255,5 +270,192 @@ namespace CodeGeneration
         }
 
         return copy_statements_for_return_tuple.str();
+    }
+
+    void inline InvokeFlatbufferCompiler(std::string_view compiler_path, std::string_view args)
+    {
+        PrintStatus(Status::Info, Flatbuffers::c_failed_to_compile_flatbuffer_msg.data());
+        std::string complete_argument = std::format("{} {}", compiler_path, args);
+        auto result = std::system(complete_argument.c_str());
+
+        if (result)
+        {
+            throw CodeGenerationException(ErrorId::FlatbufferCompilerError, result);
+        }
+
+        PrintStatus(Status::Info, Flatbuffers::c_succeeded_compiling_flatbuffer_msg.data());
+    }
+
+    template<typename... Args>
+    inline std::string FormatString(std::string_view format_string, Args&&... args)
+    {
+        return std::vformat(format_string, std::make_format_args(args...));   
+    }
+
+    inline bool TypeContainsIterator(const Declaration& declaration)
+    {
+        if (!declaration.m_array_dimensions.empty())
+        {
+            return true;
+        }
+
+        if (declaration.m_edl_type_info.m_type_kind == EdlTypeKind::Vector ||
+            declaration.m_edl_type_info.m_type_kind == EdlTypeKind::String ||
+            declaration.m_edl_type_info.m_type_kind == EdlTypeKind::WString)
+        {
+            return true;
+        }
+
+        return false;
+    }
+
+    inline std::string GetSimpleTypeInfo(const EdlTypeInfo& info)
+    {
+        switch (info.m_type_kind)
+        {
+            case EdlTypeKind::UInt8:
+            case EdlTypeKind::UInt16:
+            case EdlTypeKind::UInt32:
+            case EdlTypeKind::UInt64:
+            case EdlTypeKind::Int8:
+            case EdlTypeKind::Int16:
+            case EdlTypeKind::Int32:
+            case EdlTypeKind::Int64:
+            case EdlTypeKind::String:
+            case EdlTypeKind::WString:
+                return std::format("std::{}", info.m_name);
+            default:
+                return info.m_name;
+        }
+    }
+
+    enum class PtrKind
+    {
+        unique,
+        shared,
+    };
+
+    inline std::string AddUniquePtr(std::string_view type)
+    {
+        return std::format("{}", type);
+    }
+
+    inline std::string EncapsulateInPtrIfStruct(const EdlTypeInfo& type_info, PtrKind = PtrKind::unique)
+    {
+        if (type_info.m_type_kind == EdlTypeKind::Struct)
+        {
+            return AddUniquePtr(type_info.m_name);
+        }
+
+        return {};
+    }
+
+    inline std::string AddVectorEncapulation(const Declaration& vector_declaration)
+    {
+        auto inner_type = vector_declaration.m_edl_type_info.inner_type;
+        auto inner_type_name = GetSimpleTypeInfo(*inner_type);
+        auto type_with_unique_ptr = EncapsulateInPtrIfStruct(*inner_type);
+
+        if (!type_with_unique_ptr.empty())
+        {
+            return std::format("std::vector<{}>", type_with_unique_ptr);
+        }
+        
+        return std::format("std::vector<{}>", inner_type_name);
+    }
+
+    inline std::string AddArrayEncapulation(
+        std::string type_name,
+        const Declaration& array_declaration)
+    {
+        auto type_with_unique_ptr = EncapsulateInPtrIfStruct(array_declaration.m_edl_type_info);
+        const ArrayDimensions& dimensions = array_declaration.m_array_dimensions;
+        if (!type_with_unique_ptr.empty())
+        {
+            return std::format(c_array_initializer, type_with_unique_ptr, dimensions.front());
+
+        }
+
+        return std::format(c_array_initializer, type_name, dimensions.front());
+    }
+
+    inline std::string GetFullDeclarationType(const Declaration& declaration)
+    {
+        EdlTypeKind type_kind = declaration.m_edl_type_info.m_type_kind;
+        std::string type_name = GetSimpleTypeInfo(declaration.m_edl_type_info);
+
+        if (declaration.IsEdlType(EdlTypeKind::Vector))
+        {
+            return AddVectorEncapulation(declaration);
+        }
+
+        if (!declaration.m_array_dimensions.empty())
+        {
+            return AddArrayEncapulation(type_name, declaration);
+        }
+
+        return type_name;
+    }
+
+    inline std::string GetParameterQualifier(const Declaration& declaration)
+    {
+        if (declaration.IsInParameterOnly())
+        {
+            return "const";
+        }
+
+        return {};
+    }
+
+    inline std::string GetParameterDeclarator(const Declaration& declaration)
+    {
+        if (c_edlTypes_primitive_set.contains(declaration.m_edl_type_info.m_type_kind))
+        {
+            return {};
+        }
+
+        return "&";
+    }
+
+    inline std::string GetParameterForFunction(const Declaration& declaration)
+    {
+        std::string full_type = GetFullDeclarationType(declaration);
+        std::string qualifier = GetParameterQualifier(declaration);
+        std::string param_declarator = GetParameterDeclarator(declaration);
+
+        return std::format("{} {}{} {}", qualifier, full_type, param_declarator, declaration.m_name);
+    }
+
+    inline std::string GetToDevTypeFunctionName(const Declaration& declaration)
+    {
+        if (!declaration.IsEdlType(EdlTypeKind::Struct))
+        {
+            if (declaration.IsEdlType(EdlTypeKind::Vector) &&
+                !declaration.IsInnerEdlType(EdlTypeKind::Struct))
+            {
+                
+                throw std::runtime_error("Only pointers to structs currently supported");
+            }
+        }
+
+        if (declaration.HasPointer())
+        {
+            return "ToDevType";
+        }
+
+        return "ToDevTypeNoPtr";
+    }
+
+    inline bool ShouldForwardPointerToDevImpl(const Declaration& declaration)
+    {
+        bool is_struct = declaration.IsEdlType(EdlTypeKind::Struct);
+        
+        // Currently only pointer to struct supported.
+        if (declaration.HasPointer() && is_struct)
+        {
+            return true;
+        }
+
+        return false;
     }
 }

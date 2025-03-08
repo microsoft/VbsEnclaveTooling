@@ -203,11 +203,18 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="dllmain.cpp" />
+    <ClCompile Include="Generated Files\VbsEnclave\Enclave\Stubs.cpp" />
     <ClCompile Include="Vtl1ExportsImplementations.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="EnclaveBuild.targets" />
+    <None Include="Generated Files\VbsEnclave\Enclave\vbsenclave.def" />
     <None Include="packages.config" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="Generated Files\VbsEnclave\Enclave\DeveloperTypes.h" />
+    <ClInclude Include="Generated Files\VbsEnclave\Enclave\Implementations.h" />
+    <ClInclude Include="Generated Files\VbsEnclave\Enclave\vbsenclave_flatbuffer_support_generated.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
