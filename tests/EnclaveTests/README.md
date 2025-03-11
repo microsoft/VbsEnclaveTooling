@@ -4,7 +4,7 @@ The Enclave Taef tests require the machine that will contain the enclave to
 enable test-signing and require the enclave to be signed with a certificate that
 is available on the machine. As part of the `TestEnclave` project, the 
 [EnclaveBuild.targets](.\TestEnclave\EnclaveBuild.targets) file should sign the `TestEnclave.dll`
-using the certificate you provide. Most developers  primary dev machines won't be set up to
+using the certificate you provide. Most developers'  primary dev machines won't be set up to
 use test signing which is needed to load the enclave dll in debug mode.
 So your best bet is to remotely run the taef tests on a VM that has test signing enabled.
 We recommend using TShell to connect to the remote machine and run the following from
@@ -19,7 +19,7 @@ running the following in a PowerShell window on your primary dev machine.
 
 `Set-ExecutionPolicy Bypass -Scope Process -Force`
 
-`Note:` Taef tests can't running directly inside an enclave. So we use VTL0 (`TestHostApp`)
+`Note:` Taef tests can't run inside an enclave. So we use VTL0 (`TestHostApp`)
 as a proxy to test enclave functionality through function calls into the `TestEnclave` enclave 
 during the test. The tests involve calling into functions within the `TestEnclave.dll`, and these
 functions return some result back to VTL0. This can either be as a function return value or

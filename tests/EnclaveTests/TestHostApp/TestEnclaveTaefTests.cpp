@@ -156,7 +156,6 @@ struct EnclaveTestClass
         StructWithNoPointers result = generated_enclave_class.ReturnStructWithValues_From_Enclave();
         VERIFY_IS_TRUE(CompareStructWithNoPointers(result, CreateStructWithNoPointers()));
     }
-
     
     TEST_METHOD(TestPassingPrimitivesAsValues_To_Enclave_Test)
     {
@@ -169,7 +168,6 @@ struct EnclaveTestClass
         VERIFY_SUCCEEDED(generated_enclave_class.TestPassingPrimitivesAsValues_To_Enclave(in_bool, in_enum, in_int8));
     }
 
-    
     TEST_METHOD(TestPassingPrimitivesAsInPointers_To_Enclave_Test)
     {
         auto generated_enclave_class = TestEnclave(m_enclave);
@@ -292,6 +290,7 @@ struct EnclaveTestClass
         // Note: Hresult is returned by vtl1, and copied to vtl0 then returned to this function.
         VERIFY_SUCCEEDED(generated_enclave_class.Start_TestPassingPrimitivesAsValues_To_HostApp_Callback_Test());
     }
+
     TEST_METHOD(Start_TestPassingPrimitivesAsInPointers_To_HostApp_Callback_Test)
     {
         auto generated_enclave_class = TestEnclave(m_enclave);
@@ -299,6 +298,7 @@ struct EnclaveTestClass
         // Note: Hresult is returned by vtl1, and copied to vtl0 then returned to this function.
         VERIFY_SUCCEEDED(generated_enclave_class.Start_TestPassingPrimitivesAsInPointers_To_HostApp_Callback_Test());
     }
+
     TEST_METHOD(Start_TestPassingPrimitivesAsInOutPointers_To_HostApp_Callback_Test)
     {
         auto generated_enclave_class = TestEnclave(m_enclave);
@@ -306,6 +306,7 @@ struct EnclaveTestClass
         // Note: Hresult is returned by vtl1, and copied to vtl0 then returned to this function.
         VERIFY_SUCCEEDED(generated_enclave_class.Start_TestPassingPrimitivesAsInOutPointers_To_HostApp_Callback_Test());
     }
+
     TEST_METHOD(Start_TestPassingPrimitivesAsOutPointers_To_HostApp_Callback_Test)
     {
         auto generated_enclave_class = TestEnclave(m_enclave);
@@ -313,6 +314,7 @@ struct EnclaveTestClass
         // Note: Hresult is returned by vtl1, and copied to vtl0 then returned to this function.
         VERIFY_SUCCEEDED(generated_enclave_class.Start_TestPassingPrimitivesAsOutPointers_To_HostApp_Callback_Test());
     }
+
     TEST_METHOD(Start_ReturnInt8ValPtr_From_HostApp_Callback_Test)
     {
         auto generated_enclave_class = TestEnclave(m_enclave);
@@ -320,6 +322,7 @@ struct EnclaveTestClass
         // Note: Hresult is returned by vtl1, and copied to vtl0 then returned to this function.
         VERIFY_SUCCEEDED(generated_enclave_class.Start_ReturnInt8ValPtr_From_HostApp_Callback_Test());
     }
+
     TEST_METHOD(Start_ReturnUint64Val_From_HostApp_Callback_Test)
     {
         auto generated_enclave_class = TestEnclave(m_enclave);
@@ -327,6 +330,7 @@ struct EnclaveTestClass
         // Note: Hresult is returned by vtl1, and copied to vtl0 then returned to this function.
         VERIFY_SUCCEEDED(generated_enclave_class.Start_ReturnUint64Val_From_HostApp_Callback_Test());
     }
+
     TEST_METHOD(Start_ReturnStructWithValues_From_HostApp_Callback_Test)
     {
         auto generated_enclave_class = TestEnclave(m_enclave);
@@ -334,6 +338,7 @@ struct EnclaveTestClass
         // Note: Hresult is returned by vtl1, and copied to vtl0 then returned to this function.
         VERIFY_SUCCEEDED(generated_enclave_class.Start_ReturnStructWithValues_From_HostApp_Callback_Test());
     }
+
     TEST_METHOD(Start_ComplexPassingofTypes_To_HostApp_Callback_Test)
     {
         auto generated_enclave_class = TestEnclave(m_enclave);

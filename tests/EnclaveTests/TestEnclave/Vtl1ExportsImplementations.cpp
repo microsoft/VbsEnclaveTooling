@@ -259,42 +259,7 @@ HRESULT VTL1_Declarations::Start_TestPassingPrimitivesAsInPointers_To_HostApp_Ca
 
     return S_OK;
 }
-EnclaveString TrustedExample(_Out_ std::int8_t** int8_array, _In_ size_t int8_array_size)
-{
-    *int8_array = nullptr;
-    int8_array_size = 10;
-    size_t array_size_in_bytes = sizeof(std::int8_t) * int8_array_size;
-    std::vector<std::int8_t> int8_vector(int8_array_size);
-    std::iota(int8_vector.begin(), int8_vector.end(), 0);
 
-    // Abi provided function to allocate vtl1/vtl0 memory depending on which side of the trust boundary its called.
-    // in this case it will allocate vtl1 memory.
-    // The abi layer is responsible for freeing this memory and coping it into the vtl0 memory of the caller.
-    *int8_array = reinterpret_cast<std::int8_t*>(AllocateMemory(array_size_in_bytes));
-    memcpy_s(*int8_array, array_size_in_bytes, int8_vector.data(), array_size_in_bytes);
-
-    // TODO: when deep copy of internal structs support is added, we shouldn't need to allocate vtl0 memory
-    // directly, and should be able to allocate only vtl1 memory and have the abi layer take care of the conversion 
-    // for us. So, the developer shouldn't need to use the 'EnclaveCopyOutOfEnclave' Win32 api directly.
-
-    std::string return_from_enclave = "We returned this string from the enclave.";
-    char* ret_char_array = nullptr;
-    size_t str_size_in_bytes = sizeof(char) * return_from_enclave.size();
-
-    // The abi layer catches exceptions, but the developer can catch them too.
-    THROW_IF_FAILED(AllocateVtl0Memory(&ret_char_array, str_size_in_bytes));
-    THROW_IF_NULL_ALLOC(ret_char_array);
-
-    // free memory if the line below throws. vtl0_memory_ptr smart pointer is provided by the abi.
-    vtl0_memory_ptr<char> str_mem_ptr {ret_char_array};
-    THROW_IF_FAILED(EnclaveCopyOutOfEnclave(ret_char_array, return_from_enclave.data(), str_size_in_bytes));
-    str_mem_ptr.release(); // vtl0 caller to free
-
-    // Abi layer will handle copying the struct (not data of internal pointers, see note about deep copy support above)
-    // to vtl0 memory.
-    return EnclaveString {ret_char_array, str_size_in_bytes};
-
-}
 HRESULT VTL1_Declarations::Start_TestPassingPrimitivesAsInOutPointers_To_HostApp_Callback_Test()
 {
     std::int8_t int8_val[c_arbitrary_size_1];
