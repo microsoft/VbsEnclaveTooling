@@ -3,7 +3,7 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.9.34902.65
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "veil_enclave_cpp_support_lib", "..\..\common\veil_enclave_cpp_support_lib\veil_enclave_cpp_support_lib.vcxproj", "{26116633-98EC-4EAC-859C-139D020D10C9}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "veil_enclave_cpp_support_lib", "..\..\Common\veil_enclave_cpp_support_lib\veil_enclave_cpp_support_lib.vcxproj", "{26116633-98EC-4EAC-859C-139D020D10C9}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "veil_any_inc", "src\veil_any_inc\veil_any_inc.vcxitems", "{AB8C652A-8847-43C0-8F56-386102A43C4D}"
 EndProject
@@ -16,41 +16,6 @@ EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "veil_host_lib", "src\veil_host_lib\veil_host_lib.vcxproj", "{EE419DF4-62DC-4827-A0FC-727709B90C06}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "sample_any_inc", "samples\sample_any_inc\sample_any_inc.vcxitems", "{471ADF22-988A-499B-BD29-B51F48C940A6}"
-EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "vfs", "vfs", "{6D307ABE-458E-47B3-B0B9-EAD45838C6E0}"
-EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "enclavevfs_secure", "src\vfs\EnclaveVfs\enclavevfs_secure\enclavevfs_secure.vcxproj", "{4C3F338A-66BF-4509-A1A9-F6BBEC547CA7}"
-EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "enclavevfs_normal", "src\vfs\EnclaveVfs\enclavevfs_normal\enclavevfs_normal.vcxproj", "{DE3D9486-3961-4F39-B1D7-225F3FB4BB15}"
-EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "production_enclave_services_lib", "src\vfs\production_enclave_services\production_enclave_services_lib\production_enclave_services_lib.vcxproj", "{8464DCF7-55D3-4671-B995-AFFA8BF43C2A}"
-EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "hostvfsshims", "src\vfs\Host\hostvfsshims\hostvfsshims.vcxproj", "{14F11E4A-88D3-40AA-830A-22897FCD842D}"
-EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "EnclaveVfs", "EnclaveVfs", "{4F411663-92FF-4CB4-86FC-CBCDE24E2CA6}"
-	ProjectSection(SolutionItems) = preProject
-		src\vfs\EnclaveVfs\checks.cpp = src\vfs\EnclaveVfs\checks.cpp
-		src\vfs\EnclaveVfs\enclavevfs.cpp = src\vfs\EnclaveVfs\enclavevfs.cpp
-		src\vfs\EnclaveVfs\enclave_vfsp.h = src\vfs\EnclaveVfs\enclave_vfsp.h
-		src\vfs\EnclaveVfs\pch.cpp = src\vfs\EnclaveVfs\pch.cpp
-		src\vfs\EnclaveVfs\sqlite3_os.cpp = src\vfs\EnclaveVfs\sqlite3_os.cpp
-		src\vfs\EnclaveVfs\vtl0util.cpp = src\vfs\EnclaveVfs\vtl0util.cpp
-		src\vfs\EnclaveVfs\vtl0util.h = src\vfs\EnclaveVfs\vtl0util.h
-	EndProjectSection
-EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "inc", "inc", "{31D1DCAA-F057-4B9B-B260-490E0D46C1D5}"
-	ProjectSection(SolutionItems) = preProject
-		src\vfs\inc\checks.h = src\vfs\inc\checks.h
-		src\vfs\inc\data_enclave.h = src\vfs\inc\data_enclave.h
-		src\vfs\inc\EnclaveFeatureHost.h = src\vfs\inc\EnclaveFeatureHost.h
-		src\vfs\inc\EnclaveFeatures.h = src\vfs\inc\EnclaveFeatures.h
-		src\vfs\inc\EnclaveFeatureSupport.h = src\vfs\inc\EnclaveFeatureSupport.h
-		src\vfs\inc\EnclaveHost.h = src\vfs\inc\EnclaveHost.h
-		src\vfs\inc\EnclaveServices.h = src\vfs\inc\EnclaveServices.h
-		src\vfs\inc\enclavethreading.h = src\vfs\inc\enclavethreading.h
-		src\vfs\inc\shared_enclave.h = src\vfs\inc\shared_enclave.h
-		src\vfs\inc\utils.h = src\vfs\inc\utils.h
-	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -150,81 +115,9 @@ Global
 		{EE419DF4-62DC-4827-A0FC-727709B90C06}.Release|x64.Build.0 = Release|x64
 		{EE419DF4-62DC-4827-A0FC-727709B90C06}.Release|x86.ActiveCfg = Release|x64
 		{EE419DF4-62DC-4827-A0FC-727709B90C06}.Release|x86.Build.0 = Release|x64
-		{4C3F338A-66BF-4509-A1A9-F6BBEC547CA7}.Debug|Any CPU.ActiveCfg = Debug|x64
-		{4C3F338A-66BF-4509-A1A9-F6BBEC547CA7}.Debug|Any CPU.Build.0 = Debug|x64
-		{4C3F338A-66BF-4509-A1A9-F6BBEC547CA7}.Debug|ARM64.ActiveCfg = Debug|x64
-		{4C3F338A-66BF-4509-A1A9-F6BBEC547CA7}.Debug|ARM64.Build.0 = Debug|x64
-		{4C3F338A-66BF-4509-A1A9-F6BBEC547CA7}.Debug|x64.ActiveCfg = Debug|x64
-		{4C3F338A-66BF-4509-A1A9-F6BBEC547CA7}.Debug|x64.Build.0 = Debug|x64
-		{4C3F338A-66BF-4509-A1A9-F6BBEC547CA7}.Debug|x86.ActiveCfg = Debug|Win32
-		{4C3F338A-66BF-4509-A1A9-F6BBEC547CA7}.Debug|x86.Build.0 = Debug|Win32
-		{4C3F338A-66BF-4509-A1A9-F6BBEC547CA7}.Release|Any CPU.ActiveCfg = Release|x64
-		{4C3F338A-66BF-4509-A1A9-F6BBEC547CA7}.Release|Any CPU.Build.0 = Release|x64
-		{4C3F338A-66BF-4509-A1A9-F6BBEC547CA7}.Release|ARM64.ActiveCfg = Release|x64
-		{4C3F338A-66BF-4509-A1A9-F6BBEC547CA7}.Release|ARM64.Build.0 = Release|x64
-		{4C3F338A-66BF-4509-A1A9-F6BBEC547CA7}.Release|x64.ActiveCfg = Release|x64
-		{4C3F338A-66BF-4509-A1A9-F6BBEC547CA7}.Release|x64.Build.0 = Release|x64
-		{4C3F338A-66BF-4509-A1A9-F6BBEC547CA7}.Release|x86.ActiveCfg = Release|Win32
-		{4C3F338A-66BF-4509-A1A9-F6BBEC547CA7}.Release|x86.Build.0 = Release|Win32
-		{DE3D9486-3961-4F39-B1D7-225F3FB4BB15}.Debug|Any CPU.ActiveCfg = Debug|x64
-		{DE3D9486-3961-4F39-B1D7-225F3FB4BB15}.Debug|Any CPU.Build.0 = Debug|x64
-		{DE3D9486-3961-4F39-B1D7-225F3FB4BB15}.Debug|ARM64.ActiveCfg = Debug|x64
-		{DE3D9486-3961-4F39-B1D7-225F3FB4BB15}.Debug|ARM64.Build.0 = Debug|x64
-		{DE3D9486-3961-4F39-B1D7-225F3FB4BB15}.Debug|x64.ActiveCfg = Debug|x64
-		{DE3D9486-3961-4F39-B1D7-225F3FB4BB15}.Debug|x64.Build.0 = Debug|x64
-		{DE3D9486-3961-4F39-B1D7-225F3FB4BB15}.Debug|x86.ActiveCfg = Debug|Win32
-		{DE3D9486-3961-4F39-B1D7-225F3FB4BB15}.Debug|x86.Build.0 = Debug|Win32
-		{DE3D9486-3961-4F39-B1D7-225F3FB4BB15}.Release|Any CPU.ActiveCfg = Release|x64
-		{DE3D9486-3961-4F39-B1D7-225F3FB4BB15}.Release|Any CPU.Build.0 = Release|x64
-		{DE3D9486-3961-4F39-B1D7-225F3FB4BB15}.Release|ARM64.ActiveCfg = Release|x64
-		{DE3D9486-3961-4F39-B1D7-225F3FB4BB15}.Release|ARM64.Build.0 = Release|x64
-		{DE3D9486-3961-4F39-B1D7-225F3FB4BB15}.Release|x64.ActiveCfg = Release|x64
-		{DE3D9486-3961-4F39-B1D7-225F3FB4BB15}.Release|x64.Build.0 = Release|x64
-		{DE3D9486-3961-4F39-B1D7-225F3FB4BB15}.Release|x86.ActiveCfg = Release|Win32
-		{DE3D9486-3961-4F39-B1D7-225F3FB4BB15}.Release|x86.Build.0 = Release|Win32
-		{8464DCF7-55D3-4671-B995-AFFA8BF43C2A}.Debug|Any CPU.ActiveCfg = Debug|x64
-		{8464DCF7-55D3-4671-B995-AFFA8BF43C2A}.Debug|Any CPU.Build.0 = Debug|x64
-		{8464DCF7-55D3-4671-B995-AFFA8BF43C2A}.Debug|ARM64.ActiveCfg = Debug|x64
-		{8464DCF7-55D3-4671-B995-AFFA8BF43C2A}.Debug|ARM64.Build.0 = Debug|x64
-		{8464DCF7-55D3-4671-B995-AFFA8BF43C2A}.Debug|x64.ActiveCfg = Debug|x64
-		{8464DCF7-55D3-4671-B995-AFFA8BF43C2A}.Debug|x64.Build.0 = Debug|x64
-		{8464DCF7-55D3-4671-B995-AFFA8BF43C2A}.Debug|x86.ActiveCfg = Debug|Win32
-		{8464DCF7-55D3-4671-B995-AFFA8BF43C2A}.Debug|x86.Build.0 = Debug|Win32
-		{8464DCF7-55D3-4671-B995-AFFA8BF43C2A}.Release|Any CPU.ActiveCfg = Release|x64
-		{8464DCF7-55D3-4671-B995-AFFA8BF43C2A}.Release|Any CPU.Build.0 = Release|x64
-		{8464DCF7-55D3-4671-B995-AFFA8BF43C2A}.Release|ARM64.ActiveCfg = Release|x64
-		{8464DCF7-55D3-4671-B995-AFFA8BF43C2A}.Release|ARM64.Build.0 = Release|x64
-		{8464DCF7-55D3-4671-B995-AFFA8BF43C2A}.Release|x64.ActiveCfg = Release|x64
-		{8464DCF7-55D3-4671-B995-AFFA8BF43C2A}.Release|x64.Build.0 = Release|x64
-		{8464DCF7-55D3-4671-B995-AFFA8BF43C2A}.Release|x86.ActiveCfg = Release|Win32
-		{8464DCF7-55D3-4671-B995-AFFA8BF43C2A}.Release|x86.Build.0 = Release|Win32
-		{14F11E4A-88D3-40AA-830A-22897FCD842D}.Debug|Any CPU.ActiveCfg = Debug|x64
-		{14F11E4A-88D3-40AA-830A-22897FCD842D}.Debug|Any CPU.Build.0 = Debug|x64
-		{14F11E4A-88D3-40AA-830A-22897FCD842D}.Debug|ARM64.ActiveCfg = Debug|x64
-		{14F11E4A-88D3-40AA-830A-22897FCD842D}.Debug|ARM64.Build.0 = Debug|x64
-		{14F11E4A-88D3-40AA-830A-22897FCD842D}.Debug|x64.ActiveCfg = Debug|x64
-		{14F11E4A-88D3-40AA-830A-22897FCD842D}.Debug|x64.Build.0 = Debug|x64
-		{14F11E4A-88D3-40AA-830A-22897FCD842D}.Debug|x86.ActiveCfg = Debug|Win32
-		{14F11E4A-88D3-40AA-830A-22897FCD842D}.Debug|x86.Build.0 = Debug|Win32
-		{14F11E4A-88D3-40AA-830A-22897FCD842D}.Release|Any CPU.ActiveCfg = Release|x64
-		{14F11E4A-88D3-40AA-830A-22897FCD842D}.Release|Any CPU.Build.0 = Release|x64
-		{14F11E4A-88D3-40AA-830A-22897FCD842D}.Release|ARM64.ActiveCfg = Release|x64
-		{14F11E4A-88D3-40AA-830A-22897FCD842D}.Release|ARM64.Build.0 = Release|x64
-		{14F11E4A-88D3-40AA-830A-22897FCD842D}.Release|x64.ActiveCfg = Release|x64
-		{14F11E4A-88D3-40AA-830A-22897FCD842D}.Release|x64.Build.0 = Release|x64
-		{14F11E4A-88D3-40AA-830A-22897FCD842D}.Release|x86.ActiveCfg = Release|Win32
-		{14F11E4A-88D3-40AA-830A-22897FCD842D}.Release|x86.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
-	EndGlobalSection
-	GlobalSection(NestedProjects) = preSolution
-		{4C3F338A-66BF-4509-A1A9-F6BBEC547CA7} = {6D307ABE-458E-47B3-B0B9-EAD45838C6E0}
-		{DE3D9486-3961-4F39-B1D7-225F3FB4BB15} = {6D307ABE-458E-47B3-B0B9-EAD45838C6E0}
-		{8464DCF7-55D3-4671-B995-AFFA8BF43C2A} = {6D307ABE-458E-47B3-B0B9-EAD45838C6E0}
-		{14F11E4A-88D3-40AA-830A-22897FCD842D} = {6D307ABE-458E-47B3-B0B9-EAD45838C6E0}
-		{4F411663-92FF-4CB4-86FC-CBCDE24E2CA6} = {6D307ABE-458E-47B3-B0B9-EAD45838C6E0}
-		{31D1DCAA-F057-4B9B-B260-490E0D46C1D5} = {6D307ABE-458E-47B3-B0B9-EAD45838C6E0}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {166D23FF-1362-43F2-BEE7-58FDCDB133DF}
@@ -232,11 +125,9 @@ Global
 	GlobalSection(SharedMSBuildProjectFiles) = preSolution
 		src\veil_any_inc\veil_any_inc.vcxitems*{323433e4-11d6-4b5b-93e4-04504e2ef0e1}*SharedItemsImports = 4
 		samples\sample_any_inc\sample_any_inc.vcxitems*{471adf22-988a-499b-bd29-b51f48c940a6}*SharedItemsImports = 9
-		src\vfs\EnclaveVfs\EnclaveVfs_shared_items\EnclaveVfs_shared_items.vcxitems*{4c3f338a-66bf-4509-a1a9-f6bbec547ca7}*SharedItemsImports = 4
 		samples\sample_any_inc\sample_any_inc.vcxitems*{4f3b74f2-8c5d-449e-9841-ed5fcf6372de}*SharedItemsImports = 4
 		src\veil_any_inc\veil_any_inc.vcxitems*{4f3b74f2-8c5d-449e-9841-ed5fcf6372de}*SharedItemsImports = 4
 		src\veil_any_inc\veil_any_inc.vcxitems*{ab8c652a-8847-43c0-8f56-386102a43c4d}*SharedItemsImports = 9
-		src\vfs\EnclaveVfs\EnclaveVfs_shared_items\EnclaveVfs_shared_items.vcxitems*{de3d9486-3961-4f39-b1d7-225f3fb4bb15}*SharedItemsImports = 4
 		src\veil_any_inc\veil_any_inc.vcxitems*{ee419df4-62dc-4827-a0fc-727709b90c06}*SharedItemsImports = 4
 		samples\sample_any_inc\sample_any_inc.vcxitems*{fe406a85-1fc5-43dd-b4bb-20b024407b83}*SharedItemsImports = 4
 		src\veil_any_inc\veil_any_inc.vcxitems*{fe406a85-1fc5-43dd-b4bb-20b024407b83}*SharedItemsImports = 4
