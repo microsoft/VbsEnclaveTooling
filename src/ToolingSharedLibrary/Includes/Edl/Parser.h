@@ -69,7 +69,7 @@ namespace EdlProcessor
         Token PeekAtNextToken();
         Edl ParseBody();
         Function ParseFunctionDeclaration();
-        std::shared_ptr<EdlTypeInfo> ParseDeclarationTypeInfo();
+        EdlTypeInfo ParseDeclarationTypeInfo();
         ArrayDimensions ParseArrayDimensions();
 
         std::optional<ParsedAttributeInfo> ParseAttributes(
@@ -87,7 +87,7 @@ namespace EdlProcessor
         std::uint32_t m_cur_line {};
         std::uint32_t m_cur_column {};
 
-        std::unordered_map<std::string, std::vector<std::shared_ptr<EdlTypeInfo>>> m_unresolved_type_names {};
+        std::unordered_map<std::string, std::vector<EdlTypeInfo>> m_unresolved_type_names {};
         std::unordered_map<std::string, std::shared_ptr<DeveloperType>> m_developer_types;
         std::unordered_map<std::string, Function> m_trusted_functions;
         std::unordered_map<std::string, Function> m_untrusted_functions;

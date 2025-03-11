@@ -9,7 +9,9 @@
         <VbsEnclaveEdlPath></VbsEnclaveEdlPath>
         <VbsEnclaveCodeGenLanguage Condition="'$(VbsEnclaveCodeGenLanguage)' == ''">C++</VbsEnclaveCodeGenLanguage>
         <VbsEnclaveErrorHandling Condition="'$(VbsEnclaveErrorHandling)' == ''">ErrorCode</VbsEnclaveErrorHandling>
-        <VirtualTrustLayer Condition="'$(VirtualTrustLayer)' == ''">HostApp</VirtualTrustLayer>
+        <VbsEnclaveVirtualTrustLayer Condition="'$(VbsEnclaveVirtualTrustLayer)' == ''">HostApp</VbsEnclaveVirtualTrustLayer>
+        <VbsEnclaveVtl0ClassName></VbsEnclaveVtl0ClassName>
+        <VbsEnclaveNamespace></VbsEnclaveNamespace>
         <!-- End -->
     </PropertyGroup>
 </Project>

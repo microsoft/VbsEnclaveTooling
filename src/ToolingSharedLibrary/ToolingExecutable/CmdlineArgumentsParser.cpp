@@ -28,7 +28,7 @@ bool CmdlineArgumentsParser::ParseArguments(int argc, char* argv[])
         return false;
     }
 
-    uint32_t non_help_args_found = 0U;
+    uint32_t args_found = 0U;
     for(int i = 1; i < argc; ++i)
     {
         std::string arg = argv[i];
@@ -42,22 +42,37 @@ bool CmdlineArgumentsParser::ParseArguments(int argc, char* argv[])
         else if (arg == "--Language")
         {
             CHECK_SUCCESS(GetSupportedLanguageForCodeGen(++i, argv, argc, m_supported_language));
-            non_help_args_found++;
+            args_found++;
         }
         else if (arg == "--EdlPath")
         {
             CHECK_SUCCESS(GetEdlPathFromArgs(++i, argv, argc, m_edl_path));
-            non_help_args_found++;
+            args_found++;
         }
         else if (arg == "--OutputDirectory")
         {
             CHECK_SUCCESS(GetPathToOutputDirectoryFromArgs(++i, argv, argc, m_out_directory));
-            non_help_args_found++;
+            args_found++;
         }
         else if (arg == "--ErrorHandling")
         {
             CHECK_SUCCESS(GetErrorHandlingFromArg(++i, argv, argc, m_error_handling_kind));
-            non_help_args_found++;
+            args_found++;
+        }
+        else if (arg == "--VirtualTrustLayer")
+        {
+            CHECK_SUCCESS(GetVirtualTrustLayerFromArg(++i, argv, argc, m_virtual_trust_layer_kind));
+            args_found++;
+        }
+        else if (arg == "--Namespace")
+        {
+            m_generated_namespace_name = argv[++i];
+            args_found++;
+        }
+        else if (arg == "--Vtl0ClassName")
+        {
+            m_vtl0_class_name = argv[++i];
+            args_found++;
         }
         else
         {
@@ -66,12 +81,12 @@ bool CmdlineArgumentsParser::ParseArguments(int argc, char* argv[])
         }
     }
 
-    if (non_help_args_found != m_non_help_expected_Arg_count)
+    if (args_found < m_required_args)
     {
         PrintError(
             ErrorId::IncorrectNonHelpArgsProvided,
-            m_non_help_expected_Arg_count,
-            non_help_args_found);
+            m_required_args,
+            args_found);
 
         return false;
     }

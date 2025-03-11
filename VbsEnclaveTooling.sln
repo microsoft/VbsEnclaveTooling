@@ -4,6 +4,9 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 VisualStudioVersion = 17.9.34902.65
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ToolingNuget", "src\ToolingNuget\ToolingNuget.vcxproj", "{0900AF8B-EE9B-4208-97A5-225BDBAD01BA}"
+	ProjectSection(ProjectDependencies) = postProject
+		{26116633-98EC-4EAC-859C-139D020D10C9} = {26116633-98EC-4EAC-859C-139D020D10C9}
+	EndProjectSection
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{1542CC01-B383-491A-96C3-36FCAB8791A2}"
 	ProjectSection(SolutionItems) = preProject
@@ -35,26 +38,29 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "docs", "docs", "{890A5ACE-4
 	ProjectSection(SolutionItems) = preProject
 		docs\CodeGeneration.md = docs\CodeGeneration.md
 		docs\Edl.md = docs\Edl.md
+		docs\VbsEnclaveToolingAbi.md = docs\VbsEnclaveToolingAbi.md
 	EndProjectSection
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "TestEnclave", "tests\CodeGenerationTests\TestEnclave\TestEnclave.vcxproj", "{F4A39F44-E333-48A9-B793-B97366FE00AF}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "TestEnclave", "tests\EnclaveTests\TestEnclave\TestEnclave.vcxproj", "{F4A39F44-E333-48A9-B793-B97366FE00AF}"
 	ProjectSection(ProjectDependencies) = postProject
 		{0900AF8B-EE9B-4208-97A5-225BDBAD01BA} = {0900AF8B-EE9B-4208-97A5-225BDBAD01BA}
 	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "veil_enclave_cpp_support_lib", "Common\veil_enclave_cpp_support_lib\veil_enclave_cpp_support_lib.vcxproj", "{26116633-98EC-4EAC-859C-139D020D10C9}"
 EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "CodeGenerationTesting", "CodeGenerationTesting", "{2F6D61DA-0D52-4B60-9FB6-8372E7B2089F}"
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "EnclaveTests", "EnclaveTests", "{2F6D61DA-0D52-4B60-9FB6-8372E7B2089F}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "TestHostApp", "tests\CodeGenerationTests\TestHostApp\TestHostApp.vcxproj", "{7B34DEC6-2C34-4C89-B9E1-3EBFF0118DAF}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "TestHostApp", "tests\EnclaveTests\TestHostApp\TestHostApp.vcxproj", "{7B34DEC6-2C34-4C89-B9E1-3EBFF0118DAF}"
 	ProjectSection(ProjectDependencies) = postProject
 		{F4A39F44-E333-48A9-B793-B97366FE00AF} = {F4A39F44-E333-48A9-B793-B97366FE00AF}
 	EndProjectSection
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "SharedFiles", "SharedFiles", "{00ADD4B8-7C9D-407F-9D1F-91DEEE0C3A7D}"
 	ProjectSection(SolutionItems) = preProject
-		tests\CodeGenerationTests\CodeGenTestFunctions.edl = tests\CodeGenerationTests\CodeGenTestFunctions.edl
-		tests\CodeGenerationTests\TestEnclaveAndHostAppShared.targets = tests\CodeGenerationTests\TestEnclaveAndHostAppShared.targets
+		tests\EnclaveTests\CodeGenTestFunctions.edl = tests\EnclaveTests\CodeGenTestFunctions.edl
+		tests\EnclaveTests\README.md = tests\EnclaveTests\README.md
+		tests\EnclaveTests\run-enclave-tests.ps1 = tests\EnclaveTests\run-enclave-tests.ps1
+		tests\EnclaveTests\TestEnclaveAndHostAppShared.targets = tests\EnclaveTests\TestEnclaveAndHostAppShared.targets
 	EndProjectSection
 EndProject
 Global
@@ -117,6 +123,7 @@ Global
 		{7B34DEC6-2C34-4C89-B9E1-3EBFF0118DAF}.Debug|ARM64.Build.0 = Debug|x64
 		{7B34DEC6-2C34-4C89-B9E1-3EBFF0118DAF}.Debug|x64.ActiveCfg = Debug|x64
 		{7B34DEC6-2C34-4C89-B9E1-3EBFF0118DAF}.Debug|x64.Build.0 = Debug|x64
+		{7B34DEC6-2C34-4C89-B9E1-3EBFF0118DAF}.Debug|x64.Deploy.0 = Debug|x64
 		{7B34DEC6-2C34-4C89-B9E1-3EBFF0118DAF}.Release|ARM64.ActiveCfg = Release|x64
 		{7B34DEC6-2C34-4C89-B9E1-3EBFF0118DAF}.Release|ARM64.Build.0 = Release|x64
 		{7B34DEC6-2C34-4C89-B9E1-3EBFF0118DAF}.Release|x64.ActiveCfg = Release|x64

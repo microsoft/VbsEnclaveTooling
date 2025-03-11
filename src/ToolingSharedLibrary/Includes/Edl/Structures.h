@@ -126,6 +126,8 @@ namespace EdlProcessor
         Ptr,
         SizeT,
         String,
+        WString,
+        HRESULT,
     };
 
     struct ParsedAttributeInfo
@@ -135,8 +137,14 @@ namespace EdlProcessor
             return !m_size_info.IsEmpty() || !m_count_info.IsEmpty();
         }
 
+        bool IsInOutOrOutParameter() const
+        {
+            return m_in_and_out_present || m_out_present;
+        }
+
         bool m_in_present{};
         bool m_out_present{};
+        bool m_in_and_out_present{};
 
         Token m_size_info = Token::CreateEmptyToken();
         Token m_count_info = Token::CreateEmptyToken();
@@ -144,6 +152,8 @@ namespace EdlProcessor
 
     struct EdlTypeInfo
     {
+        EdlTypeInfo() = default;
+
         EdlTypeInfo(const std::string& name)
             : m_name(name)
         {
@@ -155,9 +165,7 @@ namespace EdlProcessor
         }
         EdlTypeKind m_type_kind{};
 
-        // Extended type is mostly reserved for pointers e.g char * will have
-        // an EdlTypeInfo type name of char and and extended type name of *
-        std::shared_ptr<EdlTypeInfo> m_extended_type_info{};
+        bool is_pointer{};
         std::string m_name{};
     };
 
@@ -181,30 +189,42 @@ namespace EdlProcessor
 
         bool HasPointer() const
         {
-            if (!m_edl_type_info)
-            {
-                return false;
-            }
+            return m_edl_type_info.is_pointer;
+        }
 
-            auto extended_info = m_edl_type_info->m_extended_type_info;
-            return extended_info && extended_info->m_type_kind == EdlTypeKind::Ptr;
+        bool IsInOutOrOutParameter() const
+        {
+            return IsInOutParameter() || IsOutParameter();
+        }
+
+        bool IsInOutParameter() const 
+        {
+            return HasAttributesAndIsForFunction() && m_attribute_info.value().m_in_and_out_present;
+        }
+
+        bool IsOutParameter() const
+        {
+            return HasAttributesAndIsForFunction() && m_attribute_info.value().m_out_present;
+        }
+
+        bool IsOutParameterOnly() const
+        {
+            return IsOutParameter() && !IsInOutParameter();
+        }
+
+        bool HasAttributesAndIsForFunction() const
+        {
+            return m_attribute_info && m_parent_kind == DeclarationParentKind::Function;
         }
 
         std::string GenerateTypeInfoString()
         {
-            if (!m_edl_type_info)
-            {
-                return "";
-            }
-
-            std::string info_string = m_edl_type_info->m_name;
-            auto type_info = m_edl_type_info->m_extended_type_info;
+            std::string info_string = m_edl_type_info.m_name;
 
             // Add pointers
-            while (type_info)
+            if (m_edl_type_info.is_pointer)
             {
-                info_string += type_info->m_name;
-                type_info = type_info->m_extended_type_info;
+                info_string += "*";
             }
 
             // Add array dimensions
@@ -217,7 +237,7 @@ namespace EdlProcessor
         }
 
         std::string m_name{};
-        std::shared_ptr<EdlTypeInfo> m_edl_type_info{};
+        EdlTypeInfo m_edl_type_info{};
         ArrayDimensions m_array_dimensions{};
         DeclarationParentKind m_parent_kind{};
         std::optional<ParsedAttributeInfo> m_attribute_info{};
@@ -275,7 +295,7 @@ namespace EdlProcessor
             {
                 auto info_string = m_parameters[i].GenerateTypeInfoString();
 
-                if (i + 1 < m_parameters.size())
+                if (i + 1U < m_parameters.size())
                 {
                     parameter_string += std::format("{},", info_string);
                 }
@@ -291,7 +311,7 @@ namespace EdlProcessor
         }
 
         std::string m_name{};
-        std::shared_ptr<EdlTypeInfo> m_return_info{};
+        EdlTypeInfo m_return_info{};
         std::vector<Declaration> m_parameters{};
     private:
         std::string m_signature{};

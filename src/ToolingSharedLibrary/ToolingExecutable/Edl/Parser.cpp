@@ -135,7 +135,10 @@ namespace EdlProcessor
         edl.m_name = m_file_name.generic_string();
         ThrowIfExpectedTokenNotNext(RIGHT_CURLY_BRACKET);
 
-        return edl;
+        status = std::format("Completed parsing {} successfully", m_file_name.generic_string());
+        PrintStatus(Status::Info, status);
+
+        return std::move(edl);
     }
 
     Edl EdlParser::ParseBody()
@@ -189,7 +192,7 @@ namespace EdlProcessor
             // types if the type was defined after we first saw it.
             for (auto& type_info : m_unresolved_type_names.at(new_type->m_name))
             {
-                type_info->m_type_kind = new_type->m_type_kind;;
+                type_info.m_type_kind = new_type->m_type_kind;;
             }
 
             m_unresolved_type_names.erase(new_type->m_name);
@@ -408,6 +411,21 @@ namespace EdlProcessor
         ThrowIfTokenNotIdentifier(function_name_token, ErrorId::EdlFunctionIdentifierNotFound);
         function.m_name = function_name_token.ToString();
 
+        // Return of pointers aren't allowed. Only primitive types and structs as values. Pointers
+        // in structs must have a an associated size/count attribute, so by preventing the return of pointers directly
+        // developers must enclose them in structs. This way the abi layer can properly copy the underlying memory to 
+        // the appropriate virtual trust layer as it will know the size of the data the pointer points to.
+        auto return_kind = function.m_return_info.m_type_kind;
+        if (function.m_return_info.is_pointer)
+        {
+            throw EdlAnalysisException(
+                ErrorId::EdlReturnValuesCannotBePointers,
+                m_file_name,
+                m_cur_line,
+                m_cur_column,
+                function.m_name);
+        }
+
         ThrowIfTypeNameIdentifierIsReserved(function.m_name);
         ThrowIfExpectedTokenNotNext(LEFT_ROUND_BRACKET);
 
@@ -553,6 +571,8 @@ namespace EdlProcessor
                 attributeInfo.m_out_present = true;
             }
 
+            attributeInfo.m_in_and_out_present = attributeInfo.m_in_present && attributeInfo.m_out_present;
+
             // Check that we aren't at the end of the attributes.
             // If not expect a comma and move the position to the token.
             if (PeekAtCurrentToken() != RIGHT_SQUARE_BRACKET)
@@ -566,27 +586,27 @@ namespace EdlProcessor
         return attributeInfo;
     }
 
-    std::shared_ptr<EdlTypeInfo> EdlParser::ParseDeclarationTypeInfo()
+    EdlTypeInfo EdlParser::ParseDeclarationTypeInfo()
     {
         Token type_token = GetCurrentTokenAndMoveToNextToken();
         ThrowIfTokenNotIdentifier(type_token, ErrorId::EdlIdentifierNameNotFound);
         auto type_name = type_token.ToString();
-        auto type_info = std::make_shared<EdlTypeInfo>(type_name);
+        auto type_info = EdlTypeInfo(type_name);
 
         // Check if keyword type is a type we support out of the box by default.
         if (c_string_to_edltype_map.contains(type_name))
         {
-            type_info->m_type_kind = c_string_to_edltype_map.at(type_name);
+            type_info.m_type_kind = c_string_to_edltype_map.at(type_name);
         }
         else if (m_developer_types.contains(type_name))
         {
             auto& developer_type = m_developer_types.at(type_name);
-            type_info->m_type_kind = developer_type->m_type_kind;
+            type_info.m_type_kind = developer_type->m_type_kind;
         }
         else
         {
             // Custom type that isn't defined yet.
-            type_info->m_type_kind = EdlTypeKind::Unknown;
+            type_info.m_type_kind = EdlTypeKind::Unknown;
             m_unresolved_type_names[type_name].push_back(type_info);
         }
 
@@ -594,8 +614,7 @@ namespace EdlProcessor
         if (PeekAtCurrentToken() == ASTERISK)
         {
             Token pointer_token = GetCurrentTokenAndMoveToNextToken();
-            auto ptr_name = c_edlTypes_to_string_map.at(EdlTypeKind::Ptr);
-            type_info->m_extended_type_info = std::make_shared<EdlTypeInfo>(ptr_name, EdlTypeKind::Ptr);
+            type_info.is_pointer = true;
 
             // Pointers to pointers not supported.
             if (PeekAtCurrentToken() == ASTERISK)
@@ -659,21 +678,8 @@ namespace EdlProcessor
         return dimensions;
     }
 
-    bool IsVoidOrCharacterPointer(const Declaration& declaration)
-    {
-        auto type = declaration.m_edl_type_info->m_type_kind;
-        bool void_or_character = 
-            type == EdlTypeKind::Void || 
-            type == EdlTypeKind::Char ||
-            type == EdlTypeKind::WChar;
-
-        return void_or_character && declaration.HasPointer();
-    }
-
     void EdlParser::ValidatePointers(const Declaration& declaration)
     {
-        auto type_info = declaration.m_edl_type_info->m_extended_type_info;
-
         // Only proceed if the extended type is a pointer.
         if (!declaration.HasPointer())
         {
@@ -685,29 +691,43 @@ namespace EdlProcessor
                declaration.m_name,
                m_cur_line,
                m_cur_column,
-               declaration.m_edl_type_info->m_name);
-
+               declaration.m_edl_type_info.m_name);
+        
+        bool is_void_ptr = declaration.m_edl_type_info.m_type_kind == EdlTypeKind::Void;
+        
         if (!declaration.m_attribute_info)
         {
-            if (IsVoidOrCharacterPointer(declaration))
+            // Disallow void*'s that do not contain a size attribute. For all other pointer
+            // types that don't contain an attribute, the code gen layer will copy sizeof(type)
+            // when copying the pointer between virtual trust layers.
+            if (is_void_ptr)
             {
                 throw EdlAnalysisException(
-                ErrorId::EdlVoidAndCharPointersSizeMustBeAnnotated,
-                m_file_name,
-                m_cur_line,
-                m_cur_column);
+                    ErrorId::EdlPointerToVoidMustBeAnnotated,
+                    m_file_name,
+                    m_cur_line,
+                    m_cur_column);
             }
 
-            PrintStatus(Status::Warning, message);
+            PrintStatus(Status::Info, message);
             return;
         }
 
         // Make sure pointer declarations are annotated with a size
         auto attribute_info = declaration.m_attribute_info.value();
 
+        if (is_void_ptr && attribute_info.m_size_info.IsEmpty())
+        {
+            throw EdlAnalysisException(
+               ErrorId::EdlPointerToVoidMustBeAnnotated,
+               m_file_name,
+               m_cur_line,
+               m_cur_column);
+        }
+
         if (!attribute_info.IsSizeOrCountPresent())
         {
-            PrintStatus(Status::Warning, message);
+            PrintStatus(Status::Info, message);
         }
 
         bool in_or_out_present = (attribute_info.m_in_present) || (attribute_info.m_out_present);
@@ -755,7 +775,7 @@ namespace EdlProcessor
                 m_file_name,
                 m_cur_line,
                 m_cur_column,
-                declaration.m_edl_type_info->m_name);
+                declaration.m_edl_type_info.m_name);
         }
     }
 
@@ -885,7 +905,7 @@ namespace EdlProcessor
                         parent_name);
                 }
 
-                EdlTypeKind type = declaration_found.value().m_edl_type_info->m_type_kind;
+                EdlTypeKind type = declaration_found.value().m_edl_type_info.m_type_kind;
 
                 switch (type)
                 {

@@ -1,4 +1,4 @@
-<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<Project InitialTargets="VbsEnclaveCodeGeneration;AddGeneratedFilesToBuild" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
     <PropertyGroup>
         <!-- 
             When other projects include a nuget package (e.g this one) to their vs project it is placed in <ProjectRoot>\packages\<name of nuget package>.
@@ -9,44 +9,53 @@
         <VbsEnclaveExeFilePath>$(VbsEnclavePackageDir)bin\$(Platform)\vbsenclavetooling.exe</VbsEnclaveExeFilePath>
         <VbsEnclavePackageEnclaveAbiPath>$(VbsEnclavePackageDir)src\VbsEnclaveABI</VbsEnclavePackageEnclaveAbiPath>
         <VbsEnclaveDeveloperEdlFileName>$([System.IO.Path]::GetFileName('$(VbsEnclaveEdlPath)'))</VbsEnclaveDeveloperEdlFileName>
-        <VbsEnclaveGeneratedFilesDir>$(ProjectDir)</VbsEnclaveGeneratedFilesDir>
+        <VbsEnclaveGeneratedFilesDir>$(ProjectDir)Generated Files</VbsEnclaveGeneratedFilesDir>
         <VbsEnclaveCppSupportLib>$(VbsEnclavePackageDir)lib\native\$(Platform)\veil_enclave_cpp_support_lib.lib</VbsEnclaveCppSupportLib>
     </PropertyGroup>
 
     <!-- The below targets/Items are ran at build time for any project that consumes the VbsEnclaveTooling nuget package. -->
 
     <!-- Only run the VbsEnclaveCodeGeneration target if the developer passed in a value for <VbsEnclaveEdlPath> -->
-    <Target 
-        Name="VbsEnclaveCodeGeneration" 
-        BeforeTargets="Build"
+    <Target
+        Name="VbsEnclaveCodeGeneration"
         Condition="'$(VbsEnclaveEdlPath)' != ''">
         <Message Text="Generating enclave code using '$(VbsEnclaveCodeGenLanguage)'" Importance="high" />
-            
         <!-- Ensure that the Edl file exists -->
         <Error Condition="!Exists('$(VbsEnclaveEdlPath)')" Text="The specified .edl file '$(VbsEnclaveEdlPath)' does not exist. Make sure the path to the .edl file is valid and inside the 'VbsEnclaveEdlPath' attribute in the packages .targets file." />
         <Error Condition="!Exists('$(VbsEnclaveExeFilePath)')" Text="Couldn't find tooling executable file '$(VbsEnclaveExeFilePath)'. Make sure the path to the executable file is valid and inside the 'VbsEnclaveExeFilePath' attribute in the packages .targets file." />
-  
+
         <!-- Generate the codegen files using the vbsenclavetooling-->
-        <PropertyGroup> 
-        <VbsEnclaveToolingExecutionCommand>
-            "$(VbsEnclaveExeFilePath)" --Language "$(VbsEnclaveCodeGenLanguage)" --EdlPath "$(VbsEnclaveEdlPath)" --ErrorHandling "$(VbsEnclaveErrorHandling)" --OutputDirectory $(VbsEnclaveGeneratedFilesDir)
-        </VbsEnclaveToolingExecutionCommand>
+        <PropertyGroup>
+            <VbsEnclaveToolingExecutionCommand>
+                "$(VbsEnclaveExeFilePath)" --Language "$(VbsEnclaveCodeGenLanguage)" --EdlPath "$(VbsEnclaveEdlPath)" --ErrorHandling "$(VbsEnclaveErrorHandling)" --OutputDirectory "$(VbsEnclaveGeneratedFilesDir)" --VirtualTrustLayer "$(VbsEnclaveVirtualTrustLayer)" --Vtl0ClassName "$(VbsEnclaveVtl0ClassName)" --Namespace "$(VbsEnclaveNamespace)"
+            </VbsEnclaveToolingExecutionCommand>
         </PropertyGroup>
 
         <Exec Command="$(VbsEnclaveToolingExecutionCommand)" />
         <Message Text="Generated '$(VbsEnclaveCodeGenLanguage)' code in output directory: '$(VbsEnclaveGeneratedFilesDir)'" Importance="high" />
     </Target>
 
-  
+
     <ItemDefinitionGroup Condition="Exists('$(VbsEnclavePackageEnclaveAbiPath)')">
         <!-- Add the enclave ABI headers and also the generated headers to the consuming projects include path-->
         <ClCompile>
             <AdditionalIncludeDirectories>$(VbsEnclavePackageDir)src\;$(VbsEnclaveGeneratedFilesDir);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
         </ClCompile>
-        
+
         <!-- Make sure our cpp support static library is added as an enclaves linker dependency -->
-        <Link Condition="$(VirtualTrustLayer) == 'Enclave' ">
+        <Link Condition="$(VbsEnclaveVirtualTrustLayer) == 'Enclave' ">
             <AdditionalDependencies>$(VbsEnclaveCppSupportLib);%(AdditionalDependencies)</AdditionalDependencies>
+            <ModuleDefinitionFile>$(VbsEnclaveGeneratedFilesDir)\VbsEnclave\Enclave\vbsenclave.def</ModuleDefinitionFile>
         </Link>
     </ItemDefinitionGroup>
+
+    <Target Name="AddGeneratedFilesToBuild">
+        <!-- Make sure the generated cpp files are added to build without the developer needing to explicitly add them to their project. -->
+        <ItemGroup>
+            <_WildCardClCompileFor_Cpp Include="$(VbsEnclaveGeneratedFilesDir)\VbsEnclave\**\*.cpp" />
+            <_WildCardClCompileFor_Cpp_h Include="$(VbsEnclaveGeneratedFilesDir)\VbsEnclave\**\*.h" />
+            <ClCompile Include="@(_WildCardClCompileFor_Cpp)"  />
+            <ClCompile Include="@(_WildCardClCompileFor_Cpp_h)"  />
+        </ItemGroup>
+    </Target>
 </Project>

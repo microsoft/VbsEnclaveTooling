@@ -68,11 +68,13 @@ namespace EdlProcessor
         { EdlTypeKind::WChar, "wchar_t" },
         { EdlTypeKind::Void, "void" },
         { EdlTypeKind::Enum, "enum" },
+        { EdlTypeKind::HRESULT, "HRESULT" },
         { EdlTypeKind::AnonymousEnum, EDL_ANONYMOUS_ENUM_KEYWORD},
         { EdlTypeKind::Struct, "struct" },
         { EdlTypeKind::Ptr, "*" },
         { EdlTypeKind::SizeT, "size_t" },
         { EdlTypeKind::String, "string" },
+        { EdlTypeKind::WString, "wstring" },
     };
 
     static const std::unordered_map<std::string, EdlTypeKind> c_string_to_edltype_map =
@@ -91,10 +93,12 @@ namespace EdlProcessor
         { "uint64_t", EdlTypeKind::UInt64 },
         { "wchar_t", EdlTypeKind::WChar },
         { "void", EdlTypeKind::Void },
+        { "HRESULT", EdlTypeKind::HRESULT },
         { "enum", EdlTypeKind::Enum },
         { EDL_ANONYMOUS_ENUM_KEYWORD, EdlTypeKind::AnonymousEnum },
         { "struct", EdlTypeKind::Struct },
         { "string", EdlTypeKind::String },
+        { "wstring", EdlTypeKind::WString },
         { "*", EdlTypeKind::Ptr },
         { "size_t", EdlTypeKind::SizeT },
     };
