@@ -31,9 +31,18 @@
     <file src="Microsoft.Windows.VbsEnclaveTooling.props" target="build\native"/>
     <file src="Microsoft.Windows.VbsEnclaveTooling.targets" target="build\native"/>
     <file src="..\..\ToolingSharedLibrary\Includes\VbsEnclaveABI\**" target="src\VbsEnclaveABI\" />
+    <file src="..\..\VbsEnclaveSDK\src\veil_enclave_lib\**\*.cpp" target="src\VbsEnclaveSDK\veil_enclave" />
+    <file src="..\..\VbsEnclaveSDK\src\veil_host_lib\**\*.cpp" target="src\VbsEnclaveSDK\veil_host" />
+    <file src="..\..\VbsEnclaveSDK\src\veil_enclave_lib\**\*.h" target="src\VbsEnclaveSDK\veil_enclave" />
+    <file src="..\..\VbsEnclaveSDK\src\veil_host_lib\**\*.h" target="src\VbsEnclaveSDK\veil_host" />
+    <file src="..\..\VbsEnclaveSDK\src\veil_any_inc\**" target="src\VbsEnclaveSDK\veil_any_inc" />
     <file src="..\..\..\Common\veil_enclave_wil_inc\**" target="src\" />
     <file src="$vbsenclavetooling_cpp_support_x64_lib$" target="lib\native\x64"/>
     <file src="$vbsenclavetooling_cpp_support_arm64_lib$" target="lib\native\arm64"/>
+    <file src="$vbsenclavetooling_enclave_x64_lib$" target="lib\native\x64"/>
+    <file src="$vbsenclavetooling_enclave_arm64_lib$" target="lib\native\arm64"/>
+    <file src="$vbsenclavetooling_host_x64_lib$" target="lib\native\x64"/>
+    <file src="$vbsenclavetooling_host_arm64_lib$" target="lib\native\arm64"/>
     <file src="..\..\..\README.md"/>
   </files>
 </package>

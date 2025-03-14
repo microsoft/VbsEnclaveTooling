@@ -116,6 +116,12 @@ Try
 
         $cppSupportLibPath = "$BaseRepositoryDirectory\_build\$platform\$configuration\veil_enclave_cpp_support_lib.lib"
         $nugetPackProperties += "vbsenclavetooling_cpp_support_$platform"+"_lib=$cppSupportLibPath;"
+        $veilEnclaveLibPath = "$BaseRepositoryDirectory\_build\$platform\$configuration\veil_enclave_lib.lib"
+        $nugetPackProperties += "vbsenclavetooling_enclave_$platform"+"_lib=$veilEnclaveLibPath;"
+        $veilHostLibPath = "$BaseRepositoryDirectory\_build\$platform\$configuration\veil_host_lib.lib"
+        $nugetPackProperties += "vbsenclavetooling_host_$platform"+"_lib=$veilHostLibPath;"
+        $veilAnyIncPath = "$BaseRepositoryDirectory\_build\$platform\$configuration\veil_any_inc"
+        $nugetPackProperties += "vbsenclavetooling_any_$platform"+"_inc=$veilAnyIncPath;"
       }
     }
 

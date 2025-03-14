@@ -11,6 +11,9 @@
         <VbsEnclaveDeveloperEdlFileName>$([System.IO.Path]::GetFileName('$(VbsEnclaveEdlPath)'))</VbsEnclaveDeveloperEdlFileName>
         <VbsEnclaveGeneratedFilesDir>$(ProjectDir)Generated Files</VbsEnclaveGeneratedFilesDir>
         <VbsEnclaveCppSupportLib>$(VbsEnclavePackageDir)lib\native\$(Platform)\veil_enclave_cpp_support_lib.lib</VbsEnclaveCppSupportLib>
+        <VbsEnclaveSDKSrc>$(VbsEnclavePackageDir)src\VbsEnclaveSDK</VbsEnclaveSDKSrc>
+        <VbsEnclaveNugetPackEnclaveLibPath>$(VbsEnclavePackageDir)lib\native\$(Platform)\veil_enclave_lib.lib</VbsEnclaveNugetPackEnclaveLibPath>
+        <VbsEnclaveNugetPackHostLibPath>$(VbsEnclavePackageDir)lib\native\$(Platform)\veil_host_lib.lib</VbsEnclaveNugetPackHostLibPath>
     </PropertyGroup>
 
     <!-- The below targets/Items are ran at build time for any project that consumes the VbsEnclaveTooling nuget package. -->
@@ -44,7 +47,13 @@
 
         <!-- Make sure our cpp support static library is added as an enclaves linker dependency -->
         <Link Condition="$(VbsEnclaveVirtualTrustLayer) == 'Enclave' ">
-            <AdditionalDependencies>$(VbsEnclaveCppSupportLib);%(AdditionalDependencies)</AdditionalDependencies>
+            <AdditionalDependencies>$(VbsEnclaveCppSupportLib);$(VbsEnclaveNugetPackEnclaveLibPath);%(AdditionalDependencies)</AdditionalDependencies>
+        </Link>
+
+        <Link Condition="$(VbsEnclaveVirtualTrustLayer) == 'HostApp' ">
+            <AdditionalDependencies>$(VbsEnclaveNugetPackHostLibPath);%(AdditionalDependencies)</AdditionalDependencies>
+        </Link>
+        <Link Condition="$(VbsEnclaveVirtualTrustLayer) == 'Enclave' AND '$(VbsEnclaveEdlPath)' != ''">
             <ModuleDefinitionFile>$(VbsEnclaveGeneratedFilesDir)\VbsEnclave\Enclave\vbsenclave.def</ModuleDefinitionFile>
         </Link>
     </ItemDefinitionGroup>
@@ -57,5 +66,5 @@
             <ClCompile Include="@(_WildCardClCompileFor_Cpp)"  />
             <ClCompile Include="@(_WildCardClCompileFor_Cpp_h)"  />
         </ItemGroup>
-    </Target>
+    </Target>    
 </Project>
