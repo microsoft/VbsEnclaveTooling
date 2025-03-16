@@ -33,7 +33,8 @@ int EncryptFlow(
     const std::wstring& input, 
     PCWSTR keyMoniker, 
     const std::filesystem::path& keyFilePath,
-    const std::filesystem::path& encryptedInputFilePath)
+    const std::filesystem::path& encryptedInputFilePath,
+    const std::filesystem::path& tagFilePath)
 {
     //
     // [Create flow]
@@ -60,6 +61,9 @@ int EncryptFlow(
     //          by the sealing-enclave or an enclave signed with compatible signature).
     auto securedEncryptionKeyBytes = std::span<uint8_t>(reinterpret_cast<uint8_t*>(data.securedEncryptionKeyBytes.data), data.securedEncryptionKeyBytes.size);
 
+    // Save securedEncryptionKeyBytes to disk
+    SaveBinaryData(keyFilePath.string(), securedEncryptionKeyBytes);
+
     //
     // [Load flow]
     // 
@@ -74,12 +78,11 @@ int EncryptFlow(
     loadData.isToBeEncrypted = true;
     THROW_IF_FAILED(veil::vtl0::enclave::call_enclave(enclave, "RunHelloSecuredEncryptionKeyExample_LoadEncryptionKey", loadData));
     auto encryptedInputBytes = std::span<uint8_t>(reinterpret_cast<uint8_t*>(loadData.encryptedInputBytes.data), loadData.encryptedInputBytes.size);
-
-    // Save securedEncryptionKeyBytes to disk
-    SaveBinaryData(keyFilePath.string(), securedEncryptionKeyBytes);
+    auto tag = std::span<uint8_t>(reinterpret_cast<uint8_t*>(loadData.tag.data), loadData.tag.size);
 
     // Save encryptedInputBytes to disk
     SaveBinaryData(encryptedInputFilePath.string(), encryptedInputBytes);
+    SaveBinaryData(tagFilePath.string(), tag);
 
     return 0;
 }
@@ -88,7 +91,8 @@ int DecryptFlow(
     void* enclave,
     PCWSTR keyMoniker,
     const std::filesystem::path& keyFilePath,
-    const std::filesystem::path& encryptedInputFilePath)
+    const std::filesystem::path& encryptedInputFilePath,
+    const std::filesystem::path& tagFilePath)
 {
     //
     // [Load flow]
@@ -96,8 +100,10 @@ int DecryptFlow(
     //  Get (encrypted) key bytes from disk, then pass into enclave to decrypt the encrypted input
     //
 
-    auto securedEncryptionKeyBytes = LoadBinaryData(keyFilePath.string());
     auto encryptedInputBytes = LoadBinaryData(encryptedInputFilePath.string());
+
+    auto securedEncryptionKeyBytes = LoadBinaryData(keyFilePath.string());
+    auto tag = LoadBinaryData(tagFilePath.string());
 
     // Call into enclave
     sample::args::RunHelloSecuredEncryptionKeyExample_LoadEncryptionKey data;
@@ -105,6 +111,8 @@ int DecryptFlow(
     data.securedEncryptionKeyBytes.size = securedEncryptionKeyBytes.size();
     data.encryptedInputBytes.data = encryptedInputBytes.data();
     data.encryptedInputBytes.size = encryptedInputBytes.size();
+    data.tag.data = tag.data();
+    data.tag.size = tag.size();
     THROW_IF_FAILED(veil::vtl0::enclave::call_enclave(enclave, "RunHelloSecuredEncryptionKeyExample_LoadEncryptionKey", data));
 
     auto decryptedInputBytes = std::span<uint8_t>(reinterpret_cast<uint8_t*>(data.decryptedInputBytes.data), data.decryptedInputBytes.size);
@@ -118,7 +126,8 @@ int main()
 {
     int choice;
     std::wstring input;
-    std::wstring encryptedInputFilePath;
+    std::wstring encryptedInputFilePath = LR"(c:\encrypted_data\encrypted)";
+    std::wstring tagFilePath = LR"(c:\encrypted_data\tag)";
 
     /******************************* Enclave setup *******************************/
     // Create app+user enclave identity
@@ -128,7 +137,7 @@ int main()
     auto flags = ENCLAVE_VBS_FLAG_DEBUG;
 
     auto enclave = veil::vtl0::enclave::create(ENCLAVE_TYPE_VBS, ownerId, flags, veil::vtl0::enclave::megabytes(512));
-    veil::vtl0::enclave::load_image(enclave.get(), L"sample_enclave.dll");
+    veil::vtl0::enclave::load_image(enclave.get(), L"sampleenclave.dll");
     veil::vtl0::enclave::initialize(enclave.get(), 1);
 
     // Register framework callbacks
@@ -137,7 +146,7 @@ int main()
     constexpr PCWSTR keyMoniker = L"MyHelloKey-001";
 
     // File with hello-secured encryption key bytes
-    auto keyFilePath = std::filesystem::path(LR"(c:\t\secured_keys)") / keyMoniker;
+    auto keyFilePath = std::filesystem::path(LR"(c:\encrypted_key)") / keyMoniker;
 
     do
     {
@@ -154,16 +163,22 @@ int main()
         switch (choice)
         {
             case 1:
+                /*
                 std::cout << "Enter the string to encrypt: ";
                 std::getline(std::wcin, input);
                 std::wcout << L"Enter the file path to store the encrypted bytes: ";
                 std::wcin >> encryptedInputFilePath;
-                EncryptFlow(enclave.get(), input, keyMoniker, keyFilePath, encryptedInputFilePath);
+                */
+                input = L"sodas";                
+                EncryptFlow(enclave.get(), input, keyMoniker, keyFilePath, encryptedInputFilePath, tagFilePath);
                 std::wcout << L"Encryption in Enclave completed. Encrypted bytes are saved to disk.";
                 break;
 
             case 2:
-                DecryptFlow(enclave.get(), keyMoniker, keyFilePath, encryptedInputFilePath);
+                DecryptFlow(enclave.get(), keyMoniker, keyFilePath, encryptedInputFilePath, tagFilePath);
+                std::filesystem::remove(keyFilePath);
+                std::filesystem::remove(encryptedInputFilePath);
+                std::filesystem::remove(tagFilePath);
                 break;
 
             case 3:
@@ -176,7 +191,5 @@ int main()
     }
     while (choice != 3);
 
-    std::filesystem::remove(keyFilePath);
-    std::filesystem::remove(encryptedInputFilePath);
     return 0;
 }

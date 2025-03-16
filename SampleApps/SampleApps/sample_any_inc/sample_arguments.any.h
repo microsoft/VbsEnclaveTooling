@@ -29,11 +29,13 @@ namespace sample
             veil::any::args::data_blob securedEncryptionKeyBytes;
             std::wstring dataToEncrypt;
             bool isToBeEncrypted = false; // Controls if the Load flow is used for encryption or decryption
+            bool resealRequired = false;
 
             // out
             bool needsReseal = true;
             veil::any::args::data_blob resealedEncryptionKeyBytes;
             veil::any::args::data_blob encryptedInputBytes;
+            veil::any::args::data_blob tag;
             veil::any::args::data_blob decryptedInputBytes;
         };
     }
