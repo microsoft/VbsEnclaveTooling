@@ -39,7 +39,7 @@ int EncryptFlow(
     //
     // [Create flow]
     // 
-    //  Generate hello-secured key in enclave, then pass the encrypted key bytes vtl0
+    //  Generate hello-secured key in enclave, then pass the encrypted key bytes to vtl0
     //
     
     // Name of a hello key that will be the "root" of our encryption ancestry
@@ -67,7 +67,7 @@ int EncryptFlow(
     //
     // [Load flow]
     // 
-    //  Get (encrypted) key bytes, then pass into enclave to encrypt the input, store the encrypted key and the encrypted bytes to disk
+    //  Pass the (encrypted) key bytes and the input into enclave to encrypt, store the encrypted bytes to disk
     //
     
     // Call into enclave
@@ -117,7 +117,7 @@ int DecryptFlow(
 
     auto decryptedInputBytes = std::span<uint8_t>(reinterpret_cast<uint8_t*>(data.decryptedInputBytes.data), data.decryptedInputBytes.size);
 
-    std::wcout << L"Decryption completed in Enclave. Decrypted string: " << decryptedInputBytes.data();
+    std::wcout << L"Decryption completed in Enclave. Decrypted string: " << std::wstring(reinterpret_cast<const wchar_t*>(decryptedInputBytes.data()), decryptedInputBytes.size() / 2);
 
     return 0;
 }
@@ -127,7 +127,8 @@ int main()
     int choice;
     std::wstring input;
     std::wstring encryptedInputFilePath = LR"(c:\encrypted_data\encrypted)";
-    std::wstring tagFilePath = LR"(c:\encrypted_data\tag)";
+    std::wstring tagFilePath = LR"(c:\encrypted_key\tag)";
+    bool programExecuted = false;
 
     /******************************* Enclave setup *******************************/
     // Create app+user enclave identity
@@ -152,26 +153,19 @@ int main()
     {
         std::cout << "\n*** String Encryption and Decryption Menu ***\n";
         std::cout << "1. Encrypt a string\n";
-        std::cout << "2. Decrypt a string\n";
-        std::cout << "3. Exit\n";
+        std::cout << "2. Decrypt the string\n";
         std::cout << "Enter your choice: ";
         std::cin >> choice;
-
-        // Clear input buffer
-        // std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
 
         switch (choice)
         {
             case 1:
-                /*
                 std::cout << "Enter the string to encrypt: ";
-                std::getline(std::wcin, input);
-                std::wcout << L"Enter the file path to store the encrypted bytes: ";
-                std::wcin >> encryptedInputFilePath;
-                */
-                input = L"sodas";                
+                std::cin.ignore();
+                std::getline(std::wcin, input);             
                 EncryptFlow(enclave.get(), input, keyMoniker, keyFilePath, encryptedInputFilePath, tagFilePath);
-                std::wcout << L"Encryption in Enclave completed. Encrypted bytes are saved to disk.";
+                std::wcout << L"Encryption in Enclave completed. Encrypted bytes are saved to disk in " << encryptedInputFilePath;
+                programExecuted = true;
                 break;
 
             case 2:
@@ -179,17 +173,18 @@ int main()
                 std::filesystem::remove(keyFilePath);
                 std::filesystem::remove(encryptedInputFilePath);
                 std::filesystem::remove(tagFilePath);
-                break;
-
-            case 3:
-                std::cout << "Exiting program. Goodbye!\n";
+                programExecuted = true;
                 break;
 
             default:
                 std::cout << "Invalid choice. Please try again.\n";
         }
     }
-    while (choice != 3);
+    while (!programExecuted);
+
+    // Wait for a key press before exiting
+    std::cout << "\n\nPress any key to exit..." << std::endl;
+    _getch();
 
     return 0;
 }

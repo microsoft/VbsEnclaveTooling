@@ -17,18 +17,6 @@
 #include "sample_arguments.any.h"
 
 //
-// My app exports: My app-enclave's exports
-//
-ENCLAVE_FUNCTION MySaveScreenshotExport(_In_ PVOID params)
-{
-    (void)params;
-
-    // ..code here..
-
-    return 0;
-}
-
-//
 // Hello-secured encryption key
 //
 void RunHelloSecuredEncryptionKeyExample_CreateEncryptionKeyImpl(_In_ sample::args::RunHelloSecuredEncryptionKeyExample_CreateEncryptionKey* data)
@@ -83,8 +71,6 @@ void RunHelloSecuredEncryptionKeyExample_CreateEncryptionKeyImpl(_In_ sample::ar
 
 ENCLAVE_FUNCTION RunHelloSecuredEncryptionKeyExample_CreateEncryptionKey(_In_ PVOID pv) noexcept try
 {
-    // TODO: Use tooling codegen to create your exports, or manually use the
-    // vtl0_ptr secure pointers.
     auto data = reinterpret_cast<sample::args::RunHelloSecuredEncryptionKeyExample_CreateEncryptionKey*>(pv);
     RunHelloSecuredEncryptionKeyExample_CreateEncryptionKeyImpl(data);
     return nullptr;
@@ -112,34 +98,6 @@ bool RunHelloSecuredEncryptionKeyExample_LoadEncryptionKeyImpl(_In_ sample::args
     auto [unsealedBytes, unsealingFlags] = veil::vtl1::crypto::unseal_data(data->securedEncryptionKeyBytes);
     debug_print(L" ...CHECKPOINT: unsealed byte count: = %d", unsealedBytes.size());
     debug_print("");
-
-    // See if we need to reseal...
-    data->needsReseal = WI_IsFlagSet(unsealingFlags, ENCLAVE_UNSEAL_FLAG_STALE_KEY);
-
-    if (data->needsReseal)
-    {
-        // The unseal succeeded, but we got a warning that this sealing key will be rotated/updated
-        // soon...
-        //
-        // ...so if the sealing key is stale, then we need to reseal with the updated sealing key and
-        // update the sealed bits on disk.
-        // 
-        // Let's,
-        //   1. Fail this operation
-        //   2. Reseal
-        //   3. Give the resealed key material to VTL0 host to update on disk
-        //   4. Have the VTL0 host call us again
-        debug_print(L"HALT: We need to reseal the Hello-secured key material and have VTL0 host save it!");
-        debug_print("");
-
-        auto sealedKeyMaterial = veil::vtl1::crypto::seal_data(unsealedBytes, ENCLAVE_IDENTITY_POLICY_SEAL_SAME_IMAGE, ENCLAVE_RUNTIME_POLICY_ALLOW_FULL_DEBUG);
-
-        // Return the resealed encryption key to vtl0 host caller...
-        auto buffer_vtl0 = veil::vtl1::memory::copy_to_vtl0_data_blob(&data->resealedEncryptionKeyBytes, sealedKeyMaterial);
-        buffer_vtl0.release();
-
-        return false;
-    }
     
     // Arbitrary metadata that must match what's encoded in the serialized key blob
     std::wstring expectedCustomData = L"usage=for_decryption";
@@ -159,8 +117,8 @@ bool RunHelloSecuredEncryptionKeyExample_LoadEncryptionKeyImpl(_In_ sample::args
         // Encrypting the user input data
         auto const SOME_PLAIN_TEXT = data->dataToEncrypt.c_str();
 
-        // Let's encrypt a thing
-        debug_print(L"3. Encrypting text: = %ws", SOME_PLAIN_TEXT);
+        // Let's encrypt the input text
+        debug_print(L"3. Encrypting input text.");
         auto [encryptedText, tag] = veil::vtl1::crypto::encrypt(encryptionKey.get(), veil::vtl1::as_data_span(SOME_PLAIN_TEXT), veil::vtl1::crypto::zero_nonce);
         debug_print(L" ...CHECKPOINT: encrypted text's byte count: = %d", encryptedText.size());
         debug_print("");
@@ -193,13 +151,9 @@ bool RunHelloSecuredEncryptionKeyExample_LoadEncryptionKeyImpl(_In_ sample::args
 
 ENCLAVE_FUNCTION RunHelloSecuredEncryptionKeyExample_LoadEncryptionKey(_In_ PVOID pv) noexcept try
 {
-    // TODO: Use tooling codegen to create your exports, or manually use the
-    // vtl0_ptr secure pointers.
     auto data = reinterpret_cast<sample::args::RunHelloSecuredEncryptionKeyExample_LoadEncryptionKey*>(pv);
-    if (!RunHelloSecuredEncryptionKeyExample_LoadEncryptionKeyImpl(data))
-    {
-
-    }
+    if (!RunHelloSecuredEncryptionKeyExample_LoadEncryptionKeyImpl(data)) 
+    { }
     return nullptr;
 }
 catch (...)
