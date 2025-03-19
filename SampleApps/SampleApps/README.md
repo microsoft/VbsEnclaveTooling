@@ -33,11 +33,11 @@ Steps
 		- Decrypted data is passed back to the host app.
 		  
 1. Create enclave dll- SampleEnclave.dll
-	
-Refer to VBS Enclave development guide: https://learn.microsoft.com/en-us/windows/win32/trusted-execution/vbs-enclaves-dev-guide
-Make sure you have made the following changes to the compiler and linker configurations of your Enclave dll (VS dll). 
-https://learn.microsoft.com/en-us/windows/win32/trusted-execution/vbs-enclaves-dev-guide#:~:text=Before%20we%20can%20build%20the%20test%20enclave%20DLL%2C%20some%20changes%20to%20the%20compiler%20and%20linker%20configurations%20are%20required%3A
-	
+
+	Refer to VBS Enclave development guide: https://learn.microsoft.com/en-us/windows/win32/trusted-execution/vbs-enclaves-dev-guide
+	Make sure you have made the following changes to the compiler and linker configurations of your Enclave dll (VS dll). 
+	https://learn.microsoft.com/en-us/windows/win32/trusted-execution/vbs-enclaves-dev-guide#:~:text=Before%20we%20can%20build%20the%20test%20enclave%20DLL%2C%20some%20changes%20to%20the%20compiler%20and%20linker%20configurations%20are%20required%3A
+		
 	- Implement RunHelloSecuredEncryptionKeyExample_CreateEncryptionKey
 		- Create a hello key for the root of our Hello-secured encryption key
 		- Generate an encryption key

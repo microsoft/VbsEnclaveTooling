@@ -18,7 +18,7 @@ namespace sample
         // Hello-secured encryption keys
         struct RunHelloSecuredEncryptionKeyExample_CreateEncryptionKey
         {
-            std::wstring helloKeyName; // Note: not worrying about passing complex types until codegen tooling work is done.
+            std::wstring helloKeyName;
 
             //out
             veil::any::args::data_blob securedEncryptionKeyBytes;
