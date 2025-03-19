@@ -63,6 +63,10 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "SharedFiles", "SharedFiles"
 		tests\EnclaveTests\TestEnclaveAndHostAppShared.targets = tests\EnclaveTests\TestEnclaveAndHostAppShared.targets
 	EndProjectSection
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "veil_enclave_lib", "src\VbsEnclaveSDK\src\veil_enclave_lib\veil_enclave_lib.vcxproj", "{323433E4-11D6-4B5B-93E4-04504E2EF0E1}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "veil_host_lib", "src\VbsEnclaveSDK\src\veil_host_lib\veil_host_lib.vcxproj", "{EE419DF4-62DC-4827-A0FC-727709B90C06}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|ARM64 = Debug|ARM64
@@ -128,6 +132,22 @@ Global
 		{7B34DEC6-2C34-4C89-B9E1-3EBFF0118DAF}.Release|ARM64.Build.0 = Release|x64
 		{7B34DEC6-2C34-4C89-B9E1-3EBFF0118DAF}.Release|x64.ActiveCfg = Release|x64
 		{7B34DEC6-2C34-4C89-B9E1-3EBFF0118DAF}.Release|x64.Build.0 = Release|x64
+		{323433E4-11D6-4B5B-93E4-04504E2EF0E1}.Debug|ARM64.ActiveCfg = Debug|ARM64
+		{323433E4-11D6-4B5B-93E4-04504E2EF0E1}.Debug|ARM64.Build.0 = Debug|ARM64
+		{323433E4-11D6-4B5B-93E4-04504E2EF0E1}.Debug|x64.ActiveCfg = Debug|x64
+		{323433E4-11D6-4B5B-93E4-04504E2EF0E1}.Debug|x64.Build.0 = Debug|x64
+		{323433E4-11D6-4B5B-93E4-04504E2EF0E1}.Release|ARM64.ActiveCfg = Release|ARM64
+		{323433E4-11D6-4B5B-93E4-04504E2EF0E1}.Release|ARM64.Build.0 = Release|ARM64
+		{323433E4-11D6-4B5B-93E4-04504E2EF0E1}.Release|x64.ActiveCfg = Release|x64
+		{323433E4-11D6-4B5B-93E4-04504E2EF0E1}.Release|x64.Build.0 = Release|x64
+		{EE419DF4-62DC-4827-A0FC-727709B90C06}.Debug|ARM64.ActiveCfg = Debug|ARM64
+		{EE419DF4-62DC-4827-A0FC-727709B90C06}.Debug|ARM64.Build.0 = Debug|ARM64
+		{EE419DF4-62DC-4827-A0FC-727709B90C06}.Debug|x64.ActiveCfg = Debug|x64
+		{EE419DF4-62DC-4827-A0FC-727709B90C06}.Debug|x64.Build.0 = Debug|x64
+		{EE419DF4-62DC-4827-A0FC-727709B90C06}.Release|ARM64.ActiveCfg = Release|ARM64
+		{EE419DF4-62DC-4827-A0FC-727709B90C06}.Release|ARM64.Build.0 = Release|ARM64
+		{EE419DF4-62DC-4827-A0FC-727709B90C06}.Release|x64.ActiveCfg = Release|x64
+		{EE419DF4-62DC-4827-A0FC-727709B90C06}.Release|x64.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -139,5 +159,9 @@ Global
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {166D23FF-1362-43F2-BEE7-58FDCDB133DF}
+	EndGlobalSection
+	GlobalSection(SharedMSBuildProjectFiles) = preSolution
+		src\VbsEnclaveSDK\src\veil_any_inc\veil_any_inc.vcxitems*{323433e4-11d6-4b5b-93e4-04504e2ef0e1}*SharedItemsImports = 4
+		src\VbsEnclaveSDK\src\veil_any_inc\veil_any_inc.vcxitems*{ee419df4-62dc-4827-a0fc-727709b90c06}*SharedItemsImports = 4
 	EndGlobalSection
 EndGlobal
