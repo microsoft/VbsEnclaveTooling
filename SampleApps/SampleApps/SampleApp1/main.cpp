@@ -126,8 +126,10 @@ int mainEncryptDecrpyt()
 {
     int choice;
     std::wstring input;
-    std::wstring encryptedInputFilePath = LR"(c:\encrypted_data\encrypted)";
-    std::wstring tagFilePath = LR"(c:\encrypted_key\tag)";
+    const std::wstring encrytedKeyDirPath = L"c:\\encrypted_key";
+    const std::wstring encryptedDataDirPath = L"c:\\encrypted_data";
+    std::wstring encryptedInputFilePath = encryptedDataDirPath + L"\\encrypted";
+    std::wstring tagFilePath = encrytedKeyDirPath + L"\\tag";
     bool programExecuted = false;
 
     /******************************* Enclave setup *******************************/
@@ -147,7 +149,7 @@ int mainEncryptDecrpyt()
     constexpr PCWSTR keyMoniker = L"MyHelloKey-001";
 
     // File with hello-secured encryption key bytes
-    auto keyFilePath = std::filesystem::path(LR"(c:\encrypted_key)") / keyMoniker;
+    auto keyFilePath = std::filesystem::path(encrytedKeyDirPath) / keyMoniker;
 
     do
     {
@@ -162,7 +164,9 @@ int mainEncryptDecrpyt()
             case 1:
                 std::cout << "Enter the string to encrypt: ";
                 std::cin.ignore();
-                std::getline(std::wcin, input);             
+                std::getline(std::wcin, input);    
+                std::filesystem::create_directories(encryptedDataDirPath);
+                std::filesystem::create_directories(encrytedKeyDirPath);
                 EncryptFlow(enclave.get(), input, keyMoniker, keyFilePath, encryptedInputFilePath, tagFilePath);
                 std::wcout << L"Encryption in Enclave completed. Encrypted bytes are saved to disk in " << encryptedInputFilePath;
                 programExecuted = true;
