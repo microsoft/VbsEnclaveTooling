@@ -411,6 +411,7 @@ FodyWeavers.xsd
 .vscode
 *.user
 *.nupkg
+!tests/EnclaveTests/Microsoft.Windows.VbsEnclaveTooling.0.0.0.nupkg
 test*.xml
 test*_results.txt
 test_failures.txt

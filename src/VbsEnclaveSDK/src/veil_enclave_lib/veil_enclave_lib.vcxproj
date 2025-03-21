@@ -143,7 +143,7 @@
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="$(SolutionDir)..\..\Common\veil_enclave_cpp_support_lib\veil_enclave_cpp_support_lib.vcxproj">
+    <ProjectReference Include="$(ProjectDir)..\..\..\..\Common\veil_enclave_cpp_support_lib\veil_enclave_cpp_support_lib.vcxproj">
       <Project>{26116633-98ec-4eac-859c-139d020d10c9}</Project>
     </ProjectReference>
   </ItemGroup>

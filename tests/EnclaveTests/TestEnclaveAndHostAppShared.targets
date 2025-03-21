@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<Project InitialTargets="AddLocalNuGetPackageBeforeBuild" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
     <PropertyGroup> 
         <!-- nuget.exe should have been downloaded to the temp folder when the ToolingNuget project completes its build -->
         <NugetexeTempPath>$([System.Environment]::GetEnvironmentVariable('TEMP'))\nuget.exe</NugetexeTempPath>
@@ -18,7 +18,8 @@
         see the VbsEnclaveTooling.0.0.0 package in $(SolutionDir)\_build and add install it into the default package location
         $(SolutionDir\packages). The projects themselves already reference the nuget package.
     -->
-    <Target Name="AddLocalNuGetPackageBeforeBuild" BeforeTargets="VbsEnclaveCodeGeneration">
+    <Target Name="AddLocalNuGetPackageBeforeBuild"
+        BeforeTargets="ClCompile;ClInclude">
         <Message Importance="high"  Text="Installing local VbsEnclaveTooling nuget package on $(MSBuildProjectName) project" />
         <Exec Command="$(NugetexeTempPath) install -ConfigFile $(SolutionDir)\nuget.config -SolutionDirectory $(SolutionDir) -Version 0.0.0 -Verbosity quiet"/>
     </Target>
