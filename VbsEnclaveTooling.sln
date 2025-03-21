@@ -49,6 +49,9 @@ EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "veil_enclave_cpp_support_lib", "Common\veil_enclave_cpp_support_lib\veil_enclave_cpp_support_lib.vcxproj", "{26116633-98EC-4EAC-859C-139D020D10C9}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "EnclaveTests", "EnclaveTests", "{2F6D61DA-0D52-4B60-9FB6-8372E7B2089F}"
+	ProjectSection(SolutionItems) = preProject
+		tests\EnclaveTests\Microsoft.Windows.VbsEnclaveTooling.0.0.0.nupkg = tests\EnclaveTests\Microsoft.Windows.VbsEnclaveTooling.0.0.0.nupkg
+	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "TestHostApp", "tests\EnclaveTests\TestHostApp\TestHostApp.vcxproj", "{7B34DEC6-2C34-4C89-B9E1-3EBFF0118DAF}"
 	ProjectSection(ProjectDependencies) = postProject

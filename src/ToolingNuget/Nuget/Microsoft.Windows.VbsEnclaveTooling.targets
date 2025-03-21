@@ -1,4 +1,4 @@
-<Project InitialTargets="VbsEnclaveCodeGeneration;AddGeneratedFilesToBuild" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
     <PropertyGroup>
         <!-- 
             When other projects include a nuget package (e.g this one) to their vs project it is placed in <ProjectRoot>\packages\<name of nuget package>.
@@ -21,6 +21,7 @@
     <!-- Only run the VbsEnclaveCodeGeneration target if the developer passed in a value for <VbsEnclaveEdlPath> -->
     <Target
         Name="VbsEnclaveCodeGeneration"
+        BeforeTargets="ClCompile;ClInclude"
         Condition="'$(VbsEnclaveEdlPath)' != ''">
         <Message Text="Generating enclave code using '$(VbsEnclaveCodeGenLanguage)'" Importance="high" />
         <!-- Ensure that the Edl file exists -->
@@ -58,13 +59,14 @@
         </Link>
     </ItemDefinitionGroup>
 
-    <Target Name="AddGeneratedFilesToBuild">
+    <Target Name="AddGeneratedFilesToBuild"
+            BeforeTargets="ClCompile;ClInclude">
         <!-- Make sure the generated cpp files are added to build without the developer needing to explicitly add them to their project. -->
         <ItemGroup>
             <_WildCardClCompileFor_Cpp Include="$(VbsEnclaveGeneratedFilesDir)\VbsEnclave\**\*.cpp" />
             <_WildCardClCompileFor_Cpp_h Include="$(VbsEnclaveGeneratedFilesDir)\VbsEnclave\**\*.h" />
             <ClCompile Include="@(_WildCardClCompileFor_Cpp)"  />
-            <ClCompile Include="@(_WildCardClCompileFor_Cpp_h)"  />
+            <ClInclude Include="@(_WildCardClCompileFor_Cpp_h)"  />
         </ItemGroup>
     </Target>    
 </Project>
