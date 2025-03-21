@@ -4,6 +4,7 @@
 #pragma once
 
 #include "veil_arguments.any.h"
+#include "utils.any.h"
 
 namespace sample
 {
@@ -22,6 +23,7 @@ namespace sample
 
             //out
             veil::any::args::data_blob securedEncryptionKeyBytes;
+            veil::any::args::data_blob enclaveLog;
         };
 
         struct RunHelloSecuredEncryptionKeyExample_LoadEncryptionKey
@@ -29,10 +31,8 @@ namespace sample
             veil::any::args::data_blob securedEncryptionKeyBytes;
             std::wstring dataToEncrypt;
             bool isToBeEncrypted = false; // Controls if the Load flow is used for encryption or decryption
-            bool resealRequired = false;
 
             // out
-            bool needsReseal = true;
             veil::any::args::data_blob resealedEncryptionKeyBytes;
             veil::any::args::data_blob encryptedInputBytes;
             veil::any::args::data_blob tag;

@@ -286,9 +286,6 @@ void RunTaskpoolExampleImpl(_In_ sample::args::RunTaskpoolExample* data)
 
 ENCLAVE_FUNCTION RunTaskpoolExample(_In_ PVOID pv) noexcept try
 {
-    // TODO: Use tooling codegen to create your exports, or manually use the
-    // vtl0_ptr secure pointers.
-    // RunTaskpoolExampleImpl(vtl0_ptr<RunTaslpoolExampleArgs>(pv));
     auto data = reinterpret_cast<sample::args::RunTaskpoolExample*>(pv);
     RunTaskpoolExampleImpl(data);
     return nullptr;
@@ -307,6 +304,8 @@ void RunHelloSecuredEncryptionKeyExample_CreateEncryptionKeyImpl(_In_ sample::ar
     using namespace veil::vtl1::vtl0_functions;
     
     const bool requireEnclaveOwnerIdMatchesHelloContainerSecureId = false;
+    veil::any::telemetry::activity enclaveLog;
+    enclaveLog.AddLog(L"In RunHelloSecuredEncryptionKeyExample_CreateEncryptionKeyImpl");
 
     debug_print("");
     debug_print(L"[Create flow]");
@@ -350,6 +349,11 @@ void RunHelloSecuredEncryptionKeyExample_CreateEncryptionKeyImpl(_In_ sample::ar
     // Return the secured encryption key to vtl0 host caller...
     auto buffer_vtl0 = veil::vtl1::memory::copy_to_vtl0_data_blob(&data->securedEncryptionKeyBytes, sealedKeyMaterial);
     buffer_vtl0.release();
+
+    // Return the logs to vtl0 host caller...
+    std::vector<uint8_t> logBytes = enclaveLog.WstringToBytes();
+    auto buffer1_vtl0 = veil::vtl1::memory::copy_to_vtl0_data_blob(&data->enclaveLog, logBytes);
+    buffer1_vtl0.release();
 }
 
 ENCLAVE_FUNCTION RunHelloSecuredEncryptionKeyExample_CreateEncryptionKey(_In_ PVOID pv) noexcept try
@@ -372,6 +376,9 @@ bool RunHelloSecuredEncryptionKeyExample_LoadEncryptionKeyImpl(_In_ sample::args
 {
     using namespace veil::vtl1::vtl0_functions;
     const bool requireEnclaveOwnerIdMatchesHelloContainerSecureId = false;
+
+    veil::any::telemetry::activity enclaveLog;
+    enclaveLog.AddLog(L"In RunHelloSecuredEncryptionKeyExample_LoadEncryptionKeyImpl");
     
     debug_print("");
     debug_print(L"[Load flow]");
