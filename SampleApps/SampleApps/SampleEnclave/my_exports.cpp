@@ -304,12 +304,13 @@ void RunHelloSecuredEncryptionKeyExample_CreateEncryptionKeyImpl(_In_ sample::ar
     using namespace veil::vtl1::vtl0_functions;
     
     const bool requireEnclaveOwnerIdMatchesHelloContainerSecureId = false;
-    veil::any::telemetry::activity enclaveLog;
-    enclaveLog.AddLog(L"In RunHelloSecuredEncryptionKeyExample_CreateEncryptionKeyImpl");
+    veil::any::telemetry::activity enclaveLog(data->activityLevel);
+    enclaveLog.AddLog(L"In RunHelloSecuredEncryptionKeyExample_CreateEncryptionKeyImpl", veil::any::telemetry::eventLevel::EVENT_LEVEL_CRITICAL);
 
     debug_print("");
     debug_print(L"[Create flow]");
     debug_print("");
+    enclaveLog.AddLog(L"Create flow", veil::any::telemetry::eventLevel::EVENT_LEVEL_VERBOSE);
     
     // Create a hello key for the root of our Hello-secured encryption key
     debug_print(L"1. Creating a 'Hello' key: %ws", data->helloKeyName.c_str());
@@ -377,8 +378,8 @@ bool RunHelloSecuredEncryptionKeyExample_LoadEncryptionKeyImpl(_In_ sample::args
     using namespace veil::vtl1::vtl0_functions;
     const bool requireEnclaveOwnerIdMatchesHelloContainerSecureId = false;
 
-    veil::any::telemetry::activity enclaveLog;
-    enclaveLog.AddLog(L"In RunHelloSecuredEncryptionKeyExample_LoadEncryptionKeyImpl");
+    veil::any::telemetry::activity enclaveLog(data->activityLevel);
+    enclaveLog.AddLog(L"In RunHelloSecuredEncryptionKeyExample_LoadEncryptionKeyImpl", veil::any::telemetry::eventLevel::EVENT_LEVEL_CRITICAL);
     
     debug_print("");
     debug_print(L"[Load flow]");
@@ -419,8 +420,6 @@ bool RunHelloSecuredEncryptionKeyExample_LoadEncryptionKeyImpl(_In_ sample::args
 
         auto buffer1_vtl0 = veil::vtl1::memory::copy_to_vtl0_data_blob(&data->tag, tag);
         buffer1_vtl0.release();
-
-        return true;
     }
     else
     {
@@ -434,9 +433,14 @@ bool RunHelloSecuredEncryptionKeyExample_LoadEncryptionKeyImpl(_In_ sample::args
         // Return the decrypted input to vtl0 host caller...
         auto buffer_vtl0 = veil::vtl1::memory::copy_to_vtl0_data_blob(&data->decryptedInputBytes, decryptedText);
         buffer_vtl0.release();
-
-        return true;
     }
+
+    // Return the logs to vtl0 host caller...
+    std::vector<uint8_t> logBytes = enclaveLog.WstringToBytes();
+    auto buffer1_vtl0 = veil::vtl1::memory::copy_to_vtl0_data_blob(&data->enclaveLog, logBytes);
+    buffer1_vtl0.release();
+
+    return true;
 }
 
 ENCLAVE_FUNCTION RunHelloSecuredEncryptionKeyExample_LoadEncryptionKey(_In_ PVOID pv) noexcept try
