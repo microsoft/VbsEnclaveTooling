@@ -125,11 +125,14 @@ int DecryptFlow(
     auto decryptedInputBytes = std::span<uint8_t>(reinterpret_cast<uint8_t*>(data.decryptedInputBytes.data), data.decryptedInputBytes.size);
 
     std::wcout << L"Decryption completed in Enclave. Decrypted string: " << std::wstring(reinterpret_cast<const wchar_t*>(decryptedInputBytes.data()), decryptedInputBytes.size() / 2);
+    veilLog.AddTimestampedLog(
+        L"Decryption completed in Enclave. Decrypted string: " + std::wstring(reinterpret_cast<const wchar_t*>(decryptedInputBytes.data()), decryptedInputBytes.size() / 2), 
+        veil::any::telemetry::eventLevel::EVENT_LEVEL_CRITICAL);
 
     return 0;
 }
 
-int mainEncryptDecrpyt()
+int mainEncryptDecrpyt(uint32_t activityLevel)
 {
     int choice;
     std::wstring input;
@@ -139,8 +142,11 @@ int mainEncryptDecrpyt()
     std::wstring tagFilePath = encrytedKeyDirPath + L"\\tag";
     bool programExecuted = false;
 
-    veil::any::telemetry::activity veilLog(L"VeilSampleApp", L"70F7212C-1F84-4B86-B550-3D5AE82EC779" /*Generated GUID*/, veil::any::telemetry::eventLevel::EVENT_LEVEL_VERBOSE);
-    veilLog.AddTimestampedLog(L"Starting from host", veil::any::telemetry::eventLevel::EVENT_LEVEL_INFO);
+    veil::any::telemetry::activity veilLog(
+        L"VeilSampleApp", 
+        L"70F7212C-1F84-4B86-B550-3D5AE82EC779" /*Generated GUID*/, 
+        static_cast<veil::any::telemetry::eventLevel>(activityLevel));
+    veilLog.AddTimestampedLog(L"Starting from host", veil::any::telemetry::eventLevel::EVENT_LEVEL_CRITICAL);
 
     /******************************* Enclave setup *******************************/
     // Create app+user enclave identity
@@ -179,6 +185,9 @@ int mainEncryptDecrpyt()
                 std::filesystem::create_directories(encrytedKeyDirPath);
                 EncryptFlow(enclave.get(), input, keyMoniker, keyFilePath, encryptedInputFilePath, tagFilePath, veilLog);
                 std::wcout << L"Encryption in Enclave completed. Encrypted bytes are saved to disk in " << encryptedInputFilePath;
+                veilLog.AddTimestampedLog(
+                    L"Encryption in Enclave completed. Encrypted bytes are saved to disk in " + encryptedInputFilePath,
+                    veil::any::telemetry::eventLevel::EVENT_LEVEL_CRITICAL);
                 programExecuted = true;
                 break;
 
@@ -199,12 +208,11 @@ int mainEncryptDecrpyt()
     // Wait for a key press before exiting
     std::cout << "\n\nPress any key to exit..." << std::endl;
     _getch();
-    veilLog.SaveLog();
 
     return 0;
 }
 
-int mainThreadPool()
+int mainThreadPool(uint32_t /*activityLevel*/ )
 {
     std::wcout << L"Running sample: Taskpool..." << std::endl;
 
@@ -238,8 +246,16 @@ int mainThreadPool()
     return 0;
 }
 
-int main()
+int main(int argc, char* argv[])
 {
+    if (argc != 2)
+    {
+        std::cerr << "Usage: " << argv[0] << " <logging_level>" << std::endl;
+        std::cerr << "Logging levels: 1 - Critical, 2 - Error, 3 - Warning, 4 - Info, 5 - Verbose" << std::endl;
+        return 1;
+    }
+
+    uint32_t activityLevel = std::atoi(argv[1]);
     int choice;
     bool programExecuted = false;
 
@@ -254,12 +270,12 @@ int main()
         switch (choice)
         {
             case 1:
-                mainEncryptDecrpyt();
+                mainEncryptDecrpyt(activityLevel);
                 programExecuted = true;
                 break;
 
             case 2:
-                mainThreadPool();
+                mainThreadPool(activityLevel);
                 programExecuted = true;
                 break;
 
