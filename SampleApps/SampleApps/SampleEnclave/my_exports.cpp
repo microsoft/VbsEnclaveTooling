@@ -397,7 +397,9 @@ bool RunHelloSecuredEncryptionKeyExample_LoadEncryptionKeyImpl(_In_ sample::args
 
     debug_print(L"1. Unsealing our encryption key (only our enclave can succeed this operation)");
     auto [unsealedBytes, unsealingFlags] = veil::vtl1::crypto::unseal_data(data->securedEncryptionKeyBytes);
+    auto needsReseal = WI_IsFlagSet(unsealingFlags, ENCLAVE_UNSEAL_FLAG_STALE_KEY);
     debug_print(L" ...CHECKPOINT: unsealed byte count: = %d", unsealedBytes.size());
+    debug_print(L" ...CHECKPOINT: needsReseal: = %d", needsReseal);
     debug_print("");
     
     // Arbitrary metadata that must match what's encoded in the serialized key blob

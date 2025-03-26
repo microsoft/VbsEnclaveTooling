@@ -248,14 +248,14 @@ int mainThreadPool(uint32_t /*activityLevel*/ )
 
 int main(int argc, char* argv[])
 {
-    if (argc != 2)
+    if (argc > 2)
     {
         std::cerr << "Usage: " << argv[0] << " <logging_level>" << std::endl;
         std::cerr << "Logging levels: 1 - Critical, 2 - Error, 3 - Warning, 4 - Info, 5 - Verbose" << std::endl;
         return 1;
     }
 
-    uint32_t activityLevel = std::atoi(argv[1]);
+    uint32_t activityLevel = (argc == 2) ? std::atoi(argv[1]) : 4; //Info by default
     int choice;
     bool programExecuted = false;
 
