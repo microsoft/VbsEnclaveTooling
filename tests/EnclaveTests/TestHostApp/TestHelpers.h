@@ -105,7 +105,7 @@ inline TestStruct1 CreateTestStruct1()
     };
 }
 
-inline bool CompareTestStruct1(TestStruct1& a, TestStruct1& b)
+inline bool CompareTestStruct1(TestStruct1 a, TestStruct1 b)
 {
     // Compare all fields of the struct
 
@@ -156,7 +156,7 @@ inline bool CompareTestStruct1(TestStruct1& a, TestStruct1& b)
 
     if (a.array1.size() == b.array1.size())
     {
-        return std::equal(a.array1.begin(), b.array1.end(), b.array1.begin());
+        return std::equal(a.array1.begin(), a.array1.end(), b.array1.begin());
     }
     else
     {

@@ -8,6 +8,7 @@
 
 #pragma once
 #include <pch.h>
+#include <unordered_set>
 
 namespace EdlProcessor
 {

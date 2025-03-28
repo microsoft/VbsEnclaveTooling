@@ -141,7 +141,7 @@ struct EnclaveTestClass
 
         // Note: Hresult is return by vtl1, and copied to vtl0 then returned to this function.
         auto result = generated_enclave_class.ReturnObjectInVector_From_Enclave();
-        VERIFY_IS_TRUE(result.size() != 5);
+        VERIFY_IS_TRUE(result.size() == 5);
         VERIFY_IS_TRUE(std::equal(result.begin(), result.end(), result_expected.begin(), CompareTestStruct1));
     }
 
@@ -178,9 +178,9 @@ struct EnclaveTestClass
         VerifyNumericArray(arg4.data(), c_arbitrary_size_1); // inout param updated.
         VerifyNumericArray(arg5.data(), c_arbitrary_size_2); // inout param updated.
         VerifyNumericArray(arg6.data(), c_arbitrary_size_1); // inout param updated.
-        VerifyContainsSameValuesArray(arg7.data(), c_data_size, std::numeric_limits<std::int8_t>::max()); // out param updated.
-        VerifyContainsSameValuesArray(arg8.data(), c_data_size, std::numeric_limits<std::int16_t>::max());// out param updated.
-        VerifyContainsSameValuesArray(arg9.data(), c_data_size, std::numeric_limits<std::int32_t>::max());// out param updated.
+        VerifyNumericArray(arg7.data(), c_arbitrary_size_1); // out param updated.
+        VerifyNumericArray(arg8.data(), c_arbitrary_size_2);// out param updated.
+        VerifyNumericArray(arg9.data(), c_arbitrary_size_1);// out param updated.
     }
 
     TEST_METHOD(ComplexPassingofTypes_To_Enclave_Test)
@@ -224,11 +224,11 @@ struct EnclaveTestClass
         std::string arg1 = "test";
         std::string arg2 = "test2";
         std::string arg3{};
-        std::vector<std::string> arg4_expected(5, "test");
+        std::vector<std::string> arg4_expected(5, "test4");
         std::vector<std::string> arg4 = arg4_expected;
-        std::vector<std::string> arg5_expected(5, "test2 was updated");
-        std::vector<std::string> arg5(5, "test2");
-        std::vector<std::string> arg6_expected(5, "test3 was returned as out");
+        std::vector<std::string> arg5_expected(5, "test5 was updated");
+        std::vector<std::string> arg5(5, "test5");
+        std::vector<std::string> arg6_expected(5, "test6 was returned as out");
 
         std::vector<std::string> arg6{};
 
@@ -258,11 +258,11 @@ struct EnclaveTestClass
         std::wstring arg1 = L"test";
         std::wstring arg2 = L"test2";
         std::wstring arg3 {};
-        std::vector<std::wstring> arg4_expected(5, L"test");
+        std::vector<std::wstring> arg4_expected(5, L"test4");
         std::vector<std::wstring> arg4 = arg4_expected;
-        std::vector<std::wstring> arg5_expected(5, L"test2 was updated");
-        std::vector<std::wstring> arg5(5, L"test2");
-        std::vector<std::wstring> arg6_expected(5, L"test3 was returned as out");
+        std::vector<std::wstring> arg5_expected(5, L"test5 was updated");
+        std::vector<std::wstring> arg5(5, L"test5");
+        std::vector<std::wstring> arg6_expected(5, L"test6 was returned as out");
 
         std::vector<std::wstring> arg6 {};
 

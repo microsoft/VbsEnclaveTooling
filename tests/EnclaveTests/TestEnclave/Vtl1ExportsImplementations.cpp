@@ -119,6 +119,16 @@ TestStruct2 VTL1_Declarations::ComplexPassingofTypes_To_Enclave(
     _Inout_  std::vector<TestStruct2>& arg5,
     _Out_  std::vector<TestStruct3>& arg6)
 {
+    auto expect_test1 = CreateTestStruct1();
+    THROW_HR_IF(E_INVALIDARG, !CompareTestStruct1(arg1, expect_test1));
+    std::vector<TestStruct1> arg4_expected(5, CreateTestStruct1());
+    THROW_HR_IF(E_INVALIDARG, !std::equal(arg4.begin(), arg4.end(), arg4_expected.begin(), CompareTestStruct1));
+    arg2 = CreateTestStruct2();
+    arg3 = CreateTestStruct3();
+    arg5 = std::vector<TestStruct2>(5, CreateTestStruct2());
+    auto expected_arg6 = std::vector<TestStruct3>(5, CreateTestStruct3());
+    arg6 = expected_arg6;
+
     return CreateTestStruct2();
 }
 
@@ -130,7 +140,18 @@ std::string VTL1_Declarations::PassingStringTypes_To_Enclave(
     _Inout_  std::vector<std::string>& arg5,
     _Out_  std::vector<std::string>& arg6)
 {
-    return {};
+    const std::string arg1_expected = "test";
+    THROW_HR_IF(E_INVALIDARG, arg1 != arg1_expected);
+    std::vector<std::string> arg4_expected(5, "test4");
+    THROW_HR_IF(E_INVALIDARG, !std::equal(arg4.begin(), arg4.end(), arg4_expected.begin()));
+    arg2 = "test2 updated";
+    arg3 = "test3 returned";
+    std::vector<std::string> arg5_expected(5, "test5 was updated");
+    arg5 = arg5_expected;
+    std::vector<std::string> arg6_expected(5, "test6 was returned as out");
+    arg6 = arg6_expected;
+    
+    return "return result";
 }
 
 std::wstring VTL1_Declarations::PassingWStringTypes_To_Enclave(
@@ -141,7 +162,18 @@ std::wstring VTL1_Declarations::PassingWStringTypes_To_Enclave(
     _Inout_  std::vector<std::wstring>& arg5,
     _Out_  std::vector<std::wstring>& arg6)
 {
-    return {};
+    const std::wstring arg1_expected = L"test";
+    THROW_HR_IF(E_INVALIDARG, arg1 != arg1_expected);
+    std::vector<std::wstring> arg4_expected(5, L"test4");
+    THROW_HR_IF(E_INVALIDARG, !std::equal(arg4.begin(), arg4.end(), arg4_expected.begin()));
+    arg2 = L"test2 updated";
+    arg3 = L"test3 returned";
+    std::vector<std::wstring> arg5_expected(5, L"test5 was updated");
+    arg5 = arg5_expected;
+    std::vector<std::wstring> arg6_expected(5, L"test6 was returned as out");
+    arg6 = arg6_expected;
+
+    return L"return result";
 }
 
 NestedStructWithArray VTL1_Declarations::PassingArrayTypes_To_Enclave(
@@ -151,6 +183,19 @@ NestedStructWithArray VTL1_Declarations::PassingArrayTypes_To_Enclave(
     _Inout_  std::array<TestStruct2, 2>& arg4,
     _Out_  std::array<TestStruct3, 2>& arg5)
 {
+    std::array<TestStruct1, 2> arg1_expected = {CreateTestStruct1(), CreateTestStruct1()};
+    std::array<TestStruct1, 2> temp_arg1 = arg1;
+    THROW_HR_IF(E_INVALIDARG, !std::equal(temp_arg1.begin(), temp_arg1.end(), arg1_expected.begin(), CompareTestStruct1));
+    std::array<std::string, 2> arg2_expected = {"test2 updated", "test2 updated"};
+    arg2 = arg2_expected;
+    std::array<std::wstring, 2> arg3_expected = {L"test2 updated", L"test2 updated"};
+    arg3 = arg3_expected;
+    auto arg4_expect_val = CreateTestStruct2();
+    arg4_expect_val.field1.array1 = {10, 9, 8, 7, 6, 5, 4, 3, 2, 1};
+    std::array<TestStruct2, 2> arg4_expected = {arg4_expect_val, arg4_expect_val};
+    arg4 = arg4_expected;
+    std::array<TestStruct3, 2> arg5_expected = {CreateTestStruct3(), CreateTestStruct3()};
+    arg5 = arg5_expected;
     return CreateNestedStructWithArray();
 }
 
@@ -173,9 +218,9 @@ HRESULT VTL1_Declarations::Start_ReturnUint64Val_From_HostApp_Callback_Test()
 HRESULT VTL1_Declarations::Start_ReturnStructWithValues_From_HostApp_Callback_Test()
 {
     // Note: struct is returned by vtl0, and copied to vtl1 then returned to this function.
-    TestStruct1 result = VTL1_Declarations::ReturnStructWithValues_From_Enclave();
+    TestStruct1 result = VTL0_Callbacks::ReturnStructWithValues_From_HostApp_callback();
     auto expected = CreateTestStruct1();
-    THROW_HR_IF(E_INVALIDARG, CompareTestStruct1(result, expected));
+    THROW_HR_IF(E_INVALIDARG, !CompareTestStruct1(result, expected));
 
     return S_OK;
 }
@@ -234,9 +279,9 @@ HRESULT VTL1_Declarations::Start_PassingPrimitivesInVector_To_HostApp_Callback_T
     VerifyNumericArray(arg4.data(), c_arbitrary_size_1); // inout param updated.
     VerifyNumericArray(arg5.data(), c_arbitrary_size_2); // inout param updated.
     VerifyNumericArray(arg6.data(), c_arbitrary_size_1); // inout param updated.
-    VerifyContainsSameValuesArray(arg7.data(), c_data_size, std::numeric_limits<std::int8_t>::max()); // out param updated.
-    VerifyContainsSameValuesArray(arg8.data(), c_data_size, std::numeric_limits<std::int16_t>::max());// out param updated.
-    VerifyContainsSameValuesArray(arg9.data(), c_data_size, std::numeric_limits<std::int32_t>::max());// out param updated.
+    VerifyNumericArray(arg7.data(), c_arbitrary_size_1); // out param updated.
+    VerifyNumericArray(arg8.data(), c_arbitrary_size_2);// out param updated.
+    VerifyNumericArray(arg9.data(), c_arbitrary_size_1);// out param updated.
 
     return S_OK;
 }
@@ -282,11 +327,11 @@ HRESULT VTL1_Declarations::Start_PassingStringTypes_To_HostApp_Callback_Test()
     std::string arg1 = "test";
     std::string arg2 = "test2";
     std::string arg3 {};
-    std::vector<std::string> arg4_expected(5, "test");
+    std::vector<std::string> arg4_expected(5, "test4");
     std::vector<std::string> arg4 = arg4_expected;
-    std::vector<std::string> arg5_expected(5, "test2 was updated");
-    std::vector<std::string> arg5(5, "test2");
-    std::vector<std::string> arg6_expected(5, "test3 was returned as out");
+    std::vector<std::string> arg5_expected(5, "test5 was updated");
+    std::vector<std::string> arg5(5, "test5");
+    std::vector<std::string> arg6_expected(5, "test6 was returned as out");
 
     std::vector<std::string> arg6 {};
 
@@ -317,11 +362,11 @@ HRESULT VTL1_Declarations::Start_PassingWStringTypes_To_HostApp_Callback_Test()
     std::wstring arg1 = L"test";
     std::wstring arg2 = L"test2";
     std::wstring arg3 {};
-    std::vector<std::wstring> arg4_expected(5, L"test");
+    std::vector<std::wstring> arg4_expected(5, L"test4");
     std::vector<std::wstring> arg4 = arg4_expected;
-    std::vector<std::wstring> arg5_expected(5, L"test2 was updated");
-    std::vector<std::wstring> arg5(5, L"test2");
-    std::vector<std::wstring> arg6_expected(5, L"test3 was returned as out");
+    std::vector<std::wstring> arg5_expected(5, L"test5 was updated");
+    std::vector<std::wstring> arg5(5, L"test5");
+    std::vector<std::wstring> arg6_expected(5, L"test6 was returned as out");
 
     std::vector<std::wstring> arg6 {};
 

@@ -709,6 +709,7 @@ namespace CodeGeneration
         param_info.m_all_param_names << std::format("{} {}", all_params_separator, name_with_address_declarator);
         param_info.m_in_inout_param_names << std::format("{} {}", in_and_inout_params_separator, declaration.m_name);
         AddParameterToTheForwardToDevImplList(c_dev_type_for_function_params_struct, declaration, all_params_separator, param_info);
+        AddStatementToReturnParameterBackIntoOriginalParameter(declaration, param_info);
     }
 
     void CppCodeBuilder::CaptureInformationAboutOutParameter(
