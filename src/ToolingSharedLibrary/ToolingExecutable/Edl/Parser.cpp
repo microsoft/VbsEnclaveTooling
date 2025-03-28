@@ -720,44 +720,22 @@ namespace EdlProcessor
             return;
         }
 
-        auto message = GetErrorMessageById(
-               ErrorId::EdlPointerSizeAttributeMissing,
-               declaration.m_name,
-               m_cur_line,
-               m_cur_column,
-               declaration.m_edl_type_info.m_name);
-         
-        bool is_void_ptr = declaration.m_edl_type_info.m_type_kind == EdlTypeKind::Void;
+        if (declaration.m_edl_type_info.m_type_kind == EdlTypeKind::Void)
+        {
+            throw EdlAnalysisException(
+                ErrorId::EdlPointerToVoidMustBeAnnotated,
+                m_file_name,
+                m_cur_line,
+                m_cur_column);
+        }
 
         if (!declaration.m_attribute_info)
         {
-            // Disallow void*'s that do not contain a size attribute. For all other pointer
-            // types that don't contain an attribute, the code gen layer will copy sizeof(type)
-            // when copying the pointer between virtual trust layers.
-            if (is_void_ptr)
-            {
-                throw EdlAnalysisException(
-                    ErrorId::EdlPointerToVoidMustBeAnnotated,
-                    m_file_name,
-                    m_cur_line,
-                    m_cur_column);
-            }
-
             return;
         }
 
         // Make sure pointer declarations are annotated with a size
         auto attribute_info = declaration.m_attribute_info.value();
-
-        if (is_void_ptr && attribute_info.m_size_info.IsEmpty())
-        {
-            throw EdlAnalysisException(
-               ErrorId::EdlPointerToVoidMustBeAnnotated,
-               m_file_name,
-               m_cur_line,
-               m_cur_column);
-        }
-
         bool in_or_out_present = (attribute_info.m_in_present) || (attribute_info.m_out_present);
 
         if (declaration.m_parent_kind == DeclarationParentKind::Function)

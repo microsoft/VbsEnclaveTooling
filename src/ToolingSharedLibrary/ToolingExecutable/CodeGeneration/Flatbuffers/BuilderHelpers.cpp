@@ -27,14 +27,13 @@ namespace CodeGeneration::Flatbuffers
 
         for (auto& type : developer_types_insertion_list)
         {
-            DeveloperType dev_type = type;
-            if (dev_type.IsEdlType(EdlTypeKind::Enum))
+            if (type.IsEdlType(EdlTypeKind::Enum))
             {
-                schema << BuildEnum(dev_type);
+                schema << BuildEnum(type);
             }
-            else if (dev_type.IsEdlType(EdlTypeKind::Struct))
+            else if (type.IsEdlType(EdlTypeKind::Struct))
             {
-                schema << BuildTable(dev_type.m_fields, dev_type.m_name);
+                schema << BuildTable(type.m_fields, type.m_name);
             }
         }
 
@@ -105,6 +104,7 @@ namespace CodeGeneration::Flatbuffers
                 return "uint32";
             case EdlTypeKind::SizeT:
             case EdlTypeKind::UInt64:
+            case EdlTypeKind::UIntPtr:
                 return "uint64";
             case EdlTypeKind::String:
                 return "string"; // natively supported by flatbuffers
@@ -112,7 +112,6 @@ namespace CodeGeneration::Flatbuffers
                 return "WString"; // array of uint16s that we convert to std::wstring
             case EdlTypeKind::Enum:
             case EdlTypeKind::Struct:
-                return type_info.m_name;
                 return type_info.m_name;
             default:
                 throw CodeGenerationException(
@@ -128,16 +127,7 @@ namespace CodeGeneration::Flatbuffers
 
         for (const Declaration& declaration : values)
         {
-            if (!declaration.m_array_dimensions.empty())
-            {
-                // Note: pointer data will be placed into a flatbuffer vector and reconstructed
-                // on the other side.
-                table_body << std::format(
-                    "    {} : [{}];\n",
-                    declaration.m_name,
-                    GetFlatBufferType(declaration.m_edl_type_info));
-            }
-            else if (declaration.IsEdlType(EdlTypeKind::Struct))
+            if (declaration.IsEdlType(EdlTypeKind::Struct))
             {
                 table_body << std::format(
                     "    {} : {};\n",
@@ -190,6 +180,7 @@ namespace CodeGeneration::Flatbuffers
             case EdlTypeKind::UInt32:
             case EdlTypeKind::SizeT:
             case EdlTypeKind::UInt64:
+            case EdlTypeKind::UIntPtr:
             case EdlTypeKind::String:
                 return FlatbufferSupportedTypes::Basic;
             case EdlTypeKind::WString:
@@ -206,36 +197,214 @@ namespace CodeGeneration::Flatbuffers
         }
     }
 
+    std::string BuildConversionFunctionBody(
+        const std::vector<Declaration>& fields,
+        FlatbufferConversionKind conversion_kind,
+        FlatbufferStructFieldsModifier modifier)
+    {
+        std::ostringstream copy_statements {};
+
+        for (auto& declaration : fields)
+        {
+            FlatbufferSupportedTypes flatbuffer_type {};
+
+           if (declaration.HasPointer())
+            {
+                if (declaration.IsEdlType(EdlTypeKind::Enum))
+                {
+                    flatbuffer_type = FlatbufferSupportedTypes::PtrForEnum;
+                }
+                else  if (declaration.IsEdlType(EdlTypeKind::Struct))
+                {
+                    flatbuffer_type = FlatbufferSupportedTypes::PtrForStruct;
+                }
+                else
+                {
+                    flatbuffer_type = FlatbufferSupportedTypes::PtrForPrimitive;
+                }
+            }
+            else
+            {
+                flatbuffer_type = GetSupportedFlatbufferTypeKind(declaration);
+            }
+
+            std::string flatbuffer_side = std::format("flatbuffer.{}", declaration.m_name);
+            std::string struct_side = std::format("dev_type.{}", declaration.m_name);
+            FieldNameDataForCopyStatements variable_names {flatbuffer_side, struct_side, modifier};
+
+            if (conversion_kind == FlatbufferConversionKind::ToFlatbuffer &&
+                modifier == FlatbufferStructFieldsModifier::AbiToFlatbufferMultipleParameters)
+            {
+                variable_names = {flatbuffer_side, declaration.m_name, modifier};
+                copy_statements << GetDevTypeToFlatbufferCopyStatements(declaration, flatbuffer_type, variable_names);
+            }
+            else if (conversion_kind == FlatbufferConversionKind::ToFlatbuffer)
+            {
+                copy_statements << GetDevTypeToFlatbufferCopyStatements(declaration, flatbuffer_type, variable_names);
+            }
+
+            if (conversion_kind == FlatbufferConversionKind::ToDevType)
+            {
+                copy_statements << GetFlatbufferToDevTypeCopyStatements(declaration, flatbuffer_type, variable_names);
+            }
+        }
+
+        return copy_statements.str();
+    }
+
+    std::string FormatStringForDevTypeToFlatbufferPtr(
+        std::string_view last_part,
+        const FieldNameDataForCopyStatements& field_names)
+    {
+        return FormatString(
+             c_dev_type_to_flatbuffer_conversion_ptr_base_smartptr,
+             field_names.m_struct,
+             last_part);
+    }
+
+    std::string GetDevTypeToFlatbufferCopyStatements(
+        const Declaration& declaration,
+        FlatbufferSupportedTypes type_kind,
+        FieldNameDataForCopyStatements field_names)
+    {
+        std::string_view string_to_format = c_dev_type_to_flatbuffer_statement_map.at(type_kind);
+        std::string_view field_name = declaration.m_name;
+        std::string_view obj_type = declaration.m_edl_type_info.m_name;
+        std::string buf_size = GetSizeFromAttribute(declaration);
+        std::string_view flatbuffer_field = field_names.m_flatbuffer;
+        std::string_view struct_field = field_names.m_struct;
+
+        if (type_kind == FlatbufferSupportedTypes::PtrForPrimitive)
+        {
+            auto statement = FormatString(string_to_format, flatbuffer_field, struct_field);
+            return FormatStringForDevTypeToFlatbufferPtr(statement, field_names);
+        }
+        else if (type_kind == FlatbufferSupportedTypes::PtrForEnum)
+        {
+            auto statement = FormatString(string_to_format, flatbuffer_field, obj_type, struct_field);
+            return FormatStringForDevTypeToFlatbufferPtr(statement, field_names);
+        }
+        else if (type_kind == FlatbufferSupportedTypes::PtrForStruct)
+        {
+            auto statement = FormatString(string_to_format, flatbuffer_field, obj_type, struct_field);
+            return FormatStringForDevTypeToFlatbufferPtr(statement, field_names);
+        }
+        else if (type_kind == FlatbufferSupportedTypes::Basic || type_kind == FlatbufferSupportedTypes::WString)
+        {
+            return FormatString(string_to_format, flatbuffer_field, struct_field);
+        }
+        else
+        {
+            // FlatbufferSupportedTypes::NestedStruct and FlatbufferSupportedTypes::Enum
+            return FormatString(string_to_format, flatbuffer_field, obj_type, struct_field);
+        }
+    }
+
+    std::string GetFlatbufferToDevTypeCopyStatements(
+        const Declaration& declaration,
+        FlatbufferSupportedTypes type_kind,
+        FieldNameDataForCopyStatements field_names)
+    {
+        std::string_view string_to_format = c_flatbuffer_to_dev_type_statement_map.at(type_kind);
+        std::string_view obj_type = declaration.m_edl_type_info.m_name;
+        std::string_view flatbuffer_field = field_names.m_flatbuffer;
+        std::string_view struct_field = field_names.m_struct;
+
+        if (type_kind == FlatbufferSupportedTypes::PtrForPrimitive)
+        {
+            return FormatString(
+                string_to_format, 
+                struct_field,
+                obj_type,
+                struct_field,
+                struct_field,
+                flatbuffer_field);
+        }
+        else if (type_kind == FlatbufferSupportedTypes::PtrForEnum)
+        {
+            return FormatString(
+                string_to_format,
+                struct_field,
+                obj_type,
+                struct_field,
+                struct_field,
+                obj_type,
+                flatbuffer_field);
+        }
+        else if (type_kind == FlatbufferSupportedTypes::PtrForStruct)
+        {
+            auto to_dev_type_func_name = GetToDevTypeFunctionName(declaration);
+            return FormatString(
+                string_to_format,
+                flatbuffer_field,
+                struct_field,
+                obj_type,
+                to_dev_type_func_name,
+                flatbuffer_field);
+        }
+        else if (type_kind == FlatbufferSupportedTypes::Basic)
+        {
+            return FormatString(string_to_format, struct_field, flatbuffer_field);
+        }
+        else if (type_kind == FlatbufferSupportedTypes::WString)
+        {
+            return FormatString(string_to_format, flatbuffer_field, struct_field, flatbuffer_field);
+        }
+        else if (type_kind == FlatbufferSupportedTypes::Enum)
+        {
+            return FormatString(string_to_format, struct_field, obj_type, flatbuffer_field);
+        }
+        else if (type_kind == FlatbufferSupportedTypes::NestedStruct)
+        {
+            auto to_dev_type_func_name = GetToDevTypeFunctionName(declaration);
+            return FormatString(string_to_format, flatbuffer_field, struct_field, obj_type, to_dev_type_func_name, flatbuffer_field);
+        }
+        else
+        {
+            // FlatbufferSupportedTypes::NestedStruct
+            return FormatString(string_to_format, flatbuffer_field, struct_field, obj_type, flatbuffer_field);
+        }
+    }
+
     FlatbufferDataForFunction BuildFlatbufferConversionStructsAndTables(
-       Function function,
+       const Function& original_function,
        std::string_view abi_function_name,
        const CppCodeBuilder::FunctionParametersInfo& params_info)
     {
-        std::vector<Declaration> all_params {};
+        std::unordered_map<std::string, Declaration> all_in_and_inout_params {};
+        auto updated_function = original_function;
 
         // Add return type to out struct if it's not void.
-        if (function.m_return_info.IsEdlType(EdlTypeKind::Void))
+        if (!updated_function.m_return_info.IsEdlType(EdlTypeKind::Void))
         {
-            function.m_parameters.push_back(function.m_return_info);
+            updated_function.m_parameters.push_back(updated_function.m_return_info);
         }
 
-        auto params_size = function.m_parameters.size();
+        auto params_size = updated_function.m_parameters.size();
 
         for (size_t param_index = 0U; param_index < params_size; param_index++)
         {
-            Declaration& parameter = function.m_parameters[param_index];
+            Declaration& parameter = updated_function.m_parameters[param_index];
             parameter.m_name = "m_" + parameter.m_name;
-            all_params.push_back(parameter);
+
+            if (!parameter.IsOutParameterOnly())
+            {
+                all_in_and_inout_params.emplace(parameter.m_name, parameter);
+            }
+
+            // update parent kind after adding to the set.
+            parameter.m_parent_kind =  DeclarationParentKind::Struct;
         }
 
         FlatbufferDataForFunction data {};
 
         // Struct that will be used to pass and return the function params/return type.
         auto struct_name = std::format(c_function_args_struct, abi_function_name);
-        data.m_flatbuffer_tables << BuildTable(function.m_parameters, struct_name);
+        data.m_flatbuffer_tables << BuildTable(updated_function.m_parameters, struct_name);
         data.m_parameters_struct << CppCodeBuilder::BuildStructDefinitionForFunctionParams(
             struct_name,
-            all_params,
+            updated_function.m_parameters,
+            all_in_and_inout_params,
             params_info);
 
         return data;

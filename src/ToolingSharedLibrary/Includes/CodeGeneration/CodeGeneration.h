@@ -64,6 +64,12 @@ namespace CodeGeneration
             std::ostringstream m_copy_vtl1_parameters_into_vtl0_heap_tuple{};
             std::ostringstream m_copy_vtl0_parameters_into_vtl1_heap_tuple {};
 
+            // Used to moving parameters through trust boundary TODO: remove unneeded ones above.
+            std::ostringstream m_in_and_inout_param_names {};
+            std::ostringstream m_copy_values_from_out_struct_to_original_args {};
+            std::ostringstream m_params_to_forward_to_dev_impl {};
+
+
             // General info about function that can affect how the the 
             // generated code to copy parameters in the abi layer.
             std::string m_function_return_value{};
@@ -77,21 +83,20 @@ namespace CodeGeneration
 
         std::string BuildEnumDefinition(const DeveloperType& developer_types);
 
-        std::string GetSimpleTypeInfo(const EdlTypeInfo& info);
-
         std::string BuildArrayType(const Declaration& declaration);
 
         std::string GetTypeInfoForFunction(const Declaration& declaration, ParameterModifier modifier);
 
         std::string GetSimpleTypeInfoWithPointerInfo(const EdlTypeInfo& info);
 
-        std::string BuildStructFieldOrFunctionParameter(const Declaration& declaration);
+        std::string BuildStructField(const Declaration& declaration);
 
         std::string BuildStructDefinition(const DeveloperType& developer_types);
 
         std::string BuildStructDefinitionForFunctionParams(
             std::string_view struct_name,
-            const std::vector<Declaration>& fields,
+            const std::vector<Declaration>& updated_parameters,
+            const std::unordered_map<std::string, Declaration>& all_in_and_inout_params,
             const FunctionParametersInfo& params_info = {});
 
         std::ostringstream CreateDeveloperTypeStructs(
@@ -100,6 +105,32 @@ namespace CodeGeneration
         std::string BuildStructDefinitionForDeveloperType(
             std::string_view struct_name,
             const std::vector<Declaration>& fields);
+
+        std::string AddAddressDeclaratorIfNecessary(const Declaration& declaration);
+
+        std::string GetTypeInfoForFunctionParameter(const Declaration& declaration);
+
+        FunctionParametersInfo GetInformationAboutParameters(
+            const Function& function,
+            std::string_view abi_function_name);
+
+        // These functions are what the developer will call 
+        // to invoke their impl function on the other side of the
+        // trust boundary.
+        std::string BuildInitialCallerFunction(
+            const Function& function,
+            std::string_view vtl0_generated_abi_function_name,
+            std::string_view abi_function_to_call,
+            bool should_be_static,
+            const FunctionParametersInfo& param_info);
+
+        // Intended to forward parameters to the developers callback Impl
+        // on the other side of the boundary
+        std::string BuildAbiImplFunction(
+            const Function& function,
+            std::string_view abi_function_name,
+            std::string_view call_impl_str,
+            const FunctionParametersInfo& param_info);
 
         std::string BuildStdArrayType(
             std::string_view type,
@@ -110,9 +141,7 @@ namespace CodeGeneration
 
         std::string BuildFunctionParameters(
             const Function& function,
-            FunctionCallInitiator initiator,
-            const FunctionParametersInfo& param_info,
-            ParameterModifier modifier = ParameterModifier::NoConst);
+            const FunctionParametersInfo& param_info);
 
         std::string BuildTypesHeader(const std::ostringstream& types);
 

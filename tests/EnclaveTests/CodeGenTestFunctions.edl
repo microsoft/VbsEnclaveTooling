@@ -65,8 +65,7 @@ enclave
 
     struct Int8PtrAndSize
     {
-        [count=size_field] int8_t* int8_val;
-        size_t size_field;
+        int8_t* int8_val;
     };
 
     // Host to enclave functions
@@ -79,27 +78,21 @@ enclave
 
         // Pointers must have an in or out direction.
         HRESULT TestPassingPrimitivesAsInPointers_To_Enclave(
-            [count=abitrary_size_1, in] uint8_t* uint8_val,
-            [count=abitrary_size_2, in] uint16_t* uint16_val,
-            [count=abitrary_size_1, in] uint32_t* uint32_val,
-            size_t abitrary_size_1,
-            size_t abitrary_size_2);
+            [in] uint8_t* uint8_val,
+            [in] uint16_t* uint16_val,
+            [in] uint32_t* uint32_val);
 
         // Pointers must have an in or out direction.
         HRESULT TestPassingPrimitivesAsInOutPointers_To_Enclave(
-            [count=abitrary_size_1, in, out] int8_t* int8_val,
-            [count=abitrary_size_2, in, out] int16_t* int16_val,
-            [in, out] int32_t* int32_val_ptr, // only sizeof(int32_t) will be copied by abi layer
-            size_t abitrary_size_1,
-            size_t abitrary_size_2);
+            [in, out] int8_t* int8_val,
+            [in, out] int16_t* int16_val,
+            [in, out] int32_t* int32_val);
 
         // Pointers must have an in or out direction.
         HRESULT TestPassingPrimitivesAsOutPointers_To_Enclave(
-            [count=abitrary_size_1, out] bool* bool_val,
-            [count=abitrary_size_2, out] DecimalEnum* enum_val,
-            [count=abitrary_size_1, out] uint64_t* uint64_val,
-            size_t abitrary_size_1,
-            size_t abitrary_size_2); 
+            [out] bool* bool_val,
+            [out] DecimalEnum* enum_val,
+            [out] uint64_t* uint64_val); 
 
         // Example of returning a pointer since we don't allow return pointers of primitives, 
         // only structs. Pointer marhaling works the same way for primitive so we only need a test
@@ -114,14 +107,12 @@ enclave
         // Returning a more complex struct
         StructWithNoPointers ReturnStructWithValues_From_Enclave();
 
-
         StructWithNoPointers ComplexPassingofTypes_To_Enclave(
             StructWithNoPointers arg1,
             [in, out]StructWithNoPointers arg2,
             [out] StructWithNoPointers* arg3,
             [out] StructWithNoPointers arg4,
-            [size=abitrary_size_1, out] uint64_t* uint64_val,
-            size_t abitrary_size_1);
+            [out] uint64_t* uint64_val);
 
         // Vtl1 can't test vtl0 callbacks unless we start them from vtl0. These functions
         // are just used to allow us to start the callback tests.
@@ -146,27 +137,21 @@ enclave
 
         // Pointers must have an in or out direction.
         HRESULT TestPassingPrimitivesAsInPointers_To_HostApp(
-            [count=abitrary_size_1, in] uint8_t* uint8_val,
-            [count=abitrary_size_2, in] uint16_t* uint16_val,
-            [count=abitrary_size_1, in] uint32_t* uint32_val,
-            size_t abitrary_size_1,
-            size_t abitrary_size_2);
+            [in] uint8_t* uint8_val,
+            [in] uint16_t* uint16_val,
+            [in] uint32_t* uint32_val);
 
         // Pointers must have an in or out direction.
         HRESULT TestPassingPrimitivesAsInOutPointers_To_HostApp(
-            [count=abitrary_size_1, in, out] int8_t* int8_val,
-            [count=abitrary_size_2, in, out] int16_t* int16_val,
-            [in, out] int32_t* int32_val_ptr, // only sizeof(int32_t) will be copied by abi layer
-            size_t abitrary_size_1,
-            size_t abitrary_size_2);
+            [in, out] int8_t* int8_val,
+            [in, out] int16_t* int16_val,
+            [in, out] int32_t* int32_val);
 
         // Pointers must have an in or out direction.
         HRESULT TestPassingPrimitivesAsOutPointers_To_HostApp(
-            [count=abitrary_size_1, out] bool* bool_val,
-            [count=abitrary_size_2, out] DecimalEnum* enum_val,
-            [count=abitrary_size_1, out] uint64_t* uint64_val,
-            size_t abitrary_size_1,
-            size_t abitrary_size_2); 
+            [out] bool* bool_val,
+            [out] DecimalEnum* enum_val,
+            [out] uint64_t* uint64_val); 
 
         // Example of returning a pointer since we don't allow return pointers of primitives, 
         // only structs. Pointer marhaling works the same way for primitive so we only need a test
@@ -187,7 +172,6 @@ enclave
             [in, out]StructWithNoPointers arg2,
             [out] StructWithNoPointers* arg3,
             [out] StructWithNoPointers arg4,
-            [size=abitrary_size_1, out] uint64_t* uint64_val,
-            size_t abitrary_size_1);
+            [out] uint64_t* uint64_val);
     };
 };
