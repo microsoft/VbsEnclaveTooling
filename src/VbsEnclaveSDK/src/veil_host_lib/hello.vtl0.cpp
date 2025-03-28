@@ -182,6 +182,8 @@ namespace simplified
         auto helloProvider = veil::vtl0::implementation::hello::open_provider();
         auto pinMessage = data->pinMessage;
 
+        __debugbreak();
+
         if (data->openOnly)
         {
             auto helloSecureSessionKey = veil::vtl0::implementation::hello::open_hello_key(helloProvider.get(), data->helloKeyName, pinMessage);

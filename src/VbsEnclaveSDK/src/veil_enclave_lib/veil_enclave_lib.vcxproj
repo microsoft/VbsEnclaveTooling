@@ -122,6 +122,7 @@
     <ClInclude Include="memory.vtl1.h" />
     <ClInclude Include="ngc.vtl1.h" />
     <ClInclude Include="object_table.vtl1.h" />
+    <ClInclude Include="telemetry.vtl1.h" />
     <ClInclude Include="vtl0_functions.vtl1.h" />
     <ClInclude Include="pch.h" />
     <ClInclude Include="registered_callbacks.vtl1.h" />

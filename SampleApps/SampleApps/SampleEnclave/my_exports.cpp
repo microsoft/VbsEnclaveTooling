@@ -11,6 +11,7 @@
 #include <enclave_interface.vtl1.h>
 #include <export_helpers.vtl1.h>
 #include <hello.vtl1.h>
+#include <telemetry.vtl1.h>
 #include <taskpool.vtl1.h>
 #include <vtl0_functions.vtl1.h>
 
@@ -301,11 +302,15 @@ catch (...)
 //
 void RunHelloSecuredEncryptionKeyExample_CreateEncryptionKeyImpl(_In_ sample::args::RunHelloSecuredEncryptionKeyExample_CreateEncryptionKey* data)
 {
+    __debugbreak();
+
     using namespace veil::vtl1::vtl0_functions;
     
     const bool requireEnclaveOwnerIdMatchesHelloContainerSecureId = false;
     veil::any::telemetry::activity enclaveLog(data->activityLevel);
     enclaveLog.AddLog(L"[Enclave] In RunHelloSecuredEncryptionKeyExample_CreateEncryptionKeyImpl", veil::any::telemetry::eventLevel::EVENT_LEVEL_CRITICAL);
+
+    veil::vtl1::telemetry::implementation::add_log_from_enclave(L"Enclave test log");
 
     debug_print("");
     debug_print(L"[Create flow]");
