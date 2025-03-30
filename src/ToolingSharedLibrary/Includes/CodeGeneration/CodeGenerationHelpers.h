@@ -290,6 +290,7 @@ namespace CodeGeneration
         EdlTypeKind::String,
         EdlTypeKind::WString,
         EdlTypeKind::Struct,
+        EdlTypeKind::Vector,
     };
 
     inline bool TypeContainsIterator(const Declaration& declaration)
@@ -300,6 +301,7 @@ namespace CodeGeneration
         }
 
         if (declaration.m_edl_type_info.m_type_kind == EdlTypeKind::String ||
+            declaration.m_edl_type_info.m_type_kind == EdlTypeKind::String ||
             declaration.m_edl_type_info.m_type_kind == EdlTypeKind::WString)
         {
             return true;
@@ -370,6 +372,25 @@ namespace CodeGeneration
         return AddPtr(type_info.m_name, PtrKind::shared);;
     }
 
+    inline std::string AddVectorEncapulation(const Declaration& vector_declaration)
+    {
+        auto inner_type = vector_declaration.m_edl_type_info.inner_type;
+        auto inner_type_name = GetSimpleTypeInfo(*inner_type);
+        std::string type_with_ptr {};
+
+        if (vector_declaration.HasPointer())
+        {
+            type_with_ptr = EncapsulateInPtr(vector_declaration, *inner_type);
+        }
+
+        if (!type_with_ptr.empty())
+        {
+            return std::format("std::vector<{}>", type_with_ptr);
+        }
+
+        return std::format("std::vector<{}>", inner_type_name);
+    }
+
     inline std::string AddArrayEncapulation(
         std::string type_name,
         const Declaration& array_declaration)
@@ -394,6 +415,11 @@ namespace CodeGeneration
     {
         EdlTypeKind type_kind = declaration.m_edl_type_info.m_type_kind;
         std::string type_name = GetSimpleTypeInfo(declaration.m_edl_type_info);
+
+        if (declaration.IsEdlType(EdlTypeKind::Vector))
+        {
+            return AddVectorEncapulation(declaration);
+        }
 
         if (!declaration.m_array_dimensions.empty())
         {

@@ -18,6 +18,8 @@ namespace EdlProcessor
     constexpr char LEFT_ROUND_BRACKET = '(';
     constexpr char RIGHT_SQUARE_BRACKET = ']';
     constexpr char LEFT_SQUARE_BRACKET = '[';
+    constexpr char RIGHT_ARROW_BRACKET = '>';
+    constexpr char LEFT_ARROW_BRACKET = '<';
     constexpr char EQUAL_SIGN = '=';
     constexpr char SEMI_COLON = ';';
     constexpr char COMMA = ',';
@@ -77,6 +79,7 @@ namespace EdlProcessor
         { EdlTypeKind::String, "string" },
         { EdlTypeKind::WString, "wstring" },
         { EdlTypeKind::UIntPtr, "uintptr_t" },
+        { EdlTypeKind::Vector, "vector" },
     };
 
     static const std::unordered_map<std::string, EdlTypeKind> c_string_to_edltype_map =
@@ -104,6 +107,7 @@ namespace EdlProcessor
         { "*", EdlTypeKind::Ptr },
         { "size_t", EdlTypeKind::SizeT },
         { "uintptr_t", EdlTypeKind::UIntPtr },
+        { "vector", EdlTypeKind::Vector },
     };
 
     static const std::unordered_set<EdlTypeKind, EdlTypeToHash> c_edlTypes_primitive_set =

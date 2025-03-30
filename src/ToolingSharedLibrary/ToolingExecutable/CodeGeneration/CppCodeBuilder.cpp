@@ -36,6 +36,7 @@ namespace CodeGeneration
 
         types_header << struct_declarations.str();
         types_header << enums_definitions.str();
+        types_header << c_flatbuffers_helper_functions;
 
         for (auto& type : developer_types_insertion_list)
         {

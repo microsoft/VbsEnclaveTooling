@@ -132,6 +132,7 @@
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="HostTestHelpers.h" />
     <ClInclude Include="TestHelpers.h" />
   </ItemGroup>
   <!-- Make sure the VirtualTrustLayer is set to HostApp so the hostApp generated files get added at compile time -->

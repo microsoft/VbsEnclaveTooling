@@ -612,11 +612,20 @@ namespace EdlProcessor
         // function parameters and structs. E.g uint8_t
         if (c_string_to_edltype_map.contains(type_name))
         {
-            type_info.m_type_kind = c_string_to_edltype_map.at(type_name);
+            auto type_kind = c_string_to_edltype_map.at(type_name);
+
+            if (type_kind == EdlTypeKind::Vector)
+            {
+                type_info = ParseVector();
+            }
+            else
+            {
+                type_info.m_type_kind = c_string_to_edltype_map.at(type_name);
+            }
         }
         else if (m_developer_types.contains(type_name))
         {
-            auto& developer_type = m_developer_types.at(type_name);
+            DeveloperType& developer_type = m_developer_types.at(type_name);
             type_info.m_type_kind = developer_type.m_type_kind;
         }
         else
@@ -687,7 +696,7 @@ namespace EdlProcessor
             {
                 // token identifier can only be a value from an
                 // anonymous enum.
-                auto& type = m_developer_types.at(EDL_ANONYMOUS_ENUM_KEYWORD);
+                DeveloperType& type = m_developer_types.at(EDL_ANONYMOUS_ENUM_KEYWORD);
                 is_valid_identifier = type.m_items.contains(token_name);
             }
 
@@ -710,6 +719,67 @@ namespace EdlProcessor
         }
 
         return dimensions;
+    }
+
+    EdlTypeInfo EdlParser::ParseVector()
+    {
+        EdlTypeInfo vector_info {};
+        vector_info.m_type_kind = EdlTypeKind::Vector;
+        vector_info.m_name = "vector";
+
+        if (PeekAtCurrentToken() != LEFT_ARROW_BRACKET)
+        {
+            throw EdlAnalysisException(
+                ErrorId::EdlVectorDoesNotStartWithArrowBracket,
+                m_file_name,
+                m_cur_line,
+                m_cur_column);
+        }
+
+        while (PeekAtCurrentToken() == LEFT_ARROW_BRACKET)
+        {
+            // Move past '<' to get value within it.
+            GetCurrentTokenAndMoveToNextToken();
+            Token vector_value_token = GetCurrentTokenAndMoveToNextToken();
+            ThrowIfTokenNotIdentifier(vector_value_token, ErrorId::EdlVectorNameIdentifierNotFound);
+            auto token_name = vector_value_token.ToString();
+
+            if (c_string_to_edltype_map.contains(token_name))
+            {
+                auto edl_type = c_string_to_edltype_map.at(token_name);
+
+                if (edl_type == EdlTypeKind::Vector)
+                {
+                    throw EdlAnalysisException(
+                        ErrorId::EdlOnlySingleDimensionsSupported,
+                        m_file_name,
+                        m_cur_line,
+                        m_cur_column);
+                }
+
+                vector_info.inner_type = std::make_shared<EdlTypeInfo>(token_name, edl_type);
+            }
+            else if (m_developer_types.contains(token_name))
+            {
+                DeveloperType& dev_type = m_developer_types.at(token_name);
+                vector_info.inner_type = std::make_shared<EdlTypeInfo>(
+                    dev_type.m_name,
+                    dev_type.m_type_kind);
+            }
+            else
+            {
+                throw EdlAnalysisException(
+                    ErrorId::EdlTypeInVectorMustBePreviouslyDefined,
+                    m_file_name,
+                    m_cur_line,
+                    m_cur_column,
+                    token_name);
+            }
+
+            ThrowIfExpectedTokenNotNext(RIGHT_ARROW_BRACKET);
+        }
+
+        return vector_info;
     }
 
     void EdlParser::ValidatePointers(const Declaration& declaration)
@@ -742,6 +812,16 @@ namespace EdlProcessor
         {
             // Pointers to arrays are not valid in the edl file.
             if (in_or_out_present && !declaration.m_array_dimensions.empty())
+            {
+                throw EdlAnalysisException(
+                    ErrorId::EdlPointerToArrayNotAllowed,
+                    m_file_name,
+                    m_cur_line,
+                    m_cur_column);
+
+            }
+
+            if (in_or_out_present && declaration.IsEdlType(EdlTypeKind::Vector))
             {
                 throw EdlAnalysisException(
                     ErrorId::EdlPointerToArrayNotAllowed,
@@ -854,7 +934,7 @@ namespace EdlProcessor
                 // within a function parameter.
                 if (m_developer_types.contains(EDL_ANONYMOUS_ENUM_KEYWORD))
                 {
-                    auto type = m_developer_types.at(EDL_ANONYMOUS_ENUM_KEYWORD);
+                    DeveloperType& type = m_developer_types.at(EDL_ANONYMOUS_ENUM_KEYWORD);
                     if (type.m_items.contains(token.ToString()))
                     {
                         continue;
