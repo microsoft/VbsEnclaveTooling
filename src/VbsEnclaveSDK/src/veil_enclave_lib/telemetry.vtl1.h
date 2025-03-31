@@ -9,8 +9,6 @@
 #include "telemetry.any.h"
 #include "utils.any.h"
 
-#include "future.vtl1.h"
-#include "memory.vtl1.h"
 #include "object_table.vtl1.h"
 #include "registered_callbacks.vtl1.h"
 #include "utils.vtl1.h"
@@ -53,6 +51,7 @@ namespace veil::vtl1::telemetry
             veil::any::telemetry::eventLevel runtimeLogLevel,
             std::wstring_view logFilePath)
         {
+
             if ((int)logLevel <= (int)runtimeLogLevel)
             {
                 implementation::callouts::add_log(log, logFilePath);

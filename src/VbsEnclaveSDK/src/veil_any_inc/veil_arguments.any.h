@@ -7,7 +7,6 @@
 
 #include <veil.any.h>
 #include <hello.any.h>
-#include <telemetry.any.h>
 
 #ifndef ENCLAVE_REPORT_DATA_LENGTH
 #define ENCLAVE_REPORT_DATA_LENGTH 64
