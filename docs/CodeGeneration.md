@@ -137,9 +137,9 @@ executable generated code based on it.
 enclave {
     struct ExampleStruct
     {
-        vector<string> vec_str{};
-        wstring arr_str[5]{};
-        int32_t* int_ptr{};
+        vector<string> vec_str;
+        wstring arr_str[5];
+        int32_t* int_ptr;
     };
 
     trusted {
@@ -153,7 +153,7 @@ enclave {
     untrusted {
         HRESULT UntrustedExample(
             [in, out] string some_string,
-            [out]wstring some_wstring
+            [out] wstring some_wstring
         );
     };
 };
