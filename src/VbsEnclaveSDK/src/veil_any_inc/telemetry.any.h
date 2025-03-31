@@ -77,22 +77,11 @@ namespace veil::any
             }
 
             public:
-            activity(const eventLevel level) : activityLevel(level) // This is used from the enclave to create and append to logString, no writes can be performed from enclave
-            {}
-
             activity(const std::wstring& providerName,
                 const std::wstring& guidStr,
                 const eventLevel level) : provider(providerName), guid(guidStr), activityLevel(level)
             {
                 SetLogFilePath();
-            }
-
-            void AddLog(const std::wstring& log, const eventLevel level) // Called from Enclave
-            {
-                if (level <= activityLevel)
-                {
-                    logString.append(log + L"\n"); // Add a new line after each log
-                }
             }
 
             static std::wstring CreateTimestamp()
@@ -121,42 +110,7 @@ namespace veil::any
                 SaveLog();
             }
 
-            std::vector<uint8_t> WstringToBytes()
-            {
-                std::vector<uint8_t> bytes;
-                bytes.reserve(logString.size() * sizeof(wchar_t));
-                for (wchar_t wc : logString)
-                {
-                    uint8_t* bytePtr = reinterpret_cast<uint8_t*>(&wc);
-                    for (size_t i = 0; i < sizeof(wchar_t); ++i)
-                    {
-                        bytes.push_back(bytePtr[i]);
-                    }
-                }
-                return bytes;
-            }
-
-            std::wstring BytesToWString(const std::vector<uint8_t>& bytes)
-            {
-                std::wstring wstr(bytes.size() / sizeof(wchar_t), L'\0');
-                std::memcpy(&wstr[0], bytes.data(), bytes.size());
-                return wstr;
-            }
-
-            void AddLogFromEnclave(uint8_t* data, size_t size)
-            {
-                auto logSpan = std::span<uint8_t>(reinterpret_cast<uint8_t*>(data), size);
-                std::vector<uint8_t> logBytes(logSpan.begin(), logSpan.end());
-                auto logStr = BytesToWString(logBytes);
-                AddTimestampedLog(logStr, activityLevel);
-            }
-
             // Getters
-            std::wstring GetLog()
-            {
-                return logString;
-            }
-
             eventLevel GetActivityLevel()
             {
                 return activityLevel;
