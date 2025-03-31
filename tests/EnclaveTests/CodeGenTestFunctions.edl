@@ -4,17 +4,6 @@
 
 enclave
 {
-    /***************************************************************************************************
-    *    Note about the count and size attribute on function parameters and struct fields:             *
-    *                                                                                                  *
-    *    [count=<value>] :  Is used to tell the codegen to copy count * sizeof(type) bytes of data     *
-    *                       when copying a parameter/field  between virtual trust layers.              *
-    *                                                                                                  *
-    *    [size=<value>]  :  Is used to tell the codegen to copy size amount of data in bytes when      *    
-    *                       copying a parameter/field between virtual trust layers.                    *
-    *                                                                                                  *
-    ****************************************************************************************************/
-
     // Anonymous enum
     enum
     {
@@ -120,19 +109,19 @@ enclave
             DecimalEnum enum_val,
             int8_t int8_val);
 
-        // Pointers must have an in or out direction.
+        // Pointers should have an in or out direction. Otherwise the codegen layer will see them as [in] parameters.
         HRESULT TestPassingPrimitivesAsInPointers_To_Enclave(
             [in] uint8_t* uint8_val,
             [in] uint16_t* uint16_val,
             [in] uint32_t* uint32_val);
 
-        // Pointers must have an in or out direction.
+        // Pointers should have an in or out direction. Otherwise the codegen layer will see them as [in] parameters.
         HRESULT TestPassingPrimitivesAsInOutPointers_To_Enclave(
             [in, out] int8_t* int8_val,
             [in, out] int16_t* int16_val,
             [in, out] int32_t* int32_val);
 
-        // Pointers must have an in or out direction.
+        // Pointers should have an in or out direction. Otherwise the codegen layer will see them as [in] parameters.
         HRESULT TestPassingPrimitivesAsOutPointers_To_Enclave(
             [out] bool* bool_val,
             [out] DecimalEnum* enum_val,
@@ -143,9 +132,6 @@ enclave
         // for one.
         Int8PtrAndSize ReturnInt8ValPtr_From_Enclave();
 
-        // We don't allow return pointers of primitives, only structs and strings.
-        // Pointer marhaling works the same way for primitive so we only need a test
-        // for one.
         uint64_t ReturnUint64Val_From_Enclave();
 
         // Returning a more complex struct
@@ -229,19 +215,19 @@ enclave
             DecimalEnum enum_val,
             int8_t int8_val);
 
-        // Pointers must have an in or out direction.
+        // Pointers should have an in or out direction. Otherwise the codegen layer will see them as [in] parameters.
         HRESULT TestPassingPrimitivesAsInPointers_To_HostApp(
             [in] uint8_t* uint8_val,
             [in] uint16_t* uint16_val,
             [in] uint32_t* uint32_val);
 
-        // Pointers must have an in or out direction.
+        // Pointers should have an in or out direction. Otherwise the codegen layer will see them as [in] parameters.
         HRESULT TestPassingPrimitivesAsInOutPointers_To_HostApp(
             [in, out] int8_t* int8_val,
             [in, out] int16_t* int16_val,
             [in, out] int32_t* int32_val);
 
-        // Pointers must have an in or out direction.
+        // Pointers should have an in or out direction. Otherwise the codegen layer will see them as [in] parameters.
         HRESULT TestPassingPrimitivesAsOutPointers_To_HostApp(
             [out] bool* bool_val,
             [out] DecimalEnum* enum_val,
@@ -252,9 +238,6 @@ enclave
         // for one.
         Int8PtrAndSize ReturnInt8ValPtr_From_HostApp();
 
-        // We don't allow return pointers of primitives, only structs and strings.
-        // Pointer marhaling works the same way for primitive so we only need a test
-        // for one.
         uint64_t ReturnUint64Val_From_HostApp();
 
         // Returning a more complex struct

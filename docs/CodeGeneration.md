@@ -280,7 +280,39 @@ create a module.def file or even call into an exported function directly. This i
 generator underhood generates export functions based on the declarations in the `trusted` scope and exports these
 generated functions within the generated module.def file.
 
-Another thing to note, is that the 
+#### Call flow HostApp -> Enclave diagram (view in Github's preview mode)
+```mermaid
+sequenceDiagram
+    participant DevelopersFunction
+    participant Generated_EnclaveClass
+    participant HostAppHelpers.cpp
+    participant Vtl1_Generated_Stub
+    participant EnclaveHelpers.cpp
+    participant VTL1_Generated_abi_impl
+    participant VTL1_Developer_impl
+
+    DevelopersFunction->>Generated_EnclaveClass: invoke generated_class.func_name()
+    Generated_EnclaveClass->>HostAppHelpers.cpp: copy parameters into flatbuffer struct, <br> and pack the struct <br> into a flatbuffer builder object<br> and pass it  along with a function specific <br> flatbuffer struct as an out param to CallVtl1ExportFromVtl0()
+    HostAppHelpers.cpp->>Vtl1_Generated_Stub: use GetBufferPointer() to put the pointer <br> to the buffer (uint8_t*) and its size into the <br> EnclaveFunctionContext abi struct <br> and pass it to CallEnclave as input
+    Vtl1_Generated_Stub->>EnclaveHelpers.cpp: invoke CallVtl1ExportFromVtl1() <br> with EnclaveFunctionContext as input
+    EnclaveHelpers.cpp->>EnclaveHelpers.cpp: Copy the pointer to the buffer <br> inside the abi struct into vtl1 memory and use the <br> flatbuffer struct specific verifier function to verify the array of bytes<br>
+    EnclaveHelpers.cpp->>VTL1_Generated_abi_impl:  Unpack the array of bytes <br> into the function specific flatbuffer struct and <br> forward it to func_name_abi_impl() <br> along with a flatbuffer builder <br> out param for the return object.
+    VTL1_Generated_abi_impl->>VTL1_Developer_impl:convert the flatbuffer struct into a <br> mirror'd non flatbuffer function specific struct. <br> Its fields will be used as the functions <br> parameters in the call <br> to the developers impl function.
+    VTL1_Generated_abi_impl->>VTL1_Developer_impl:invoke func_name() with the fields as parameters
+    VTL1_Developer_impl->>VTL1_Generated_abi_impl: The inout/out values should now be updated and <br> the return value (also a member of the struct) <br> should be updated if applicable to function.
+    VTL1_Generated_abi_impl->>VTL1_Generated_abi_impl: convert the mirror'd non flatbuffer struct <br> whose values have now been <br> updated into a function specific flatbuffer struct <br>
+    VTL1_Generated_abi_impl->>VTL1_Generated_abi_impl: pack the flatbuffer struct into <br> a flatbuffer builder object and<br> assign it to the builder object out parameter
+    VTL1_Generated_abi_impl->>EnclaveHelpers.cpp: return 
+    EnclaveHelpers.cpp->>EnclaveHelpers.cpp: Get pointer to buffer (uint8_t*) <br> and size from returned builder object <br> and copy to vtl0 memory
+    EnclaveHelpers.cpp->>EnclaveHelpers.cpp: assign the vtl0 memory and size to the original vtl0's <br> EnclaveFunctionContext structs return buffer and size fields.
+    EnclaveHelpers.cpp->>Vtl1_Generated_Stub: return ABI HRESULT
+    Vtl1_Generated_Stub->>HostAppHelpers.cpp: return ABI HRESULT as pvoid
+    HostAppHelpers.cpp->>HostAppHelpers.cpp: Use the flatbuffer struct specific verifier <br> function to verify the array of bytes
+    HostAppHelpers.cpp->>HostAppHelpers.cpp: Unpack the array of bytes <br> into the function specific flatbuffer struct and <br> assign it to the out param <br> passed in by the original calling function.
+    HostAppHelpers.cpp->>Generated_EnclaveClass: return
+    Generated_EnclaveClass->>Generated_EnclaveClass: convert flatbuffer struct into non flatbuffer mirror'd struct.
+    Generated_EnclaveClass->>DevelopersFunction: copy values from mirror'd struct <br> into the functions original inout/out parameters <br> then return the return_value <br> field in the struct if applicable.
+```
 
 #### Enclave -> HostApp scenario (untrusted scope)
 
@@ -358,36 +390,6 @@ HRESULT MyEnclave::UntrustedExample_callback(
 `Note: 11` As you can see, again the developer no longer has to worry about copying parameters into
 and out of the enclave or using the `CallEnclave` Win32 api directly.
 
-#### Call flow HostApp -> Enclave diagram (view in Github's preview mode)
-```mermaid
-sequenceDiagram
-    participant DevelopersFunction
-    participant Generated_EnclaveClass
-    participant HostAppHelpers.cpp
-    participant Vtl1_Generated_Stub
-    participant EnclaveHelpers.cpp
-    participant VTL1_Generated_abi_impl
-    participant VTL1_Developer_impl
-
-    DevelopersFunction->>Generated_EnclaveClass: invoke generated_class.func_name()
-    Generated_EnclaveClass->>HostAppHelpers.cpp: put parameters in tuple, <br> create return struct and pass <br> both to CallVtl1ExportFromVtl0()
-    HostAppHelpers.cpp->>Vtl1_Generated_Stub: put tuple and return struct into <br> EnclaveFunctionContext abi struct <br> and pass it to CallEnclave as input
-    Vtl1_Generated_Stub->>EnclaveHelpers.cpp: invoke CallVtl1ExportFromVtl1() <br> with EnclaveFunctionContext as input
-    EnclaveHelpers.cpp->>VTL1_Generated_abi_impl: extract return struct and <br> parameters from tuple and <br> forward them to func_name_abi_impl()
-    VTL1_Generated_abi_impl->>VTL1_Developer_impl:copy vtl0 parameters into vtl1 parameters
-    VTL1_Generated_abi_impl->>VTL1_Developer_impl:invoke func_name() with vtl1 parameters
-    VTL1_Developer_impl->>VTL1_Generated_abi_impl: update inout/out params and <br> return a value if applicable to function
-    VTL1_Generated_abi_impl->>VTL1_Generated_abi_impl: copy updated vtl1 inout/out <br> pointer paramerters to original vtl0 parameters
-    VTL1_Generated_abi_impl->>VTL1_Generated_abi_impl: copy return value and non pointer <br> inout/out paramerters into return struct
-    VTL1_Generated_abi_impl->>EnclaveHelpers.cpp: return 
-    EnclaveHelpers.cpp->>EnclaveHelpers.cpp: copy return struct out of vtl1 into vtl0 memory
-    EnclaveHelpers.cpp->>EnclaveHelpers.cpp: copy return struct into original <br> EnclaveFunctionContext return parameter buffer
-    EnclaveHelpers.cpp->>Vtl1_Generated_Stub: return ABI HRESULT
-    Vtl1_Generated_Stub->>HostAppHelpers.cpp: return ABI HRESULT as pvoid
-    HostAppHelpers.cpp->>HostAppHelpers.cpp: put EnclaveFunctionContext return <br> parameter buffer into original return struct
-    HostAppHelpers.cpp->>Generated_EnclaveClass: return
-    Generated_EnclaveClass->>DevelopersFunction: copy non pointer values from <br> return struct into original <br> parameters then return value if applicable
-```
 ### Data flow Enclave -> HostApp diagram (view in Github's preview mode)
 
 ```mermaid
@@ -401,19 +403,25 @@ sequenceDiagram
     participant VTL0_Developer_impl
 
     DevelopersFunction->>VTL1_Generated_abi_impl_callback: invoke func_name_callback()
-    VTL1_Generated_abi_impl_callback->>EnclaveHelpers.cpp: copy parameters into vtl0 tuple <br> create vtl0 return struct and <br> pass both to CallVtl0CallbackFromVtl1()
-    EnclaveHelpers.cpp->>Vtl0_Generated_Stub_callback: put tuple and return struct <br> into vtl0 EnclaveFunctionContext abi <br> struct and pass it to CallEnclave as input
-    Vtl0_Generated_Stub_callback->>HostAppHelpers.cpp: invoke CallVtl0CallbackFromVtl0() with <br> EnclaveFunctionContext as input
-    HostAppHelpers.cpp->>VTL0_Generated_abi_impl: extract return struct and <br> parameters from tuple and forward <br> them to func_name_abi_impl_callback()
-    VTL0_Generated_abi_impl->>VTL0_Developer_impl: invoke func_name_callback() <br> with parameters
-    VTL0_Developer_impl->>VTL0_Generated_abi_impl: update inout/out params and <br> return a value if applicable to <br> function
-    VTL0_Generated_abi_impl->>VTL0_Generated_abi_impl: copy return value and <br> non pointer inout/out paramerters <br> into return struct
+    VTL1_Generated_abi_impl_callback->>EnclaveHelpers.cpp: copy parameters into flatbuffer struct, <br> and pack the struct <br> into a flatbuffer builder object<br> and pass it along with a function specific <br> flatbuffer struct as an out param to CallVtl0CallbackFromVtl1()
+    EnclaveHelpers.cpp->>EnclaveHelpers.cpp: use GetBufferPointer() to get the pointer <br> to the buffer (uint8_t*) and its size and copy it into a vtl0 blob of memory
+    EnclaveHelpers.cpp->>Vtl0_Generated_Stub_callback: put vtl0 blob of memory and its size into a <br> EnclaveFunctionContext abi struct <br> and pass it to CallEnclave as input
+    Vtl0_Generated_Stub_callback->>HostAppHelpers.cpp: invoke CallVtl0CallbackFromVtl0() <br> with EnclaveFunctionContext as input
+    HostAppHelpers.cpp->>HostAppHelpers.cpp: Use the flatbuffer struct specific verifier <br> function to verify the array of bytes <br> inside the EnclaveFunctionContext struct
+    HostAppHelpers.cpp->>VTL0_Generated_abi_impl: Unpack the array of bytes <br> into a function specific flatbuffer struct and <br> forward it along with a flatbuffer builder object <br> as an out param to <br> func_name_abi_impl_callback() 
+    VTL0_Generated_abi_impl->>VTL0_Generated_abi_impl:convert the flatbuffer struct into a <br> mirror'd non flatbuffer function specific struct. <br> Its fields will be used as the functions <br> parameters in the call <br> to the developers impl function.
+    VTL0_Generated_abi_impl->>VTL0_Developer_impl:invoke func_name() with the fields as parameters
+    VTL0_Developer_impl->>VTL0_Generated_abi_impl: The inout/out values should now be updated and <br> the return value (also a member of the struct) <br> should be updated if applicable to function.
+    VTL0_Generated_abi_impl->>VTL0_Generated_abi_impl: convert the mirror'd non flatbuffer struct <br> whose values have now been <br> updated into a function specific flatbuffer struct <br>
+    VTL0_Generated_abi_impl->>VTL0_Generated_abi_impl: pack the flatbuffer struct into <br> a flatbuffer builder object and <br> assign it to the builder object out parameter
     VTL0_Generated_abi_impl->>HostAppHelpers.cpp: return 
-    HostAppHelpers.cpp->>HostAppHelpers.cpp: put return struct into original <br> EnclaveFunctionContexts return <br> parameter buffer
+    HostAppHelpers.cpp->>HostAppHelpers.cpp: Get pointer to buffer (uint8_t*) <br> and size from returned builder object <br> and copy to vtl0 memory
+    HostAppHelpers.cpp->>HostAppHelpers.cpp: assign the vtl0 memory and size to the original vtl0's <br> EnclaveFunctionContext structs return buffer and size fields.
     HostAppHelpers.cpp->>Vtl0_Generated_Stub_callback: return ABI HRESULT
     Vtl0_Generated_Stub_callback->>EnclaveHelpers.cpp: return ABI HRESULT as pvoid
-    EnclaveHelpers.cpp->>EnclaveHelpers.cpp: copy EnclaveFunctionContext return parameter <br> buffer into original enclave return struct
+    EnclaveHelpers.cpp->>EnclaveHelpers.cpp: Copy return buffer array of bytes <br> inside EnclaveFunctionContext into vtl1 memory <br> and use the flatbuffer struct specific verifier <br> function to verify the vtl1 array of bytes.
+    EnclaveHelpers.cpp->>EnclaveHelpers.cpp: Unpack the vtl1 array of bytes <br> into the function specific flatbuffer struct and <br> assign it to the out param <br> passed in by the original calling function.
     EnclaveHelpers.cpp->>VTL1_Generated_abi_impl_callback: return
-    VTL1_Generated_abi_impl_callback->>DevelopersFunction: copy non pointer values <br> from return struct into original <br> vtl1 parameters then return value  <br> if applicable
+    VTL1_Generated_abi_impl_callback->>VTL1_Generated_abi_impl_callback: convert flatbuffer struct into non flatbuffer mirror'd struct.
+    VTL1_Generated_abi_impl_callback->>DevelopersFunction: copy values from mirror'd struct <br> into the functions original inout/out parameters <br> then return the return_value <br> field in the struct if applicable.
 ```
-
