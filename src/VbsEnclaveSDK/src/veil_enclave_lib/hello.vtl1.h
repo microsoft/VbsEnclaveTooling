@@ -187,8 +187,6 @@ namespace veil::vtl1::hello
                 auto data = veil::vtl1::memory::allocate_vtl0<veil::any::implementation::args::hellokeys_create_or_open_hello_key>();
                 data->openOnly = openOnly;
 
-                __debugbreak();
-
                 {
                     auto cnt = veil::any::math_max(sizeof(data->helloKeyName), helloKeyName.size());
                     wcscpy_s(data->helloKeyName, cnt, helloKeyName.data());

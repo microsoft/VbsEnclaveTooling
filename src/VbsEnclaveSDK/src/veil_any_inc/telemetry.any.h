@@ -34,22 +34,6 @@ namespace veil::any
             std::wstring logFilePath;
             eventLevel activityLevel;
 
-            std::wstring CreateTimestamp()
-            {
-                // Get the current time
-                std::time_t now = std::time(nullptr);
-
-                // Convert to local time
-                std::tm localTime;
-                localtime_s(&localTime, &now);
-
-                // Format the time as a wide string
-                std::wostringstream timestamp;
-                timestamp << std::put_time(&localTime, L"%Y-%m-%d %H:%M:%S");
-
-                return timestamp.str(); // Return the formatted timestamp as std::wstring
-            }
-
             std::wstring ReplaceForbiddenFilenameChars(const std::wstring& input)
             {
                 std::wstring modified = input;
@@ -111,6 +95,22 @@ namespace veil::any
                 }
             }
 
+            static std::wstring CreateTimestamp()
+            {
+                // Get the current time
+                std::time_t now = std::time(nullptr);
+
+                // Convert to local time
+                std::tm localTime;
+                localtime_s(&localTime, &now);
+
+                // Format the time as a wide string
+                std::wostringstream timestamp;
+                timestamp << std::put_time(&localTime, L"%Y-%m-%d %H:%M:%S");
+
+                return timestamp.str(); // Return the formatted timestamp as std::wstring
+            }
+
             void AddTimestampedLog(const std::wstring& log, const eventLevel level) // Called from Host
             {
                 if (level <= activityLevel)
@@ -160,6 +160,11 @@ namespace veil::any
             eventLevel GetActivityLevel()
             {
                 return activityLevel;
+            }
+
+            std::wstring GetLogFilePath()
+            {
+                return logFilePath;
             }
         };
     }

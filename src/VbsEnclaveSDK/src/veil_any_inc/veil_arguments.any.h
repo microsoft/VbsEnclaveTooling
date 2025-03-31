@@ -7,6 +7,7 @@
 
 #include <veil.any.h>
 #include <hello.any.h>
+#include <telemetry.any.h>
 
 #ifndef ENCLAVE_REPORT_DATA_LENGTH
 #define ENCLAVE_REPORT_DATA_LENGTH 64
@@ -137,6 +138,7 @@ namespace veil::any
             struct add_log
             {
                 wchar_t log[256];
+                wchar_t logFilePath[256];
 
                 // out
             };

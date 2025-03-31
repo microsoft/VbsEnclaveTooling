@@ -49,6 +49,7 @@ int EncryptFlow(
     sample::args::RunHelloSecuredEncryptionKeyExample_CreateEncryptionKey data;
     data.helloKeyName = helloKeyName;
     data.activityLevel = veilLog.GetActivityLevel();
+    data.logFilePath = veilLog.GetLogFilePath();
     THROW_IF_FAILED(veil::vtl0::enclave::call_enclave(enclave, "RunHelloSecuredEncryptionKeyExample_CreateEncryptionKey", data));
 
     // We now have our encryption key's bytes, which are "hello-secured" and sealed!
@@ -61,7 +62,6 @@ int EncryptFlow(
     //      2. Our encryption key is sealed by the enclave (i.e. can only be unsealed
     //          by the sealing-enclave or an enclave signed with compatible signature).
     auto securedEncryptionKeyBytes = std::span<uint8_t>(reinterpret_cast<uint8_t*>(data.securedEncryptionKeyBytes.data), data.securedEncryptionKeyBytes.size);
-    veilLog.AddLogFromEnclave(data.enclaveLog.data, data.enclaveLog.size);
 
     // Save securedEncryptionKeyBytes to disk
     SaveBinaryData(keyFilePath.string(), securedEncryptionKeyBytes);
@@ -79,10 +79,10 @@ int EncryptFlow(
     loadData.dataToEncrypt = input;
     loadData.isToBeEncrypted = true;
     loadData.activityLevel = veilLog.GetActivityLevel();
+    loadData.logFilePath = veilLog.GetLogFilePath();
     THROW_IF_FAILED(veil::vtl0::enclave::call_enclave(enclave, "RunHelloSecuredEncryptionKeyExample_LoadEncryptionKey", loadData));
     auto encryptedInputBytes = std::span<uint8_t>(reinterpret_cast<uint8_t*>(loadData.encryptedInputBytes.data), loadData.encryptedInputBytes.size);
     auto tag = std::span<uint8_t>(reinterpret_cast<uint8_t*>(loadData.tag.data), loadData.tag.size);
-    veilLog.AddLogFromEnclave(loadData.enclaveLog.data, loadData.enclaveLog.size);
 
     // Save encryptedInputBytes to disk
     SaveBinaryData(encryptedInputFilePath.string(), encryptedInputBytes);
@@ -118,9 +118,9 @@ int DecryptFlow(
     data.encryptedInputBytes.size = encryptedInputBytes.size();
     data.tag.data = tag.data();
     data.tag.size = tag.size();
+    data.logFilePath = veilLog.GetLogFilePath();
     data.activityLevel = veilLog.GetActivityLevel();
     THROW_IF_FAILED(veil::vtl0::enclave::call_enclave(enclave, "RunHelloSecuredEncryptionKeyExample_LoadEncryptionKey", data));
-    veilLog.AddLogFromEnclave(data.enclaveLog.data, data.enclaveLog.size);
 
     auto decryptedInputBytes = std::span<uint8_t>(reinterpret_cast<uint8_t*>(data.decryptedInputBytes.data), data.decryptedInputBytes.size);
 
@@ -144,9 +144,10 @@ int mainEncryptDecrpyt(uint32_t activityLevel)
 
     veil::any::telemetry::activity veilLog(
         L"VeilSampleApp", 
-        L"70F7212C-1F84-4B86-B550-3D5AE82EC779" /*Generated GUID*/, 
+        L"70F7212C-1F84-4B86-B550-3D5AE82EC779" /*Generated GUID*/,
         static_cast<veil::any::telemetry::eventLevel>(activityLevel));
-    veilLog.AddTimestampedLog(L"Starting from host", veil::any::telemetry::eventLevel::EVENT_LEVEL_CRITICAL);
+    
+    veilLog.AddTimestampedLog(L"[Host] Starting from host", veil::any::telemetry::eventLevel::EVENT_LEVEL_CRITICAL);
 
     /******************************* Enclave setup *******************************/
     // Create app+user enclave identity

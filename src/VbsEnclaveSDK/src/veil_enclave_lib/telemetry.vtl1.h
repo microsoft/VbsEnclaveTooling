@@ -22,13 +22,8 @@ namespace veil::vtl1::telemetry
     {
         namespace callouts
         {
-            void add_log(std::wstring_view log)
+            void add_log(std::wstring_view log, std::wstring_view logFilePath)
             {
-                __debugbreak();
-
-                auto addLogEnum = veil::implementation::callback_id::add_log;
-                auto callbackCount = veil::implementation::callback_id_count;
-
                 // Call out to VTL0 (TODO:NOT SAFE UNTIL TOOLING WORK COMPLETE)
                 auto data = veil::vtl1::memory::allocate_vtl0<veil::any::implementation::args::add_log>();
                 
@@ -37,21 +32,31 @@ namespace veil::vtl1::telemetry
                     wcscpy_s(data->log, cnt, log.data());
                     data->log[cnt] = L'\0';
                 }
+                {
+                    auto cnt = veil::any::math_max(sizeof(data->logFilePath), logFilePath.size());
+                    wcscpy_s(data->logFilePath, cnt, logFilePath.data());
+                    data->logFilePath[cnt] = L'\0';
+                }
 
                 void* output {};
                 auto func = veil::vtl1::implementation::get_callback(veil::implementation::callback_id::add_log);
 
                 auto tempData = data.release();
-
                 THROW_IF_WIN32_BOOL_FALSE(::CallEnclave(func, reinterpret_cast<void*>(tempData), TRUE, reinterpret_cast<void**>(&output)));
                 THROW_IF_FAILED(pvoid_to_hr(output));
             }
         }
 
         inline void add_log_from_enclave(
-            std::wstring_view log)
+            std::wstring_view log,
+            veil::any::telemetry::eventLevel logLevel,
+            veil::any::telemetry::eventLevel runtimeLogLevel,
+            std::wstring_view logFilePath)
         {
-            implementation::callouts::add_log(log);
+            if ((int)logLevel <= (int)runtimeLogLevel)
+            {
+                implementation::callouts::add_log(log, logFilePath);
+            }
         }
     }
 }

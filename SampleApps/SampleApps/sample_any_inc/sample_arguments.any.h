@@ -22,10 +22,10 @@ namespace sample
         {
             std::wstring helloKeyName;
             veil::any::telemetry::eventLevel activityLevel;
+            std::wstring logFilePath;
 
             //out
             veil::any::args::data_blob securedEncryptionKeyBytes;
-            veil::any::args::data_blob enclaveLog;
         };
 
         struct RunHelloSecuredEncryptionKeyExample_LoadEncryptionKey
@@ -34,13 +34,13 @@ namespace sample
             std::wstring dataToEncrypt;
             bool isToBeEncrypted = false; // Controls if the Load flow is used for encryption or decryption
             veil::any::telemetry::eventLevel activityLevel;
+            std::wstring logFilePath;
 
             // out
             veil::any::args::data_blob resealedEncryptionKeyBytes;
             veil::any::args::data_blob encryptedInputBytes;
             veil::any::args::data_blob tag;
             veil::any::args::data_blob decryptedInputBytes;
-            veil::any::args::data_blob enclaveLog;
         };
     }
 }
