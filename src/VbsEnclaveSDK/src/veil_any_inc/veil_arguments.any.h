@@ -136,7 +136,7 @@ namespace veil::any
 
             struct add_log
             {
-                wchar_t log[256];
+                wchar_t log[2048];
                 wchar_t logFilePath[256];
 
                 // out

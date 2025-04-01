@@ -9,6 +9,7 @@
 #include "telemetry.any.h"
 #include "utils.any.h"
 
+#include "future.vtl1.h"
 #include "memory.vtl1.h"
 #include "object_table.vtl1.h"
 #include "registered_callbacks.vtl1.h"
@@ -40,8 +41,7 @@ namespace veil::vtl1::telemetry
                 void* output {};
                 auto func = veil::vtl1::implementation::get_callback(veil::implementation::callback_id::add_log);
 
-                auto tempData = data.release();
-                THROW_IF_WIN32_BOOL_FALSE(::CallEnclave(func, reinterpret_cast<void*>(tempData), TRUE, reinterpret_cast<void**>(&output)));
+                THROW_IF_WIN32_BOOL_FALSE(::CallEnclave(func, reinterpret_cast<void*>(data.get()), TRUE, reinterpret_cast<void**>(&output)));
                 THROW_IF_FAILED(pvoid_to_hr(output));
             }
         }
