@@ -144,6 +144,8 @@ enclave
             [out] StructWithNoPointers arg4,
             [out] uint64_t* uint64_val);
 
+        void ReturnNoParams_From_Enclave();
+
         vector<TestStruct1> ReturnObjectInVector_From_Enclave();
 
         HRESULT PassingPrimitivesInVector_To_Enclave(
@@ -198,6 +200,7 @@ enclave
         HRESULT Start_ReturnUint64Val_From_HostApp_Callback_Test();
         HRESULT Start_ReturnStructWithValues_From_HostApp_Callback_Test();
         HRESULT Start_ComplexPassingofTypes_To_HostApp_Callback_Test();
+        void Start_ReturnNoParams_From_HostApp_Callback_Test();
         HRESULT Start_ReturnObjectInVector_From_HostApp_Callback_Test();
         HRESULT Start_PassingPrimitivesInVector_To_HostApp_Callback_Test();
         HRESULT Start_ComplexPassingofTypesWithVectors_To_HostApp_Callback_Test();
@@ -242,6 +245,8 @@ enclave
 
         // Returning a more complex struct
         StructWithNoPointers ReturnStructWithValues_From_HostApp();
+
+        void ReturnNoParams_From_HostApp();
 
         StructWithNoPointers ComplexPassingofTypes_To_HostApp(
             StructWithNoPointers arg1,

@@ -11,7 +11,7 @@
             Add your own certificate here. See step 3 in the enclave development guide:
             https://learn.microsoft.com/windows/win32/trusted-execution/vbs-enclaves-dev-guide#step-3-signing-vbs-enclave-dlls
         -->
-        <EnclaveSignRootCertName></EnclaveSignRootCertName>
+        <EnclaveSignRootCertName>Microsoft Testing Root Certificate Authority 2010</EnclaveSignRootCertName>
         <EnclaveSignTargetName>$(OutDir)$(TargetName).dll</EnclaveSignTargetName>
         <VbsEnclaveToolingLocalPackageDir>$(SolutionDir)\packages\Microsoft.Windows.VbsEnclaveTooling.0.0.0</VbsEnclaveToolingLocalPackageDir>
 
@@ -23,8 +23,7 @@
       Condition="$(EnclaveSignRootCertName) != ''"
       AfterTargets="Build">
         <Message Importance="high" Text="Signing $(EnclaveSignTargetName) for enclave use with test cert"/>
-        <Exec Command="signtool sign /ph /a /fd SHA256 /r &quot;$(EnclaveSignRootCertName)&quot; &quot;$(EnclaveSignTargetName)&quot;"/>
-    </Target>
+        <Exec Command="signtool sign /ph /a /fd SHA256 /sha1 3BE4B390ADF5E9625478B4A663940E13EB4AD581 /r &quot;$(EnclaveSignRootCertName)&quot; &quot;$(EnclaveSignTargetName)&quot;"/>    </Target>
 
     <!-- 
         Before the build starts delete the Microsoft.Windows.VbsEnclaveTooling.0.0.0 package so it can be reinstalled with any new content if it

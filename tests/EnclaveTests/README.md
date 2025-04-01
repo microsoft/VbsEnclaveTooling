@@ -4,7 +4,10 @@ The Enclave Taef tests require the machine that will contain the enclave to
 enable test-signing and require the enclave to be signed with a certificate that
 is available on the machine. As part of the `TestEnclave` project, the 
 [EnclaveBuild.targets](.\TestEnclave\EnclaveBuild.targets) file should sign the `TestEnclave.dll`
-using the certificate you provide. Most developers'  primary dev machines won't be set up to
+using the certificate you provide. You will need to follow the instructions there to add
+your certificate to the build so the enclave dll can be signed.
+
+Most developers'  primary dev machines won't be set up to
 use test signing which is needed to load the enclave dll in debug mode.
 So your best bet is to remotely run the taef tests on a VM that has test signing enabled.
 We recommend using TShell to connect to the remote machine and run the following from

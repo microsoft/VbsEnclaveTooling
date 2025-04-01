@@ -948,31 +948,36 @@ namespace CodeGeneration
         std::string params_to_forward = param_info.m_params_to_forward_to_dev_impl.str();
         std::ostringstream function_body {};
 
-        std::ostringstream return_parameters_for_enclave_to_host {};
-
+        std::ostringstream updated_parameters_received_from_dev_impl{};;
+        
         if (param_info.m_are_return_params_needed)
         {
-            return_parameters_for_enclave_to_host << std::format(
+            updated_parameters_received_from_dev_impl << std::format(
                 c_setup_return_params_struct,
                 function_params_struct_type);
         }
+        else
+        {
+            updated_parameters_received_from_dev_impl
+                << std::format(c_setup_no_return_params_struct, function_params_struct_type);
+        }
 
-        std::string_view return_statement {};
+        std::string_view abi_func_return_statement {};
         if (param_info.m_function_return_type_void)
         {
-            return_statement = c_abi_func_return_when_void;
+            abi_func_return_statement = c_abi_func_return_when_void;
         }
         else
         {
-            return_statement = c_abi_func_return_value;
+            abi_func_return_statement = c_abi_func_return_value;
         }
 
         function_body << FormatString(
-            return_statement,
+            abi_func_return_statement,
             function_params_struct_type,
             call_impl_str,
             params_to_forward,
-            return_parameters_for_enclave_to_host.str());
+            updated_parameters_received_from_dev_impl.str());
 
 
         return std::format(
