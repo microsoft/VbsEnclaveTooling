@@ -144,6 +144,12 @@ StructWithNoPointers VTL1_Declarations::ComplexPassingofTypes_To_Enclave(
 
     return struct_to_return;
 }
+
+void VTL1_Declarations::ReturnNoParams_From_Enclave()
+{
+    // No body, test just here to make sure we have coverage for void returns
+}
+
 #pragma endregion
 
 #pragma region Enclave to HostApp Tests
@@ -279,6 +285,11 @@ HRESULT VTL1_Declarations::Start_ComplexPassingofTypes_To_HostApp_Callback_Test(
     THROW_HR_IF(E_INVALIDARG, *uint64_val != std::numeric_limits<std::uint64_t>::max());
 
     return S_OK;
+}
+
+void VTL1_Declarations::Start_ReturnNoParams_From_HostApp_Callback_Test()
+{
+    // No body, test just here to make sure we have coverage for void returns
 }
 
 #pragma endregion

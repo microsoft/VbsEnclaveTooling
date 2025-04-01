@@ -114,6 +114,8 @@ enclave
             [out] StructWithNoPointers arg4,
             [out] uint64_t* uint64_val);
 
+        void ReturnNoParams_From_Enclave();
+
         // Vtl1 can't test vtl0 callbacks unless we start them from vtl0. These functions
         // are just used to allow us to start the callback tests.
         HRESULT Start_TestPassingPrimitivesAsValues_To_HostApp_Callback_Test();
@@ -124,6 +126,7 @@ enclave
         HRESULT Start_ReturnUint64Val_From_HostApp_Callback_Test();
         HRESULT Start_ReturnStructWithValues_From_HostApp_Callback_Test();
         HRESULT Start_ComplexPassingofTypes_To_HostApp_Callback_Test();
+        void Start_ReturnNoParams_From_HostApp_Callback_Test();
     };
 
     // Functions are the same but these are for the opposite direction.
@@ -166,6 +169,7 @@ enclave
         // Returning a more complex struct
         StructWithNoPointers ReturnStructWithValues_From_HostApp();
 
+        void ReturnNoParams_From_HostApp();
 
         StructWithNoPointers ComplexPassingofTypes_To_HostApp(
             StructWithNoPointers arg1,

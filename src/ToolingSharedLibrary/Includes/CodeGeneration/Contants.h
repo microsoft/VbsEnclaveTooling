@@ -634,13 +634,16 @@ R"(auto dev_type_params = {}::ToDevType(in_flatbuffer_params);
 {})";
 
     static inline constexpr std::string_view c_abi_func_return_when_void =
-R"(     auto dev_type_params = {}::ToDevType(in_flatbuffer_params);
-        {}({});
+R"(auto dev_type_params = {}::ToDevType(in_flatbuffer_params);
+            {}({});
 {})";
 
     static inline constexpr std::string_view c_setup_return_params_struct = R"(
             auto flatbuffer_out_param = {}::ToFlatBuffer(*dev_type_params);
             flatbuffer_out_params_builder = PackFlatbuffer(*flatbuffer_out_param);)";
+
+    static inline constexpr std::string_view c_setup_no_return_params_struct = R"(
+            flatbuffer_out_params_builder = PackFlatbuffer<FlatbuffersDevTypes::{}T>({{}});)";
 
     static inline constexpr std::string_view c_setup_return_params_back_to_developer = R"(
             auto return_params = {}::ToDevType(function_result);

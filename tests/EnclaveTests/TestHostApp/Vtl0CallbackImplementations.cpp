@@ -126,4 +126,9 @@ StructWithNoPointers TestEnclave::ComplexPassingofTypes_To_HostApp_callback(
     return struct_to_return;
 }
 
+void TestEnclave::ReturnNoParams_From_HostApp_callback()
+{
+    // No body, test just here to make sure we have coverage for void returns
+}
+
 #pragma endregion

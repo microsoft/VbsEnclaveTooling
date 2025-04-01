@@ -252,6 +252,14 @@ struct EnclaveTestClass
         VERIFY_ARE_EQUAL(*uint64_val, std::numeric_limits<std::uint64_t>::max());
     }
 
+    TEST_METHOD(ReturnNoParams_From_Enclave_Test)
+    {
+        auto generated_enclave_class = TestEnclave(m_enclave);
+
+        // function returns void so make sure it doesn't throw
+        VERIFY_NO_THROW(generated_enclave_class.ReturnNoParams_From_Enclave());
+    }
+
     #pragma endregion // End of HostApp to Enclave Tests
 
     #pragma region Enclave to HostApp Tests
@@ -323,6 +331,14 @@ struct EnclaveTestClass
 
         // Note: Hresult is returned by vtl1, and copied to vtl0 then returned to this function.
         VERIFY_SUCCEEDED(generated_enclave_class.Start_ComplexPassingofTypes_To_HostApp_Callback_Test());
+    }
+
+    TEST_METHOD(Start_ReturnNoParams_From_HostApp_Callback_Test)
+    {
+        auto generated_enclave_class = TestEnclave(m_enclave);
+
+        // function returns void so make sure it doesn't throw
+        VERIFY_NO_THROW(generated_enclave_class.Start_ReturnNoParams_From_HostApp_Callback_Test());
     }
 
     #pragma endregion // Enclave to HostApp tests happen in vtl1
