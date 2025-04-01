@@ -9,8 +9,8 @@
 
 #include <sddl.h>
 
-#include "hello.any.h"
-#include "utils.any.h"
+#include "..\veil_any_inc\hello.any.h"
+#include "..\veil_any_inc\utils.any.h"
 
 #include "hello.vtl0.h"
 

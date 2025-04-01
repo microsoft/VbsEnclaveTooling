@@ -4,6 +4,7 @@
 #pragma once
 
 #include <wil/stl.h>
+#include <gsl/gsl_util>
 
 namespace veil::vtl1::crypto
 {

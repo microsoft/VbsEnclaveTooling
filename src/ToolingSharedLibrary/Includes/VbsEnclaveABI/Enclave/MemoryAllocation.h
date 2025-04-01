@@ -109,7 +109,7 @@ namespace VbsEnclaveABI::Enclave
                 TRUE,
                 &returned_result));
 
-            RETURN_IF_FAILED(PVOID_TO_HRESULT(returned_result));
+            RETURN_IF_FAILED(ABI_PVOID_TO_HRESULT(returned_result));
 
             return S_OK;
         }

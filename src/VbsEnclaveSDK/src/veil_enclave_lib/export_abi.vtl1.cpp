@@ -7,8 +7,8 @@
 #include "exports.vtl1.h"
 #include "taskpool.vtl1.h"
 
-#include "veil.any.h"
-#include "veil_arguments.any.h"
+#include "..\veil_any_inc\veil.any.h"
+#include "..\veil_any_inc\veil_arguments.any.h"
 
 namespace veil::vtl1
 {

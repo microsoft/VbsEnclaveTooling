@@ -8,9 +8,9 @@
 #include <gsl/gsl_util>
 #include <wil/stl.h>
 
-#include "veil_arguments.any.h"
-#include "hello.any.h"
-#include "utils.any.h"
+#include "..\veil_any_inc\veil_arguments.any.h"
+#include "..\veil_any_inc\hello.any.h"
+#include "..\veil_any_inc\utils.any.h"
 
 #include "crypto.vtl1.h"
 #include "future.vtl1.h"
