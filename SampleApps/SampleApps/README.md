@@ -1,3 +1,34 @@
+Running the sample host app, encrypt and decrypt data in enclave
+======================================================================
+
+Steps
+------------
+
+1. Running in a VM using Visual Studio
+	- Create a VM, turn on Windows Security -> Device Security -> Core Isolation -> Memory integrity. Restart the VM. You would be running your app here.
+	- Set up Accounts -> Sign-in options -> Windows Hello PIN. Make sure you are in a Basic session, otherwise Windows Hello settings are not available.
+	- Please make sure you have Microsoft.Windows.SDK.cpp version 10.0.26100.2454 installed on your host machine where you would be building code. You may have to downgrade your SDK version if needed.
+	- Install Visual Studio Remote Debugger in your VM. https://learn.microsoft.com/en-us/visualstudio/debugger/remote-debugging?view=vs-2022
+	- Set up Visual Studio remote debugger for the Host app. https://learn.microsoft.com/en-us/visualstudio/debugger/remote-debugging?view=vs-2022
+	- Make sure you have the enclave dll available in the working directory of the VM. You can specify the absolute dll path in Visual Studio -> SampleHostApp -> Properties -> Debugging -> Remote Windows Debugger -> Additional files to let VS do place it on the VM.
+	- F5 on Visual studio will launch the app on your VM.
+	- You should be able to set breakpoints in host and debug. You can use debug_print commands in the Enclave code to help debug.
+	- You could also launch the host app and use Windbg -> Attach to process to debug code inside the enclave.
+
+
+1. Known issues:
+	- No certificates were found that met all the given criteria.
+		- Make sure to go through Step 3 in https://learn.microsoft.com/en-us/windows/win32/trusted-execution/vbs-enclaves-dev-guide and run the following commands.
+		- PS C:\WINDOWS\system32> New-SelfSignedCertificate -CertStoreLocation Cert:\\CurrentUser\\My -DnsName "TheDefaultTestEnclaveCertName" -KeyUsage DigitalSignature -KeySpec Signature -KeyLength 2048 -KeyAlgorithm RSA -HashAlgorithm SHA256 -TextExtension "2.5.29.37={text}1.3.6.1.5.5.7.3.3,1.3.6.1.4.1.311.76.57.1.15,1.3.6.1.4.1.311.97.814040577.346743380.4783503.105532347"	
+		- You would see the following:
+		   PSParentPath: Microsoft.PowerShell.Security\Certificate::CurrentUser\My
+
+			Thumbprint                                Subject
+			----------                                -------
+			4BCEEFFE327F46DFB2401F3460123BB016B50C22  CN=TheDefaultTestEnclaveCertName
+
+
+
 Developer flow: Create a host app, encrypt and decrypt data in enclave
 ======================================================================
 
@@ -49,11 +80,7 @@ Steps
 		- Decrypt the encryption key using Windows Hello
 		- Use the encryption key to encrypt/decrypt input data.
 
-1. Debugging in a VM using Visual Studio
-	- Create a VM, turn on Windows Security -> Device Security -> Core Isolation -> Memory integrity. Restart the VM.
-	- Set up Accounts -> Sign-in options -> Windows Hello PIN. Make sure you are in a Basic session, otherwise Windows Hello settings are not available.
-	- Install Visual Studio Remote Debugger in your VM. https://learn.microsoft.com/en-us/visualstudio/debugger/remote-debugging?view=vs-2022
-	- Set up Visual Studio remote debugger for the Host app. https://learn.microsoft.com/en-us/visualstudio/debugger/remote-debugging?view=vs-2022
-	- Make sure you have the enclave dll available in the working directory of the VM. 
-	- You should be able to set breakpoints in host and debug. You can use debug_print commands in the Enclave code to help debug
-	- You could also use Windbg to debug code inside the enclave.
+1. Telemetry support
+
+	- We support telemetry strings from the Enclave that are 2048 chars or shorter. Plz refer to telemetry usage in the sample app.
+	- Telemetry files are stored in c:\VeilLogs.	
