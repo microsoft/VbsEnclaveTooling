@@ -11,6 +11,7 @@
 
 #include "callbacks.vtl0.h"
 #include "hello.vtl0.h"
+#include "telemetry.vtl0.h"
 #include "taskpool.vtl0.h"
 #include "utils.vtl0.h"
 
@@ -36,6 +37,7 @@ namespace veil::vtl0::implementation::callbacks
         &hellokeys_send_attestation_report,
         &hellokeys_finalize_key,
         &hellokeys_send_ngc_request,
+        &add_log,
     };
 }
 

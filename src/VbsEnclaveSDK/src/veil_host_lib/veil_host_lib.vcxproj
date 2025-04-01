@@ -58,13 +58,11 @@
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
-  
   <ItemDefinitionGroup>
     <ClCompile>
       <LanguageStandard>stdcpp20</LanguageStandard>
     </ClCompile>
   </ItemDefinitionGroup>
-
   <ItemDefinitionGroup Condition="'$(Configuration)'=='Release'">
     <ClCompile>
       <FunctionLevelLinking>true</FunctionLevelLinking>
@@ -76,7 +74,6 @@
       <OptimizeReferences>true</OptimizeReferences>
     </Link>
   </ItemDefinitionGroup>
-
   <ItemDefinitionGroup Condition="'$(Configuration)'=='Debug'">
     <ClCompile>
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
@@ -87,7 +84,6 @@
       <OptimizeReferences>false</OptimizeReferences>
     </Link>
   </ItemDefinitionGroup>
-  
   <ItemDefinitionGroup>
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
@@ -112,6 +108,7 @@
     <ClInclude Include="hello.vtl0.h" />
     <ClInclude Include="pch.h" />
     <ClInclude Include="taskpool.vtl0.h" />
+    <ClInclude Include="telemetry.vtl0.h" />
     <ClInclude Include="utils.vtl0.h" />
   </ItemGroup>
   <ItemGroup>
@@ -123,6 +120,7 @@
     <ClCompile Include="exports.vtl0.cpp" />
     <ClCompile Include="hello.vtl0.cpp" />
     <ClCompile Include="taskpool.vtl0.cpp" />
+    <ClCompile Include="telemetry.vtl0.cpp" />
     <ClCompile Include="utils.vtl0.cpp" />
   </ItemGroup>
   <ImportGroup Label="ExtensionTargets">

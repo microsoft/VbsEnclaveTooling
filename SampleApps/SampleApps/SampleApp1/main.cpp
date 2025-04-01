@@ -18,7 +18,6 @@
 
 namespace fs = std::filesystem;
 
-
 std::wstring FormatUserHelloKeyName(PCWSTR name)
 {
     static constexpr wchar_t c_formatString[] = L"//{}//{}";
@@ -34,7 +33,8 @@ int EncryptFlow(
     PCWSTR keyMoniker, 
     const std::filesystem::path& keyFilePath,
     const std::filesystem::path& encryptedInputFilePath,
-    const std::filesystem::path& tagFilePath)
+    const std::filesystem::path& tagFilePath,
+    veil::any::telemetry::activity& veilLog)
 {
     //
     // [Create flow]
@@ -48,6 +48,8 @@ int EncryptFlow(
     // Call into enclave
     sample::args::RunHelloSecuredEncryptionKeyExample_CreateEncryptionKey data;
     data.helloKeyName = helloKeyName;
+    data.activityLevel = veilLog.GetActivityLevel();
+    data.logFilePath = veilLog.GetLogFilePath();
     THROW_IF_FAILED(veil::vtl0::enclave::call_enclave(enclave, "RunHelloSecuredEncryptionKeyExample_CreateEncryptionKey", data));
 
     // We now have our encryption key's bytes, which are "hello-secured" and sealed!
@@ -76,6 +78,8 @@ int EncryptFlow(
     loadData.securedEncryptionKeyBytes.size = securedEncryptionKeyBytes.size();
     loadData.dataToEncrypt = input;
     loadData.isToBeEncrypted = true;
+    loadData.activityLevel = veilLog.GetActivityLevel();
+    loadData.logFilePath = veilLog.GetLogFilePath();
     THROW_IF_FAILED(veil::vtl0::enclave::call_enclave(enclave, "RunHelloSecuredEncryptionKeyExample_LoadEncryptionKey", loadData));
     auto encryptedInputBytes = std::span<uint8_t>(reinterpret_cast<uint8_t*>(loadData.encryptedInputBytes.data), loadData.encryptedInputBytes.size);
     auto tag = std::span<uint8_t>(reinterpret_cast<uint8_t*>(loadData.tag.data), loadData.tag.size);
@@ -92,7 +96,8 @@ int DecryptFlow(
     PCWSTR keyMoniker,
     const std::filesystem::path& keyFilePath,
     const std::filesystem::path& encryptedInputFilePath,
-    const std::filesystem::path& tagFilePath)
+    const std::filesystem::path& tagFilePath,
+    veil::any::telemetry::activity& veilLog)
 {
     //
     // [Load flow]
@@ -113,16 +118,21 @@ int DecryptFlow(
     data.encryptedInputBytes.size = encryptedInputBytes.size();
     data.tag.data = tag.data();
     data.tag.size = tag.size();
+    data.logFilePath = veilLog.GetLogFilePath();
+    data.activityLevel = veilLog.GetActivityLevel();
     THROW_IF_FAILED(veil::vtl0::enclave::call_enclave(enclave, "RunHelloSecuredEncryptionKeyExample_LoadEncryptionKey", data));
 
     auto decryptedInputBytes = std::span<uint8_t>(reinterpret_cast<uint8_t*>(data.decryptedInputBytes.data), data.decryptedInputBytes.size);
 
     std::wcout << L"Decryption completed in Enclave. Decrypted string: " << std::wstring(reinterpret_cast<const wchar_t*>(decryptedInputBytes.data()), decryptedInputBytes.size() / 2);
+    veilLog.AddTimestampedLog(
+        L"[Host] Decryption completed in Enclave. Decrypted string: " + std::wstring(reinterpret_cast<const wchar_t*>(decryptedInputBytes.data()), decryptedInputBytes.size() / 2), 
+        veil::any::telemetry::eventLevel::EVENT_LEVEL_CRITICAL);
 
     return 0;
 }
 
-int mainEncryptDecrpyt()
+int mainEncryptDecrpyt(uint32_t activityLevel)
 {
     int choice;
     std::wstring input;
@@ -131,6 +141,13 @@ int mainEncryptDecrpyt()
     std::wstring encryptedInputFilePath = encryptedDataDirPath + L"\\encrypted";
     std::wstring tagFilePath = encrytedKeyDirPath + L"\\tag";
     bool programExecuted = false;
+
+    veil::any::telemetry::activity veilLog(
+        L"VeilSampleApp", 
+        L"70F7212C-1F84-4B86-B550-3D5AE82EC779" /*Generated GUID*/,
+        static_cast<veil::any::telemetry::eventLevel>(activityLevel));
+    
+    veilLog.AddTimestampedLog(L"[Host] Starting from host", veil::any::telemetry::eventLevel::EVENT_LEVEL_CRITICAL);
 
     /******************************* Enclave setup *******************************/
     // Create app+user enclave identity
@@ -167,13 +184,16 @@ int mainEncryptDecrpyt()
                 std::getline(std::wcin, input);    
                 std::filesystem::create_directories(encryptedDataDirPath);
                 std::filesystem::create_directories(encrytedKeyDirPath);
-                EncryptFlow(enclave.get(), input, keyMoniker, keyFilePath, encryptedInputFilePath, tagFilePath);
+                EncryptFlow(enclave.get(), input, keyMoniker, keyFilePath, encryptedInputFilePath, tagFilePath, veilLog);
                 std::wcout << L"Encryption in Enclave completed. Encrypted bytes are saved to disk in " << encryptedInputFilePath;
+                veilLog.AddTimestampedLog(
+                    L"[Host] Encryption in Enclave completed. Encrypted bytes are saved to disk in " + encryptedInputFilePath,
+                    veil::any::telemetry::eventLevel::EVENT_LEVEL_CRITICAL);
                 programExecuted = true;
                 break;
 
             case 2:
-                DecryptFlow(enclave.get(), keyMoniker, keyFilePath, encryptedInputFilePath, tagFilePath);
+                DecryptFlow(enclave.get(), keyMoniker, keyFilePath, encryptedInputFilePath, tagFilePath, veilLog);
                 std::filesystem::remove(keyFilePath);
                 std::filesystem::remove(encryptedInputFilePath);
                 std::filesystem::remove(tagFilePath);
@@ -193,7 +213,7 @@ int mainEncryptDecrpyt()
     return 0;
 }
 
-int mainThreadPool()
+int mainThreadPool(uint32_t /*activityLevel*/ )
 {
     std::wcout << L"Running sample: Taskpool..." << std::endl;
 
@@ -227,8 +247,16 @@ int mainThreadPool()
     return 0;
 }
 
-int main()
+int main(int argc, char* argv[])
 {
+    if (argc > 2)
+    {
+        std::cerr << "Usage: " << argv[0] << " <logging_level>" << std::endl;
+        std::cerr << "Logging levels: 1 - Critical, 2 - Error, 3 - Warning, 4 - Info, 5 - Verbose" << std::endl;
+        return 1;
+    }
+
+    uint32_t activityLevel = (argc == 2) ? std::atoi(argv[1]) : 4; //Info by default
     int choice;
     bool programExecuted = false;
 
@@ -243,12 +271,12 @@ int main()
         switch (choice)
         {
             case 1:
-                mainEncryptDecrpyt();
+                mainEncryptDecrpyt(activityLevel);
                 programExecuted = true;
                 break;
 
             case 2:
-                mainThreadPool();
+                mainThreadPool(activityLevel);
                 programExecuted = true;
                 break;
 
