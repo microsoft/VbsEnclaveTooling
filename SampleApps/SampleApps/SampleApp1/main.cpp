@@ -126,7 +126,7 @@ int DecryptFlow(
 
     std::wcout << L"Decryption completed in Enclave. Decrypted string: " << std::wstring(reinterpret_cast<const wchar_t*>(decryptedInputBytes.data()), decryptedInputBytes.size() / 2);
     veilLog.AddTimestampedLog(
-        L"Decryption completed in Enclave. Decrypted string: " + std::wstring(reinterpret_cast<const wchar_t*>(decryptedInputBytes.data()), decryptedInputBytes.size() / 2), 
+        L"[Host] Decryption completed in Enclave. Decrypted string: " + std::wstring(reinterpret_cast<const wchar_t*>(decryptedInputBytes.data()), decryptedInputBytes.size() / 2), 
         veil::any::telemetry::eventLevel::EVENT_LEVEL_CRITICAL);
 
     return 0;
@@ -187,7 +187,7 @@ int mainEncryptDecrpyt(uint32_t activityLevel)
                 EncryptFlow(enclave.get(), input, keyMoniker, keyFilePath, encryptedInputFilePath, tagFilePath, veilLog);
                 std::wcout << L"Encryption in Enclave completed. Encrypted bytes are saved to disk in " << encryptedInputFilePath;
                 veilLog.AddTimestampedLog(
-                    L"Encryption in Enclave completed. Encrypted bytes are saved to disk in " + encryptedInputFilePath,
+                    L"[Host] Encryption in Enclave completed. Encrypted bytes are saved to disk in " + encryptedInputFilePath,
                     veil::any::telemetry::eventLevel::EVENT_LEVEL_CRITICAL);
                 programExecuted = true;
                 break;

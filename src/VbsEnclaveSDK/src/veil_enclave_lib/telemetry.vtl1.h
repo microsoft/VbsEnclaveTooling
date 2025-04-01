@@ -9,6 +9,7 @@
 #include "telemetry.any.h"
 #include "utils.any.h"
 
+#include "memory.vtl1.h"
 #include "object_table.vtl1.h"
 #include "registered_callbacks.vtl1.h"
 #include "utils.vtl1.h"

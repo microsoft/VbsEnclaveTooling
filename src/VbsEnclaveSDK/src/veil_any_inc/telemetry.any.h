@@ -9,9 +9,11 @@
 #include <iostream>
 #include <fstream>
 #include <filesystem>
-#include <mutex>
 
 #include <wil/resource.h>
+
+#include <mutex>
+#include <thread>
 
 namespace veil::any
 {
@@ -34,8 +36,6 @@ namespace veil::any
             std::wstring logString;
             std::wstring logFilePath;
             eventLevel activityLevel;
-
-            std::mutex g_telemetryMutex;
 
             std::wstring ReplaceForbiddenFilenameChars(const std::wstring& input)
             {
