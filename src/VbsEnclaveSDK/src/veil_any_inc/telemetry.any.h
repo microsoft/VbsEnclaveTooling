@@ -15,6 +15,7 @@
 #include <mutex>
 #include <thread>
 
+
 namespace veil::any
 {
     namespace telemetry
@@ -33,9 +34,9 @@ namespace veil::any
             private:
             std::wstring provider;
             std::wstring guid;
-            std::wstring logString;
             std::wstring logFilePath;
             eventLevel activityLevel;
+            // static std::mutex logMutex;
 
             std::wstring ReplaceForbiddenFilenameChars(const std::wstring& input)
             {
@@ -60,33 +61,6 @@ namespace veil::any
                 logFilePath = L"c:\\VeilLogs\\" + ReplaceForbiddenFilenameChars(CreateTimestamp()) + L".txt";
             }
 
-            void SaveLog()
-            {
-                // TODO: Multiple threads can potentially save log at the same time. Make sure to lock
-                std::filesystem::path filePath(logFilePath);
-                std::filesystem::path dirPath = filePath.parent_path();
-
-                // Create the directory if it doesn't exist
-                if (!dirPath.empty() && !std::filesystem::exists(dirPath))
-                {
-                    std::filesystem::create_directories(dirPath);
-                }
-
-                std::wofstream wofs(filePath, std::ios::app);
-
-                wofs << logString;
-                logString = L"";
-                wofs.close();
-            }
-
-            public:
-            activity(const std::wstring& providerName,
-                const std::wstring& guidStr,
-                const eventLevel level) : provider(providerName), guid(guidStr), activityLevel(level)
-            {
-                SetLogFilePath();
-            }
-
             static std::wstring CreateTimestamp()
             {
                 // Get the current time
@@ -103,14 +77,65 @@ namespace veil::any
                 return timestamp.str(); // Return the formatted timestamp as std::wstring
             }
 
+            void SaveLog(const std::wstring& log)
+            {
+                std::filesystem::path filePath(logFilePath);
+                std::filesystem::path dirPath = filePath.parent_path();
+
+                // std::scoped_lock lock(logMutex);
+
+                // Create the directory if it doesn't exist
+                if (!dirPath.empty() && !std::filesystem::exists(dirPath))
+                {
+                    std::filesystem::create_directories(dirPath);
+                }
+
+                std::wofstream wofs(filePath, std::ios::app);
+
+                wofs << log;
+                wofs.close();
+            }
+
+            static void SaveLog(const std::wstring& log, const std::wstring& logPath)
+            {
+                std::filesystem::path filePath(logPath);
+                std::filesystem::path dirPath = filePath.parent_path();
+
+                // std::scoped_lock lock(logMutex);
+
+                // Create the directory if it doesn't exist
+                if (!dirPath.empty() && !std::filesystem::exists(dirPath))
+                {
+                    std::filesystem::create_directories(dirPath);
+                }
+
+                std::wofstream wofs(filePath, std::ios::app);
+
+                wofs << log;
+                wofs.close();
+            }
+
+            public:
+            activity(const std::wstring& providerName,
+                const std::wstring& guidStr,
+                const eventLevel level) : provider(providerName), guid(guidStr), activityLevel(level)
+            {
+                SetLogFilePath();
+            }
+
             void AddTimestampedLog(const std::wstring& log, const eventLevel level) // Called from Host
             {
                 if (level <= activityLevel)
                 {
-                    logString.append(CreateTimestamp() + L": " + guid + L": " + provider + L": " + log + L"\n"); // Add a new line after each log
+                    std::wstring timestampedLog = CreateTimestamp() + L": " + guid + L": " + provider + L": " + log + L"\n"; // Add a new line after each log 
+                    SaveLog(timestampedLog);
                 }
+            }
 
-                SaveLog();
+            static void AddTimestampedLog(const std::wstring& log, const std::wstring& logFilePath) // Callback from Enclave via Host
+            {
+                std::wstring timestampedLog = CreateTimestamp() + L": " + log + L"\n"; // Add a new line after each log 
+                SaveLog(timestampedLog, logFilePath);
             }
 
             // Getters

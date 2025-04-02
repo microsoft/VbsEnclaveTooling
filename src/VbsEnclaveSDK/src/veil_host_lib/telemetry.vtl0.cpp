@@ -18,12 +18,7 @@ namespace simplified
 {
     static void add_log(veil::any::implementation::args::add_log* data)
     {
-        auto logFilePath = data->logFilePath;
-        std::filesystem::path filePath(logFilePath);
-        std::wofstream wofs(filePath, std::ios::app);
-        wofs << veil::any::telemetry::activity::CreateTimestamp() + L": ";
-        wofs << data->log << std::endl;
-        wofs.close();
+        veil::any::telemetry::activity::AddTimestampedLog(data->log, data->logFilePath);
     }
 }
 
