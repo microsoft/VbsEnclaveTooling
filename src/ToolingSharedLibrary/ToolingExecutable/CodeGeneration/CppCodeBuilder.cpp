@@ -158,18 +158,6 @@ namespace CodeGeneration
         return std::format("{}{}", const_str, type);
     }
 
-    std::string CppCodeBuilder::GetTypeInfoForFunctionParameter(const Declaration& declaration)
-    {
-        std::string type = GetFullDeclarationType(declaration);
-
-        if (declaration.IsInParameterOnly())
-        {
-            return std::format("const {}&", type);
-        }
-
-        return std::format("{}&", type);
-    }
-
     std::string CppCodeBuilder::GetSimpleTypeInfoWithPointerInfo(const EdlTypeInfo& info)
     {
         std::string pointer = info.is_pointer ? "*" : "";
