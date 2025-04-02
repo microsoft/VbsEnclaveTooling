@@ -166,25 +166,5 @@ namespace VbsEnclaveABI::Enclave::Pointers
             size_t m_memory_size{};
             DeleterT m_deleter{};
     };
-
-    // Simple deleter for freeing vtl0 T** from vtl1.
-    template <typename T>
-    struct Vtl0DoublePtrDeleter
-    {
-        void operator()(T** memory) noexcept
-        {
-            if (memory)
-            {
-                if (*memory)
-                {
-                    LOG_IF_FAILED(DeallocateVtl0Memory(*memory));
-                }
-
-                LOG_IF_FAILED(DeallocateVtl0Memory(memory));
-            }
-        }
-    };
-
-
 }
 #endif // end __ENCLAVE_PROJECT__
