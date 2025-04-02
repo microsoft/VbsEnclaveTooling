@@ -477,30 +477,6 @@ namespace CodeGeneration
             inner_body);
     }
     
-    std::string CppCodeBuilder::AddAddressDeclaratorIfNecessary(const Declaration& declaration)
-    {
-        // For the To flatbuffer function that we generate that accepts multiple parameters we
-        // want to pass these as pointers.
-        if (declaration.m_array_dimensions.empty() && declaration.IsEdlType(EdlTypeKind::Struct))
-        {
-            return std::format("&{}", declaration.m_name);
-        }
-
-        return declaration.m_name;
-    }
-
-    std::string CppCodeBuilder::AddAddressDeclaratorIfNecessary(const Declaration& declaration)
-    {
-        // For the To flatbuffer function that we generate that accepts multiple parameters we
-        // want to pass these as pointers.
-        if (declaration.m_array_dimensions.empty() && declaration.IsEdlType(EdlTypeKind::Struct))
-        {
-            return std::format("&{}", declaration.m_name);
-        }
-
-        return declaration.m_name;
-    }
-
     CppCodeBuilder::FunctionParametersInfo CppCodeBuilder::GetInformationAboutParameters(
         const Function& function,
         std::string_view abi_function_name)
