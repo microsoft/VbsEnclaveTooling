@@ -27,8 +27,6 @@
     <RootNamespace>veil_host_lib</RootNamespace>
     <DefaultLanguage>en-US</DefaultLanguage>
     <GenerateProjectSpecificOutputFolder>true</GenerateProjectSpecificOutputFolder>
-    <ApplicationType>Windows Store</ApplicationType>
-    <ApplicationTypeRevision>10.0</ApplicationTypeRevision>
     <ConfigurationType>StaticLibrary</ConfigurationType>
     <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
     <WindowsTargetPlatformMinVersion>10.0.0.0</WindowsTargetPlatformMinVersion>
