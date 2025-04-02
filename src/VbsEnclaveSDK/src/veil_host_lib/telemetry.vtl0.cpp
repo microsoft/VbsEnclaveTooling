@@ -14,6 +14,11 @@
 
 #include "hello.vtl0.h"
 
+namespace veil::any::telemetry
+{
+    std::mutex logMutex;
+}
+
 namespace simplified
 {
     static void add_log(veil::any::implementation::args::add_log* data)

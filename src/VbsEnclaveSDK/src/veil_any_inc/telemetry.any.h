@@ -20,6 +20,8 @@ namespace veil::any
 {
     namespace telemetry
     {
+        extern std::mutex logMutex;
+
         enum class eventLevel : uint32_t
         {
             EVENT_LEVEL_CRITICAL = 1,
@@ -36,7 +38,6 @@ namespace veil::any
             std::wstring guid;
             std::wstring logFilePath;
             eventLevel activityLevel;
-            // static std::mutex logMutex;
 
             std::wstring ReplaceForbiddenFilenameChars(const std::wstring& input)
             {
@@ -82,7 +83,7 @@ namespace veil::any
                 std::filesystem::path filePath(logFilePath);
                 std::filesystem::path dirPath = filePath.parent_path();
 
-                // std::scoped_lock lock(logMutex);
+                std::scoped_lock lock(logMutex);
 
                 // Create the directory if it doesn't exist
                 if (!dirPath.empty() && !std::filesystem::exists(dirPath))
@@ -101,7 +102,7 @@ namespace veil::any
                 std::filesystem::path filePath(logPath);
                 std::filesystem::path dirPath = filePath.parent_path();
 
-                // std::scoped_lock lock(logMutex);
+                std::scoped_lock lock(logMutex);
 
                 // Create the directory if it doesn't exist
                 if (!dirPath.empty() && !std::filesystem::exists(dirPath))
