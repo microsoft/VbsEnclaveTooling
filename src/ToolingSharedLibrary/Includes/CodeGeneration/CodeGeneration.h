@@ -75,7 +75,11 @@ namespace CodeGeneration
             std::string_view struct_name,
             const std::vector<Declaration>& fields);
 
-        std::string AddAddressDeclaratorIfNecessary(const Declaration& declaration);
+        std::string GetTypeInfoForFunctionParameter(const Declaration& declaration);
+
+        std::string GetTypeInfoForFunctionParameter(const Declaration& declaration);
+
+        std::string GetTypeInfoForFunctionParameter(const Declaration& declaration);
 
         FunctionParametersInfo GetInformationAboutParameters(
             const Function& function,
