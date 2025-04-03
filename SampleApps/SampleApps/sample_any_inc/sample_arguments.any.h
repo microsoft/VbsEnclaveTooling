@@ -5,7 +5,7 @@
 
 #include "veil_arguments.any.h"
 #include "utils.any.h"
-#include "telemetry.any.h"
+#include "logger.any.h"
 
 namespace sample
 {
@@ -21,7 +21,7 @@ namespace sample
         struct RunHelloSecuredEncryptionKeyExample_CreateEncryptionKey
         {
             std::wstring helloKeyName;
-            veil::any::telemetry::eventLevel activityLevel;
+            veil::any::logger::eventLevel activityLevel;
             std::wstring logFilePath;
 
             //out
@@ -33,7 +33,7 @@ namespace sample
             veil::any::args::data_blob securedEncryptionKeyBytes;
             std::wstring dataToEncrypt;
             bool isToBeEncrypted = false; // Controls if the Load flow is used for encryption or decryption
-            veil::any::telemetry::eventLevel activityLevel;
+            veil::any::logger::eventLevel activityLevel;
             std::wstring logFilePath;
 
             // out

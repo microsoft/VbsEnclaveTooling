@@ -12,7 +12,7 @@
 #include <sddl.h>
 
 #include <enclave_api.vtl0.h>
-#include <telemetry.vtl0.h>
+#include <logger.vtl0.h>
 
 #include <sample_arguments.any.h>
 #include "sample_utils.h"
@@ -35,7 +35,7 @@ int EncryptFlow(
     const std::filesystem::path& keyFilePath,
     const std::filesystem::path& encryptedInputFilePath,
     const std::filesystem::path& tagFilePath,
-    veil::vtl0::telemetry::logger& veilLog)
+    veil::vtl0::logger::logger& veilLog)
 {
     //
     // [Create flow]
@@ -98,7 +98,7 @@ int DecryptFlow(
     const std::filesystem::path& keyFilePath,
     const std::filesystem::path& encryptedInputFilePath,
     const std::filesystem::path& tagFilePath,
-    veil::vtl0::telemetry::logger& veilLog)
+    veil::vtl0::logger::logger& veilLog)
 {
     //
     // [Load flow]
@@ -128,7 +128,7 @@ int DecryptFlow(
     std::wcout << L"Decryption completed in Enclave. Decrypted string: " << std::wstring(reinterpret_cast<const wchar_t*>(decryptedInputBytes.data()), decryptedInputBytes.size() / 2);
     veilLog.AddTimestampedLog(
         L"[Host] Decryption completed in Enclave. Decrypted string: " + std::wstring(reinterpret_cast<const wchar_t*>(decryptedInputBytes.data()), decryptedInputBytes.size() / 2), 
-        veil::any::telemetry::eventLevel::EVENT_LEVEL_CRITICAL);
+        veil::any::logger::eventLevel::EVENT_LEVEL_CRITICAL);
 
     return 0;
 }
@@ -143,12 +143,12 @@ int mainEncryptDecrpyt(uint32_t activityLevel)
     std::wstring tagFilePath = encrytedKeyDirPath + L"\\tag";
     bool programExecuted = false;
 
-    veil::vtl0::telemetry::logger veilLog(
+    veil::vtl0::logger::logger veilLog(
         L"VeilSampleApp", 
         L"70F7212C-1F84-4B86-B550-3D5AE82EC779" /*Generated GUID*/,
-        static_cast<veil::any::telemetry::eventLevel>(activityLevel));
+        static_cast<veil::any::logger::eventLevel>(activityLevel));
     
-    veilLog.AddTimestampedLog(L"[Host] Starting from host", veil::any::telemetry::eventLevel::EVENT_LEVEL_CRITICAL);
+    veilLog.AddTimestampedLog(L"[Host] Starting from host", veil::any::logger::eventLevel::EVENT_LEVEL_CRITICAL);
 
     /******************************* Enclave setup *******************************/
     // Create app+user enclave identity
@@ -189,7 +189,7 @@ int mainEncryptDecrpyt(uint32_t activityLevel)
                 std::wcout << L"Encryption in Enclave completed. Encrypted bytes are saved to disk in " << encryptedInputFilePath;
                 veilLog.AddTimestampedLog(
                     L"[Host] Encryption in Enclave completed. Encrypted bytes are saved to disk in " + encryptedInputFilePath,
-                    veil::any::telemetry::eventLevel::EVENT_LEVEL_CRITICAL);
+                    veil::any::logger::eventLevel::EVENT_LEVEL_CRITICAL);
                 programExecuted = true;
                 break;
 
