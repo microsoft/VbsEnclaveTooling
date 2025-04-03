@@ -9,12 +9,12 @@
 
 #include <sddl.h>
 
-#include "telemetry.any.h"
+#include "telemetry.vtl0.h"
 #include "utils.any.h"
 
 #include "hello.vtl0.h"
 
-namespace veil::any::telemetry
+namespace veil::vtl0::telemetry
 {
     std::mutex logMutex;
 }
@@ -23,7 +23,7 @@ namespace simplified
 {
     static void add_log(veil::any::implementation::args::add_log* data)
     {
-        veil::any::telemetry::logger::AddTimestampedLog(data->log, data->logFilePath);
+        veil::vtl0::telemetry::logger::AddTimestampedLog(data->log, data->logFilePath);
     }
 }
 

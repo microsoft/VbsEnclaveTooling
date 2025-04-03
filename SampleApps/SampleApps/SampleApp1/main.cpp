@@ -12,6 +12,7 @@
 #include <sddl.h>
 
 #include <enclave_api.vtl0.h>
+#include <telemetry.vtl0.h>
 
 #include <sample_arguments.any.h>
 #include "sample_utils.h"
@@ -34,7 +35,7 @@ int EncryptFlow(
     const std::filesystem::path& keyFilePath,
     const std::filesystem::path& encryptedInputFilePath,
     const std::filesystem::path& tagFilePath,
-    veil::any::telemetry::logger& veilLog)
+    veil::vtl0::telemetry::logger& veilLog)
 {
     //
     // [Create flow]
@@ -97,7 +98,7 @@ int DecryptFlow(
     const std::filesystem::path& keyFilePath,
     const std::filesystem::path& encryptedInputFilePath,
     const std::filesystem::path& tagFilePath,
-    veil::any::telemetry::logger& veilLog)
+    veil::vtl0::telemetry::logger& veilLog)
 {
     //
     // [Load flow]
@@ -142,7 +143,7 @@ int mainEncryptDecrpyt(uint32_t activityLevel)
     std::wstring tagFilePath = encrytedKeyDirPath + L"\\tag";
     bool programExecuted = false;
 
-    veil::any::telemetry::logger veilLog(
+    veil::vtl0::telemetry::logger veilLog(
         L"VeilSampleApp", 
         L"70F7212C-1F84-4B86-B550-3D5AE82EC779" /*Generated GUID*/,
         static_cast<veil::any::telemetry::eventLevel>(activityLevel));
