@@ -23,7 +23,7 @@ namespace simplified
 {
     static void add_log(veil::any::implementation::args::add_log* data)
     {
-        veil::any::telemetry::activity::AddTimestampedLog(data->log, data->logFilePath);
+        veil::any::telemetry::logger::AddTimestampedLog(data->log, data->logFilePath);
     }
 }
 

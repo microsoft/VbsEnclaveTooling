@@ -31,13 +31,13 @@ namespace veil::any
             EVENT_LEVEL_VERBOSE
         };
 
-        class activity
+        class logger
         {
             private:
             std::wstring provider;
             std::wstring guid;
             std::wstring logFilePath;
-            eventLevel activityLevel;
+            eventLevel logLevel;
 
             std::wstring ReplaceForbiddenFilenameChars(const std::wstring& input)
             {
@@ -80,21 +80,7 @@ namespace veil::any
 
             void SaveLog(const std::wstring& log)
             {
-                std::filesystem::path filePath(logFilePath);
-                std::filesystem::path dirPath = filePath.parent_path();
-
-                std::scoped_lock lock(logMutex);
-
-                // Create the directory if it doesn't exist
-                if (!dirPath.empty() && !std::filesystem::exists(dirPath))
-                {
-                    std::filesystem::create_directories(dirPath);
-                }
-
-                std::wofstream wofs(filePath, std::ios::app);
-
-                wofs << log;
-                wofs.close();
+                SaveLog(log, logFilePath);
             }
 
             static void SaveLog(const std::wstring& log, const std::wstring& logPath)
@@ -117,16 +103,16 @@ namespace veil::any
             }
 
             public:
-            activity(const std::wstring& providerName,
+            logger(const std::wstring& providerName,
                 const std::wstring& guidStr,
-                const eventLevel level) : provider(providerName), guid(guidStr), activityLevel(level)
+                const eventLevel level) : provider(providerName), guid(guidStr), logLevel(level)
             {
                 SetLogFilePath();
             }
 
             void AddTimestampedLog(const std::wstring& log, const eventLevel level) // Called from Host
             {
-                if (level <= activityLevel)
+                if (level <= logLevel)
                 {
                     std::wstring timestampedLog = CreateTimestamp() + L": " + guid + L": " + provider + L": " + log + L"\n"; // Add a new line after each log 
                     SaveLog(timestampedLog);
@@ -140,9 +126,9 @@ namespace veil::any
             }
 
             // Getters
-            eventLevel GetActivityLevel()
+            eventLevel GetLogLevel()
             {
-                return activityLevel;
+                return logLevel;
             }
 
             std::wstring GetLogFilePath()

@@ -102,6 +102,6 @@ https://learn.microsoft.com/en-us/windows/win32/trusted-execution/vbs-enclaves-d
 
 1. Telemetry support
 
-	- We support telemetry strings from the Enclave that are 2048 chars or shorter. Plz refer to telemetry usage in the 
+	- We support telemetry strings from the Enclave that are 2048 chars or shorter. Refer to telemetry usage in the 
 sample app.
 	- Telemetry files are stored in c:\VeilLogs.	

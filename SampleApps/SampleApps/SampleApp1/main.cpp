@@ -34,7 +34,7 @@ int EncryptFlow(
     const std::filesystem::path& keyFilePath,
     const std::filesystem::path& encryptedInputFilePath,
     const std::filesystem::path& tagFilePath,
-    veil::any::telemetry::activity& veilLog)
+    veil::any::telemetry::logger& veilLog)
 {
     //
     // [Create flow]
@@ -48,7 +48,7 @@ int EncryptFlow(
     // Call into enclave
     sample::args::RunHelloSecuredEncryptionKeyExample_CreateEncryptionKey data;
     data.helloKeyName = helloKeyName;
-    data.activityLevel = veilLog.GetActivityLevel();
+    data.activityLevel = veilLog.GetLogLevel();
     data.logFilePath = veilLog.GetLogFilePath();
     THROW_IF_FAILED(veil::vtl0::enclave::call_enclave(enclave, "RunHelloSecuredEncryptionKeyExample_CreateEncryptionKey", data));
 
@@ -78,7 +78,7 @@ int EncryptFlow(
     loadData.securedEncryptionKeyBytes.size = securedEncryptionKeyBytes.size();
     loadData.dataToEncrypt = input;
     loadData.isToBeEncrypted = true;
-    loadData.activityLevel = veilLog.GetActivityLevel();
+    loadData.activityLevel = veilLog.GetLogLevel();
     loadData.logFilePath = veilLog.GetLogFilePath();
     THROW_IF_FAILED(veil::vtl0::enclave::call_enclave(enclave, "RunHelloSecuredEncryptionKeyExample_LoadEncryptionKey", loadData));
     auto encryptedInputBytes = std::span<uint8_t>(reinterpret_cast<uint8_t*>(loadData.encryptedInputBytes.data), loadData.encryptedInputBytes.size);
@@ -97,7 +97,7 @@ int DecryptFlow(
     const std::filesystem::path& keyFilePath,
     const std::filesystem::path& encryptedInputFilePath,
     const std::filesystem::path& tagFilePath,
-    veil::any::telemetry::activity& veilLog)
+    veil::any::telemetry::logger& veilLog)
 {
     //
     // [Load flow]
@@ -119,7 +119,7 @@ int DecryptFlow(
     data.tag.data = tag.data();
     data.tag.size = tag.size();
     data.logFilePath = veilLog.GetLogFilePath();
-    data.activityLevel = veilLog.GetActivityLevel();
+    data.activityLevel = veilLog.GetLogLevel();
     THROW_IF_FAILED(veil::vtl0::enclave::call_enclave(enclave, "RunHelloSecuredEncryptionKeyExample_LoadEncryptionKey", data));
 
     auto decryptedInputBytes = std::span<uint8_t>(reinterpret_cast<uint8_t*>(data.decryptedInputBytes.data), data.decryptedInputBytes.size);
@@ -142,7 +142,7 @@ int mainEncryptDecrpyt(uint32_t activityLevel)
     std::wstring tagFilePath = encrytedKeyDirPath + L"\\tag";
     bool programExecuted = false;
 
-    veil::any::telemetry::activity veilLog(
+    veil::any::telemetry::logger veilLog(
         L"VeilSampleApp", 
         L"70F7212C-1F84-4B86-B550-3D5AE82EC779" /*Generated GUID*/,
         static_cast<veil::any::telemetry::eventLevel>(activityLevel));
