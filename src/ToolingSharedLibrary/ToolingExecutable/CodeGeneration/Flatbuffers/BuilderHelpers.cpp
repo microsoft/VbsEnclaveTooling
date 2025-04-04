@@ -17,17 +17,18 @@ using namespace EdlProcessor;
 
 namespace CodeGeneration::Flatbuffers
 {
-    std::unordered_map<std::string, std::string> s_enum_data {};
+    std::unordered_map<std::string, std::string> g_enum_data {};
 
-    std::ostringstream BuildInitialFlatbufferSchemaContent(
-        const std::vector<DeveloperType>& developer_types_insertion_list)
+    std::string GenerateFlatbufferSchema(
+        const std::vector<DeveloperType>& developer_types_insertion_list,
+        const std::vector<DeveloperType>& abi_function_developer_types)
     {
         std::ostringstream schema {};
         schema << c_autogen_header_string << c_flatbuffer_namespace;
 
-        for (auto& type : developer_types_insertion_list)
+        for (auto& dev_type : developer_types_insertion_list)
         {
-            if (type.IsEdlType(EdlTypeKind::Enum))
+            if (dev_type.IsEdlType(EdlTypeKind::Enum))
             {
                 schema << BuildEnum(type);
             }
@@ -37,10 +38,18 @@ namespace CodeGeneration::Flatbuffers
             }
         }
 
+        for (auto& dev_type : abi_function_developer_types)
+        {
+            // type will only ever be structs
+            schema << BuildTable(dev_type.m_fields, dev_type.m_name);
+        }
+
         // Add Wstring table by default
         schema << c_flatbuffer_wstring_table;
 
-        return schema;
+        schema << c_flatbuffer_root_table << c_flatbuffer_root_type;
+
+        return schema.str();
     }
 
     std::string BuildEnum(const DeveloperType& enum_type)
@@ -62,7 +71,7 @@ namespace CodeGeneration::Flatbuffers
 
             if (enum_value.m_is_default_value)
             {
-                s_enum_data.emplace(enum_type.m_name, enum_value_name);
+                g_enum_data.emplace(enum_type.m_name, enum_value_name);
             }
         }
 
@@ -140,7 +149,7 @@ namespace CodeGeneration::Flatbuffers
                     "    {} : {} = {};\n",
                     declaration.m_name,
                     declaration.m_edl_type_info.m_name,
-                    s_enum_data.at(declaration.m_edl_type_info.m_name));
+                    g_enum_data.at(declaration.m_edl_type_info.m_name));
             }
             else
             {

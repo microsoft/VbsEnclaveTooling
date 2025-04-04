@@ -22,12 +22,6 @@ namespace CodeGeneration::Flatbuffers
         NestedStruct,
     };
 
-    enum class FlatbufferConversionKind : std::uint32_t
-    {
-        ToDevType,
-        ToFlatbuffer,
-    };
-
     enum class FlatbufferStructFieldsModifier
     {
         NoModification,
@@ -36,35 +30,14 @@ namespace CodeGeneration::Flatbuffers
         AbiToDevTypeSingleStruct,
     };
 
-    struct FlatbufferDataForFunction
-    {
-        std::ostringstream m_flatbuffer_tables{};
-        std::ostringstream m_parameters_struct{};
-    };
+    std::string GenerateFlatbufferSchema(
+        const std::vector<DeveloperType>& developer_types_insertion_list,
+        const std::vector<DeveloperType>& abi_function_developer_types);
 
-    struct FieldNameDataForCopyStatements
-    {
-        std::string m_flatbuffer {};
-        std::string m_struct {};
-        FlatbufferStructFieldsModifier m_modifier = FlatbufferStructFieldsModifier::NoModification;
-    };
-
-    std::ostringstream BuildInitialFlatbufferSchemaContent(
-        const std::vector<DeveloperType>& developer_types_insertion_list);
 
     std::string BuildEnum(const DeveloperType& enum_type);
 
     std::string BuildTable(const std::vector<Declaration>& fields, std::string_view struct_name);
-
-    FlatbufferDataForFunction BuildFlatbufferConversionStructsAndTables(
-        const Function& original_function,
-        std::string_view abi_function_name,
-        const CppCodeBuilder::FunctionParametersInfo& params_info);
-
-    std::string BuildConversionFunctionBody(
-        const std::vector<Declaration>& fields,
-        FlatbufferConversionKind conversion_kind,
-        FlatbufferStructFieldsModifier modifier = FlatbufferStructFieldsModifier::NoModification);
 
     std::string GetFlatbufferToDevTypeCopyStatements(
         const Declaration& declaration,
@@ -105,4 +78,6 @@ namespace CodeGeneration::Flatbuffers
         { FlatbufferSupportedTypes::Enum, c_dev_type_to_flatbuffer_conversion_enum },
         { FlatbufferSupportedTypes::NestedStruct, c_dev_type_to_flatbuffer_conversion_nestedstruct },
     };
+}
+
 }

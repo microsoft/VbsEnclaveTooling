@@ -258,10 +258,10 @@ namespace CodeGeneration
         return copy_statements_for_return_tuple.str();
     }
 
-    void inline InvokeFlatbufferCompiler(std::string_view compiler_path, std::string_view args)
+    void inline InvokeFlatbufferCompiler(const std::filesystem::path& compiler_path, std::string_view args)
     {
         PrintStatus(Status::Info, Flatbuffers::c_failed_to_compile_flatbuffer_msg.data());
-        std::string complete_argument = std::format("{} {}", compiler_path, args);
+        std::string complete_argument = std::format("{} {}", compiler_path.generic_string(), args);
         auto result = std::system(complete_argument.c_str());
 
         if (result)
@@ -273,6 +273,52 @@ namespace CodeGeneration
         PrintStatus(Status::Info, Flatbuffers::c_succeeded_compiling_flatbuffer_msg.data());
     }
 
+    inline DeveloperType GetDeveloperTypeStructForABI(const Function& function)
+    {
+        DeveloperType new_type { function.m_name, EdlTypeKind::Struct };
+
+           // Add return type to out struct if it's not void.
+        if (function.m_return_info.IsEdlType(EdlTypeKind::Void))
+        {
+            new_type.m_fields.push_back(function.m_return_info);
+        }
+
+        auto params_size = function.m_parameters.size();
+
+        for (Declaration parameter : function.m_parameters)
+        {
+            parameter.m_name = "m_" + parameter.m_name;
+            new_type.m_fields.push_back(parameter);
+        }
+
+        return new_type;
+    }
+
+    inline std::vector<DeveloperType> CreateDeveloperTypesForABIFunctions(
+        const std::unordered_map<std::string, Function>& trusted_functions,
+        const std::unordered_map<std::string, Function>& untrusted_functions)
+    {
+        std::vector<DeveloperType> dev_types {};
+
+        for (auto [name, function] : trusted_functions)
+        {
+            DeveloperType dev_type = GetDeveloperTypeStructForABI(function);
+            dev_types.push_back(dev_type);
+        }
+
+        for (auto [name, function] : untrusted_functions)
+        {
+            // add callback string at the end.
+            function.m_name = std::format(c_untrusted_function_name, function.m_name);
+            DeveloperType dev_type = GetDeveloperTypeStructForABI(function);
+            dev_types.push_back(dev_type);
+        }
+
+        return dev_types;
+    }
+
+    // std::format in C++20 requires the "format_string" to be known at compile time. 
+    // this is used for instances where we only know the format string at runtime.
     template<typename... Args>
     inline std::string FormatString(std::string_view format_string, Args&&... args)
     {
@@ -292,23 +338,7 @@ namespace CodeGeneration
         EdlTypeKind::Struct,
     };
 
-    inline bool TypeContainsIterator(const Declaration& declaration)
-    {
-        if (!declaration.m_array_dimensions.empty())
-        {
-            return true;
-        }
-
-        if (declaration.m_edl_type_info.m_type_kind == EdlTypeKind::String ||
-            declaration.m_edl_type_info.m_type_kind == EdlTypeKind::WString)
-        {
-            return true;
-        }
-
-        return false;
-    }
-
-    inline std::string GetSimpleTypeInfo(const EdlTypeInfo& info)
+    inline std::string EdlTypeToCppType(const EdlTypeInfo& info)
     {
         switch (info.m_type_kind)
         {
@@ -393,7 +423,7 @@ namespace CodeGeneration
     inline std::string GetFullDeclarationType(const Declaration& declaration)
     {
         EdlTypeKind type_kind = declaration.m_edl_type_info.m_type_kind;
-        std::string type_name = GetSimpleTypeInfo(declaration.m_edl_type_info);
+        std::string type_name = EdlTypeToCppType(declaration.m_edl_type_info);
 
         if (!declaration.m_array_dimensions.empty())
         {
@@ -465,6 +495,4 @@ namespace CodeGeneration
         return !declaration.m_array_dimensions.empty() ||
             s_complex_types.contains(declaration.m_edl_type_info.m_type_kind);
     }
-
-
 }
