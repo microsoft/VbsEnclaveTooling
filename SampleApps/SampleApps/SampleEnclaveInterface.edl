@@ -1,0 +1,47 @@
+// Copyright (c) Microsoft Corporation.
+// Licensed under the MIT License.
+
+enclave
+{
+    // Host to enclave functions
+    trusted
+    {
+        HRESULT RunTaskpoolExample(uint32_t thread_count);
+        
+        HRESULT RunHelloSecuredEncryptionKeyExample_CreateEncryptionKey(
+            wstring hello_key_name,
+            uint32_t activity_level,
+            wstring log_file_path,
+            [out] vector<uint8_t> secured_encryption_key_bytes
+            );
+
+        HRESULT RunHelloSecuredEncryptionKeyExample_LoadEncryptionKey(
+            vector<uint8_t> secured_encryption_key_bytes,
+            wstring data_to_encrypt,
+            bool is_to_be_encrypted, // Controls if the Load flow is used for encryption or decryption
+            uint32_t activity_level,
+            wstring log_file_path,
+            [out] vector<uint8_t> resealed_encryption_key_bytes,
+            [in, out] vector<uint8_t> encrypted_input_bytes,
+            [in, out] vector<uint8_t> tag,
+            [out] wstring decrypted_input_bytes
+            );
+
+        HRESULT RunHelloSecuredEncryptionKeyExample_LoadEncryptionKeyThreadpool(
+            vector<uint8_t> secured_encryption_key_bytes,
+            wstring data_to_encrypt_1,
+            wstring data_to_encrypt_2,
+            bool is_to_be_encrypted, // Controls if the Load flow is used for encryption or decryption
+            uint32_t activity_level,
+            wstring log_file_path,
+            [out] vector<uint8_t> resealed_encryption_key_bytes,
+            [in, out] vector<uint8_t> encrypted_input_bytes_1,
+            [in, out] vector<uint8_t> encrypted_input_bytes_2,
+            [in, out] vector<uint8_t> tag1,
+            [in, out] vector<uint8_t> tag2,
+            [out] wstring decrypted_input_bytes_1,
+            [out] wstring decrypted_input_bytes_2
+            );
+    };
+
+};

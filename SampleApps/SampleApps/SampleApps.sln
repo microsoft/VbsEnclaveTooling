@@ -7,6 +7,11 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "SampleHostApp", "SampleApp1
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "SampleEnclave", "SampleEnclave\SampleEnclave.vcxproj", "{D2C762E2-0DE1-4F72-98C9-75F7BD69D17E}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Edl", "Edl", "{02EA681E-C7D8-13C7-8484-4AC65E1B71E8}"
+	ProjectSection(SolutionItems) = preProject
+		SampleEnclaveInterface.edl = SampleEnclaveInterface.edl
+	EndProjectSection
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|ARM64 = Debug|ARM64
@@ -41,6 +46,5 @@ Global
 	EndGlobalSection
 	GlobalSection(SharedMSBuildProjectFiles) = preSolution
 		packages\Microsoft.Windows.VbsEnclaveTooling.0.0.0\src\VbsEnclaveSDK\veil_any_inc\veil_any_inc.vcxitems*{d2c762e2-0de1-4f72-98c9-75f7bd69d17e}*SharedItemsImports = 4
-		sample_any_inc\sample_any_inc.vcxitems*{d2c762e2-0de1-4f72-98c9-75f7bd69d17e}*SharedItemsImports = 4
 	EndGlobalSection
 EndGlobal

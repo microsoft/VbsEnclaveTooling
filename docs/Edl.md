@@ -72,7 +72,7 @@ enclave {
 
         HRESULT SecondaryExample (
             [in, out] ExampleStruct,
-            vector<int8_t> bytes
+            vector<int8_t> bytes // a data blob
         );
     };
 

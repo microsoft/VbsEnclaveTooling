@@ -15,15 +15,15 @@
 #include <taskpool.vtl1.h>
 #include <vtl0_functions.vtl1.h>
 
-#include "sample_arguments.any.h"
+#include <VbsEnclave\Enclave\Implementations.h>
 
 namespace RunTaskpoolExamples
 {
-    void Test_Dont_WaitForAllTasksToFinish(_In_ sample::args::RunTaskpoolExample* data)
+    void Test_Dont_WaitForAllTasksToFinish(uint32_t threadCount)
     {
         using namespace veil::vtl1::vtl0_functions;
 
-        debug_print(L"Creating taskpool with '%d' threads...", data->threadCount);
+        debug_print(L"Creating taskpool with '%d' threads...", threadCount);
 
         auto tasks = std::vector<veil::vtl1::future<void>>();
 
@@ -31,10 +31,10 @@ namespace RunTaskpoolExamples
 
         // taskpool
         {
-            auto taskpool = veil::vtl1::taskpool(data->threadCount, false);
+            auto taskpool = veil::vtl1::taskpool(threadCount, false);
 
             // Use up all the threads
-            for (uint32_t i = 0; i < data->threadCount; i++)
+            for (uint32_t i = 0; i < threadCount; i++)
             {
                 auto task = taskpool.queue_task([=] ()
                 {
@@ -73,11 +73,11 @@ namespace RunTaskpoolExamples
         }
     }
 
-    void Test_Do_WaitForAllTasksToFinish(_In_ sample::args::RunTaskpoolExample* data)
+    void Test_Do_WaitForAllTasksToFinish(uint32_t threadCount)
     {
         using namespace veil::vtl1::vtl0_functions;
 
-        debug_print(L"Creating taskpool with '%d' threads...", data->threadCount);
+        debug_print(L"Creating taskpool with '%d' threads...", threadCount);
 
         auto tasks = std::vector<veil::vtl1::future<void>>();
 
@@ -85,10 +85,10 @@ namespace RunTaskpoolExamples
 
         // taskpool
         {
-            auto taskpool = veil::vtl1::taskpool(data->threadCount, true);
+            auto taskpool = veil::vtl1::taskpool(threadCount, true);
 
             // Use up all the threads
-            for (uint32_t i = 0; i < data->threadCount; i++)
+            for (uint32_t i = 0; i < threadCount; i++)
             {
                 auto task = taskpool.queue_task([=] ()
                 {
@@ -118,11 +118,11 @@ namespace RunTaskpoolExamples
         }
     }
 
-    void Test_Cancellation(_In_ sample::args::RunTaskpoolExample* data)
+    void Test_Cancellation(uint32_t threadCount)
     {
         using namespace veil::vtl1::vtl0_functions;
 
-        debug_print(L"Creating taskpool with '%d' threads...", data->threadCount);
+        debug_print(L"Creating taskpool with '%d' threads...", threadCount);
 
         auto tasks = std::vector<veil::vtl1::future<void>>();
 
@@ -130,10 +130,10 @@ namespace RunTaskpoolExamples
 
         // taskpool
         {
-            auto taskpool = veil::vtl1::taskpool(data->threadCount, true);
+            auto taskpool = veil::vtl1::taskpool(threadCount, true);
 
             // Use up all the threads
-            for (uint32_t i = 0; i < data->threadCount; i++)
+            for (uint32_t i = 0; i < threadCount; i++)
             {
                 auto task = taskpool.queue_task([=] ()
                 {
@@ -165,13 +165,13 @@ namespace RunTaskpoolExamples
         }
     }
 
-    void UsageExample(_In_ sample::args::RunTaskpoolExample* data)
+    void UsageExample(uint32_t threadCount)
     {
         using namespace veil::vtl1::vtl0_functions;
 
-        debug_print(L"Creating taskpool with '%d' threads...", data->threadCount);
+        debug_print(L"Creating taskpool with '%d' threads...", threadCount);
 
-        auto taskpool = veil::vtl1::taskpool(data->threadCount, true);
+        auto taskpool = veil::vtl1::taskpool(threadCount, true);
 
         auto task_1 = taskpool.queue_task([=] ()
         {
@@ -208,13 +208,13 @@ namespace RunTaskpoolExamples
         debug_print(L"Waiting for taskpool to destruct...");
     }
 
-    void UsageExceptionExample(_In_ sample::args::RunTaskpoolExample* data)
+    void UsageExceptionExample(uint32_t threadCount)
     {
         using namespace veil::vtl1::vtl0_functions;
 
-        debug_print(L"Creating taskpool with '%d' threads...", data->threadCount);
+        debug_print(L"Creating taskpool with '%d' threads...", threadCount);
 
-        auto taskpool = veil::vtl1::taskpool(data->threadCount, true);
+        auto taskpool = veil::vtl1::taskpool(threadCount, true);
 
         auto task1 = taskpool.queue_task([=] ()
         {
@@ -260,56 +260,48 @@ namespace RunTaskpoolExamples
 //
 // Taskpool
 //
-void RunTaskpoolExampleImpl(_In_ sample::args::RunTaskpoolExample* data)
+HRESULT VbsEnclave::VTL1_Declarations::RunTaskpoolExample(_In_ const std::uint32_t threadCount)
 {
     using namespace veil::vtl1::vtl0_functions;
 
     debug_print(L"TEST: Taskpool destruction, don't wait for all tasks to finish");
-    RunTaskpoolExamples::Test_Dont_WaitForAllTasksToFinish(data);
+    RunTaskpoolExamples::Test_Dont_WaitForAllTasksToFinish(threadCount);
     debug_print(L"");
 
     debug_print(L"TEST: Taskpool destruction, wait for all tasks to finish");
-    RunTaskpoolExamples::Test_Do_WaitForAllTasksToFinish(data);
+    RunTaskpoolExamples::Test_Do_WaitForAllTasksToFinish(threadCount);
     debug_print(L"");
 
     debug_print(L"TEST: Taskpool cancellation");
-    RunTaskpoolExamples::Test_Cancellation(data);
+    RunTaskpoolExamples::Test_Cancellation(threadCount);
     debug_print(L"");
 
     debug_print(L"USAGE");
-    RunTaskpoolExamples::UsageExample(data);
+    RunTaskpoolExamples::UsageExample(threadCount);
     debug_print(L"");
 
     debug_print(L"USAGE EXCEPTIONS");
-    RunTaskpoolExamples::UsageExceptionExample(data);
+    RunTaskpoolExamples::UsageExceptionExample(threadCount);
     debug_print(L"");
-}
 
-ENCLAVE_FUNCTION RunTaskpoolExample(_In_ PVOID pv) noexcept try
-{
-    auto data = reinterpret_cast<sample::args::RunTaskpoolExample*>(pv);
-    RunTaskpoolExampleImpl(data);
-    return nullptr;
-}
-catch (...)
-{
-    LOG_CAUGHT_EXCEPTION();
-    RETURN_HR_AS_PVOID(wil::ResultFromCaughtException());
+    return S_OK;
 }
 
 //
 // Hello-secured encryption key
 //
-void RunHelloSecuredEncryptionKeyExample_CreateEncryptionKeyImpl(_In_ sample::args::RunHelloSecuredEncryptionKeyExample_CreateEncryptionKey* data)
+HRESULT VbsEnclave::VTL1_Declarations::RunHelloSecuredEncryptionKeyExample_CreateEncryptionKey(_In_ const std::wstring& helloKeyName, _In_ const std::uint32_t activity_level, _In_ const std::wstring& logFilePath, _Out_  std::vector<std::uint8_t>& securedEncryptionKeyBytes)
 {
     using namespace veil::vtl1::vtl0_functions;
     
+    auto activityLevel = (veil::any::logger::eventLevel)activity_level;
+
     const bool requireEnclaveOwnerIdMatchesHelloContainerSecureId = false;
     veil::vtl1::logger::implementation::add_log_from_enclave(
         L"[Enclave] In RunHelloSecuredEncryptionKeyExample_CreateEncryptionKeyImpl", 
         veil::any::logger::eventLevel::EVENT_LEVEL_CRITICAL,
-        data->activityLevel,
-        data->logFilePath);
+        activityLevel,
+        logFilePath);
 
     debug_print("");
     debug_print(L"[Create flow]");
@@ -317,17 +309,17 @@ void RunHelloSecuredEncryptionKeyExample_CreateEncryptionKeyImpl(_In_ sample::ar
     veil::vtl1::logger::implementation::add_log_from_enclave(
         L"[Enclave] Create flow", 
         veil::any::logger::eventLevel::EVENT_LEVEL_VERBOSE,
-        data->activityLevel,
-        data->logFilePath);
+        activityLevel,
+        logFilePath);
     
     // Create a hello key for the root of our Hello-secured encryption key
-    debug_print(L"1. Creating a 'Hello' key: %ws", data->helloKeyName.c_str());
+    debug_print(L"1. Creating a 'Hello' key: %ws", helloKeyName.c_str());
     veil::vtl1::logger::implementation::add_log_from_enclave(
-        L"[Enclave] Creating a 'Hello' key: " + data->helloKeyName,
+        L"[Enclave] Creating a 'Hello' key: " + helloKeyName,
         veil::any::logger::eventLevel::EVENT_LEVEL_INFO,
-        data->activityLevel,
-        data->logFilePath);
-    auto [helloKey, createdKey] = veil::vtl1::hello::create_or_open_hello_key(data->helloKeyName, L"Let's secure the encryption key with this Hello key!");
+        activityLevel,
+        logFilePath);
+    auto [helloKey, createdKey] = veil::vtl1::hello::create_or_open_hello_key(helloKeyName, L"Let's secure the encryption key with this Hello key!");
     debug_print("");
 
     // Generate our encryption key
@@ -335,16 +327,16 @@ void RunHelloSecuredEncryptionKeyExample_CreateEncryptionKeyImpl(_In_ sample::ar
     veil::vtl1::logger::implementation::add_log_from_enclave(
         L"[Enclave] Generating our encryption key",
         veil::any::logger::eventLevel::EVENT_LEVEL_INFO,
-        data->activityLevel,
-        data->logFilePath);
+        activityLevel,
+        logFilePath);
     auto encryptionKeyBytes = veil::vtl1::crypto::generate_symmetric_key_bytes();
     debug_print(L" ...CHECKPOINT: encryption key byte count: %d", encryptionKeyBytes.size());
     std::wstring logSizeStr = std::to_wstring(encryptionKeyBytes.size());
     veil::vtl1::logger::implementation::add_log_from_enclave(
         L"[Enclave] Encryption key byte count: " + logSizeStr,
         veil::any::logger::eventLevel::EVENT_LEVEL_CRITICAL,
-        data->activityLevel,
-        data->logFilePath);
+        activityLevel,
+        logFilePath);
     debug_print("");
 
     // Arbitrary metadata to encode in the final secured serialized key material blob saved on disk
@@ -355,11 +347,11 @@ void RunHelloSecuredEncryptionKeyExample_CreateEncryptionKeyImpl(_In_ sample::ar
     veil::vtl1::logger::implementation::add_log_from_enclave(
         L"[Enclave] Securing our encryption key with Hello",
         veil::any::logger::eventLevel::EVENT_LEVEL_INFO,
-        data->activityLevel,
-        data->logFilePath);
+        activityLevel,
+        logFilePath);
     auto serializedHelloSecuredKey = veil::vtl1::hello::conceal_encryption_key_with_hello(
         helloKey.get(),
-        data->helloKeyName,
+        helloKeyName,
         STANDARD_HELLO_KEY_CACHE_CONFIG,
         encryptionKeyBytes,
         veil::vtl1::as_data_span(customData),
@@ -369,8 +361,8 @@ void RunHelloSecuredEncryptionKeyExample_CreateEncryptionKeyImpl(_In_ sample::ar
     veil::vtl1::logger::implementation::add_log_from_enclave(
         L"[Enclave] Secured encryption key material byte count: " + logSizeStr,
         veil::any::logger::eventLevel::EVENT_LEVEL_CRITICAL,
-        data->activityLevel,
-        data->logFilePath);
+        activityLevel,
+        logFilePath);
     debug_print("");
     
     // Seal it so only our enclave may open it
@@ -378,74 +370,68 @@ void RunHelloSecuredEncryptionKeyExample_CreateEncryptionKeyImpl(_In_ sample::ar
     veil::vtl1::logger::implementation::add_log_from_enclave(
         L"[Enclave] Sealing the serialized key material for our enclave only",
         veil::any::logger::eventLevel::EVENT_LEVEL_INFO,
-        data->activityLevel,
-        data->logFilePath);
+        activityLevel,
+        logFilePath);
     auto sealedKeyMaterial = veil::vtl1::crypto::seal_data(serializedHelloSecuredKey, ENCLAVE_IDENTITY_POLICY_SEAL_SAME_IMAGE, ENCLAVE_RUNTIME_POLICY_ALLOW_FULL_DEBUG);
     debug_print(L" ...CHECKPOINT: sealed key material byte count: %d", sealedKeyMaterial.size());
     logSizeStr = std::to_wstring(sealedKeyMaterial.size());
     veil::vtl1::logger::implementation::add_log_from_enclave(
         L"[Enclave] Sealed key material byte count: " + logSizeStr,
         veil::any::logger::eventLevel::EVENT_LEVEL_CRITICAL,
-        data->activityLevel,
-        data->logFilePath);
+        activityLevel,
+        logFilePath);
     debug_print("");
 
     // Erase our plain-text encryption key, (not necessary, but being explicit that we do not need this data anymore)
     encryptionKeyBytes.fill(0);
 
     // Return the secured encryption key to vtl0 host caller...
-    auto buffer_vtl0 = veil::vtl1::memory::copy_to_vtl0_data_blob(&data->securedEncryptionKeyBytes, sealedKeyMaterial);
-    buffer_vtl0.release();
+    securedEncryptionKeyBytes.assign(sealedKeyMaterial.begin(), sealedKeyMaterial.end());
 
+    return S_OK;
 }
 
-ENCLAVE_FUNCTION RunHelloSecuredEncryptionKeyExample_CreateEncryptionKey(_In_ PVOID pv) noexcept try
-{
-    auto data = reinterpret_cast<sample::args::RunHelloSecuredEncryptionKeyExample_CreateEncryptionKey*>(pv);
-    RunHelloSecuredEncryptionKeyExample_CreateEncryptionKeyImpl(data);
-    return nullptr;
-}
-catch (...)
-{
-    using namespace veil::vtl1::vtl0_functions;
-    auto error = veil::vtl1::implementation::export_helpers::get_back_thread_enclave_error(GetCurrentThreadId());
-    debug_print(error->wmessage);
-
-    LOG_CAUGHT_EXCEPTION();
-    RETURN_HR_AS_PVOID(wil::ResultFromCaughtException());
-}
-
-bool RunHelloSecuredEncryptionKeyExample_LoadEncryptionKeyImpl(
-   _In_ sample::args::RunHelloSecuredEncryptionKeyExample_LoadEncryptionKey* data,
-   _In_ bool calledFromThreadpool = false,
-   _In_ std::wstring logPrefix = L"",
-   _Out_ veil::any::args::data_blob* encryptedInputBytes = nullptr,
-   _Out_ veil::any::args::data_blob* encryptionTag = nullptr,
-   _Out_ veil::any::args::data_blob* decryptedInputBytes = nullptr)
+HRESULT RunHelloSecuredEncryptionKeyExample_LoadEncryptionKeyImpl(
+    _In_ const std::vector<std::uint8_t>& securedEncryptionKeyBytes,
+    _In_ const std::wstring& dataToEncrypt,
+    _In_ const bool isToBeEncrypted,
+    _In_ const std::uint32_t activity_level,
+    _In_ const std::wstring& logFilePath,
+    _Out_  std::vector<std::uint8_t>& resealedEncryptionKeyBytes,
+    _Out_  std::vector<std::uint8_t>& encryptedInputBytes,
+    _Out_  std::vector<std::uint8_t>& tag,
+    _Out_  std::wstring& decryptedInputBytes,
+    _In_ bool calledFromThreadpool = false,
+    _In_ std::wstring logPrefix = L"",
+    _Inout_opt_  std::vector<std::uint8_t>* threadpool_encryptedInputBytes = nullptr,
+    _Inout_opt_  std::vector<std::uint8_t>* threadpool_encryptionTag = nullptr,
+    _Inout_opt_  std::wstring* threadpool_decryptedInputBytes = nullptr)
 {
    using namespace veil::vtl1::vtl0_functions;
    const bool requireEnclaveOwnerIdMatchesHelloContainerSecureId = false;
 
-   veil::vtl1::logger::implementation::add_log_from_enclave(
-       L"[Enclave] In RunHelloSecuredEncryptionKeyExample_LoadEncryptionKeyImpl",
-       veil::any::logger::eventLevel::EVENT_LEVEL_CRITICAL,
-       data->activityLevel,
-       data->logFilePath);
+    auto activityLevel = (veil::any::logger::eventLevel)activity_level;
 
-   debug_print("%ws", logPrefix.c_str());
-   debug_print("");
-   debug_print(L"[Load flow]");
-   debug_print("");
+    veil::vtl1::logger::implementation::add_log_from_enclave(
+        L"[Enclave] In RunHelloSecuredEncryptionKeyExample_LoadEncryptionKeyImpl",
+        veil::any::logger::eventLevel::EVENT_LEVEL_CRITICAL,
+        activityLevel,
+        logFilePath);
 
-   debug_print("%ws", logPrefix.c_str());
-   debug_print(L"1. Unsealing our encryption key (only our enclave can succeed this operation)");
-   auto [unsealedBytes, unsealingFlags] = veil::vtl1::crypto::unseal_data(data->securedEncryptionKeyBytes);
-   debug_print("%ws", logPrefix.c_str());
-   debug_print(L" ...CHECKPOINT: unsealed byte count: = %d", unsealedBytes.size());
-   debug_print("");
-   
-   // Arbitrary metadata that must match what's encoded in the serialized key blob
-   std::wstring expectedCustomData = L"usage=for_decryption";
+    debug_print("%ws", logPrefix.c_str());
+    debug_print("");
+    debug_print(L"[Load flow]");
+    debug_print("");
+
+    debug_print("%ws", logPrefix.c_str());
+    debug_print(L"1. Unsealing our encryption key (only our enclave can succeed this operation)");
+    auto [unsealedBytes, unsealingFlags] = veil::vtl1::crypto::unseal_data(securedEncryptionKeyBytes);
+    debug_print("%ws", logPrefix.c_str());
+    debug_print(L" ...CHECKPOINT: unsealed byte count: = %d", unsealedBytes.size());
+    debug_print("");
+
+    // Arbitrary metadata that must match what's encoded in the serialized key blob
+    std::wstring expectedCustomData = L"usage=for_decryption";
 
    // Decrypt the encryption key
    debug_print("%ws", logPrefix.c_str());
@@ -455,19 +441,19 @@ bool RunHelloSecuredEncryptionKeyExample_LoadEncryptionKeyImpl(
    debug_print(L" ...CHECKPOINT: encryption key handle: = %d", encryptionKey.get());
    debug_print("");
 
-   if (data->isToBeEncrypted)
+   if (isToBeEncrypted)
    {
        //
        // Now let's encrypt the input data with our encryption key
        //
 
        // Encrypting the user input data
-       auto const SOME_PLAIN_TEXT = data->dataToEncrypt.c_str();
+       auto const SOME_PLAIN_TEXT = dataToEncrypt.c_str();
 
        // Let's encrypt the input text
        debug_print("%ws", logPrefix.c_str());
        debug_print(L"3. Encrypting input text.");
-       auto [encryptedText, tag] = veil::vtl1::crypto::encrypt(encryptionKey.get(), veil::vtl1::as_data_span(SOME_PLAIN_TEXT), veil::vtl1::crypto::zero_nonce);
+       auto [encryptedText, encryptionTag] = veil::vtl1::crypto::encrypt(encryptionKey.get(), veil::vtl1::as_data_span(SOME_PLAIN_TEXT), veil::vtl1::crypto::zero_nonce);
        debug_print("%ws", logPrefix.c_str());
        debug_print(L" ...CHECKPOINT: encrypted text's byte count: = %d", encryptedText.size());
        debug_print("");
@@ -475,20 +461,14 @@ bool RunHelloSecuredEncryptionKeyExample_LoadEncryptionKeyImpl(
        if (!calledFromThreadpool)
        {
            // Return the encrypted input to vtl0 host caller...
-           auto buffer_vtl0 = veil::vtl1::memory::copy_to_vtl0_data_blob(&data->encryptedInputBytes, encryptedText);
-           buffer_vtl0.release();
-
-           auto buffer1_vtl0 = veil::vtl1::memory::copy_to_vtl0_data_blob(&data->tag, tag);
-           buffer1_vtl0.release();
+           encryptedInputBytes.assign(encryptedText.begin(), encryptedText.end());
+           tag.assign(encryptionTag.begin(), encryptionTag.end());
        }
        else
        {
            // Return the encrypted input to vtl0 host caller...
-           auto buffer_vtl0 = veil::vtl1::memory::copy_to_vtl0_data_blob(encryptedInputBytes, encryptedText);
-           buffer_vtl0.release();
-
-           auto buffer1_vtl0 = veil::vtl1::memory::copy_to_vtl0_data_blob(encryptionTag, tag);
-           buffer1_vtl0.release();
+           threadpool_encryptedInputBytes->assign(encryptedText.begin(), encryptedText.end());
+           threadpool_encryptionTag->assign(encryptionTag.begin(), encryptionTag.end());
        }
    }
    else
@@ -496,7 +476,7 @@ bool RunHelloSecuredEncryptionKeyExample_LoadEncryptionKeyImpl(
        // Let's decrypt the stored encrypted input
        debug_print("%ws", logPrefix.c_str());
        debug_print(L"4. Decrypting text...");
-       auto decryptedText = veil::vtl1::crypto::decrypt(encryptionKey.get(), data->encryptedInputBytes, veil::vtl1::crypto::zero_nonce, data->tag);
+       auto decryptedText = veil::vtl1::crypto::decrypt(encryptionKey.get(), encryptedInputBytes, veil::vtl1::crypto::zero_nonce, tag);
        std::wstring decryptedString = veil::vtl1::to_wstring(decryptedText);
        debug_print("%ws", logPrefix.c_str());
        debug_print(L" ...CHECKPOINT: decrypted text: = %ws", decryptedString.c_str());
@@ -505,41 +485,46 @@ bool RunHelloSecuredEncryptionKeyExample_LoadEncryptionKeyImpl(
        if (!calledFromThreadpool)
        {
            // Return the decrypted input to vtl0 host caller...
-           auto buffer_vtl0 = veil::vtl1::memory::copy_to_vtl0_data_blob(&data->decryptedInputBytes, decryptedText);
-           buffer_vtl0.release();
+           decryptedInputBytes = decryptedString;
        }
        else
        {
            // Return the decrypted input to vtl0 host caller...
-           auto buffer_vtl0 = veil::vtl1::memory::copy_to_vtl0_data_blob(decryptedInputBytes, decryptedText);
-           buffer_vtl0.release();
+           *threadpool_decryptedInputBytes = decryptedString;
        }
    }
 
    return true;
 }
 
-ENCLAVE_FUNCTION RunHelloSecuredEncryptionKeyExample_LoadEncryptionKey(_In_ PVOID pv) noexcept try
+HRESULT VbsEnclave::VTL1_Declarations::RunHelloSecuredEncryptionKeyExample_LoadEncryptionKey(_In_ const std::vector<std::uint8_t>& securedEncryptionKeyBytes,
+    _In_ const std::wstring& dataToEncrypt,
+    _In_ const bool isToBeEncrypted,
+    _In_ const std::uint32_t activity_level,
+    _In_ const std::wstring& logFilePath,
+    _Out_  std::vector<std::uint8_t>& resealedEncryptionKeyBytes,
+    _Out_  std::vector<std::uint8_t>& encryptedInputBytes,
+    _Out_  std::vector<std::uint8_t>& tag,
+    _Out_  std::wstring& decryptedInputBytes)
 {
-    auto data = reinterpret_cast<sample::args::RunHelloSecuredEncryptionKeyExample_LoadEncryptionKey*>(pv);
-    if (!RunHelloSecuredEncryptionKeyExample_LoadEncryptionKeyImpl(data)) 
-    { }
-    return nullptr;
+    RETURN_IF_FAILED(RunHelloSecuredEncryptionKeyExample_LoadEncryptionKeyImpl(
+        securedEncryptionKeyBytes,
+        dataToEncrypt,
+        isToBeEncrypted,
+        activity_level,
+        logFilePath,
+        resealedEncryptionKeyBytes,
+        encryptedInputBytes,
+        tag,
+        decryptedInputBytes
+        ));
+    return S_OK;
 }
-catch (...)
+
+HRESULT VbsEnclave::VTL1_Declarations::RunHelloSecuredEncryptionKeyExample_LoadEncryptionKeyThreadpool(_In_ const std::vector<std::uint8_t>& securedEncryptionKeyBytes, _In_ const std::wstring& dataToEncrypt1, _In_ const std::wstring& dataToEncrypt2, _In_ const bool isToBeEncrypted, _In_ const std::uint32_t activity_level, _In_ const std::wstring& logFilePath, _Out_  std::vector<std::uint8_t>& resealedEncryptionKeyBytes, _Inout_  std::vector<std::uint8_t>& encryptedInputBytes1, _Inout_  std::vector<std::uint8_t>& encryptedInputBytes2, _Inout_  std::vector<std::uint8_t>& tag1, _Inout_  std::vector<std::uint8_t>& tag2, _Out_  std::wstring& decryptedInputBytes1, _Out_  std::wstring& decryptedInputBytes2)
 {
     using namespace veil::vtl1::vtl0_functions;
-    auto error = veil::vtl1::implementation::export_helpers::get_back_thread_enclave_error(GetCurrentThreadId());
-    debug_print(error->wmessage);
-
-    LOG_CAUGHT_EXCEPTION();
-    RETURN_HR_AS_PVOID(wil::ResultFromCaughtException());
-}
-
-bool RunHelloSecuredEncryptionKeyExample_LoadEncryptionKeyThreadpoolImpl(_In_ sample::args::RunHelloSecuredEncryptionKeyExample_LoadEncryptionKeyThreadpool* data)
-{
-    using namespace veil::vtl1::vtl0_functions;
-    auto threadCount = 2;
+    auto threadCount = 2u;
 
     debug_print(L"Creating taskpool with '%d' threads...", threadCount);
 
@@ -554,55 +539,55 @@ bool RunHelloSecuredEncryptionKeyExample_LoadEncryptionKeyThreadpoolImpl(_In_ sa
         // Use up all the threads
         for (uint32_t i = 0; i < threadCount; i++)
         {
-            auto task = taskpool.queue_task([=] ()
+            auto task = taskpool.queue_task([&, i=i] ()
             {
-                if (data->isToBeEncrypted)
+                if (isToBeEncrypted)
                 {
                     auto logPrefix = L"[THREAD " + std::to_wstring(i) + L"]";
                     auto helloStr = logPrefix + L" Hello from encryption task.";
                     debug_print(helloStr.c_str());
-                    sample::args::RunHelloSecuredEncryptionKeyExample_LoadEncryptionKey threadData;
-                    threadData.securedEncryptionKeyBytes.data = data->securedEncryptionKeyBytes.data;
-                    threadData.securedEncryptionKeyBytes.size = data->securedEncryptionKeyBytes.size;
-                    threadData.dataToEncrypt = (i == 0) ? data->dataToEncrypt1 : data->dataToEncrypt2;
-                    threadData.isToBeEncrypted = data->isToBeEncrypted;
-                    threadData.logFilePath = data->logFilePath;
-                    threadData.activityLevel = data->activityLevel;
 
-                    wil::secure_vector<uint8_t>* encryptedInputBytes = nullptr;
-                    std::array<uint8_t, 16Ui64>* encryptionTag = nullptr;
-
-                    if (!RunHelloSecuredEncryptionKeyExample_LoadEncryptionKeyImpl(
-                            &threadData, 
+                    auto a = std::vector<uint8_t> {};
+                    auto b = std::vector<uint8_t> {};
+                    auto c = std::vector<uint8_t> {};
+                    auto d = std::wstring {};
+                    if (FAILED(RunHelloSecuredEncryptionKeyExample_LoadEncryptionKeyImpl(
+                            securedEncryptionKeyBytes,
+                            (i == 0) ? dataToEncrypt1 : dataToEncrypt2,
+                            isToBeEncrypted,
+                            activity_level,
+                            logFilePath,
+                            a,
+                            b,
+                            c,
+                            d,
                             true /* called from threadPool */,
                             logPrefix,
-                            (i == 0) ? &data->encryptedInputBytes1 : &data->encryptedInputBytes2,
-                            (i == 0) ? &data->tag1 : &data->tag2))
+                            (i == 0) ? &encryptedInputBytes1 : &encryptedInputBytes2,
+                            (i == 0) ? &tag1 : &tag2)))
                     {}
                 }
                 else
                 {
                     debug_print(L"hello from decryption task: %d", i);
-                    sample::args::RunHelloSecuredEncryptionKeyExample_LoadEncryptionKey threadData;
-                    threadData.securedEncryptionKeyBytes.data = data->securedEncryptionKeyBytes.data;
-                    threadData.securedEncryptionKeyBytes.size = data->securedEncryptionKeyBytes.size;
-                    threadData.encryptedInputBytes.data = (i == 0) ? data->encryptedInputBytes1.data : data->encryptedInputBytes2.data;
-                    threadData.encryptedInputBytes.size = (i == 0) ? data->encryptedInputBytes1.size : data->encryptedInputBytes2.size;
-                    threadData.isToBeEncrypted = data->isToBeEncrypted;
-                    threadData.tag.data = (i == 0) ? data->tag1.data : data->tag2.data;
-                    threadData.tag.size = (i == 0) ? data->tag1.size : data->tag2.size;
-                    threadData.logFilePath = data->logFilePath;
-                    threadData.activityLevel = data->activityLevel;
 
-                    wil::secure_vector<uint8_t>* decryptedInputBytes = nullptr;
-
-                    if (!RunHelloSecuredEncryptionKeyExample_LoadEncryptionKeyImpl(
-                            &threadData,
-                            true /* called from threadPool */, 
-                            L"[THREAD " + std::to_wstring(i) + L"]",
-                            nullptr /* encryptedInputBytes- not used */,
-                            nullptr /* encryptionTag- not used */,
-                            (i == 0) ? &data->decryptedInputBytes1 : &data->decryptedInputBytes2))
+                    auto a = std::vector<uint8_t> {};
+                    auto b = std::wstring {};
+                    if (FAILED(RunHelloSecuredEncryptionKeyExample_LoadEncryptionKeyImpl(
+                        securedEncryptionKeyBytes,
+                        {},
+                        isToBeEncrypted,
+                        activity_level,
+                        logFilePath,
+                        a,
+                        (i == 0) ? encryptedInputBytes1 : encryptedInputBytes2,
+                        (i == 0) ? tag1 : tag2,
+                        b,
+                        true /* called from threadPool */,
+                        L"[THREAD " + std::to_wstring(i) + L"]",
+                        nullptr,
+                        nullptr,
+                        (i == 0) ? &decryptedInputBytes1 : &decryptedInputBytes2)))
                     {
                     }
                 }
@@ -629,22 +614,5 @@ bool RunHelloSecuredEncryptionKeyExample_LoadEncryptionKeyThreadpoolImpl(_In_ sa
         debug_print(L"SUCCESS: Taskpool destructed after all tasks finished.");
     }
 
-    return true;
-}
-
-ENCLAVE_FUNCTION RunHelloSecuredEncryptionKeyExample_LoadEncryptionKeyThreadpool(_In_ PVOID pv) noexcept try
-{
-    auto data = reinterpret_cast<sample::args::RunHelloSecuredEncryptionKeyExample_LoadEncryptionKeyThreadpool*>(pv);
-    if (!RunHelloSecuredEncryptionKeyExample_LoadEncryptionKeyThreadpoolImpl(data))
-    {}
-    return nullptr;
-}
-catch (...)
-{
-    using namespace veil::vtl1::vtl0_functions;
-    auto error = veil::vtl1::implementation::export_helpers::get_back_thread_enclave_error(GetCurrentThreadId());
-    debug_print(error->wmessage);
-
-    LOG_CAUGHT_EXCEPTION();
-    RETURN_HR_AS_PVOID(wil::ResultFromCaughtException());
+    return S_OK;
 }

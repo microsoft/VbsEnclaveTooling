@@ -42,6 +42,7 @@ namespace VbsEnclaveABI::HostApp
 
         auto module = reinterpret_cast<HMODULE>(enclave_instance);
         auto proc_address = GetProcAddress(module, function_name.data());
+        THROW_LAST_ERROR_IF_NULL(proc_address);
 
         auto routine = reinterpret_cast<PENCLAVE_ROUTINE>(proc_address);
         void* result_from_vtl1;
