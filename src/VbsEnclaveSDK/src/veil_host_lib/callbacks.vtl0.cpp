@@ -11,7 +11,7 @@
 
 #include "callbacks.vtl0.h"
 #include "hello.vtl0.h"
-#include "telemetry.vtl0.h"
+#include "logger.vtl0.h"
 #include "taskpool.vtl0.h"
 #include "utils.vtl0.h"
 

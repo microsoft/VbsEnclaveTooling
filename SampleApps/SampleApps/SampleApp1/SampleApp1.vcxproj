@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="..\packages\Microsoft.Windows.VbsEnclaveTooling.0.0.0\build\native\Microsoft.Windows.VbsEnclaveTooling.props" Condition="Exists('..\packages\Microsoft.Windows.VbsEnclaveTooling.0.0.0\build\native\Microsoft.Windows.VbsEnclaveTooling.props')" />
+  <Import Project="..\packages\MsGsl.3.1.0.2\build\native\MsGsl.props" Condition="Exists('..\packages\MsGsl.3.1.0.2\build\native\MsGsl.props')" />
   <Import Project="..\packages\Microsoft.Windows.SDK.CPP.x64.10.0.26100.2454\build\native\Microsoft.Windows.SDK.cpp.x64.props" Condition="Exists('..\packages\Microsoft.Windows.SDK.CPP.x64.10.0.26100.2454\build\native\Microsoft.Windows.SDK.cpp.x64.props')" />
   <Import Project="..\packages\Microsoft.Windows.SDK.CPP.arm64.10.0.26100.2454\build\native\Microsoft.Windows.SDK.cpp.arm64.props" Condition="Exists('..\packages\Microsoft.Windows.SDK.CPP.arm64.10.0.26100.2454\build\native\Microsoft.Windows.SDK.cpp.arm64.props')" />
   <Import Project="..\packages\Microsoft.Windows.SDK.CPP.10.0.26100.2454\build\native\Microsoft.Windows.SDK.cpp.props" Condition="Exists('..\packages\Microsoft.Windows.SDK.CPP.10.0.26100.2454\build\native\Microsoft.Windows.SDK.cpp.props')" />
@@ -165,6 +166,7 @@
     <Error Condition="!Exists('..\packages\Microsoft.Windows.SDK.CPP.10.0.26100.2454\build\native\Microsoft.Windows.SDK.cpp.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\Microsoft.Windows.SDK.CPP.10.0.26100.2454\build\native\Microsoft.Windows.SDK.cpp.targets'))" />
     <Error Condition="!Exists('..\packages\Microsoft.Windows.SDK.CPP.arm64.10.0.26100.2454\build\native\Microsoft.Windows.SDK.cpp.arm64.props')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\Microsoft.Windows.SDK.CPP.arm64.10.0.26100.2454\build\native\Microsoft.Windows.SDK.cpp.arm64.props'))" />
     <Error Condition="!Exists('..\packages\Microsoft.Windows.SDK.CPP.x64.10.0.26100.2454\build\native\Microsoft.Windows.SDK.cpp.x64.props')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\Microsoft.Windows.SDK.CPP.x64.10.0.26100.2454\build\native\Microsoft.Windows.SDK.cpp.x64.props'))" />
+    <Error Condition="!Exists('..\packages\MsGsl.3.1.0.2\build\native\MsGsl.props')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\MsGsl.3.1.0.2\build\native\MsGsl.props'))" />
     <Error Condition="!Exists('..\packages\Microsoft.Windows.VbsEnclaveTooling.0.0.0\build\native\Microsoft.Windows.VbsEnclaveTooling.props')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\Microsoft.Windows.VbsEnclaveTooling.0.0.0\build\native\Microsoft.Windows.VbsEnclaveTooling.props'))" />
     <Error Condition="!Exists('..\packages\Microsoft.Windows.VbsEnclaveTooling.0.0.0\build\native\Microsoft.Windows.VbsEnclaveTooling.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\Microsoft.Windows.VbsEnclaveTooling.0.0.0\build\native\Microsoft.Windows.VbsEnclaveTooling.targets'))" />
   </Target>

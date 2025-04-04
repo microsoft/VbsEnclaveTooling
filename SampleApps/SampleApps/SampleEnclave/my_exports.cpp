@@ -11,7 +11,7 @@
 #include <enclave_interface.vtl1.h>
 #include <export_helpers.vtl1.h>
 #include <hello.vtl1.h>
-#include <telemetry.vtl1.h>
+#include <logger.vtl1.h>
 #include <taskpool.vtl1.h>
 #include <vtl0_functions.vtl1.h>
 
@@ -305,26 +305,26 @@ void RunHelloSecuredEncryptionKeyExample_CreateEncryptionKeyImpl(_In_ sample::ar
     using namespace veil::vtl1::vtl0_functions;
     
     const bool requireEnclaveOwnerIdMatchesHelloContainerSecureId = false;
-    veil::vtl1::telemetry::implementation::add_log_from_enclave(
+    veil::vtl1::logger::implementation::add_log_from_enclave(
         L"[Enclave] In RunHelloSecuredEncryptionKeyExample_CreateEncryptionKeyImpl", 
-        veil::any::telemetry::eventLevel::EVENT_LEVEL_CRITICAL,
+        veil::any::logger::eventLevel::EVENT_LEVEL_CRITICAL,
         data->activityLevel,
         data->logFilePath);
 
     debug_print("");
     debug_print(L"[Create flow]");
     debug_print("");
-    veil::vtl1::telemetry::implementation::add_log_from_enclave(
+    veil::vtl1::logger::implementation::add_log_from_enclave(
         L"[Enclave] Create flow", 
-        veil::any::telemetry::eventLevel::EVENT_LEVEL_VERBOSE,
+        veil::any::logger::eventLevel::EVENT_LEVEL_VERBOSE,
         data->activityLevel,
         data->logFilePath);
     
     // Create a hello key for the root of our Hello-secured encryption key
     debug_print(L"1. Creating a 'Hello' key: %ws", data->helloKeyName.c_str());
-    veil::vtl1::telemetry::implementation::add_log_from_enclave(
+    veil::vtl1::logger::implementation::add_log_from_enclave(
         L"[Enclave] Creating a 'Hello' key: " + data->helloKeyName,
-        veil::any::telemetry::eventLevel::EVENT_LEVEL_INFO,
+        veil::any::logger::eventLevel::EVENT_LEVEL_INFO,
         data->activityLevel,
         data->logFilePath);
     auto [helloKey, createdKey] = veil::vtl1::hello::create_or_open_hello_key(data->helloKeyName, L"Let's secure the encryption key with this Hello key!");
@@ -332,17 +332,17 @@ void RunHelloSecuredEncryptionKeyExample_CreateEncryptionKeyImpl(_In_ sample::ar
 
     // Generate our encryption key
     debug_print(L"2. Generating our encryption key");
-    veil::vtl1::telemetry::implementation::add_log_from_enclave(
+    veil::vtl1::logger::implementation::add_log_from_enclave(
         L"[Enclave] Generating our encryption key",
-        veil::any::telemetry::eventLevel::EVENT_LEVEL_INFO,
+        veil::any::logger::eventLevel::EVENT_LEVEL_INFO,
         data->activityLevel,
         data->logFilePath);
     auto encryptionKeyBytes = veil::vtl1::crypto::generate_symmetric_key_bytes();
     debug_print(L" ...CHECKPOINT: encryption key byte count: %d", encryptionKeyBytes.size());
     std::wstring logSizeStr = std::to_wstring(encryptionKeyBytes.size());
-    veil::vtl1::telemetry::implementation::add_log_from_enclave(
+    veil::vtl1::logger::implementation::add_log_from_enclave(
         L"[Enclave] Encryption key byte count: " + logSizeStr,
-        veil::any::telemetry::eventLevel::EVENT_LEVEL_CRITICAL,
+        veil::any::logger::eventLevel::EVENT_LEVEL_CRITICAL,
         data->activityLevel,
         data->logFilePath);
     debug_print("");
@@ -352,9 +352,9 @@ void RunHelloSecuredEncryptionKeyExample_CreateEncryptionKeyImpl(_In_ sample::ar
 
     // Secure our encryption key with Hello
     debug_print(L"3. Securing our encryption key with Hello");
-    veil::vtl1::telemetry::implementation::add_log_from_enclave(
+    veil::vtl1::logger::implementation::add_log_from_enclave(
         L"[Enclave] Securing our encryption key with Hello",
-        veil::any::telemetry::eventLevel::EVENT_LEVEL_INFO,
+        veil::any::logger::eventLevel::EVENT_LEVEL_INFO,
         data->activityLevel,
         data->logFilePath);
     auto serializedHelloSecuredKey = veil::vtl1::hello::conceal_encryption_key_with_hello(
@@ -366,26 +366,26 @@ void RunHelloSecuredEncryptionKeyExample_CreateEncryptionKeyImpl(_In_ sample::ar
         requireEnclaveOwnerIdMatchesHelloContainerSecureId);
     debug_print(L" ...CHECKPOINT: secured encryption key material byte count: %d", serializedHelloSecuredKey.size());
     logSizeStr = std::to_wstring(serializedHelloSecuredKey.size());
-    veil::vtl1::telemetry::implementation::add_log_from_enclave(
+    veil::vtl1::logger::implementation::add_log_from_enclave(
         L"[Enclave] Secured encryption key material byte count: " + logSizeStr,
-        veil::any::telemetry::eventLevel::EVENT_LEVEL_CRITICAL,
+        veil::any::logger::eventLevel::EVENT_LEVEL_CRITICAL,
         data->activityLevel,
         data->logFilePath);
     debug_print("");
     
     // Seal it so only our enclave may open it
     debug_print(L"4. Sealing the serialized key material for our enclave only");
-    veil::vtl1::telemetry::implementation::add_log_from_enclave(
+    veil::vtl1::logger::implementation::add_log_from_enclave(
         L"[Enclave] Sealing the serialized key material for our enclave only",
-        veil::any::telemetry::eventLevel::EVENT_LEVEL_INFO,
+        veil::any::logger::eventLevel::EVENT_LEVEL_INFO,
         data->activityLevel,
         data->logFilePath);
     auto sealedKeyMaterial = veil::vtl1::crypto::seal_data(serializedHelloSecuredKey, ENCLAVE_IDENTITY_POLICY_SEAL_SAME_IMAGE, ENCLAVE_RUNTIME_POLICY_ALLOW_FULL_DEBUG);
     debug_print(L" ...CHECKPOINT: sealed key material byte count: %d", sealedKeyMaterial.size());
     logSizeStr = std::to_wstring(sealedKeyMaterial.size());
-    veil::vtl1::telemetry::implementation::add_log_from_enclave(
+    veil::vtl1::logger::implementation::add_log_from_enclave(
         L"[Enclave] Sealed key material byte count: " + logSizeStr,
-        veil::any::telemetry::eventLevel::EVENT_LEVEL_CRITICAL,
+        veil::any::logger::eventLevel::EVENT_LEVEL_CRITICAL,
         data->activityLevel,
         data->logFilePath);
     debug_print("");
@@ -420,9 +420,9 @@ bool RunHelloSecuredEncryptionKeyExample_LoadEncryptionKeyImpl(_In_ sample::args
     using namespace veil::vtl1::vtl0_functions;
     const bool requireEnclaveOwnerIdMatchesHelloContainerSecureId = false;
 
-    veil::vtl1::telemetry::implementation::add_log_from_enclave(
+    veil::vtl1::logger::implementation::add_log_from_enclave(
         L"[Enclave] In RunHelloSecuredEncryptionKeyExample_LoadEncryptionKeyImpl",
-        veil::any::telemetry::eventLevel::EVENT_LEVEL_CRITICAL,
+        veil::any::logger::eventLevel::EVENT_LEVEL_CRITICAL,
         data->activityLevel,
         data->logFilePath);
     

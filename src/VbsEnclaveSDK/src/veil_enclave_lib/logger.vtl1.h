@@ -6,7 +6,7 @@
 #include <wil/stl.h>
 
 #include "veil_arguments.any.h"
-#include "telemetry.any.h"
+#include "logger.any.h"
 #include "utils.any.h"
 
 #include "future.vtl1.h"
@@ -16,7 +16,7 @@
 #include "utils.vtl1.h"
 #include "vtl0_functions.vtl1.h"
 
-namespace veil::vtl1::telemetry
+namespace veil::vtl1::logger
 {
     namespace implementation
     {
@@ -48,8 +48,8 @@ namespace veil::vtl1::telemetry
 
         inline void add_log_from_enclave(
             std::wstring_view log,
-            veil::any::telemetry::eventLevel logLevel,
-            veil::any::telemetry::eventLevel runtimeLogLevel,
+            veil::any::logger::eventLevel logLevel,
+            veil::any::logger::eventLevel runtimeLogLevel,
             std::wstring_view logFilePath)
         {
 
