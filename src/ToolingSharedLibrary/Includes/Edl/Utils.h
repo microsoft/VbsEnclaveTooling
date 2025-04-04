@@ -190,8 +190,6 @@ namespace EdlProcessor
         return true;
     }
 
-    extern std::unordered_map<std::string, std::uint64_t> s_anonymous_enum_values_map;
-
     static inline constexpr std::string_view c_default_count_value = "1";
 
     inline std::string GetSizeFromAttribute(const Declaration& declaration)

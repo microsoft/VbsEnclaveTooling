@@ -133,6 +133,14 @@ namespace veil::any
                 // out
                 veil::any::args::data_blob responses[3];
             };
+
+            struct add_log
+            {
+                wchar_t log[2048];
+                wchar_t logFilePath[256];
+
+                // out
+            };
         }
     }
 }

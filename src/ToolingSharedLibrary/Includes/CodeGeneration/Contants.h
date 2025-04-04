@@ -660,5 +660,7 @@ R"(
 
     static inline constexpr std::string_view c_parameter_return_struct_using_statement =
 R"(        using ReturnParamsT = FlatbuffersDevTypes::{}T;)";
+
+    static inline constexpr std::string_view c_function_args_struct = "{}_args";
 }
 

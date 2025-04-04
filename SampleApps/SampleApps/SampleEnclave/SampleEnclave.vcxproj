@@ -60,9 +60,7 @@
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
   <ImportGroup Label="ExtensionSettings">
   </ImportGroup>
-  <ImportGroup 
-      Condition="exists('..\packages\Microsoft.Windows.VbsEnclaveTooling.0.0.0\src\VbsEnclaveSDK\veil_any_inc\veil_any_inc.vcxitems')"
-      Label="Shared">
+  <ImportGroup Condition="exists('..\packages\Microsoft.Windows.VbsEnclaveTooling.0.0.0\src\VbsEnclaveSDK\veil_any_inc\veil_any_inc.vcxitems')" Label="Shared">
     <Import Project="..\packages\Microsoft.Windows.VbsEnclaveTooling.0.0.0\src\VbsEnclaveSDK\veil_any_inc\veil_any_inc.vcxitems" Label="Shared" />
     <Import Project="..\sample_any_inc\sample_any_inc.vcxitems" Label="Shared" />
   </ImportGroup>
