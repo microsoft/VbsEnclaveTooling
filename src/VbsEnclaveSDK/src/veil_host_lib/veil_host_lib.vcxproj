@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$(SolutionDir)packages\MsGsl.3.1.0.2\build\native\MsGsl.props" Condition="Exists('$(SolutionDir)packages\MsGsl.3.1.0.2\build\native\MsGsl.props')" />
-    <ItemGroup Label="ProjectConfigurations">
+  <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Debug|ARM64">
       <Configuration>Debug</Configuration>
       <Platform>ARM64</Platform>
@@ -56,13 +56,11 @@
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
-  
   <ItemDefinitionGroup>
     <ClCompile>
       <LanguageStandard>stdcpp20</LanguageStandard>
     </ClCompile>
   </ItemDefinitionGroup>
-
   <ItemDefinitionGroup Condition="'$(Configuration)'=='Release'">
     <ClCompile>
       <FunctionLevelLinking>true</FunctionLevelLinking>
@@ -74,7 +72,6 @@
       <OptimizeReferences>true</OptimizeReferences>
     </Link>
   </ItemDefinitionGroup>
-
   <ItemDefinitionGroup Condition="'$(Configuration)'=='Debug'">
     <ClCompile>
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
@@ -85,7 +82,6 @@
       <OptimizeReferences>false</OptimizeReferences>
     </Link>
   </ItemDefinitionGroup>
-  
   <ItemDefinitionGroup>
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
@@ -110,6 +106,7 @@
     <ClInclude Include="hello.vtl0.h" />
     <ClInclude Include="pch.h" />
     <ClInclude Include="taskpool.vtl0.h" />
+    <ClInclude Include="logger.vtl0.h" />
     <ClInclude Include="utils.vtl0.h" />
   </ItemGroup>
   <ItemGroup>
@@ -121,6 +118,7 @@
     <ClCompile Include="exports.vtl0.cpp" />
     <ClCompile Include="hello.vtl0.cpp" />
     <ClCompile Include="taskpool.vtl0.cpp" />
+    <ClCompile Include="logger.vtl0.cpp" />
     <ClCompile Include="utils.vtl0.cpp" />
   </ItemGroup>
   <ImportGroup Label="ExtensionTargets">
