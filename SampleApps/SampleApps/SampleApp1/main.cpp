@@ -14,8 +14,9 @@
 #include <enclave_api.vtl0.h>
 #include <logger.vtl0.h>
 
-#include <sample_arguments.any.h>
 #include "sample_utils.h"
+
+#include <VbsEnclave\HostApp\Stubs.h>
 
 namespace fs = std::filesystem;
 
@@ -47,11 +48,16 @@ int EncryptFlow(
     auto helloKeyName = FormatUserHelloKeyName(keyMoniker);
 
     // Call into enclave
-    sample::args::RunHelloSecuredEncryptionKeyExample_CreateEncryptionKey data;
-    data.helloKeyName = helloKeyName;
-    data.activityLevel = veilLog.GetLogLevel();
-    data.logFilePath = veilLog.GetLogFilePath();
-    THROW_IF_FAILED(veil::vtl0::enclave::call_enclave(enclave, "RunHelloSecuredEncryptionKeyExample_CreateEncryptionKey", data));
+    auto enclaveInterface = VbsEnclave::VTL0_Stubs::SampleEnclave(enclave);
+    THROW_IF_FAILED(enclaveInterface.RegisterVtl0Callbacks());
+
+    auto securedEncryptionKeyBytes = std::vector<uint8_t>{};
+    THROW_IF_FAILED(enclaveInterface.RunHelloSecuredEncryptionKeyExample_CreateEncryptionKey(
+        helloKeyName,
+        (const uint32_t)veilLog.GetLogLevel(),
+        veilLog.GetLogFilePath(),
+        securedEncryptionKeyBytes
+    ));
 
     // We now have our encryption key's bytes, which are "hello-secured" and sealed!
     //
@@ -62,7 +68,6 @@ int EncryptFlow(
     //
     //      2. Our encryption key is sealed by the enclave (i.e. can only be unsealed
     //          by the sealing-enclave or an enclave signed with compatible signature).
-    auto securedEncryptionKeyBytes = std::span<uint8_t>(reinterpret_cast<uint8_t*>(data.securedEncryptionKeyBytes.data), data.securedEncryptionKeyBytes.size);
 
     // Save securedEncryptionKeyBytes to disk
     SaveBinaryData(keyFilePath.string(), securedEncryptionKeyBytes);
@@ -74,16 +79,24 @@ int EncryptFlow(
     //
     
     // Call into enclave
-    sample::args::RunHelloSecuredEncryptionKeyExample_LoadEncryptionKey loadData;
-    loadData.securedEncryptionKeyBytes.data = securedEncryptionKeyBytes.data();
-    loadData.securedEncryptionKeyBytes.size = securedEncryptionKeyBytes.size();
-    loadData.dataToEncrypt = input;
-    loadData.isToBeEncrypted = true;
-    loadData.activityLevel = veilLog.GetLogLevel();
-    loadData.logFilePath = veilLog.GetLogFilePath();
-    THROW_IF_FAILED(veil::vtl0::enclave::call_enclave(enclave, "RunHelloSecuredEncryptionKeyExample_LoadEncryptionKey", loadData));
-    auto encryptedInputBytes = std::span<uint8_t>(reinterpret_cast<uint8_t*>(loadData.encryptedInputBytes.data), loadData.encryptedInputBytes.size);
-    auto tag = std::span<uint8_t>(reinterpret_cast<uint8_t*>(loadData.tag.data), loadData.tag.size);
+    auto resealedEncryptionKeyBytes = std::vector<uint8_t>{};
+    auto encryptedInputBytes = std::vector<uint8_t>{};
+    auto tag = std::vector<uint8_t>{};
+    auto decryptedData = std::wstring{};
+    THROW_IF_FAILED(enclaveInterface.RunHelloSecuredEncryptionKeyExample_LoadEncryptionKey(
+        securedEncryptionKeyBytes,
+        input,
+        true,
+        (const uint32_t)veilLog.GetLogLevel(),
+        veilLog.GetLogFilePath(),
+        // outs
+        resealedEncryptionKeyBytes,
+        // in/outs
+        encryptedInputBytes,
+        tag,
+        // outs
+        decryptedData
+    ));
 
     // Save encryptedInputBytes to disk
     SaveBinaryData(encryptedInputFilePath.string(), encryptedInputBytes);
@@ -112,22 +125,29 @@ int DecryptFlow(
     auto tag = LoadBinaryData(tagFilePath.string());
 
     // Call into enclave
-    sample::args::RunHelloSecuredEncryptionKeyExample_LoadEncryptionKey data;
-    data.securedEncryptionKeyBytes.data = securedEncryptionKeyBytes.data();
-    data.securedEncryptionKeyBytes.size = securedEncryptionKeyBytes.size();
-    data.encryptedInputBytes.data = encryptedInputBytes.data();
-    data.encryptedInputBytes.size = encryptedInputBytes.size();
-    data.tag.data = tag.data();
-    data.tag.size = tag.size();
-    data.logFilePath = veilLog.GetLogFilePath();
-    data.activityLevel = veilLog.GetLogLevel();
-    THROW_IF_FAILED(veil::vtl0::enclave::call_enclave(enclave, "RunHelloSecuredEncryptionKeyExample_LoadEncryptionKey", data));
+    auto enclaveInterface = VbsEnclave::VTL0_Stubs::SampleEnclave(enclave);
+    THROW_IF_FAILED(enclaveInterface.RegisterVtl0Callbacks());
 
-    auto decryptedInputBytes = std::span<uint8_t>(reinterpret_cast<uint8_t*>(data.decryptedInputBytes.data), data.decryptedInputBytes.size);
+    auto resealedEncryptionKeyBytes = std::vector<uint8_t>{};
+    auto decryptedData = std::wstring{};
+    THROW_IF_FAILED(enclaveInterface.RunHelloSecuredEncryptionKeyExample_LoadEncryptionKey(
+        securedEncryptionKeyBytes,
+        {},
+        false,
+        (const uint32_t)veilLog.GetLogLevel(),
+        veilLog.GetLogFilePath(),
+        // outs
+        resealedEncryptionKeyBytes,
+        // in/outs
+        encryptedInputBytes,
+        tag,
+        // outs
+        decryptedData
+    ));
 
-    std::wcout << L"Decryption completed in Enclave. Decrypted string: " << std::wstring(reinterpret_cast<const wchar_t*>(decryptedInputBytes.data()), decryptedInputBytes.size() / 2);
+    std::wcout << L"Decryption completed in Enclave. Decrypted string: " << decryptedData;
     veilLog.AddTimestampedLog(
-        L"[Host] Decryption completed in Enclave. Decrypted string: " + std::wstring(reinterpret_cast<const wchar_t*>(decryptedInputBytes.data()), decryptedInputBytes.size() / 2), 
+        L"[Host] Decryption completed in Enclave. Decrypted string: " + decryptedData,
         veil::any::logger::eventLevel::EVENT_LEVEL_CRITICAL);
 
     return 0;
@@ -235,9 +255,9 @@ int mainThreadPool(uint32_t /*activityLevel*/ )
     veil::vtl0::enclave_api::register_callbacks(enclave.get());
 
     // Call into enclave to 'RunTaskpoolExample' export
-    sample::args::RunTaskpoolExample data;
-    data.threadCount = THREAD_COUNT - 1;
-    THROW_IF_FAILED(veil::vtl0::enclave::call_enclave(enclave.get(), "RunTaskpoolExample", data));
+    auto enclaveInterface = VbsEnclave::VTL0_Stubs::SampleEnclave(enclave.get());
+    THROW_IF_FAILED(enclaveInterface.RegisterVtl0Callbacks());
+    THROW_IF_FAILED(enclaveInterface.RunTaskpoolExample(THREAD_COUNT - 1));
 
     std::wcout << L"Finished sample: Taskpool..." << std::endl;
 
@@ -250,6 +270,14 @@ int mainThreadPool(uint32_t /*activityLevel*/ )
 
 int main(int argc, char* argv[])
 {
+    // Print diagnostic messages to the console for developer convenience
+    wil::SetResultLoggingCallback([] (wil::FailureInfo const& failure) noexcept
+    {
+        wchar_t message[1024];
+        wil::GetFailureLogString(message, ARRAYSIZE(message), failure);
+        wprintf(L"Diagnostic message: %ls\n", message);
+    });
+
     if (argc > 2)
     {
         std::cerr << "Usage: " << argv[0] << " <logging_level>" << std::endl;

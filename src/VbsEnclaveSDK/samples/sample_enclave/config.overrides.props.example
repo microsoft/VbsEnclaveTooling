@@ -1,4 +1,4 @@
-<!-- Rename to ConfigOverrides.props -->
+<!-- Rename to 'config.overrides.props' -->
 
 <Project>
   <PropertyGroup>

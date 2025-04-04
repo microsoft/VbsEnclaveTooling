@@ -4,7 +4,8 @@ EXPORTS
         ; Required entrypoint for the Veil Enclave SDK
         VeilEnclaveSdkEntrypoint
 
-        ; AppEnclave exports here
-        RunTaskpoolExample
-        RunHelloSecuredEncryptionKeyExample_CreateEncryptionKey
-        RunHelloSecuredEncryptionKeyExample_LoadEncryptionKey
+        ; Codegen
+         RunTaskpoolExample0_Generated_Stub
+         RunHelloSecuredEncryptionKeyExample_CreateEncryptionKey1_Generated_Stub
+         RunHelloSecuredEncryptionKeyExample_LoadEncryptionKey2_Generated_Stub
+        __AbiRegisterVtl0Callbacks__

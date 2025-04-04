@@ -1,0 +1,31 @@
+// Copyright (c) Microsoft Corporation.
+// Licensed under the MIT License.
+
+enclave
+{
+    // Host to enclave functions
+    trusted
+    {
+        HRESULT RunTaskpoolExample(uint32_t thread_count);
+        
+        HRESULT RunHelloSecuredEncryptionKeyExample_CreateEncryptionKey(
+            wstring hello_key_name,
+            uint32_t activity_level,
+            wstring log_file_path,
+            [out] vector<uint8_t> secured_encryption_key_bytes
+            );
+
+        HRESULT RunHelloSecuredEncryptionKeyExample_LoadEncryptionKey(
+            vector<uint8_t> secured_encryption_key_bytes,
+            wstring data_to_encrypt,
+            bool is_to_be_encrypted,
+            uint32_t activity_level,
+            wstring log_file_path,
+            [out] vector<uint8_t> resealed_encryption_key_bytes,
+            [in, out] vector<uint8_t> encrypted_input_bytes,
+            [in, out] vector<uint8_t> tag,
+            [out] wstring decrypted_data
+            );
+    };
+
+};

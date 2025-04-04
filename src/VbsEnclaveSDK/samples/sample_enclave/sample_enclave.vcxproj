@@ -53,7 +53,7 @@
     <!-- Default value for the certificate name -->
     <EnclaveCertName>TheDefaultTestEnclaveCertName</EnclaveCertName>
   </PropertyGroup>
-  <Import Project="ConfigOverrides.props" Condition="Exists('ConfigOverrides.props')" />
+  <Import Project="config.overrides.props" Condition="Exists('config.overrides.props')" />
   <PropertyGroup>
     <WindowsSDK_LibraryPath_Platform>$(WindowsSDKLibDir)\um\$(Platform)</WindowsSDK_LibraryPath_Platform>
     <VBS_Enclave_Dependencies>$(WindowsSDK_LibraryPath_Platform)\vertdll.lib;$(WindowsSDK_LibraryPath_Platform)\bcrypt.lib</VBS_Enclave_Dependencies>
@@ -68,6 +68,10 @@
   <PropertyGroup>
     <VEIIDExeFullPath>$(WindowsSDKBuildToolsBinVersionedArchFolder)\veiid.exe</VEIIDExeFullPath>
     <VEIID_Command>$(VEIIDExeFullPath) "$(OutDir)$(TargetName)$(TargetExt)"</VEIID_Command>
+  </PropertyGroup>
+  </PropertyGroup>
+  <PropertyGroup>
+    <UseGeneratedModuleDefinitionFile>false</UseGeneratedModuleDefinitionFile>
   </PropertyGroup>
   <!-- Undocked UCRT configuration. -->
   <PropertyGroup>
