@@ -81,24 +81,7 @@ namespace VbsEnclaveABI::Enclave
             return S_OK;
         }
 
-        template <typename T>
-        static inline HRESULT AllocateVtl0Memory(_Out_ T*** vtl0_memory, _In_ size_t size)
-        {
-            *vtl0_memory = nullptr;
-            RETURN_HR_IF_NULL_MSG(E_INVALIDARG, s_vtl0_allocation_function, "VTL0 allocation function not registered.");
-
-            void* returned_vtl0_memory;
-            RETURN_IF_WIN32_BOOL_FALSE(CallEnclave(
-                s_vtl0_allocation_function,
-                reinterpret_cast<void*>(size),
-                TRUE,
-                &returned_vtl0_memory));
-
-            RETURN_IF_NULL_ALLOC(returned_vtl0_memory);
-            *vtl0_memory = static_cast<T**>(returned_vtl0_memory);
-            return S_OK;
-        }
-
+       
         static inline HRESULT DeallocateVtl0Memory(_Inout_ void* vtl0_memory)
         {
             RETURN_HR_IF_NULL_MSG(E_INVALIDARG, s_vtl0_deallocation_function, "VTL0 deallocation function not registered.");
