@@ -20,7 +20,7 @@ using namespace VbsEnclave::VTL0_Stubs;
 Int8PtrAndSize TestEnclave::ReturnInt8ValPtr_From_HostApp_callback()
 {
     Int8PtrAndSize ret {};
-    ret.int8_val = std::make_shared<std::int8_t>();
+    ret.int8_val = std::make_unique<std::int8_t>();
     *ret.int8_val = std::numeric_limits<std::int8_t>::max();
 
     return ret;
@@ -88,17 +88,17 @@ HRESULT TestEnclave::TestPassingPrimitivesAsInOutPointers_To_HostApp_callback(
 }
 
 HRESULT TestEnclave::TestPassingPrimitivesAsOutPointers_To_HostApp_callback(
-    _Out_ std::shared_ptr<bool>& bool_val,
-    _Out_ std::shared_ptr<DecimalEnum>& enum_val,
-    _Out_ std::shared_ptr<std::uint64_t>& uint64_val)
+    _Out_ std::unique_ptr<bool>& bool_val,
+    _Out_ std::unique_ptr<DecimalEnum>& enum_val,
+    _Out_ std::unique_ptr<std::uint64_t>& uint64_val)
 {
     bool_val = nullptr;
     enum_val = nullptr;
     uint64_val = nullptr;
 
-    bool_val = std::make_shared<bool>(true);
-    enum_val = std::make_shared<DecimalEnum>(DecimalEnum::Deci_val3);
-    uint64_val = std::make_shared<std::uint64_t>(std::numeric_limits<std::uint64_t>::max());
+    bool_val = std::make_unique<bool>(true);
+    enum_val = std::make_unique<DecimalEnum>(DecimalEnum::Deci_val3);
+    uint64_val = std::make_unique<std::uint64_t>(std::numeric_limits<std::uint64_t>::max());
 
     return S_OK;
 }
@@ -106,9 +106,9 @@ HRESULT TestEnclave::TestPassingPrimitivesAsOutPointers_To_HostApp_callback(
 StructWithNoPointers TestEnclave::ComplexPassingofTypes_To_HostApp_callback(
     _In_ const StructWithNoPointers& arg1,
     _Inout_ StructWithNoPointers& arg2,
-    _Out_ std::shared_ptr<StructWithNoPointers>& arg3,
+    _Out_ std::unique_ptr<StructWithNoPointers>& arg3,
     _Out_ StructWithNoPointers& arg4,
-    _Out_ std::shared_ptr<std::uint64_t>& uint64_val)
+    _Out_ std::unique_ptr<std::uint64_t>& uint64_val)
 {
     arg3 = nullptr;
     uint64_val = nullptr;
@@ -118,10 +118,10 @@ StructWithNoPointers TestEnclave::ComplexPassingofTypes_To_HostApp_callback(
     THROW_HR_IF(E_INVALIDARG, !CompareStructWithNoPointers(arg1, struct_to_return));
     arg2 = struct_to_return;
 
-    arg3 = std::make_shared<StructWithNoPointers>();
+    arg3 = std::make_unique<StructWithNoPointers>();
     *arg3 = CreateStructWithNoPointers();
     arg4 = CreateStructWithNoPointers();
-    uint64_val = std::make_shared<std::uint64_t>(std::numeric_limits<std::uint64_t>::max());
+    uint64_val = std::make_unique<std::uint64_t>(std::numeric_limits<std::uint64_t>::max());
 
     return struct_to_return;
 }

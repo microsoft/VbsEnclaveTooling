@@ -8,6 +8,8 @@
 #include <CodeGeneration\Contants.h>
 #include <CodeGeneration\CodeGeneration.h>
 #include <CodeGeneration\Flatbuffers\BuilderHelpers.h>
+#include <CodeGeneration\Flatbuffers\cpp\CppContants.h>
+#include <CodeGeneration\Flatbuffers\cpp\ConversionFunctionHelpers.h>
 #include <CodeGeneration\Flatbuffers\Contants.h>
 #include <sstream>
 using namespace EdlProcessor;
@@ -117,13 +119,13 @@ namespace CodeGeneration
         const Declaration& declaration,
         ParameterModifier modifier = ParameterModifier::NoConst)
     {
-        std::string type = GetSimpleTypeInfo(declaration.m_edl_type_info);
+        std::string type = EdlTypeToCppType(declaration.m_edl_type_info);
 
         if (!declaration.m_array_dimensions.empty())
         {
-            auto type_info = GetSimpleTypeInfo(declaration.m_edl_type_info);
+            auto type_info = EdlTypeToCppType(declaration.m_edl_type_info);
             type = BuildStdArrayType(type_info, declaration.m_array_dimensions);
-        }        
+        }
 
         if (declaration.m_attribute_info)
         {
@@ -146,7 +148,7 @@ namespace CodeGeneration
 
         // just an in param but developer did not specify attributes e.g by default we implicitly will see these
         // as in parameters. Or the developer did specify an attribut but it was an in param.
-        if (declaration.HasPointer()) 
+        if (declaration.HasPointer())
         {
             return std::format("{}{}*", const_str, type);
         }
@@ -155,18 +157,12 @@ namespace CodeGeneration
         {
             return std::format("{}{}&", const_str, type);
         }
-        
+
         return std::format("{}{}", const_str, type);
     }
 
-    std::string CppCodeBuilder::GetSimpleTypeInfoWithPointerInfo(const EdlTypeInfo& info)
-    {
-        std::string pointer = info.is_pointer ? "*" : "";
-        return GetSimpleTypeInfo(info) + pointer;
-    }
-
     std::string CppCodeBuilder::BuildStdArrayType(
-        std::string_view type, 
+        std::string_view type,
         const ArrayDimensions& dimensions,
         std::uint32_t index)
     {
@@ -182,7 +178,7 @@ namespace CodeGeneration
     std::string CppCodeBuilder::BuildArrayType(
         const Declaration& declaration)
     {
-        auto type_info = GetSimpleTypeInfo(declaration.m_edl_type_info);
+        auto type_info = EdlTypeToCppType(declaration.m_edl_type_info);
         auto array_info = BuildStdArrayType(type_info, declaration.m_array_dimensions);
         return std::format("{} {}", array_info, declaration.m_name);
     }
@@ -201,14 +197,14 @@ namespace CodeGeneration
         auto flatbuffer_type = std::format(c_flatbuffer_native_table_type_suffix, struct_name);
 
         // Get function body for this structs flatbuffer to developer type static function
-        std::string flatbuffer_to_dev_type_func_body = BuildConversionFunctionBody(
+        std::string flatbuffer_to_dev_type_func_body = Flatbuffers::Cpp::BuildConversionFunctionBody(
             fields,
             FlatbufferConversionKind::ToDevType);
         
         // Encapsulate body in a function that takes in a flatbuffer struct reference
         // and returns dev type in a shared ptr
         struct_body << std::format(
-            c_convert_to_dev_type_function_definition_reference,
+            Flatbuffers::Cpp::c_convert_to_dev_type_function_definition_reference,
             struct_name,
             flatbuffer_type,
             struct_name,
@@ -217,7 +213,7 @@ namespace CodeGeneration
         // Encapsulate body in a function that takes in a flatbuffer struct unique ptr
         // and returns dev type in a shared ptr
         struct_body << std::format(
-            c_convert_to_dev_type_function_definition_shared_ptr,
+            Flatbuffers::Cpp::c_convert_to_dev_type_function_definition_shared_ptr,
             struct_name,
             flatbuffer_type,
             struct_name);
@@ -225,7 +221,7 @@ namespace CodeGeneration
         // Encapsulate body in a function that takes in a flatbuffer struct reference
         // and returns dev type object
         struct_body << std::format(
-            c_convert_to_dev_type_function_definition_no_ptr,
+            Flatbuffers::Cpp::c_convert_to_dev_type_function_definition_no_ptr,
             struct_name,
             flatbuffer_type,
             struct_name,
@@ -234,20 +230,20 @@ namespace CodeGeneration
         // Encapsulate body in a function that takes in a flatbuffer struct unique ptr
         // and returns dev type object
         struct_body << std::format(
-            c_convert_to_dev_type_function_definition_no_ptr2,
+            Flatbuffers::Cpp::c_convert_to_dev_type_function_definition_no_ptr2,
             struct_name,
             flatbuffer_type,
             struct_name);
 
         // Get function body for this structs developer to flatbuffer static function
-        std::string dev_type_to_flatbuffer_func_body = BuildConversionFunctionBody(
+        std::string dev_type_to_flatbuffer_func_body = Flatbuffers::Cpp::BuildConversionFunctionBody(
             fields,
             FlatbufferConversionKind::ToFlatbuffer);
         
         // Encapsulate body in a function that takes in a reference to this struct type
         // and returns a unique ptr to a flatbuffer struct
         struct_body << std::format(
-            c_convert_to_flatbuffer_function_definition_reference,
+            Flatbuffers::Cpp::c_convert_to_flatbuffer_function_definition_reference,
             flatbuffer_type,
             struct_name,
             flatbuffer_type,
@@ -256,7 +252,7 @@ namespace CodeGeneration
         // Encapsulate body in a function that takes in a shared ptr to this struct type
         // and returns a unique ptr to a flatbuffer struct
         struct_body << std::format(
-            c_convert_to_flatbuffer_function_definition_unique_ptr,
+            Flatbuffers::Cpp::c_convert_to_flatbuffer_function_definition_unique_ptr,
             flatbuffer_type,
             struct_name,
             struct_name);
@@ -301,7 +297,7 @@ namespace CodeGeneration
         std::ostringstream struct_body {};
         auto flatbuffer_type = std::format(c_flatbuffer_native_table_type_suffix, struct_name);
 
-        std::string flatbuffer_to_dev_type_func_body = BuildConversionFunctionBody(
+        std::string flatbuffer_to_dev_type_func_body = Flatbuffers::Cpp::BuildConversionFunctionBody(
             fields,
             FlatbufferConversionKind::ToDevType,
             FlatbufferStructFieldsModifier::AbiToDevTypeSingleStruct);
@@ -309,7 +305,7 @@ namespace CodeGeneration
         // Encapsulate body in a function that takes in a flatbuffer struct reference
         // and returns dev type in a shared ptr
         struct_body << std::format(
-            c_convert_to_dev_type_function_definition_reference,
+            Flatbuffers::Cpp::c_convert_to_dev_type_function_definition_reference,
             struct_name,
             flatbuffer_type,
             struct_name,
@@ -318,13 +314,13 @@ namespace CodeGeneration
         // Encapsulate body in a function that takes in a flatbuffer struct unique ptr
         // and returns dev type in a shared ptr
         struct_body << std::format(
-            c_convert_to_dev_type_function_definition_shared_ptr,
+            Flatbuffers::Cpp::c_convert_to_dev_type_function_definition_shared_ptr,
             struct_name,
             flatbuffer_type,
             struct_name);
 
         // Get function body for this structs developer to flatbuffer static function
-        std::string dev_type_to_flatbuffer_func_body = BuildConversionFunctionBody(
+        std::string dev_type_to_flatbuffer_func_body = Flatbuffers::Cpp::BuildConversionFunctionBody(
             fields,
             FlatbufferConversionKind::ToFlatbuffer,
             FlatbufferStructFieldsModifier::AbiToFlatbufferSingleStruct);
@@ -332,7 +328,7 @@ namespace CodeGeneration
         // Encapsulate body in a function that takes in a struct that contains the parameters as fields,
         // and returns a unique ptr to a flatbuffer struct
         struct_body << std::format(
-            c_convert_to_flatbuffer_function_definition_reference,
+            Flatbuffers::Cpp::c_convert_to_flatbuffer_function_definition_reference,
             flatbuffer_type,
             struct_name,
             flatbuffer_type,
@@ -341,14 +337,14 @@ namespace CodeGeneration
         // Encapsulate body in a function that takes in a shared ptr to the struct that contains the parameters
         // as fields, and returns a unique ptr to a flatbuffer struct
         struct_body << std::format(
-            c_convert_to_flatbuffer_function_definition_unique_ptr,
+            Flatbuffers::Cpp::c_convert_to_flatbuffer_function_definition_unique_ptr,
             flatbuffer_type,
             struct_name,
             struct_name);
 
         // Get function body for this structs developer to flatbuffer static function to add in/inout values to
         // the struct.
-        std::string dev_type_to_flatbuffer_func_body_mult_params = BuildConversionFunctionBody(
+        std::string dev_type_to_flatbuffer_func_body_multi_params = Flatbuffers::Cpp::BuildConversionFunctionBody(
             to_flatbuffer_in_and_inout_args_list,
             FlatbufferConversionKind::ToFlatbuffer,
             FlatbufferStructFieldsModifier::AbiToFlatbufferMultipleParameters);
@@ -356,12 +352,12 @@ namespace CodeGeneration
         // Encapsulate body in a function that takes in the in/inout parameters for the function and puts them 
         // in a struct. It returns a unique ptr to a flatbuffer struct.
         struct_body << std::format(
-            c_convert_to_flatbuffer_function_definition_multi_params,
+            Flatbuffers::Cpp::c_convert_to_flatbuffer_function_definition_multi_params,
             flatbuffer_type,
             to_flatbuffer_in_and_inout_params,
             flatbuffer_type,
             flatbuffer_type,
-            dev_type_to_flatbuffer_func_body_mult_params);
+            dev_type_to_flatbuffer_func_body_multi_params);
 
         return struct_body.str();
     }
@@ -405,9 +401,7 @@ namespace CodeGeneration
 
     std::string CppCodeBuilder::BuildStructDefinitionForABIDeveloperType(
         std::string_view struct_name,
-        const std::vector<Declaration>& updated_parameters,
-        const std::unordered_map<std::string, Declaration>& all_in_and_inout_params,
-        const CppCodeBuilder::FunctionParametersInfo& params_info)
+        const std::vector<Declaration>& fields)
     {
         auto [struct_header, struct_body, struct_footer] = BuildStartOfDefinition(
             EDL_STRUCT_KEYWORD,
@@ -416,32 +410,32 @@ namespace CodeGeneration
         std::ostringstream to_flatbuffer_in_and_inout_function_args {};
         std::vector<Declaration> to_flatbuffer_in_and_inout_args_list {};
         size_t inout_index = 0U;
-        for (size_t param_index = 0U; param_index < updated_parameters.size(); param_index++)
+        for (auto field : fields)
         {
-            auto& updated_parameter = updated_parameters[param_index];
             struct_body << std::format(
                 "{}{} {{}}{}\n",
                 c_four_spaces,
-                BuildStructField(updated_parameter),
+                BuildStructField(field),
                 SEMI_COLON);
 
-            if (all_in_and_inout_params.contains(updated_parameter.m_name))
+            // Get info for a ToFlatbuffer static function that takes in multiple parameters.
+            if (field.IsInParameterOnly() || field.IsInOutParameter())
             {
-                // Now that we've created a field for the parameter we need to create a variable that
-                // we will use to pass to the ToFlatbuffer function to add the passed in function 
-                // parameter from the developer to the args struct for this function.
-                auto& param_in_set = all_in_and_inout_params.at(updated_parameter.m_name);
-                auto param_str = GetParameterForFunction(param_in_set);
+                // Now that we've created a field for the parameter we need to create a function parameter string that
+                // we will use to pass to the ToFlatbuffer function. When the developer passes an in or
+                // inout parameter we use it directly in the ToFlatbuffer function. 
+                field.m_parent_kind = DeclarationParentKind::Function;
+                auto param_str = GetParameterForFunction(field);
                 auto inout_params_separator = inout_index > 0 ? "," : "";
                 to_flatbuffer_in_and_inout_function_args << std::format("{} {}", inout_params_separator, param_str);
-                to_flatbuffer_in_and_inout_args_list.push_back(param_in_set);
+                to_flatbuffer_in_and_inout_args_list.push_back(field);
                 inout_index++;
             }
         }
 
         struct_body << GetConverterFunctionForNonDeveloperAbiStruct(
             struct_name,
-            updated_parameters,
+            fields,
             to_flatbuffer_in_and_inout_args_list,
             to_flatbuffer_in_and_inout_function_args.str());
 
@@ -515,16 +509,6 @@ namespace CodeGeneration
                 declaration.m_name,
                 declaration.m_name);
         }
-    }
-
-    static inline std::string GetFunctionNameForAbi(std::string_view original_name)
-    {
-        // Since we allow developer functions to contain the same name but with different
-        // parameters, we need to make sure the non developer facing functions are unique
-        // in our abi layer. So we append a number to the function name.
-        static std::uint32_t abi_function_index {};
-
-        return std::format("{}{}", original_name, abi_function_index++);
     }
 
     std::string CppCodeBuilder::BuildHostToEnclaveInitialCallerFunction(
@@ -665,12 +649,11 @@ namespace CodeGeneration
 
     std::string CppCodeBuilder::BuildTrustBoundaryFunction(
         const Function& function,
-        std::string_view boundary_function_name,
         std::string_view abi_function_to_call,
         bool is_vtl0_callback,
         const FunctionParametersInfo& param_info)
     {
-        std::string function_params_struct_type = std::format(c_function_args_struct, boundary_function_name);
+        std::string function_params_struct_type = std::format(c_function_args_struct, function.abi_m_name);
 
         std::string inner_body = std::format(
             c_inner_abi_function,
@@ -683,7 +666,7 @@ namespace CodeGeneration
         return std::format(
             c_outer_abi_function,
             return_statement,
-            boundary_function_name,
+            function.abi_m_name,
             inner_body);
     }
 
@@ -789,8 +772,7 @@ namespace CodeGeneration
     }
 
     CppCodeBuilder::FunctionParametersInfo CppCodeBuilder::GetInformationAboutParameters(
-        const Function& function,
-        std::string_view abi_function_name)
+        const Function& function)
     {
         FunctionParametersInfo param_info {};
         size_t in_out_index = 0U;
@@ -804,7 +786,7 @@ namespace CodeGeneration
             in_and_inout_params_separator = (in_out_index == 0 && in_index == 0) ? "" : ",";
             const Declaration& declaration = function.m_parameters[params_index];
 
-            AddParameterToTheForwardToDevImplList(c_params_struct, declaration, all_params_separator, param_info);
+            AddParameterToTheForwardToDevImplList(Flatbuffers::Cpp::c_params_struct, declaration, all_params_separator, param_info);
 
             // these will be copied into the flatbuffer
             if (!declaration.IsOutParameterOnly())
@@ -842,7 +824,6 @@ namespace CodeGeneration
 
     std::string CppCodeBuilder::BuildInitialCallerFunction(
         const Function& function,
-        std::string_view abi_struct_name,
         std::string_view abi_function_to_call,
         bool should_be_static,
         const FunctionParametersInfo& param_info)
@@ -856,7 +837,7 @@ namespace CodeGeneration
             function.m_name,
             BuildFunctionParameters(function, param_info));
 
-        std::string function_params_struct_type = std::format(c_function_args_struct, abi_struct_name);
+        std::string function_params_struct_type = std::format(c_function_args_struct, function.abi_m_name);
 
         // First create the using statements so we can use the type for forwarding parameters
         // and the type for returning parameters throughout the generated code.
@@ -914,13 +895,12 @@ namespace CodeGeneration
 
     std::string CppCodeBuilder::BuildAbiImplFunction(
         const Function& function,
-        std::string_view abi_function_name,
         std::string_view call_impl_str,
         const FunctionParametersInfo& param_info)
     {
-        std::string function_params_struct_type = std::format(c_function_args_struct, abi_function_name);
+        std::string function_params_struct_type = std::format(c_function_args_struct, function.abi_m_name);
 
-        auto abi_parameters = std::format(c_abi_impl_function_parameters, abi_function_name);
+        auto abi_parameters = std::format(c_abi_impl_function_parameters, function.abi_m_name);
         std::string params_to_forward = param_info.m_params_to_forward_to_dev_impl.str();
         std::ostringstream function_body {};
 
@@ -958,7 +938,7 @@ namespace CodeGeneration
 
         return std::format(
             c_generated_abi_impl_function,
-            abi_function_name,
+            function.abi_m_name,
             abi_parameters,
             function_body.str());
     }
@@ -1002,9 +982,8 @@ namespace CodeGeneration
 
         for (auto&& [name, function] : functions)
         {
-            auto abi_function_name = GetFunctionNameForAbi(function.m_name);
-            auto param_info = GetInformationAboutParameters(function, abi_function_name);
-            auto vtl1_exported_func_name = std::format(c_generated_stub_name, abi_function_name);
+            auto param_info = GetInformationAboutParameters(function);
+            auto vtl1_exported_func_name = std::format(c_generated_stub_name, function.abi_m_name);
             auto vtl0_call_to_vtl1_export = std::format(
                 c_vtl0_call_to_vtl1_export,
                 vtl1_exported_func_name);
@@ -1013,21 +992,19 @@ namespace CodeGeneration
             // of calling their vtl1 enclave function impl.
             vtl0_side_of_vtl1_developer_impl_functions << BuildInitialCallerFunction(
                 function,
-                abi_function_name,
                 vtl0_call_to_vtl1_export,
                 false,
                 param_info);
 
             auto vtl1_call_to_vtl1_export = std::format(
                 c_vtl1_call_to_vtl1_export,
-                abi_function_name,
-                abi_function_name);
+                function.abi_m_name,
+                function.abi_m_name);
 
             // This is the vtl0 function that is exported by the enclave and called via a
             // CallEnclave call by the abi.
             vtl1_abi_boundary_functions << BuildTrustBoundaryFunction(
                 function,
-                abi_function_name,
                 vtl1_call_to_vtl1_export,
                 false,
                 param_info);
@@ -1037,7 +1014,6 @@ namespace CodeGeneration
             // This is the vtl1 abi function that will call the developers vtl1 function implementation.
             std::string vtl1_abi_impl_definition = BuildAbiImplFunction(
                 function,
-                abi_function_name,
                 vtl1_dev_impl_call,
                 param_info);
 
@@ -1051,7 +1027,7 @@ namespace CodeGeneration
 
             vtl1_abi_impl_functions << vtl1_abi_impl_definition;
 
-            vtl1_generated_module_exports << std::format(c_exported_function_in_module, abi_function_name);
+            vtl1_generated_module_exports << std::format(c_exported_function_in_module, function.abi_m_name);
         }
 
         vtl0_class_public_portion << vtl0_side_of_vtl1_developer_impl_functions.str();
@@ -1062,8 +1038,6 @@ namespace CodeGeneration
 
         auto vtl1_stubs_in_namespace =
             std::format(c_vtl1_enclave_stub_namespace, generated_namespace, vtl1_abi_boundary_functions.str());
-
-        flatbuffer_content << c_flatbuffer_register_callback_tables;
 
         return HostToEnclaveContent {
             std::move(vtl0_class_public_portion),
@@ -1113,10 +1087,7 @@ namespace CodeGeneration
         auto current_iteration = 0U;
         for (auto&& [name, function] : functions)
         {
-            // Update name so there are no conflicts if the same name is used for a trusted function.
-            function.m_name = std::format(c_untrusted_function_name, function.m_name);
-            auto abi_function_name = GetFunctionNameForAbi(function.m_name);
-            auto param_info = GetInformationAboutParameters(function, abi_function_name);
+            auto param_info = GetInformationAboutParameters(function);
 
             auto vtl1_call_to_vtl0_callback = std::format(
                 c_vtl1_call_to_vtl0_callback,
@@ -1127,21 +1098,19 @@ namespace CodeGeneration
             // to the vtl0 abi boundary function for this specific function.
             vtl1_side_of_vtl0_callback_functions << BuildInitialCallerFunction(
                 function,
-                abi_function_name,
                 vtl1_call_to_vtl0_callback,
                 true,
                 param_info);
 
             auto vtl0_call_to_vtl0_callback = std::format(
                 c_vtl0_call_to_vtl0_callback,
-                abi_function_name,
-                abi_function_name);
+                function.abi_m_name,
+                function.abi_m_name);
 
             // This is the vtl0 callback that will call into our abi vtl0 callback implementation.
             // This callback is what vtl1 will call with CallEnclave.
             vtl0_abi_boundary_functions << BuildTrustBoundaryFunction(
                 function,
-                abi_function_name,
                 vtl0_call_to_vtl0_callback,
                 true,
                 param_info);
@@ -1150,7 +1119,6 @@ namespace CodeGeneration
             // to the developers vtl0 impl function.
             vtl0_abi_impl_callback_functions << BuildAbiImplFunction(
                 function,
-                abi_function_name,
                 function.m_name,
                 param_info);
 
@@ -1165,7 +1133,7 @@ namespace CodeGeneration
             // capture the addresses for each developer callback so we can pass them to vtl1 later.
             vtl0_class_method_addresses << std::format(
                 c_callback_to_address, 
-                abi_function_name,
+                function.abi_m_name,
                 parameter_separator);
 
             current_iteration++;

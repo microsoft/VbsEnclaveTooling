@@ -102,15 +102,13 @@ namespace CodeGeneration
             const std::vector<Declaration>& fields);
 
         FunctionParametersInfo GetInformationAboutParameters(
-            const Function& function,
-            std::string_view abi_function_name);
+            const Function& function);
 
         // These functions are what the developer will call 
         // to invoke their impl function on the other side of the
         // trust boundary.
         std::string BuildInitialCallerFunction(
             const Function& function,
-            std::string_view vtl0_generated_abi_function_name,
             std::string_view abi_function_to_call,
             bool should_be_static,
             const FunctionParametersInfo& param_info);
@@ -119,7 +117,6 @@ namespace CodeGeneration
         // on the other side of the boundary
         std::string BuildAbiImplFunction(
             const Function& function,
-            std::string_view abi_function_name,
             std::string_view call_impl_str,
             const FunctionParametersInfo& param_info);
 
@@ -184,7 +181,6 @@ namespace CodeGeneration
         // abi layer.
         std::string BuildTrustBoundaryFunction(
             const Function& function,
-            std::string_view boundary_function_name,
             std::string_view abi_function_to_call,
             bool is_vtl0_callback,
             const FunctionParametersInfo& param_info);

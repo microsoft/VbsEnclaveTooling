@@ -275,19 +275,22 @@ namespace CodeGeneration
 
     inline DeveloperType GetDeveloperTypeStructForABI(const Function& function)
     {
-        DeveloperType new_type { function.m_name, EdlTypeKind::Struct };
+        std::string function_params_struct_type = std::format(c_function_args_struct, function.abi_m_name);
+        DeveloperType new_type {function_params_struct_type, EdlTypeKind::Struct };
 
-           // Add return type to out struct if it's not void.
-        if (function.m_return_info.IsEdlType(EdlTypeKind::Void))
+        // Add return type to out struct if it's not void.
+        if (!function.m_return_info.IsEdlType(EdlTypeKind::Void))
         {
-            new_type.m_fields.push_back(function.m_return_info);
+            auto return_copy = function.m_return_info;
+            return_copy.m_name = "m_" + return_copy.m_name;
+            return_copy.m_parent_kind = DeclarationParentKind::Struct;
+            new_type.m_fields.push_back(return_copy);
         }
-
-        auto params_size = function.m_parameters.size();
 
         for (Declaration parameter : function.m_parameters)
         {
             parameter.m_name = "m_" + parameter.m_name;
+            parameter.m_parent_kind = DeclarationParentKind::Struct;
             new_type.m_fields.push_back(parameter);
         }
 
@@ -308,8 +311,6 @@ namespace CodeGeneration
 
         for (auto [name, function] : untrusted_functions)
         {
-            // add callback string at the end.
-            function.m_name = std::format(c_untrusted_function_name, function.m_name);
             DeveloperType dev_type = GetDeveloperTypeStructForABI(function);
             dev_types.push_back(dev_type);
         }
@@ -389,7 +390,7 @@ namespace CodeGeneration
         {
             if (declaration.IsOutParameterOnly())
             {
-                return AddPtr(type_info.m_name, PtrKind::shared);
+                return AddPtr(type_info.m_name, PtrKind::unique);
             }
 
             // In and Inout pointers will be raw pointers since the function that will be using them 
@@ -397,7 +398,7 @@ namespace CodeGeneration
             return AddPtr(type_info.m_name, PtrKind::raw);
         }
 
-        return AddPtr(type_info.m_name, PtrKind::shared);;
+        return AddPtr(type_info.m_name, PtrKind::unique);;
     }
 
     inline std::string AddArrayEncapulation(

@@ -203,9 +203,9 @@ struct EnclaveTestClass
     TEST_METHOD(TestPassingPrimitivesAsOutPointers_To_Enclave_Test)
     {
         auto generated_enclave_class = TestEnclave(m_enclave);
-        std::shared_ptr<bool> bool_val = nullptr;
-        std::shared_ptr<DecimalEnum> enum_val = nullptr;
-        std::shared_ptr<std::uint64_t> uint64_val = nullptr;
+        std::unique_ptr<bool> bool_val = nullptr;
+        std::unique_ptr<DecimalEnum> enum_val = nullptr;
+        std::unique_ptr<std::uint64_t> uint64_val = nullptr;
 
         // Note: Hresult is returned by vtl1, and copied to vtl0 then returned to this function.
         VERIFY_SUCCEEDED(generated_enclave_class.TestPassingPrimitivesAsOutPointers_To_Enclave(
@@ -229,9 +229,9 @@ struct EnclaveTestClass
         auto expected_struct_values = CreateStructWithNoPointers();
         StructWithNoPointers struct_no_pointers_1 = expected_struct_values;
         StructWithNoPointers struct_no_pointers_2 {};
-        std::shared_ptr<StructWithNoPointers> struct_no_pointers_3;
+        std::unique_ptr<StructWithNoPointers> struct_no_pointers_3;
         StructWithNoPointers struct_no_pointers_4 {};
-        std::shared_ptr<std::uint64_t> uint64_val = nullptr;
+        std::unique_ptr<std::uint64_t> uint64_val = nullptr;
 
         // Note: Hresult is returned by vtl1, and copied to vtl0 then returned to this function.
         auto result = generated_enclave_class.ComplexPassingofTypes_To_Enclave(

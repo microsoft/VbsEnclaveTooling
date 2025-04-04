@@ -240,12 +240,12 @@ namespace EdlProcessor
 
         bool IsInOutParameter() const 
         {
-            return HasAttributesAndIsForFunction() && m_attribute_info.value().m_in_and_out_present;
+            return m_attribute_info && m_attribute_info.value().m_in_and_out_present;
         }
 
         bool IsOutParameter() const
         {
-            return HasAttributesAndIsForFunction() && m_attribute_info.value().m_out_present;
+            return m_attribute_info && m_attribute_info.value().m_out_present;
         }
 
         bool IsOutParameterOnly() const
@@ -255,19 +255,12 @@ namespace EdlProcessor
 
         bool IsInParameter() const
         {
-            bool attribute_present_case = HasAttributesAndIsForFunction() && m_attribute_info.value().m_in_present;
-            bool attribute_not_present_case = !m_attribute_info && m_parent_kind == DeclarationParentKind::Function;
-            return attribute_present_case || attribute_not_present_case;
+            return m_attribute_info && m_attribute_info.value().m_in_present;
         }
 
         bool IsInParameterOnly() const
         {
             return IsInParameter() && !IsOutParameter();
-        }
-
-        bool HasAttributesAndIsForFunction() const
-        {
-            return m_attribute_info && m_parent_kind == DeclarationParentKind::Function;
         }
 
         bool IsEdlType(EdlTypeKind type_kind) const
@@ -449,6 +442,7 @@ namespace EdlProcessor
         }
 
         std::string m_name{};
+        std::string abi_m_name {};
         Declaration m_return_info {DeclarationParentKind::Function};
         std::vector<Declaration> m_parameters{};
     private:
