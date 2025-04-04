@@ -6,11 +6,13 @@
 #include <CodeGeneration\CodeGeneration.h>
 #include <CodeGeneration\Contants.h>
 #include <ErrorHelpers.h>
+#include <CodeGeneration\Flatbuffers\Contants.h>
+#include <CodeGeneration\Flatbuffers\BuilderHelpers.h>
 
 using namespace EdlProcessor;
 using namespace ErrorHelpers;
 using namespace CodeGeneration::CppCodeBuilder;
-
+using namespace CodeGeneration::Flatbuffers;
 namespace CodeGeneration
 {
     CppCodeGenerator::CppCodeGenerator(
@@ -19,13 +21,15 @@ namespace CodeGeneration
         ErrorHandlingKind error_handling,
         VirtualTrustLayerKind trust_layer,
         std::string_view generated_namespace_name,
-        std::string_view generated_vtl0_class_name)
+        std::string_view generated_vtl0_class_name,
+        std::string_view flatbuffer_compiler_path)
         :   m_edl(edl),
             m_output_folder_path(output_path),
             m_error_handling(error_handling),
             m_virtual_trust_layer_kind(trust_layer),
             m_generated_namespace_name(generated_namespace_name),
-            m_generated_vtl0_class_name(generated_vtl0_class_name)
+            m_generated_vtl0_class_name(generated_vtl0_class_name),
+            m_flatbuffer_compiler_path(flatbuffer_compiler_path)
     {
         if (m_output_folder_path.empty())
         {
@@ -42,6 +46,14 @@ namespace CodeGeneration
         {
             m_generated_vtl0_class_name = std::move(std::format(c_vtl0_enclave_class_name, edl.m_name));
         }
+
+        if (m_flatbuffer_compiler_path.empty())
+        {
+            // Set flatbuffer compiler path to current directory by default if not provided.
+            m_flatbuffer_compiler_path = std::format(
+                c_flatbuffer_compiler_default_path,
+                std::filesystem::current_path().generic_string());
+        }
     }
 
     void CppCodeGenerator::Generate()
@@ -51,20 +63,32 @@ namespace CodeGeneration
         auto enclave_headers_location = m_output_folder_path / enclave_headers_output;
         auto hostapp_headers_location = m_output_folder_path / hostapp_headers_output;
 
+        auto abi_function_developer_types = CreateDeveloperTypesForABIFunctions(
+            m_edl.m_trusted_functions,
+            m_edl.m_untrusted_functions);
+
         // Create developer types. This is shared between
         // the HostApp and the enclave.
-        auto enclave_types_header = BuildDeveloperTypesHeader(m_edl.m_developer_types);
+        std::string enclave_types_header = BuildTypesHeader(
+            m_edl.m_developer_types_insertion_order_list,
+            abi_function_developer_types);
+
+        auto flatbuffer_schema = GenerateFlatbufferSchema(
+            m_edl.m_developer_types_insertion_order_list,
+            abi_function_developer_types);
 
         // Process content from the trusted content.
-        auto host_to_enclave_content = BuildHostToEnclaveFunctions(
-            m_generated_namespace_name,
-            m_edl.m_trusted_functions);
+        auto host_to_enclave_content = BuildHostToEnclaveFunctions(m_generated_namespace_name, m_edl.m_trusted_functions);
 
         // Process the content from the untrusted functions
         auto enclave_to_host_content = BuildEnclaveToHostFunctions(m_edl.m_untrusted_functions);
 
+        std::filesystem::path save_location{};
+
         if (m_virtual_trust_layer_kind == VirtualTrustLayerKind::Enclave)
         {
+            save_location = enclave_headers_location;
+
             SaveFileToOutputFolder(
                 c_trust_vtl1_stubs_header,
                 enclave_headers_location,
@@ -90,9 +114,13 @@ namespace CodeGeneration
                 c_developer_types_header,
                 enclave_headers_location,
                 enclave_types_header);
+
+            SaveFileToOutputFolder(c_flatbuffer_fbs_filename, enclave_headers_location, flatbuffer_schema);
         }
         else if (m_virtual_trust_layer_kind == VirtualTrustLayerKind::HostApp)
         {
+            save_location = hostapp_headers_location;
+
             // Add the register callbacks abi function and combine the two streams
             // that contain the vtl0 public class methods.
             enclave_to_host_content.m_vtl0_class_public_content 
@@ -114,11 +142,15 @@ namespace CodeGeneration
                 c_developer_types_header,
                 hostapp_headers_location,
                 enclave_types_header);
+
+            SaveFileToOutputFolder(c_flatbuffer_fbs_filename, hostapp_headers_location, flatbuffer_schema);
         }
         else
         {
             throw CodeGenerationException(ErrorId::VirtualTrustLayerInvalidType);
         }
+
+        CompileFlatbufferFile(save_location);
     }
 
     void CppCodeGenerator::SaveFileToOutputFolder(
@@ -133,7 +165,6 @@ namespace CodeGeneration
             throw CodeGenerationException(
                 ErrorId::CodeGenUnableToOpenOutputFile,
                 output_file_path.generic_string());
-            
         }
 
         std::ofstream output_file(output_file_path.generic_string());
@@ -149,5 +180,13 @@ namespace CodeGeneration
                 ErrorId::CodeGenUnableToOpenOutputFile,
                 output_file_path.generic_string());
         }
+    }
+
+    void CppCodeGenerator::CompileFlatbufferFile(std::filesystem::path save_location)
+    {
+        auto flatbuffer_schema_path = (save_location / c_flatbuffer_fbs_filename).generic_string();
+
+        std::string flatbuffer_args = std::format(R"({} -o "{}" "{}")", c_cpp_gen_args, save_location.generic_string(), flatbuffer_schema_path);
+        InvokeFlatbufferCompiler(m_flatbuffer_compiler_path, flatbuffer_args);
     }
 }

@@ -89,6 +89,14 @@ namespace CodeGeneration
 
         std::string BuildStructDefinition(const DeveloperType& developer_types);
 
+        std::string BuildStructDefinitionForABIDeveloperType(
+            std::string_view struct_name,
+            const std::vector<Declaration>& fields);
+
+        std::string BuildStructDefinitionForNonABIDeveloperType(
+            std::string_view struct_name,
+            const std::vector<Declaration>& fields);
+
         std::string BuildStdArrayType(
             std::string_view type,
             const ArrayDimensions& dimensions,
@@ -96,16 +104,15 @@ namespace CodeGeneration
 
         std::string BuildNonArrayType(const Declaration& declaration);
 
-        std::string BuildDeveloperType(const DeveloperType& type);
-
         std::string BuildFunctionParameters(
             const Function& function,
             FunctionCallInitiator initiator,
             const FunctionParametersInfo& param_info,
             ParameterModifier modifier = ParameterModifier::NoConst);
 
-        std::string BuildDeveloperTypesHeader(
-            const std::unordered_map<std::string, std::shared_ptr<DeveloperType>>& developer_types);
+        std::string BuildTypesHeader(
+            const std::vector<DeveloperType>& developer_types_insertion_list,
+            const std::vector<DeveloperType>& abi_function_developer_types);
 
         // Used to gather all needed function parameter information to allow multiple
         // CodeGen functions to reuse saved metadata about a functions parameters without
@@ -204,7 +211,8 @@ namespace CodeGeneration
             ErrorHandlingKind error_handling,
             VirtualTrustLayerKind trust_layer,
             std::string_view generated_namespace_name,
-            std::string_view generated_vtl0_class_name);
+            std::string_view generated_vtl0_class_name,
+            std::string_view flatbuffer_compiler_path);
 
         void Generate();
 
@@ -215,11 +223,14 @@ namespace CodeGeneration
             const std::filesystem::path& output_folder,
             std::string_view file_content);
 
+        void CompileFlatbufferFile(std::filesystem::path save_location);
+
         Edl m_edl {};
         ErrorHandlingKind m_error_handling {};
         std::string_view m_generated_namespace_name{};
         std::string_view m_generated_vtl0_class_name {};
         VirtualTrustLayerKind m_virtual_trust_layer_kind{};
         std::filesystem::path m_output_folder_path {};
+        std::filesystem::path m_flatbuffer_compiler_path {};
     };
 }

@@ -125,7 +125,7 @@ namespace VbsEnclaveToolingTests
             }
 
             // Confirm return type is correct
-            auto actual_return_type_string = c_edlTypes_to_string_map.at(function.m_return_info.m_type_kind);
+            auto actual_return_type_string = c_edlTypes_to_string_map.at(function.m_return_info.m_edl_type_info.m_type_kind);
             auto expected_return_type_string = c_edlTypes_to_string_map.at(expected_return_type);
             Assert::AreEqual(expected_return_type_string, actual_return_type_string);
         }

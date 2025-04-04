@@ -7,23 +7,51 @@
 #include <Edl\Utils.h>
 #include <CodeGeneration\Contants.h>
 #include <CodeGeneration\CodeGeneration.h>
+#include <CodeGeneration\Flatbuffers\BuilderHelpers.h>
+#include <CodeGeneration\Flatbuffers\Contants.h>
 #include <sstream>
 using namespace EdlProcessor;
+using namespace CodeGeneration::Flatbuffers;
 
 namespace CodeGeneration
 {
-    std::string CppCodeBuilder::BuildDeveloperTypesHeader(
-        const std::unordered_map<std::string, std::shared_ptr<DeveloperType>>& developer_types)
+    std::string CppCodeBuilder::BuildTypesHeader(
+        const std::vector<DeveloperType>& developer_types_insertion_list,
+        const std::vector<DeveloperType>& abi_function_developer_types)
     {
         std::ostringstream types_header {};
+        std::ostringstream enums_definitions {};
+        std::ostringstream struct_declarations {};
 
-        for (auto&& [name, type] : developer_types)
+        for (auto& type : developer_types_insertion_list)
         {
-            types_header << BuildDeveloperType(*type);
+            if (type.IsEdlType(EdlTypeKind::Enum) || type.IsEdlType(EdlTypeKind::AnonymousEnum))
+            {
+                enums_definitions << BuildEnumDefinition(type);
+            }
+            else
+            {
+                struct_declarations << std::format(c_statements_for_developer_struct, type.m_name);
+            }
+        }
+
+        types_header << struct_declarations.str();
+        types_header << enums_definitions.str();
+
+        for (auto& type : developer_types_insertion_list)
+        {
+            if (type.IsEdlType(EdlTypeKind::Struct))
+            {
+                types_header << BuildStructDefinitionForNonABIDeveloperType(type.m_name, type.m_fields);
+            }
+        }
+
+        for (auto& type : abi_function_developer_types)
+        {
+            types_header << BuildStructDefinitionForABIDeveloperType(type.m_name, type.m_fields);
         }
 
         auto start_of_file = std::format(c_developer_types_start_of_file, c_autogen_header_string);
-        start_of_file = std::format(c_developer_types_start_of_file, c_autogen_header_string);
         auto body = std::format(c_developer_types_namespace, types_header.str());
 
         return std::format("{}{}\n", start_of_file, body);
@@ -196,39 +224,27 @@ namespace CodeGeneration
         return BuildNonArrayType(declaration);
     }
 
-    std::string CppCodeBuilder::BuildStructDefinition(const DeveloperType& developer_types)
+    std::string CppCodeBuilder::BuildStructDefinitionForNonABIDeveloperType(
+        std::string_view struct_name,
+        const std::vector<Declaration>& fields)
     {
         auto [struct_header, struct_body, struct_footer] = BuildStartOfDefinition(
             EDL_STRUCT_KEYWORD,
-            developer_types.m_name);
+            struct_name);
 
-        for (auto& field : developer_types.m_fields)
+        for (auto& field : fields)
         {
             struct_body << std::format(
-                "{}{}{}\n",
+                "{}{} {{}}{}\n",
                 c_four_spaces,
                 BuildStructFieldOrFunctionParameter(field),
                 SEMI_COLON);
         }
 
-        return std::format("\n{}\n{}{}{}{}\n",
-            c_pragma_pack,
+        return std::format("\n{}{}{}\n",
             struct_header.str(),
             struct_body.str(),
-            struct_footer.str(),
-            c_pragma_pop);
-    }
-
-    std::string CppCodeBuilder::BuildDeveloperType(const DeveloperType& type)
-    {
-        if (type.m_type_kind == EdlTypeKind::Enum || type.m_type_kind == EdlTypeKind::AnonymousEnum)
-        {
-            return BuildEnumDefinition(type);
-        }
-        else
-        {
-            return BuildStructDefinition(type);
-        }
+            struct_footer.str());
     }
 
     std::string  CppCodeBuilder::BuildFunctionParameters(
@@ -273,6 +289,30 @@ namespace CodeGeneration
         function_parameters << ")";
 
         return function_parameters.str();
+    }
+
+    std::string CppCodeBuilder::BuildStructDefinitionForABIDeveloperType(
+        std::string_view struct_name,
+        const std::vector<Declaration>& parameters)
+    {
+        auto [struct_header, struct_body, struct_footer] = BuildStartOfDefinition(
+            EDL_STRUCT_KEYWORD,
+            struct_name);
+
+        for (size_t param_index = 0U; param_index < parameters.size(); param_index++)
+        {
+            auto& parameter = parameters[param_index];
+            struct_body << std::format(
+                "{}{} {{}}{}\n",
+                c_four_spaces,
+                BuildStructFieldOrFunctionParameter(parameter),
+                SEMI_COLON);
+        }
+
+        return std::format("\n{}{}{}\n",
+            struct_header.str(),
+            struct_body.str(),
+            struct_footer.str());
     }
 
     void CppCodeBuilder::SetupCopyOfReturnParameterStatements(
@@ -449,9 +489,10 @@ namespace CodeGeneration
             }
         }
 
-        param_info.m_function_return_value = std::format("{}", GetSimpleTypeInfoWithPointerInfo(function.m_return_info));
+        param_info.m_function_return_value = std::format("{}", GetSimpleTypeInfoWithPointerInfo(function.m_return_info.m_edl_type_info));
 
-        bool is_void_function = function.m_return_info.m_type_kind == EdlTypeKind::Void;
+
+        bool is_void_function = function.m_return_info.IsEdlType(EdlTypeKind::Void);
         param_info.m_are_return_params_needed = (!is_void_function || (inout_out_return_tuple_index > 0));
         param_info.m_function_return_type_void = is_void_function;
 
