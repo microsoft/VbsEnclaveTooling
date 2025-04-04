@@ -34,12 +34,12 @@
 #include <flatbuffers/verifier.h>
 #include <flatbuffers/flatbuffer_builder.h>
 
-#define HRESULT_TO_PVOID(hr) (PVOID)((ULONG_PTR)(hr) & 0x00000000FFFFFFFF)
-#ifndef RETURN_HR_AS_PVOID
-#define RETURN_HR_AS_PVOID(hr) return HRESULT_TO_PVOID(hr);
+#define ABI_HRESULT_TO_PVOID(hr) (PVOID)((ULONG_PTR)(hr) & 0x00000000FFFFFFFF)
+#ifndef ABI_RETURN_HR_AS_PVOID
+#define ABI_RETURN_HR_AS_PVOID(hr) return ABI_HRESULT_TO_PVOID(hr);
 #endif
-#define PVOID_TO_HRESULT(p) ((HRESULT)((ULONG_PTR)(p) & 0x00000000FFFFFFFF))
-#define RETURN_PVOID_AS_HR(p) return PVOID_TO_HRESULT(p);
+#define ABI_PVOID_TO_HRESULT(p) ((HRESULT)((ULONG_PTR)(p) & 0x00000000FFFFFFFF))
+#define ABI_RETURN_PVOID_AS_HR(p) return ABI_PVOID_TO_HRESULT(p);
 
 // All types and functions within this file should be usable within both the hostApp and the enclave.
 namespace VbsEnclaveABI::Shared

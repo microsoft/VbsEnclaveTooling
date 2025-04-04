@@ -3,8 +3,8 @@
 
 #pragma once
 
-#include "veil.any.h"
-#include "veil_arguments.any.h"
+#include "..\veil_any_inc\veil.any.h"
+#include "..\veil_any_inc\veil_arguments.any.h"
 
 #include "enclave_api.vtl0.h"
 #include "exports.vtl0.h"

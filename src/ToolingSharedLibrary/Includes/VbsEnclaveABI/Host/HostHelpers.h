@@ -22,7 +22,7 @@ namespace VbsEnclaveABI::HostApp
     // VTL0 deallocation callback
     static inline void* DeallocateVtl0MemoryCallback(_In_ void* memory)
     {
-        RETURN_HR_AS_PVOID(Shared::DeallocateMemory(memory));
+        ABI_RETURN_HR_AS_PVOID(Shared::DeallocateMemory(memory));
     }
 
     // Generated code uses this function to forward input parameters and retrieve
@@ -51,7 +51,7 @@ namespace VbsEnclaveABI::HostApp
             reinterpret_cast<void*>(&function_context),
             TRUE,
             &result_from_vtl1)));
-        RETURN_IF_FAILED(PVOID_TO_HRESULT(result_from_vtl1));
+        RETURN_IF_FAILED(ABI_PVOID_TO_HRESULT(result_from_vtl1));
 
         auto return_buffer_size = function_context.m_returned_parameters.buffer_size;
         wil::unique_process_heap_ptr<uint8_t> return_buffer {

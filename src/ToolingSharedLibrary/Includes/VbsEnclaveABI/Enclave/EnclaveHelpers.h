@@ -144,7 +144,7 @@ namespace VbsEnclaveABI::Enclave
             reinterpret_cast<void*>(vtl0_context_ptr.get()),
             TRUE,
             &vtl0_output_buffer)));
-        RETURN_IF_FAILED(PVOID_TO_HRESULT(vtl0_output_buffer));
+        RETURN_IF_FAILED(ABI_PVOID_TO_HRESULT(vtl0_output_buffer));
 
         EnclaveFunctionContext vtl1_incoming_context {};
         RETURN_IF_FAILED((EnclaveCopyIntoEnclave(

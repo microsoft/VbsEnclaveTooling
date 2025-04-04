@@ -147,13 +147,13 @@ namespace {}
         {{
             {}
             LOG_IF_FAILED(hr);
-            return HRESULT_TO_PVOID(hr);
+            return ABI_HRESULT_TO_PVOID(hr);
         }}
         catch (...)
         {{
             HRESULT hr = wil::ResultFromCaughtException();
             LOG_IF_FAILED(hr);
-            return HRESULT_TO_PVOID(hr);
+            return ABI_HRESULT_TO_PVOID(hr);
         }}
 )";
 
@@ -566,13 +566,13 @@ R"(            ParamsT vtl1_parameters = ParamsT();
             using ParamsT = FlatbuffersDevTypes::AbiRegisterVtl0Callbacks_argsT;
             HRESULT hr = CallVtl1ExportFromVtl1<ParamsT, decltype(RegisterVtl0Callbacks)>(function_context, RegisterVtl0Callbacks);
             LOG_IF_FAILED(hr);
-            return HRESULT_TO_PVOID(hr);
+            return ABI_HRESULT_TO_PVOID(hr);
         }
         catch (...)
         {
             HRESULT hr = wil::ResultFromCaughtException();
             LOG_IF_FAILED(hr);
-            return HRESULT_TO_PVOID(hr);
+            return ABI_HRESULT_TO_PVOID(hr);
         }
 )";
 
