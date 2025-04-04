@@ -52,7 +52,7 @@ namespace CodeGeneration
         return std::format("{} {}", c_in_annotation, partially_complete_param);
     }
 
-    void inline InvokeFlatbufferCompiler(const std::filesystem::path&, std::string_view args)
+    void inline InvokeFlatbufferCompiler(const std::filesystem::path& compiler_path, std::string_view args)
     {
         PrintStatus(Status::Info, Flatbuffers::c_failed_to_compile_flatbuffer_msg.data());
         std::string complete_argument = std::format("{} {}", compiler_path.generic_string(), args);
