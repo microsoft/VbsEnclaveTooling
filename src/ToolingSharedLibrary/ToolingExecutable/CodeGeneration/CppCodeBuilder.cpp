@@ -15,8 +15,9 @@ using namespace CodeGeneration::Flatbuffers;
 
 namespace CodeGeneration
 {
-    std::ostringstream CppCodeBuilder::CreateDeveloperTypeStructs(
-        const std::vector<DeveloperType>& developer_types_insertion_list)
+    std::string CppCodeBuilder::BuildTypesHeader(
+        const std::vector<DeveloperType>& developer_types_insertion_list,
+        const std::vector<DeveloperType>& abi_function_developer_types)
     {
         std::ostringstream types_header {};
         std::ostringstream enums_definitions {};
@@ -30,7 +31,7 @@ namespace CodeGeneration
             }
             else
             {
-                struct_declarations << std::format(c_statements_for_developer_struct, type.m_name, type.m_name);
+                struct_declarations << std::format(c_statements_for_developer_struct, type.m_name);
             }
         }
 
@@ -41,17 +42,17 @@ namespace CodeGeneration
         {
             if (type.IsEdlType(EdlTypeKind::Struct))
             {
-                types_header << BuildStructDefinitionForDeveloperType(type.m_name, type.m_fields);
+                types_header << BuildStructDefinitionForNonABIDeveloperType(type.m_name, type.m_fields);
             }
         }
 
-        return types_header;
-    }
+        for (auto& type : abi_function_developer_types)
+        {
+            types_header << BuildStructDefinitionForABIDeveloperType(type.m_name, type.m_fields);
+        }
 
-    std::string CppCodeBuilder::BuildTypesHeader(const std::ostringstream& types)
-    {
         auto start_of_file = std::format(c_developer_types_start_of_file, c_autogen_header_string);
-        auto body = std::format(c_developer_types_namespace, types.str());
+        auto body = std::format(c_developer_types_namespace, types_header.str());
 
         return std::format("{}{}\n", start_of_file, body);
     }
@@ -223,7 +224,7 @@ namespace CodeGeneration
         return BuildNonArrayType(declaration);
     }
 
-    std::string CppCodeBuilder::BuildStructDefinitionForDeveloperType(
+    std::string CppCodeBuilder::BuildStructDefinitionForNonABIDeveloperType(
         std::string_view struct_name,
         const std::vector<Declaration>& fields)
     {
@@ -290,10 +291,9 @@ namespace CodeGeneration
         return function_parameters.str();
     }
 
-    std::string CppCodeBuilder::BuildStructDefinitionForFunctionParams(
+    std::string CppCodeBuilder::BuildStructDefinitionForABIDeveloperType(
         std::string_view struct_name,
-        const std::vector<Declaration>& parameters,
-        const CppCodeBuilder::FunctionParametersInfo& params_info)
+        const std::vector<Declaration>& parameters)
     {
         auto [struct_header, struct_body, struct_footer] = BuildStartOfDefinition(
             EDL_STRUCT_KEYWORD,
@@ -808,9 +808,6 @@ namespace CodeGeneration
 
     CppCodeBuilder::HostToEnclaveContent CppCodeBuilder::BuildHostToEnclaveFunctions(
         std::string_view generated_namespace,
-        std::ostringstream& flatbuffer_content,
-        std::ostringstream& developer_structs,
-        const std::unordered_map<std::string,DeveloperType>& developer_types,
         std::unordered_map<std::string, Function>& functions)
     {
         std::ostringstream vtl0_class_public_portion {};
@@ -838,11 +835,6 @@ namespace CodeGeneration
             auto vtl0_call_to_vtl1_export = std::format(
                 c_vtl0_call_to_vtl1_export,
                 vtl1_exported_func_name);
-
-            auto [table, built_struct] = BuildFlatbufferConversionStructsAndTables(function, abi_function_name, param_info);
-
-            flatbuffer_content << table.str();
-            developer_structs << built_struct.str();
 
             // This is the vtl0 abi function that the developer will call into to start the flow
             // of calling their vtl1 enclave function impl.
@@ -904,9 +896,6 @@ namespace CodeGeneration
     }
 
     CppCodeBuilder::EnclaveToHostContent CppCodeBuilder::BuildEnclaveToHostFunctions(
-        std::ostringstream& flatbuffer_content,
-        std::ostringstream& developer_structs,
-        const std::unordered_map<std::string,DeveloperType>& developer_types,
         std::unordered_map<std::string, Function>& functions)
     {
         size_t number_of_functions = functions.size();
@@ -949,10 +938,6 @@ namespace CodeGeneration
             function.m_name = std::format(c_untrusted_function_name, function.m_name);
             auto abi_function_name = GetFunctionNameForAbi(function.m_name);
             auto param_info = GetParametersAndTupleInformation(function, CallFlowDirection::EnclaveToHostApp);
-            auto [table, built_struct] = BuildFlatbufferConversionStructsAndTables(function, abi_function_name, param_info);
-
-            flatbuffer_content << table.str();
-            developer_structs << built_struct.str();
 
             auto vtl1_call_to_vtl0_callback = std::format(
                 c_vtl1_call_to_vtl0_callback,

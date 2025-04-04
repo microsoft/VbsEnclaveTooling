@@ -89,15 +89,11 @@ namespace CodeGeneration
 
         std::string BuildStructDefinition(const DeveloperType& developer_types);
 
-        std::string BuildStructDefinitionForFunctionParams(
+        std::string BuildStructDefinitionForABIDeveloperType(
             std::string_view struct_name,
-            const std::vector<Declaration>& fields,
-            const FunctionParametersInfo& params_info = {});
+            const std::vector<Declaration>& fields);
 
-        std::ostringstream CreateDeveloperTypeStructs(
-            const std::vector<DeveloperType>& developer_types_insertion_list);
-
-        std::string BuildStructDefinitionForDeveloperType(
+        std::string BuildStructDefinitionForNonABIDeveloperType(
             std::string_view struct_name,
             const std::vector<Declaration>& fields);
 
@@ -114,7 +110,9 @@ namespace CodeGeneration
             const FunctionParametersInfo& param_info,
             ParameterModifier modifier = ParameterModifier::NoConst);
 
-        std::string BuildTypesHeader(const std::ostringstream& types);
+        std::string BuildTypesHeader(
+            const std::vector<DeveloperType>& developer_types_insertion_list,
+            const std::vector<DeveloperType>& abi_function_developer_types);
 
         // Used to gather all needed function parameter information to allow multiple
         // CodeGen functions to reuse saved metadata about a functions parameters without
@@ -187,15 +185,9 @@ namespace CodeGeneration
         
         HostToEnclaveContent BuildHostToEnclaveFunctions(
             std::string_view generated_namespace,
-            std::ostringstream& flatbuffer_content,
-            std::ostringstream& developer_structs,
-            const std::unordered_map<std::string, DeveloperType>& developer_types,
             std::unordered_map<std::string, Function>& functions);
 
         EnclaveToHostContent BuildEnclaveToHostFunctions(
-            std::ostringstream& flatbuffer_content,
-            std::ostringstream& developer_structs,
-            const std::unordered_map<std::string, DeveloperType>& developer_types,
             std::unordered_map<std::string, Function>& functions);
 
         std::string CombineAndBuildHostAppEnclaveClass(
@@ -231,9 +223,7 @@ namespace CodeGeneration
             const std::filesystem::path& output_folder,
             std::string_view file_content);
 
-        void SaveAndCompileFlatbufferFile(
-            std::filesystem::path save_location,
-            std::ostringstream flatbuffer_schema);
+        void CompileFlatbufferFile(std::filesystem::path save_location);
 
         Edl m_edl {};
         ErrorHandlingKind m_error_handling {};

@@ -17,17 +17,17 @@ using namespace EdlProcessor;
 
 namespace CodeGeneration::Flatbuffers
 {
-    std::unordered_map<std::string, std::string> s_enum_data {};
+    std::unordered_map<std::string, std::string> g_enum_data {};
 
-    std::ostringstream BuildInitialFlatbufferSchemaContent(
-        const std::vector<DeveloperType>& developer_types_insertion_list)
+    std::string GenerateFlatbufferSchema(
+        const std::vector<DeveloperType>& developer_types_insertion_list,
+        const std::vector<DeveloperType>& abi_function_developer_types)
     {
         std::ostringstream schema {};
         schema << c_autogen_header_string << c_flatbuffer_namespace;
 
-        for (auto& type : developer_types_insertion_list)
+        for (auto& dev_type : developer_types_insertion_list)
         {
-            DeveloperType dev_type = type;
             if (dev_type.IsEdlType(EdlTypeKind::Enum))
             {
                 schema << BuildEnum(dev_type);
@@ -38,10 +38,18 @@ namespace CodeGeneration::Flatbuffers
             }
         }
 
+        for (auto& dev_type : abi_function_developer_types)
+        {
+            // type will only ever be structs
+            schema << BuildTable(dev_type.m_fields, dev_type.m_name);
+        }
+
         // Add Wstring table by default
         schema << c_flatbuffer_wstring_table;
 
-        return schema;
+        schema << c_flatbuffer_root_table << c_flatbuffer_root_type;
+
+        return schema.str();
     }
 
     std::string BuildEnum(const DeveloperType& enum_type)
@@ -63,7 +71,7 @@ namespace CodeGeneration::Flatbuffers
 
             if (enum_value.m_is_default_value)
             {
-                s_enum_data.emplace(enum_type.m_name, enum_value_name);
+                g_enum_data.emplace(enum_type.m_name, enum_value_name);
             }
         }
 
@@ -113,7 +121,6 @@ namespace CodeGeneration::Flatbuffers
             case EdlTypeKind::Enum:
             case EdlTypeKind::Struct:
                 return type_info.m_name;
-                return type_info.m_name;
             default:
                 throw CodeGenerationException(
                     ErrorId::FlatbufferTypeNotCompatibleWithEdlType,
@@ -130,8 +137,6 @@ namespace CodeGeneration::Flatbuffers
         {
             if (!declaration.m_array_dimensions.empty())
             {
-                // Note: pointer data will be placed into a flatbuffer vector and reconstructed
-                // on the other side.
                 table_body << std::format(
                     "    {} : [{}];\n",
                     declaration.m_name,
@@ -150,7 +155,7 @@ namespace CodeGeneration::Flatbuffers
                     "    {} : {} = {};\n",
                     declaration.m_name,
                     declaration.m_edl_type_info.m_name,
-                    s_enum_data.at(declaration.m_edl_type_info.m_name));
+                    g_enum_data.at(declaration.m_edl_type_info.m_name));
             }
             else
             {
@@ -204,40 +209,5 @@ namespace CodeGeneration::Flatbuffers
                     type_info.m_name,
                     declaration.m_name);
         }
-    }
-
-    FlatbufferDataForFunction BuildFlatbufferConversionStructsAndTables(
-       Function function,
-       std::string_view abi_function_name,
-       const CppCodeBuilder::FunctionParametersInfo& params_info)
-    {
-        std::vector<Declaration> all_params {};
-
-        // Add return type to out struct if it's not void.
-        if (function.m_return_info.IsEdlType(EdlTypeKind::Void))
-        {
-            function.m_parameters.push_back(function.m_return_info);
-        }
-
-        auto params_size = function.m_parameters.size();
-
-        for (size_t param_index = 0U; param_index < params_size; param_index++)
-        {
-            Declaration& parameter = function.m_parameters[param_index];
-            parameter.m_name = "m_" + parameter.m_name;
-            all_params.push_back(parameter);
-        }
-
-        FlatbufferDataForFunction data {};
-
-        // Struct that will be used to pass and return the function params/return type.
-        auto struct_name = std::format(c_function_args_struct, abi_function_name);
-        data.m_flatbuffer_tables << BuildTable(function.m_parameters, struct_name);
-        data.m_parameters_struct << CppCodeBuilder::BuildStructDefinitionForFunctionParams(
-            struct_name,
-            all_params,
-            params_info);
-
-        return data;
     }
 }

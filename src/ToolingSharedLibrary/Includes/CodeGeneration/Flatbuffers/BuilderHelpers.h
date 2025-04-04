@@ -19,22 +19,11 @@ namespace CodeGeneration::Flatbuffers
         NestedStruct,
     };
 
-    struct FlatbufferDataForFunction
-    {
-        std::ostringstream m_flatbuffer_tables{};
-        std::ostringstream m_parameters_struct{};
-    };
-
-    std::ostringstream BuildInitialFlatbufferSchemaContent(
-        const std::vector<DeveloperType>& developer_types_insertion_list);
+    std::string GenerateFlatbufferSchema(
+        const std::vector<DeveloperType>& developer_types_insertion_list,
+        const std::vector<DeveloperType>& abi_function_developer_types);
 
     std::string BuildEnum(const DeveloperType& enum_type);
 
     std::string BuildTable(const std::vector<Declaration>& fields, std::string_view struct_name);
-
-
-    FlatbufferDataForFunction BuildFlatbufferConversionStructsAndTables(
-        Function function,
-        std::string_view abi_function_name,
-        const CppCodeBuilder::FunctionParametersInfo& params_info);
 }
