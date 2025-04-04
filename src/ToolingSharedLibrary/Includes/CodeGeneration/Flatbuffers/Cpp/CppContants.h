@@ -3,6 +3,8 @@
 #pragma once 
 #include <pch.h>
 
+using namespace EdlProcessor;
+
 namespace CodeGeneration::Flatbuffers::Cpp
 {
     static inline constexpr std::string_view c_convert_to_dev_type_function_definition_reference =

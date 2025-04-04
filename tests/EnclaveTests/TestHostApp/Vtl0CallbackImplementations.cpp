@@ -261,4 +261,9 @@ NestedStructWithArray TestEnclave::PassingArrayTypes_To_HostApp_callback(
     return CreateNestedStructWithArray();
 }
 
+void TestEnclave::ReturnNoParams_From_HostApp_callback()
+{
+    // No body, test just here to make sure we have coverage for void returns
+}
+
 #pragma endregion

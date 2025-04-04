@@ -3,6 +3,8 @@
 
 #pragma once 
 #include <pch.h>
+#include <Edl\Structures.h>
+#include <Edl\Utils.h>
 #include <CodeGeneration\Contants.h>
 #include <CodeGeneration\CodeGeneration.h>
 #include <CodeGeneration\CodeGenerationHelpers.h>
@@ -16,6 +18,7 @@ using namespace EdlProcessor;
 
 namespace CodeGeneration::Flatbuffers::Cpp
 {
+
     std::string BuildConversionFunctionBody(
         const std::vector<Declaration>& fields,
         FlatbufferConversionKind conversion_kind,
