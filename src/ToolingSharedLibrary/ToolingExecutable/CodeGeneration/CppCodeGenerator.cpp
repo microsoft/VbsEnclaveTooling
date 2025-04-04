@@ -50,9 +50,9 @@ namespace CodeGeneration
         if (m_flatbuffer_compiler_path.empty())
         {
             // Set flatbuffer compiler path to current directory by default if not provided.
-            m_flatbuffer_compiler_path = std::move(std::format(
+            m_flatbuffer_compiler_path = std::format(
                 c_flatbuffer_compiler_default_path,
-                std::filesystem::current_path().generic_string()));
+                std::filesystem::current_path().generic_string());
         }
     }
 
@@ -63,34 +63,32 @@ namespace CodeGeneration
         auto enclave_headers_location = m_output_folder_path / enclave_headers_output;
         auto hostapp_headers_location = m_output_folder_path / hostapp_headers_output;
 
-        std::ostringstream developer_structs = CreateDeveloperTypeStructs(
-            m_edl.m_developer_types_insertion_order_list);
-
-        auto flatbuffer_schema = BuildInitialFlatbufferSchemaContent(m_edl.m_developer_types_insertion_order_list);
-
-        // Process content from the trusted content.
-        auto host_to_enclave_content = BuildHostToEnclaveFunctions(
-            m_generated_namespace_name,
-            flatbuffer_schema,
-            developer_structs,
-            m_edl.m_developer_types,
-            m_edl.m_trusted_functions);
-
-        // Process the content from the untrusted functions
-        auto enclave_to_host_content = BuildEnclaveToHostFunctions(
-            flatbuffer_schema,
-            developer_structs,
-            m_edl.m_developer_types,
+        auto abi_function_developer_types = CreateDeveloperTypesForABIFunctions(
+            m_edl.m_trusted_functions,
             m_edl.m_untrusted_functions);
-
-        flatbuffer_schema << c_flatbuffer_root_table << c_flatbuffer_root_type;
 
         // Create developer types. This is shared between
         // the HostApp and the enclave.
-        auto enclave_types_header = BuildTypesHeader(developer_structs);
+        std::string enclave_types_header = BuildTypesHeader(
+            m_edl.m_developer_types_insertion_order_list,
+            abi_function_developer_types);
+
+        auto flatbuffer_schema = GenerateFlatbufferSchema(
+            m_edl.m_developer_types_insertion_order_list,
+            abi_function_developer_types);
+
+        // Process content from the trusted content.
+        auto host_to_enclave_content = BuildHostToEnclaveFunctions(m_generated_namespace_name, m_edl.m_trusted_functions);
+
+        // Process the content from the untrusted functions
+        auto enclave_to_host_content = BuildEnclaveToHostFunctions(m_edl.m_untrusted_functions);
+
+        std::filesystem::path save_location{};
 
         if (m_virtual_trust_layer_kind == VirtualTrustLayerKind::Enclave)
         {
+            save_location = enclave_headers_location;
+
             SaveFileToOutputFolder(
                 c_trust_vtl1_stubs_header,
                 enclave_headers_location,
@@ -117,10 +115,12 @@ namespace CodeGeneration
                 enclave_headers_location,
                 enclave_types_header);
 
-            SaveAndCompileFlatbufferFile(enclave_headers_location, std::move(flatbuffer_schema));
+            SaveFileToOutputFolder(c_flatbuffer_fbs_filename, enclave_headers_location, flatbuffer_schema);
         }
         else if (m_virtual_trust_layer_kind == VirtualTrustLayerKind::HostApp)
         {
+            save_location = hostapp_headers_location;
+
             // Add the register callbacks abi function and combine the two streams
             // that contain the vtl0 public class methods.
             enclave_to_host_content.m_vtl0_class_public_content 
@@ -143,12 +143,14 @@ namespace CodeGeneration
                 hostapp_headers_location,
                 enclave_types_header);
 
-            SaveAndCompileFlatbufferFile(hostapp_headers_location, std::move(flatbuffer_schema));
+            SaveFileToOutputFolder(c_flatbuffer_fbs_filename, hostapp_headers_location, flatbuffer_schema);
         }
         else
         {
             throw CodeGenerationException(ErrorId::VirtualTrustLayerInvalidType);
         }
+
+        CompileFlatbufferFile(save_location);
     }
 
     void CppCodeGenerator::SaveFileToOutputFolder(
@@ -180,14 +182,11 @@ namespace CodeGeneration
         }
     }
 
-    void CppCodeGenerator::SaveAndCompileFlatbufferFile(
-        std::filesystem::path save_location,
-        std::ostringstream flatbuffer_schema)
+    void CppCodeGenerator::CompileFlatbufferFile(std::filesystem::path save_location)
     {
-        SaveFileToOutputFolder(c_flatbuffer_fbs_filename, save_location, flatbuffer_schema.str());
         auto flatbuffer_schema_path = (save_location / c_flatbuffer_fbs_filename).generic_string();
 
         std::string flatbuffer_args = std::format(R"({} -o "{}" "{}")", c_cpp_gen_args, save_location.generic_string(), flatbuffer_schema_path);
-        InvokeFlatbufferCompiler(m_flatbuffer_compiler_path.generic_string(), flatbuffer_args);
+        InvokeFlatbufferCompiler(m_flatbuffer_compiler_path, flatbuffer_args);
     }
 }

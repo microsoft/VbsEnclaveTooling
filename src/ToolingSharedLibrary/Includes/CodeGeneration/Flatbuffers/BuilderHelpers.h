@@ -30,12 +30,6 @@ namespace CodeGeneration::Flatbuffers
         NestedStruct,
     };
 
-    enum class FlatbufferConversionKind : std::uint32_t
-    {
-        ToDevType,
-        ToFlatbuffer,
-    };
-
     enum class FlatbufferStructFieldsModifier
     {
         NoModification,
@@ -44,89 +38,59 @@ namespace CodeGeneration::Flatbuffers
         AbiToDevTypeSingleStruct,
     };
 
-    struct FlatbufferDataForFunction
+    enum class FlatbufferConversionKind : std::uint32_t
     {
-        std::ostringstream m_flatbuffer_tables{};
-        std::ostringstream m_parameters_struct{};
+        ToDevType,
+        ToFlatbuffer,
     };
 
-    struct FieldNameDataForCopyStatements
-    {
-        std::string m_flatbuffer {};
-        std::string m_struct {};
-        FlatbufferStructFieldsModifier m_modifier = FlatbufferStructFieldsModifier::NoModification;
-    };
-
-    std::ostringstream BuildInitialFlatbufferSchemaContent(
-        const std::vector<DeveloperType>& developer_types_insertion_list);
+    std::string GenerateFlatbufferSchema(
+        const std::vector<DeveloperType>& developer_types_insertion_list,
+        const std::vector<DeveloperType>& abi_function_developer_types);
 
     std::string BuildEnum(const DeveloperType& enum_type);
 
     std::string BuildTable(const std::vector<Declaration>& fields, std::string_view struct_name);
 
-    FlatbufferDataForFunction BuildFlatbufferConversionStructsAndTables(
-        const Function& original_function,
-        std::string_view abi_function_name,
-        const CppCodeBuilder::FunctionParametersInfo& params_info);
-
-    std::string BuildConversionFunctionBody(
-        const std::vector<Declaration>& fields,
-        FlatbufferConversionKind conversion_kind,
-        FlatbufferStructFieldsModifier modifier = FlatbufferStructFieldsModifier::NoModification);
-
-    std::string GetFlatbufferToDevTypeCopyStatements(
-        const Declaration& declaration,
-        FlatbufferSupportedTypes type_kind,
-        FieldNameDataForCopyStatements variable_names);
-
-    std::string GetDevTypeToFlatbufferCopyStatements(
-        const Declaration& declaration,
-        FlatbufferSupportedTypes type_kind,
-        FieldNameDataForCopyStatements variable_names);
-
-    struct FlatbufferSupportedTypesHash
+    // TODO: Make static map
+    inline FlatbufferSupportedTypes GetSupportedFlatbufferTypeKind(const Declaration& declaration)
     {
-        std::size_t operator()(FlatbufferSupportedTypes type) const
+        auto& type_info = declaration.m_edl_type_info;
+
+        // These are the types we support. Just like the WString case we can always
+        // create a custom type using the natively supported types of flatbuffers
+        // should we ever need to expand this.
+        switch (type_info.m_type_kind)
         {
-            return std::hash<std::uint32_t>()(static_cast<std::uint32_t>(type));
+            case EdlTypeKind::Bool:
+            case EdlTypeKind::Char:
+            case EdlTypeKind::Int8:
+            case EdlTypeKind::WChar:
+            case EdlTypeKind::Int16:
+            case EdlTypeKind::HRESULT:
+            case EdlTypeKind::Int32:
+            case EdlTypeKind::Int64:
+            case EdlTypeKind::Float:
+            case EdlTypeKind::Double:
+            case EdlTypeKind::UInt8:
+            case EdlTypeKind::UInt16:
+            case EdlTypeKind::UInt32:
+            case EdlTypeKind::SizeT:
+            case EdlTypeKind::UInt64:
+            case EdlTypeKind::UIntPtr:
+            case EdlTypeKind::String:
+                return FlatbufferSupportedTypes::Basic;
+            case EdlTypeKind::WString:
+                return FlatbufferSupportedTypes::WString;
+            case EdlTypeKind::Enum:
+                return FlatbufferSupportedTypes::Enum;
+            case EdlTypeKind::Struct:
+                return FlatbufferSupportedTypes::NestedStruct;
+            default:
+                throw CodeGenerationException(
+                    ErrorId::FlatbufferTypeNotCompatibleWithEdlType,
+                    type_info.m_name,
+                    declaration.m_name);
         }
-    };
-
-    static const std::unordered_map<FlatbufferSupportedTypes, std::string_view, FlatbufferSupportedTypesHash> c_flatbuffer_to_dev_type_statement_map =
-    {
-        { FlatbufferSupportedTypes::LinearArrayBasic, c_flatbuffer_to_dev_type_conversion_linear_array_basic },
-        { FlatbufferSupportedTypes::LinearArrayStructs, c_flatbuffer_to_dev_type_conversion_linear_array_structs },
-        { FlatbufferSupportedTypes::LinearArrayEnums, c_flatbuffer_to_dev_type_conversion_linear_array_enums },
-        { FlatbufferSupportedTypes::LinearArrayWString, c_flatbuffer_to_dev_type_conversion_linear_array_wstring },
-        { FlatbufferSupportedTypes::LinearVectorBasic, c_flatbuffer_to_dev_type_conversion_linear_vector_basic },
-        { FlatbufferSupportedTypes::LinearVectorEnums, c_flatbuffer_to_dev_type_conversion_linear_vector_enums },
-        { FlatbufferSupportedTypes::LinearVectorStructs, c_flatbuffer_to_dev_type_conversion_linear_vector_structs },
-        { FlatbufferSupportedTypes::LinearVectorWString, c_flatbuffer_to_dev_type_conversion_linear_vector_wstring },
-        { FlatbufferSupportedTypes::PtrForPrimitive, c_flatbuffer_to_dev_type_conversion_ptr_for_primitive },
-        { FlatbufferSupportedTypes::PtrForEnum, c_flatbuffer_to_dev_type_conversion_ptr_for_enum },
-        { FlatbufferSupportedTypes::PtrForStruct, c_flatbuffer_to_dev_type_conversion_ptr_for_struct },
-        { FlatbufferSupportedTypes::Basic, c_flatbuffer_to_dev_type_conversion_basic },
-        { FlatbufferSupportedTypes::WString, c_flatbuffer_to_dev_type_conversion_wstring },
-        { FlatbufferSupportedTypes::Enum, c_flatbuffer_to_dev_type_conversion_enum },
-        { FlatbufferSupportedTypes::NestedStruct, c_flatbuffer_to_dev_type_conversion_nestedstruct },
-    };
-
-    static const std::unordered_map<FlatbufferSupportedTypes, std::string_view, FlatbufferSupportedTypesHash> c_dev_type_to_flatbuffer_statement_map =
-    {
-        { FlatbufferSupportedTypes::LinearArrayBasic, c_dev_type_to_flatbuffer_conversion_linear_array_basic },
-        { FlatbufferSupportedTypes::LinearArrayStructs, c_dev_type_to_flatbuffer_conversion_linear_array_structs },
-        { FlatbufferSupportedTypes::LinearArrayEnums, c_dev_type_to_flatbuffer_conversion_linear_array_enums },
-        { FlatbufferSupportedTypes::LinearArrayWString, c_dev_type_to_flatbuffer_conversion_linear_array_wstrings },
-        { FlatbufferSupportedTypes::LinearVectorBasic, c_dev_type_to_flatbuffer_conversion_linear_vector_basic },
-        { FlatbufferSupportedTypes::LinearVectorEnums, c_dev_type_to_flatbuffer_conversion_linear_vector_enums },
-        { FlatbufferSupportedTypes::LinearVectorStructs, c_dev_type_to_flatbuffer_conversion_linear_vector_structs },
-        { FlatbufferSupportedTypes::LinearVectorWString, c_dev_type_to_flatbuffer_conversion_linear_vector_wstrings },
-        { FlatbufferSupportedTypes::PtrForPrimitive, c_dev_type_to_flatbuffer_conversion_ptr_for_primitive },
-        { FlatbufferSupportedTypes::PtrForEnum, c_dev_type_to_flatbuffer_conversion_ptr_for_enum },
-        { FlatbufferSupportedTypes::PtrForStruct, c_dev_type_to_flatbuffer_conversion_ptr_for_struct },
-        { FlatbufferSupportedTypes::Basic, c_dev_type_to_flatbuffer_conversion_basic },
-        { FlatbufferSupportedTypes::WString, c_dev_type_to_flatbuffer_conversion_wstring },
-        { FlatbufferSupportedTypes::Enum, c_dev_type_to_flatbuffer_conversion_enum },
-        { FlatbufferSupportedTypes::NestedStruct, c_dev_type_to_flatbuffer_conversion_nestedstruct },
-    };
+    }
 }

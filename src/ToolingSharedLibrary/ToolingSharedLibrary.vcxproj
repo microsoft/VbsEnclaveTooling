@@ -98,6 +98,18 @@
   <PropertyGroup Label="Vcpkg">
     <VcpkgEnableManifest>true</VcpkgEnableManifest>
   </PropertyGroup>
+  <PropertyGroup Label="Vcpkg" Condition="'$(Configuration)|$(Platform)'=='Debug|ARM64'">
+    <VcpkgUseStatic>true</VcpkgUseStatic>
+    <VcpkgUseMD>false</VcpkgUseMD>
+  </PropertyGroup>
+  <PropertyGroup Label="Vcpkg" Condition="'$(Configuration)|$(Platform)'=='Release|ARM64'">
+    <VcpkgUseStatic>true</VcpkgUseStatic>
+    <VcpkgUseMD>false</VcpkgUseMD>
+  </PropertyGroup>
+  <PropertyGroup Label="Vcpkg" Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <VcpkgUseStatic>true</VcpkgUseStatic>
+    <VcpkgUseMD>false</VcpkgUseMD>
+  </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
@@ -179,6 +191,8 @@
     <ClInclude Include="Includes\CmdlineParsingHelpers.h" />
     <ClInclude Include="Includes\CodeGeneration\Flatbuffers\Contants.h" />
     <ClInclude Include="Includes\CodeGeneration\Flatbuffers\BuilderHelpers.h" />
+    <ClInclude Include="Includes\CodeGeneration\Flatbuffers\Cpp\ConversionFunctionHelpers.h" />
+    <ClInclude Include="Includes\CodeGeneration\Flatbuffers\Cpp\CppContants.h" />
     <ClInclude Include="Includes\VbsEnclaveABI\Enclave\EnclaveHelpers.h" />
     <ClInclude Include="Includes\VbsEnclaveABI\Enclave\MemoryAllocation.h" />
     <ClInclude Include="Includes\VbsEnclaveABI\Enclave\MemoryChecks.h" />
@@ -198,6 +212,7 @@
     <ClInclude Include="pch.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="ToolingExecutable\CodeGeneration\Flatbuffers\Cpp\ConversionFunctionHelpers.cpp" />
     <ClCompile Include="ToolingExecutable\CmdlineArgumentsParser.cpp" />
     <ClCompile Include="pch.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>

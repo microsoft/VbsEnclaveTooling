@@ -258,10 +258,10 @@ namespace CodeGeneration
         return copy_statements_for_return_tuple.str();
     }
 
-    void inline InvokeFlatbufferCompiler(std::string_view compiler_path, std::string_view args)
+    void inline InvokeFlatbufferCompiler(const std::filesystem::path& compiler_path, std::string_view args)
     {
         PrintStatus(Status::Info, Flatbuffers::c_failed_to_compile_flatbuffer_msg.data());
-        std::string complete_argument = std::format("{} {}", compiler_path, args);
+        std::string complete_argument = std::format("{} {}", compiler_path.generic_string(), args);
         auto result = std::system(complete_argument.c_str());
 
         if (result)
@@ -273,6 +273,53 @@ namespace CodeGeneration
         PrintStatus(Status::Info, Flatbuffers::c_succeeded_compiling_flatbuffer_msg.data());
     }
 
+    inline DeveloperType GetDeveloperTypeStructForABI(const Function& function)
+    {
+        std::string function_params_struct_type = std::format(c_function_args_struct, function.abi_m_name);
+        DeveloperType new_type {function_params_struct_type, EdlTypeKind::Struct };
+
+        // Add return type to out struct if it's not void.
+        if (!function.m_return_info.IsEdlType(EdlTypeKind::Void))
+        {
+            auto return_copy = function.m_return_info;
+            return_copy.m_name = "m_" + return_copy.m_name;
+            return_copy.m_parent_kind = DeclarationParentKind::Struct;
+            new_type.m_fields.push_back(return_copy);
+        }
+
+        for (Declaration parameter : function.m_parameters)
+        {
+            parameter.m_name = "m_" + parameter.m_name;
+            parameter.m_parent_kind = DeclarationParentKind::Struct;
+            new_type.m_fields.push_back(parameter);
+        }
+
+        return new_type;
+    }
+
+    inline std::vector<DeveloperType> CreateDeveloperTypesForABIFunctions(
+        const std::unordered_map<std::string, Function>& trusted_functions,
+        const std::unordered_map<std::string, Function>& untrusted_functions)
+    {
+        std::vector<DeveloperType> dev_types {};
+
+        for (auto [name, function] : trusted_functions)
+        {
+            DeveloperType dev_type = GetDeveloperTypeStructForABI(function);
+            dev_types.push_back(dev_type);
+        }
+
+        for (auto [name, function] : untrusted_functions)
+        {
+            DeveloperType dev_type = GetDeveloperTypeStructForABI(function);
+            dev_types.push_back(dev_type);
+        }
+
+        return dev_types;
+    }
+
+    // std::format in C++20 requires the "format_string" to be known at compile time. 
+    // this is used for instances where we only know the format string at runtime.
     template<typename... Args>
     inline std::string FormatString(std::string_view format_string, Args&&... args)
     {
@@ -293,6 +340,7 @@ namespace CodeGeneration
         EdlTypeKind::Vector,
     };
 
+<<<<<<< HEAD
     inline bool TypeContainsIterator(const Declaration& declaration)
     {
         if (!declaration.m_array_dimensions.empty())
@@ -311,6 +359,9 @@ namespace CodeGeneration
     }
 
     inline std::string GetSimpleTypeInfo(const EdlTypeInfo& info)
+=======
+    inline std::string EdlTypeToCppType(const EdlTypeInfo& info)
+>>>>>>> add-flatbuffer-conversion-functions-and-update-abi-and-tests
     {
         switch (info.m_type_kind)
         {
@@ -361,7 +412,7 @@ namespace CodeGeneration
         {
             if (declaration.IsOutParameterOnly())
             {
-                return AddPtr(type_info.m_name, PtrKind::shared);
+                return AddPtr(type_info.m_name, PtrKind::unique);
             }
 
             // In and Inout pointers will be raw pointers since the function that will be using them 
@@ -369,7 +420,7 @@ namespace CodeGeneration
             return AddPtr(type_info.m_name, PtrKind::raw);
         }
 
-        return AddPtr(type_info.m_name, PtrKind::shared);;
+        return AddPtr(type_info.m_name, PtrKind::unique);;
     }
 
     inline std::string AddVectorEncapulation(const Declaration& vector_declaration)
@@ -414,7 +465,7 @@ namespace CodeGeneration
     inline std::string GetFullDeclarationType(const Declaration& declaration)
     {
         EdlTypeKind type_kind = declaration.m_edl_type_info.m_type_kind;
-        std::string type_name = GetSimpleTypeInfo(declaration.m_edl_type_info);
+        std::string type_name = EdlTypeToCppType(declaration.m_edl_type_info);
 
         if (declaration.IsEdlType(EdlTypeKind::Vector))
         {
@@ -491,6 +542,4 @@ namespace CodeGeneration
         return !declaration.m_array_dimensions.empty() ||
             s_complex_types.contains(declaration.m_edl_type_info.m_type_kind);
     }
-
-
 }
