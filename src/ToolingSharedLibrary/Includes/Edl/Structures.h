@@ -339,11 +339,6 @@ namespace EdlProcessor
             return false;
         }
 
-        bool IsEdlType(EdlTypeKind type_kind) const
-        {
-            return m_edl_type_info.m_type_kind == type_kind;
-        }
-
         std::string GenerateTypeInfoString()
         {
             std::string info_string = m_edl_type_info.m_name;
@@ -403,11 +398,6 @@ namespace EdlProcessor
         DeveloperType(std::string name, EdlTypeKind type)
             : m_name(name), m_type_kind(type)
         {
-        }
-
-        bool IsEdlType(EdlTypeKind type_kind) const
-        {
-            return m_type_kind == type_kind;
         }
 
         bool IsEdlType(EdlTypeKind type_kind) const
