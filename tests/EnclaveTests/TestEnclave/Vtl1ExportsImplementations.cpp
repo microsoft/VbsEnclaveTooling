@@ -50,7 +50,7 @@ HRESULT inline VerifyContainsSameValuesArray(const T* data, size_t size, T value
 Int8PtrAndSize VTL1_Declarations::ReturnInt8ValPtr_From_Enclave()
 {
     Int8PtrAndSize ret {};
-    ret.int8_val = std::make_shared<std::int8_t>();
+    ret.int8_val = std::make_unique<std::int8_t>();
     *ret.int8_val = std::numeric_limits<std::int8_t>::max();
 
     return ret;
@@ -118,17 +118,17 @@ HRESULT VTL1_Declarations::TestPassingPrimitivesAsInOutPointers_To_Enclave(
 }
 
 HRESULT VTL1_Declarations::TestPassingPrimitivesAsOutPointers_To_Enclave(
-    _Out_ std::shared_ptr<bool>& bool_val,
-    _Out_ std::shared_ptr<DecimalEnum>& enum_val,
-    _Out_ std::shared_ptr<std::uint64_t>& uint64_val)
+    _Out_ std::unique_ptr<bool>& bool_val,
+    _Out_ std::unique_ptr<DecimalEnum>& enum_val,
+    _Out_ std::unique_ptr<std::uint64_t>& uint64_val)
 {
     bool_val = nullptr;
     enum_val = nullptr;
     uint64_val = nullptr;
 
-    bool_val = std::make_shared<bool>(true);
-    enum_val = std::make_shared<DecimalEnum>(DecimalEnum::Deci_val3);
-    uint64_val = std::make_shared<std::uint64_t>(std::numeric_limits<std::uint64_t>::max());
+    bool_val = std::make_unique<bool>(true);
+    enum_val = std::make_unique<DecimalEnum>(DecimalEnum::Deci_val3);
+    uint64_val = std::make_unique<std::uint64_t>(std::numeric_limits<std::uint64_t>::max());
 
     return S_OK;
 }
@@ -136,9 +136,9 @@ HRESULT VTL1_Declarations::TestPassingPrimitivesAsOutPointers_To_Enclave(
 StructWithNoPointers VTL1_Declarations::ComplexPassingofTypes_To_Enclave(
     _In_ const StructWithNoPointers& arg1,
     _Inout_ StructWithNoPointers& arg2,
-    _Out_ std::shared_ptr<StructWithNoPointers>& arg3,
+    _Out_ std::unique_ptr<StructWithNoPointers>& arg3,
     _Out_ StructWithNoPointers& arg4,
-    _Out_ std::shared_ptr<std::uint64_t>& uint64_val)
+    _Out_ std::unique_ptr<std::uint64_t>& uint64_val)
 {
     arg3 = nullptr;
     uint64_val = nullptr;
@@ -148,10 +148,10 @@ StructWithNoPointers VTL1_Declarations::ComplexPassingofTypes_To_Enclave(
     THROW_HR_IF(E_INVALIDARG, !CompareStructWithNoPointers(arg1, struct_to_return));
     arg2 = struct_to_return;
 
-    arg3 = std::make_shared<StructWithNoPointers>();
+    arg3 = std::make_unique<StructWithNoPointers>();
     *arg3 = CreateStructWithNoPointers();
     arg4 = CreateStructWithNoPointers();
-    uint64_val = std::make_shared<std::uint64_t>();
+    uint64_val = std::make_unique<std::uint64_t>();
     *uint64_val = std::numeric_limits<std::uint64_t>::max();
 
     return struct_to_return;
@@ -376,9 +376,9 @@ HRESULT VTL1_Declarations::Start_TestPassingPrimitivesAsInOutPointers_To_HostApp
 }
 HRESULT VTL1_Declarations::Start_TestPassingPrimitivesAsOutPointers_To_HostApp_Callback_Test()
 {
-    std::shared_ptr<bool> bool_val = nullptr;
-    std::shared_ptr<DecimalEnum> enum_val = nullptr;
-    std::shared_ptr<std::uint64_t> uint64_val = nullptr;
+    std::unique_ptr<bool> bool_val = nullptr;
+    std::unique_ptr<DecimalEnum> enum_val = nullptr;
+    std::unique_ptr<std::uint64_t> uint64_val = nullptr;
 
     // Note: Hresult is returned by vtl0, and copied to vtl1 then returned to this function.
     THROW_IF_FAILED(VTL0_Callbacks::TestPassingPrimitivesAsOutPointers_To_HostApp_callback(
@@ -403,9 +403,9 @@ HRESULT VTL1_Declarations::Start_ComplexPassingofTypes_To_HostApp_Callback_Test(
     auto expected_struct_values = CreateStructWithNoPointers();
     StructWithNoPointers struct_no_pointers_1 = expected_struct_values;
     StructWithNoPointers struct_no_pointers_2 {};
-    std::shared_ptr<StructWithNoPointers> struct_no_pointers_3;
+    std::unique_ptr<StructWithNoPointers> struct_no_pointers_3;
     StructWithNoPointers struct_no_pointers_4 {};
-    std::shared_ptr<std::uint64_t> uint64_val = nullptr;
+    std::unique_ptr<std::uint64_t> uint64_val = nullptr;
 
     // Note: Hresult is returned by vtl0, and copied to vtl1 then returned to this function.
     auto result = VTL0_Callbacks::ComplexPassingofTypes_To_HostApp_callback(

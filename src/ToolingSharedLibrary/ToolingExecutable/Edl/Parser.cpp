@@ -15,7 +15,6 @@ using namespace ToolingExceptions;
 namespace EdlProcessor
 {
     static const std::uint32_t c_max_number_of_pointers = 1;
-    static std::unordered_map<std::string, std::uint64_t> s_anonymous_enum_values_map;
 
     EdlParser::EdlParser(const std::filesystem::path& file_path)
         : m_file_path(file_path), m_file_name(m_file_path.filename().replace_extension()), m_cur_line(1), m_cur_column(1)
@@ -309,11 +308,6 @@ namespace EdlProcessor
             m_developer_types[type_name].m_items.emplace(value_name, enum_type);
             cur_enum_value_position++;
             is_default_value = false;
-
-            if (is_anonymous_enum)
-            {
-                s_anonymous_enum_values_map[value_name] = enum_type.m_declared_position;
-            }
         }
 
         ThrowIfExpectedTokenNotNext(RIGHT_CURLY_BRACKET);
@@ -403,6 +397,19 @@ namespace EdlProcessor
                     m_cur_line,
                     m_cur_column,
                     parsed_function.m_name);
+            }
+
+            // Since we allow developer functions to contain the same name but with different
+            // parameters, we need to make sure the non developer facing functions are unique
+            // in our abi layer. So we append a number to the function name.
+            static std::uint32_t abi_function_index {};
+
+            parsed_function.abi_m_name = std::format("{}{}", parsed_function.m_name, abi_function_index++);
+
+            if (function_kind == FunctionKind::Untrusted)
+            {
+                // add callback string at the end to prevent in class name conflicts.
+                parsed_function.m_name = std::format("{}_callback", parsed_function.m_name);
             }
 
             map.emplace(function_signature, parsed_function);

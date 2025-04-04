@@ -60,11 +60,11 @@ running the tests. This way you can use `WinDbg` to debug them
 -   Click the `Debug` button
 
 You can set breakpoints in the enclave DLL with `bm
-TestEnclave!TestFunctionName` or similar. Note: the `TestEnclave` name is not the name
+TestEnclave!TestFunctionName` or similar. Note: the `TestFunctionName` name is not the name
 of the Taef test. It is the name of an actual function within the enclave you want to
-debug. Be sure to insert the functions namespace in from of the function name as well.
+debug. Be sure to insert the functions namespace in front of the function name as well.
 E.g `bm TestEnclave!VbsEnclave::VTL1_Declarations::ReturnInt8ValPtr_From_Enclave`
-Because the `TestEnclave` are
+Because the `TestEnclave` is
 configured with debugging enabled, the debugger will pick up the symbol load and
 help you break in when it's hit. Then you can F10/F11 in the normal way!
 

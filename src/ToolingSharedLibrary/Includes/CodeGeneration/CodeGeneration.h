@@ -62,29 +62,24 @@ namespace CodeGeneration
 
         std::string BuildStructField(const Declaration& declaration);
 
-        std::string BuildStructDefinitionForFunctionParams(
+        std::string BuildStructDefinition(const DeveloperType& developer_types);
+
+        std::string BuildStructDefinitionForABIDeveloperType(
             std::string_view struct_name,
-            const std::vector<Declaration>& updated_parameters,
-            const std::unordered_map<std::string, Declaration>& all_in_and_inout_params,
-            const FunctionParametersInfo& params_info = {});
+            const std::vector<Declaration>& fields);
 
-        std::ostringstream CreateDeveloperTypeStructs(
-            const std::vector<DeveloperType>& developer_types_insertion_list);
-
-        std::string BuildStructDefinitionForDeveloperType(
+        std::string BuildStructDefinitionForNonABIDeveloperType(
             std::string_view struct_name,
             const std::vector<Declaration>& fields);
 
         FunctionParametersInfo GetInformationAboutParameters(
-            const Function& function,
-            std::string_view abi_function_name);
+            const Function& function);
 
         // These functions are what the developer will call 
         // to invoke their impl function on the other side of the
         // trust boundary.
         std::string BuildInitialCallerFunction(
             const Function& function,
-            std::string_view vtl0_generated_abi_function_name,
             std::string_view abi_function_to_call,
             bool should_be_static,
             const FunctionParametersInfo& param_info);
@@ -93,7 +88,6 @@ namespace CodeGeneration
         // on the other side of the boundary
         std::string BuildAbiImplFunction(
             const Function& function,
-            std::string_view abi_function_name,
             std::string_view call_impl_str,
             const FunctionParametersInfo& param_info);
 
@@ -101,13 +95,14 @@ namespace CodeGeneration
             const Function& function,
             const FunctionParametersInfo& param_info);
 
-        std::string BuildTypesHeader(const std::ostringstream& types);
+        std::string BuildTypesHeader(
+            const std::vector<DeveloperType>& developer_types_insertion_list,
+            const std::vector<DeveloperType>& abi_function_developer_types);
 
         // Intended to be used by in a CallEnclave Win32 function by the
         // abi layer.
         std::string BuildTrustBoundaryFunction(
             const Function& function,
-            std::string_view boundary_function_name,
             std::string_view abi_function_to_call,
             bool is_vtl0_callback,
             const FunctionParametersInfo& param_info);
@@ -116,15 +111,9 @@ namespace CodeGeneration
         
         HostToEnclaveContent BuildHostToEnclaveFunctions(
             std::string_view generated_namespace,
-            std::ostringstream& flatbuffer_content,
-            std::ostringstream& developer_structs,
-            const std::unordered_map<std::string, DeveloperType>& developer_types,
             std::unordered_map<std::string, Function>& functions);
 
         EnclaveToHostContent BuildEnclaveToHostFunctions(
-            std::ostringstream& flatbuffer_content,
-            std::ostringstream& developer_structs,
-            const std::unordered_map<std::string, DeveloperType>& developer_types,
             std::unordered_map<std::string, Function>& functions);
 
         std::string CombineAndBuildHostAppEnclaveClass(
@@ -160,9 +149,7 @@ namespace CodeGeneration
             const std::filesystem::path& output_folder,
             std::string_view file_content);
 
-        void SaveAndCompileFlatbufferFile(
-            std::filesystem::path save_location,
-            std::ostringstream flatbuffer_schema);
+        void CompileFlatbufferFile(std::filesystem::path save_location);
 
         Edl m_edl {};
         ErrorHandlingKind m_error_handling {};

@@ -92,6 +92,7 @@ namespace veil
             hellokeys_send_attestation_report,
             hellokeys_finalize_key,
             hellokeys_send_ngc_request,
+            add_log,
             __count__ // keep as last entry
         };
 

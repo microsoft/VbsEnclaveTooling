@@ -33,6 +33,9 @@
     <ClCompile Include="hello.vtl0.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="telemetry.vtl0.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h">
@@ -54,6 +57,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="hello.vtl0.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="telemetry.vtl0.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
