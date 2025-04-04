@@ -13,6 +13,23 @@ An official package will be added to nuget.org closer to our release date. See t
 
 Building locally
 ------------
+
+#### Prerequistes
+
+*The code generator uses Google Flatbuffers to facilite marshaling data into and out of the enclave.
+This means we take Flatbuffers as a dependency, specifically in our `ToolingSharedLibrary` project.
+We use [vcpkg](https://learn.microsoft.com/en-us/vcpkg/get_started/overview) to add the flatbuffer compiler and header files into our nuget package. To build the
+repository you will need to install/integrate `vcpkg` into your visual studio application inorder 
+to build this repository.*
+
+Here are the instructions to integrate vcpkg into your visual studio application:
+
+https://learn.microsoft.com/vcpkg/get_started/get-started-msbuild?pivots=shell-powershell
+
+You only need to follow step 1 (Set up vcpkg) in the above link, then close and relaunch visual studio. 
+After this, you should be able to build the entire repository without issue. See the build instructions below.
+
+#### Build instructions.
 The projects in this repository support only x64 and arm64 builds. 
 
 - To build the `VbsEnclaveTooling` executable on its own build the `ToolingExecutable` project
@@ -23,13 +40,11 @@ The projects in this repository support only x64 and arm64 builds.
   1. `OR` in a Visual Studio developer Powershell window run the `buildScripts\build.ps1` 
      script. This will do the same as above.
 
-For F5 debugging VbsEnclaveTooling.exe locally see `ToolingExecutable`s
-[see instructions here](./src/ToolingExecutable/README.md)
+For F5 debugging VbsEnclaveTooling.exe locally, [see the ToolingExecutable projects instructions here](./src/ToolingExecutable/README.md)
 
 
 Using VbsEnclaveTooling.exe from within your own Visual Studio project to generate code
 ------------
-`Note: Code generation is still a work in progress`
 
 Once you have built the nuget package, you can add it directly to your own visual studio
 project by doing the following:
@@ -43,10 +58,14 @@ project by doing the following:
 1. In your enclave projects .vcxproj file add the following inside a `<PropertyGroup>` attribute
    `<VbsEnclaveEdlPath>Path-To-Your-.Edl-File</VbsEnclaveEdlPath>`
 
-Note: a new VbsEnclaveTooling .nupkg file is generated everytime you build the `ToolingNuget`
-project. The new version should appear as an update when you go back to the "Manage Nuget Packages"
-window/refresh the page. This is helpful when you need to test changes made in the `ToolingExecutable`
-or the `VbsEnclaveSDK` project inside a project that consumes the nuget package.
+*Note*: A new VbsEnclaveTooling .nupkg file is generated everytime you build the `ToolingNuget`
+project. It will appear as `Microsoft.Windows.VbsEnclaveTooling.0.0.0.nupkg` in the `_build` file.
+
+If you already have it installed into your project, you will need to uninstall and reinstall it
+via the "Manage Nuget Packages" window/refresh the page. 
+
+This is helpful when you need to test changes made in the `ToolingExecutable`
+or the `ToolingSharedLibrary` projects inside a project that consumes the nuget package.
 
 VbsEnclaveSDK usage
 ------------

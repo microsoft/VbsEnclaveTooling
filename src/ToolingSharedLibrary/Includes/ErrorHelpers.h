@@ -134,7 +134,7 @@ namespace ErrorHelpers
         { ErrorId::EdlArrayDimensionIdentifierInvalid, "'{}' not supported within array brackets. Arrays in VbsEnclaveTooling .edl files only support arrays with an integer literal '[5]' and arrays with string literals previously declared in the edl file e.g. '[int_max]'." },
         { ErrorId::EdlPointerSizeAttributeMissing, "Pointer for '{}' on line '{}', column '{}' does not have a count attribute. The codegen layer will copy only 'sizeof({})' when copying the data this pointer points to between virtual trust layers." },
         { ErrorId::EdlPointerMustBeAnnotatedWithDirection, "Pointers must have a pointer direction. Use the 'in' or 'out' attribute." },
-        { ErrorId::EdlPointerToArrayNotAllowed, "VbsEnclaveTooling .edl files do not support pointers to arrays." },
+        { ErrorId::EdlPointerToArrayNotAllowed, "VbsEnclaveTooling .edl files do not support the pointers to arrays or vectors." },
         { ErrorId::EdlSizeOrCountAttributeNotFound, "Could not find '{}' size/count declaration in '{}'." },
         { ErrorId::EdlSizeOrCountForArrayNotValid, "Found size/count attributes for an array in '{}'. This is not supported, only unsigned types are supported." },
         { ErrorId::EdlSizeOrCountInvalidType, "size/count attributes not supported for the '{}' type, found in '{}'. Only unsigned types are supported." },
@@ -145,8 +145,8 @@ namespace ErrorHelpers
         { ErrorId::EdlDuplicateFieldOrParameter, "duplicate name '{}' found in '{}'." },
         { ErrorId::EdlSizeAndCountNotValidForNonPointer, "Size/count attributes are only valid for pointer types. Found type '{}'" },
         { ErrorId::EdlReturnValuesCannotBePointers, "Functions cannot return a pointer. Instead return a struct that contains the pointer and the size of the data it points to." },
-        { ErrorId::EdlPointerToVoidMustBeAnnotated, "Pointers to void must be annotated with the size attribute." },
-        { ErrorId::EdlOnlySingleDimensionsSupported, "Only linear arrays are supported." },
+        { ErrorId::EdlPointerToVoidMustBeAnnotated, "Pointers to void are not allowed. To use a pointer that does not have a type use the 'uintptr_t' type. Note: The codegen layer will only copy the 'uintptr_t' type, not the data it points to." },
+        { ErrorId::EdlOnlySingleDimensionsSupported, "Only linear arrays and vectors are supported." },
         { ErrorId::EdlDeveloperTypesMustBeDefinedBeforeUse, "Developer types must be defined before using. Found '{}'" },
 
         // CodeGen errors

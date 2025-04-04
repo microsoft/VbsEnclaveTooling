@@ -158,9 +158,9 @@ namespace {}
 )";
 
     // This body is specific to the developer function
-    static inline constexpr std::string_view c_inner_abi_function = 
-R"(using ParamsT = {};
-            using ReturnParamsT = {};
+    static inline constexpr std::string_view c_inner_abi_function =
+        R"(using ParamsT = FlatbuffersDevTypes::{}T;
+            using ReturnParamsT = FlatbuffersDevTypes::{}T;
             {})";
 
     // This body is specific to the developer function
@@ -168,23 +168,23 @@ R"(using ParamsT = {};
         {}
         {{
             {}
-            auto function_result = FunctionResult<ReturnParamsT>();
+            auto function_result = ReturnParamsT();
             {}
             {}
         }}
 )";
 
     static inline constexpr std::string_view c_vtl0_call_to_vtl1_export =
-R"(THROW_IF_FAILED((CallVtl1ExportFromVtl0<ParamsT, ReturnParamsT>(m_enclave, {}, forward_parameters, function_result)));)";
+ R"(THROW_IF_FAILED((CallVtl1ExportFromVtl0<ReturnParamsT>(m_enclave, {}, flatbuffer_builder, function_result)));)";
 
     static inline constexpr std::string_view c_vtl1_call_to_vtl1_export =
-R"(HRESULT hr = CallVtl1ExportFromVtl1<ParamsT, ReturnParamsT, decltype(AbiDefinitions::{}_Abi_Impl)>(function_context, AbiDefinitions::{}_Abi_Impl);)";
+ R"(HRESULT hr = CallVtl1ExportFromVtl1<ParamsT, decltype(AbiDefinitions::{}_Abi_Impl)>(function_context, AbiDefinitions::{}_Abi_Impl);)";
 
     static inline constexpr std::string_view c_vtl0_call_to_vtl0_callback =
-R"(HRESULT hr = CallVtl0CallbackImplFromVtl0<ParamsT, ReturnParamsT, decltype({}_Abi_Impl)>(function_context, {}_Abi_Impl);)";
+ R"(HRESULT hr = CallVtl0CallbackImplFromVtl0<ParamsT, ReturnParamsT, decltype({}_Abi_Impl)>(function_context, {}_Abi_Impl);)";
 
     static inline constexpr std::string_view c_vtl1_call_to_vtl0_callback =
-R"(THROW_IF_FAILED((CallVtl0CallbackFromVtl1<ParamsT, ReturnParamsT>({}U, vtl0_parameters, function_result)));)";
+ R"(THROW_IF_FAILED((CallVtl0CallbackFromVtl1<ParamsT, ReturnParamsT>({}U, flatbuffer_builder, function_result)));)";
 
     // Using a R("...") that contains a " character with std::format ends up adding a \" to the string.
     // instead of the double quote itself. So, as a work around we'll use the old style of declaring a multi line string.
@@ -228,6 +228,8 @@ namespace {}
 {}\n\
 #pragma once\n\
 #include <VbsEnclaveABI\\Shared\\VbsEnclaveAbiBase.h>\n\
+#undef max // prevent windows max macro from conflicting with flatbuffers macro\n\
+#include \"vbsenclave_flatbuffer_support_generated.h\"\n\
 \n\
 ";
 
@@ -257,7 +259,7 @@ R"({}(LPVOID enclave) : m_enclave(enclave)
             LPVOID m_enclave{{}};
             bool m_callbacks_registered{{}};
             wil::srwlock m_register_callbacks_lock{{}};
-            std::array<uint64_t, {}> m_callbacks{{ {} }};
+            std::array<uintptr_t, {}> m_callbacks{{ {} }};
 )";
 
     static inline constexpr std::string_view c_setup_return_params_tuple_for_vtl0_enclave_to_host = R"(
@@ -347,11 +349,11 @@ R"(            auto result = {}({});
 
     static inline constexpr std::string_view c_std_get_vtl0_input_tuple_value_for_host_to_enclave = "std::get<{}>(vtl1_parameters.m_members)";
 
-    static inline constexpr std::string_view c_allocate_memory_callback_to_address = "reinterpret_cast<uint64_t>(&VbsEnclaveABI::HostApp::AllocateVtl0MemoryCallback)";
+    static inline constexpr std::string_view c_allocate_memory_callback_to_address = "reinterpret_cast<uintptr_t>(&VbsEnclaveABI::HostApp::AllocateVtl0MemoryCallback)";
 
-    static inline constexpr std::string_view c_deallocate_memory_callback_to_address = ",reinterpret_cast<uint64_t>(&VbsEnclaveABI::HostApp::DeallocateVtl0MemoryCallback)";
+    static inline constexpr std::string_view c_deallocate_memory_callback_to_address = ",reinterpret_cast<uintptr_t>(&VbsEnclaveABI::HostApp::DeallocateVtl0MemoryCallback)";
 
-    static inline constexpr std::string_view c_callback_to_address = ", reinterpret_cast<uint64_t>(&{}_Generated_Stub)";
+    static inline constexpr std::string_view c_callback_to_address = ", reinterpret_cast<uintptr_t>(&{}_Generated_Stub)";
 
     static inline constexpr std::string_view c_untrusted_function_name = "{}_callback";
 
@@ -520,26 +522,49 @@ R"(            ParamsT vtl1_parameters = ParamsT();
                 return S_OK;;
             }
 
-            HRESULT hr = VbsEnclaveABI::HostApp::AbiRegisterVtl0Callbacks(m_enclave, m_callbacks);
+            FlatbuffersDevTypes::AbiRegisterVtl0Callbacks_argsT input {};
+            input.callbacks.resize(m_callbacks.size());
+            std::copy(m_callbacks.begin(), m_callbacks.end(), input.callbacks.begin());
+            flatbuffers::FlatBufferBuilder builder = PackFlatbuffer(input);
+            using ReturnParamsT = FlatbuffersDevTypes::AbiRegisterVtl0Callbacks_argsT;
+            ReturnParamsT out_args {};
 
-            if (SUCCEEDED(hr))
+            HRESULT hr = CallVtl1ExportFromVtl0<ReturnParamsT>(
+                m_enclave,
+                c_register_callbacks_abi_name,
+                builder,
+                out_args);
+            RETURN_IF_FAILED(hr);
+
+            if (SUCCEEDED(out_args.m__return_value_))
             {
                 m_callbacks_registered = true;
             }
 
-            return hr;
+            return out_args.m__return_value_;
         }
 )";
 
     static inline constexpr std::string_view c_vtl1_register_callbacks_abi_export_name = "    __AbiRegisterVtl0Callbacks__";
 
     static inline constexpr std::string_view c_vtl1_register_callbacks_abi_export = R"(
+        void RegisterVtl0Callbacks(
+            _In_ FlatbuffersDevTypes::AbiRegisterVtl0Callbacks_argsT in_params,
+            _Inout_ flatbuffers::FlatBufferBuilder& flatbuffer_out_params_builder)
+        {
+            THROW_IF_FAILED(AddVtl0FunctionsToTable(in_params.callbacks));
+
+            FlatbuffersDevTypes::AbiRegisterVtl0Callbacks_argsT  result{};
+            result.m__return_value_ = S_OK;
+
+            flatbuffer_out_params_builder = PackFlatbuffer(result);
+        }
+
         void* CALLBACK __AbiRegisterVtl0Callbacks__(void* function_context)
         try
         {
-            using ParamsT = ParameterContainer<EnclaveParameters>;
-            using ReturnParamsT = ParameterContainer<HRESULT>;
-            HRESULT hr = CallVtl1ExportFromVtl1<ParamsT, ReturnParamsT, decltype(RegisterVtl0Callbacks)>(function_context, RegisterVtl0Callbacks);
+            using ParamsT = FlatbuffersDevTypes::AbiRegisterVtl0Callbacks_argsT;
+            HRESULT hr = CallVtl1ExportFromVtl1<ParamsT, decltype(RegisterVtl0Callbacks)>(function_context, RegisterVtl0Callbacks);
             LOG_IF_FAILED(hr);
             return HRESULT_TO_PVOID(hr);
         }
@@ -551,13 +576,91 @@ R"(            ParamsT vtl1_parameters = ParamsT();
         }
 )";
 
-    static inline constexpr std::string_view c_vtl0_class_structure = 
-R"({}
+    static inline constexpr std::string_view c_vtl0_class_structure =
+        R"({}
         {}
             {}
             {}
             {}
         {}
 )";
+
+    static inline constexpr std::string_view c_dev_type_for_developer_struct = "dev_type_params";
+
+    static inline constexpr std::string_view c_dev_type_for_function_params_struct = "dev_type_params";
+
+    static inline constexpr std::string_view c_return_param_for_out_param_ptr = 
+R"(     
+            if (return_params->m_{})
+            {{
+                {} = std::move(return_params->m_{});
+            }}
+)";
+
+    static inline constexpr std::string_view c_return_param_for_inout_param_ptr =
+R"(     
+            if ({} && return_params->m_{})
+            {{
+                *{} = *return_params->m_{};
+            }}
+)";
+
+    static inline constexpr std::string_view c_return_param_for_param_non_ptr_complex =
+R"(     
+            {} = std::move(return_params->m_{});
+)";
+
+
+static inline constexpr std::string_view c_return_param_for_basic_type =
+R"(     
+            {} = return_params->m_{};
+)";
+    
+    static inline constexpr std::string_view c_parameter_struct_using_statement =
+R"(             using ReturnParamsT = FlatbuffersDevTypes::{}T;)";
+
+    static inline constexpr std::string_view c_pack_params_to_flatbuffer_call =
+R"(// Package in and in/out parameters into struct and convert it to a flatbuffer type.
+            auto in_flatbufferT = {}::ToFlatBuffer({});
+            using ParamsT = decltype(in_flatbufferT);
+            auto flatbuffer_builder = PackFlatbuffer(*in_flatbufferT);
+    )";
+
+    static inline constexpr std::string_view c_abi_impl_function_parameters = "(_In_ FlatbuffersDevTypes::{}_argsT& in_flatbuffer_params, _In_ flatbuffers::FlatBufferBuilder& flatbuffer_out_params_builder)";
+
+    static inline constexpr std::string_view c_abi_func_return_value =
+R"(auto dev_type_params = {}::ToDevType(in_flatbuffer_params);
+            dev_type_params->m__return_value_ = {}({});
+{})";
+
+    static inline constexpr std::string_view c_abi_func_return_when_void =
+R"(auto dev_type_params = {}::ToDevType(in_flatbuffer_params);
+            {}({});
+{})";
+
+    static inline constexpr std::string_view c_setup_return_params_struct = R"(
+            auto flatbuffer_out_param = {}::ToFlatBuffer(*dev_type_params);
+            flatbuffer_out_params_builder = PackFlatbuffer(*flatbuffer_out_param);)";
+
+    static inline constexpr std::string_view c_setup_no_return_params_struct = R"(
+            flatbuffer_out_params_builder = PackFlatbuffer<FlatbuffersDevTypes::{}T>({{}});)";
+
+    static inline constexpr std::string_view c_setup_return_params_back_to_developer = R"(
+            auto return_params = {}::ToDevType(function_result);
+            {}
+)";
+
+    static inline constexpr std::string_view c_return_value_back_to_initial_caller_with_move =
+R"(             
+            return std::move(return_params->m__return_value_);)";
+
+    static inline constexpr std::string_view c_return_value_back_to_initial_caller_no_move =
+R"(             
+            return return_params->m__return_value_;)";
+
+    static inline constexpr std::string_view c_parameter_return_struct_using_statement =
+R"(        using ReturnParamsT = FlatbuffersDevTypes::{}T;)";
+
+    static inline constexpr std::string_view c_function_args_struct = "{}_args";
 }
 

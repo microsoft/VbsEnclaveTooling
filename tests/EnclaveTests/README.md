@@ -4,7 +4,10 @@ The Enclave Taef tests require the machine that will contain the enclave to
 enable test-signing and require the enclave to be signed with a certificate that
 is available on the machine. As part of the `TestEnclave` project, the 
 [EnclaveBuild.targets](.\TestEnclave\EnclaveBuild.targets) file should sign the `TestEnclave.dll`
-using the certificate you provide. Most developers'  primary dev machines won't be set up to
+using the certificate you provide. You will need to follow the instructions there to add
+your certificate to the build so the enclave dll can be signed.
+
+Most developers'  primary dev machines won't be set up to
 use test signing which is needed to load the enclave dll in debug mode.
 So your best bet is to remotely run the taef tests on a VM that has test signing enabled.
 We recommend using TShell to connect to the remote machine and run the following from
@@ -57,11 +60,11 @@ running the tests. This way you can use `WinDbg` to debug them
 -   Click the `Debug` button
 
 You can set breakpoints in the enclave DLL with `bm
-TestEnclave!TestFunctionName` or similar. Note: the `TestEnclave` name is not the name
+TestEnclave!TestFunctionName` or similar. Note: the `TestFunctionName` name is not the name
 of the Taef test. It is the name of an actual function within the enclave you want to
-debug. Be sure to insert the functions namespace in from of the function name as well.
-E.g `bm TestEnclave!::VbsEnclave::VTL1_Declarations::ReturnInt8ValPtr_From_Enclave`
-Because the `TestEnclave` are
+debug. Be sure to insert the functions namespace in front of the function name as well.
+E.g `bm TestEnclave!VbsEnclave::VTL1_Declarations::ReturnInt8ValPtr_From_Enclave`
+Because the `TestEnclave` is
 configured with debugging enabled, the debugger will pick up the symbol load and
 help you break in when it's hit. Then you can F10/F11 in the normal way!
 

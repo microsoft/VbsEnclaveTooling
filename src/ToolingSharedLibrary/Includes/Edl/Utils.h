@@ -8,6 +8,7 @@
 
 #pragma once
 #include <pch.h>
+#include <unordered_set>
 
 namespace EdlProcessor
 {
@@ -75,6 +76,7 @@ namespace EdlProcessor
         { EdlTypeKind::SizeT, "size_t" },
         { EdlTypeKind::String, "string" },
         { EdlTypeKind::WString, "wstring" },
+        { EdlTypeKind::UIntPtr, "uintptr_t" },
     };
 
     static const std::unordered_map<std::string, EdlTypeKind> c_string_to_edltype_map =
@@ -101,6 +103,27 @@ namespace EdlProcessor
         { "wstring", EdlTypeKind::WString },
         { "*", EdlTypeKind::Ptr },
         { "size_t", EdlTypeKind::SizeT },
+        { "uintptr_t", EdlTypeKind::UIntPtr },
+    };
+
+    static const std::unordered_set<EdlTypeKind, EdlTypeToHash> c_edlTypes_primitive_set =
+    {
+        EdlTypeKind::Bool,
+        EdlTypeKind::Char,
+        EdlTypeKind::Float,
+        EdlTypeKind::Double,
+        EdlTypeKind::Int8,
+        EdlTypeKind::Int16,
+        EdlTypeKind::Int32,
+        EdlTypeKind::Int64,
+        EdlTypeKind::UInt8,
+        EdlTypeKind::UInt16,
+        EdlTypeKind::UInt32,
+        EdlTypeKind::UInt64,
+        EdlTypeKind::WChar,
+        EdlTypeKind::Enum,
+        EdlTypeKind::HRESULT,
+        EdlTypeKind::SizeT,
     };
 
     static inline bool IsHexPrefix(const char* token_start)
@@ -161,5 +184,21 @@ namespace EdlProcessor
         std::stringstream() << token.m_starting_character >> value;
 
         return true;
+    }
+
+    static inline constexpr std::string_view c_default_count_value = "1";
+
+    inline std::string GetSizeFromAttribute(const Declaration& declaration)
+    {
+        std::string copy_length = declaration.GetSizeOrCountAttribute();
+
+        if (!copy_length.empty())
+        {
+            return copy_length;
+        }
+        else
+        {
+            return c_default_count_value.data();
+        }
     }
 }

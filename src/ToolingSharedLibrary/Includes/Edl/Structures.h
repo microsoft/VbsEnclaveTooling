@@ -128,6 +128,7 @@ namespace EdlProcessor
         String,
         WString,
         HRESULT,
+        UIntPtr
     };
 
     struct ParsedAttributeInfo
@@ -140,6 +141,45 @@ namespace EdlProcessor
         bool IsInOutOrOutParameter() const
         {
             return m_in_and_out_present || m_out_present;
+        }
+
+        bool IsSizeMoreThanOne() const
+        {
+            if (m_size_info.IsIdentifier())
+            {
+                // developer using a variable for the size. In this case we'll
+                // return true by default since it can change at runtime to any number.
+                return true;
+            }
+
+            if (m_size_info.IsUnsignedInteger() && std::stoull(m_size_info.ToString()) > 1)
+            {
+                return true;
+            }
+
+            return false;
+        }
+
+        bool IsCountMoreThanOne() const
+        {
+            if (m_count_info.IsIdentifier())
+            {
+                // developer using a variable for the size. In this case we'll
+                // return true by default since it can change at runtime to any number.
+                return true;
+            }
+
+            if (m_count_info.IsUnsignedInteger() && std::stoull(m_count_info.ToString()) > 1)
+            {
+                return true;
+            }
+
+            return false;
+        }
+
+        bool IsCountOrSizeMoreThanOne() const
+        {
+            return IsCountMoreThanOne() || IsSizeMoreThanOne();
         }
 
         bool m_in_present{};
@@ -167,6 +207,7 @@ namespace EdlProcessor
 
         bool is_pointer{};
         std::string m_name{};
+        std::shared_ptr<EdlTypeInfo> inner_type;
     };
 
     typedef std::vector<std::string> ArrayDimensions;
@@ -199,12 +240,12 @@ namespace EdlProcessor
 
         bool IsInOutParameter() const 
         {
-            return HasAttributesAndIsForFunction() && m_attribute_info.value().m_in_and_out_present;
+            return m_attribute_info && m_attribute_info.value().m_in_and_out_present;
         }
 
         bool IsOutParameter() const
         {
-            return HasAttributesAndIsForFunction() && m_attribute_info.value().m_out_present;
+            return m_attribute_info && m_attribute_info.value().m_out_present;
         }
 
         bool IsOutParameterOnly() const
@@ -212,14 +253,90 @@ namespace EdlProcessor
             return IsOutParameter() && !IsInOutParameter();
         }
 
-        bool HasAttributesAndIsForFunction() const
+        bool IsInParameter() const
         {
-            return m_attribute_info && m_parent_kind == DeclarationParentKind::Function;
+            return m_attribute_info && m_attribute_info.value().m_in_present;
+        }
+
+        bool IsInParameterOnly() const
+        {
+            return IsInParameter() && !IsOutParameter();
         }
 
         bool IsEdlType(EdlTypeKind type_kind) const
         {
             return m_edl_type_info.m_type_kind == type_kind;
+        }
+
+        bool IsInnerEdlType(EdlTypeKind type_kind) const
+        {
+            auto inner_type = m_edl_type_info.inner_type;
+            if (!inner_type)
+            {
+                return false;
+            }
+
+            return inner_type->m_type_kind == type_kind;
+        }
+
+        bool HasPointerAndIsPointerToArray() const
+        {
+            if (m_attribute_info && m_attribute_info.value().IsCountOrSizeMoreThanOne())
+            {
+                return HasPointer();
+            }
+
+            return false;
+        }
+
+        bool IsSizeOrCountAttributeAnIdentifier() const
+        {
+            if (m_attribute_info)
+            {
+                return m_attribute_info.value().m_size_info.IsIdentifier() ||
+                    m_attribute_info.value().m_count_info.IsIdentifier();
+            }
+
+            return false;
+        }
+
+        std::string GetSizeOrCountAttribute() const
+        {
+            std::string size_or_count {};
+            if (TryGetSizeAttributeValue(size_or_count))
+            {
+                return size_or_count;
+            }
+            else
+            {
+                TryGetCountAttributeValue(size_or_count);
+            }
+
+            return size_or_count;
+        }
+
+        bool TryGetSizeAttributeValue(std::string& value) const
+        {
+            value = "";
+
+            if (m_attribute_info && m_attribute_info.value().IsSizeMoreThanOne())
+            {
+                value = m_attribute_info.value().m_size_info.ToString();
+                return true;
+            }
+
+            return false;
+        }
+
+        bool TryGetCountAttributeValue(std::string& value) const
+        {
+            if (m_attribute_info && m_attribute_info.value().IsCountMoreThanOne())
+            {
+                value = m_attribute_info.value().m_count_info.ToString();
+                return true;
+            }
+
+            return false;
         }
 
         std::string GenerateTypeInfoString()
@@ -325,6 +442,7 @@ namespace EdlProcessor
         }
 
         std::string m_name{};
+        std::string abi_m_name {};
         Declaration m_return_info {DeclarationParentKind::Function};
         std::vector<Declaration> m_parameters{};
     private:
