@@ -53,6 +53,14 @@ namespace CodeGeneration::Flatbuffers::Cpp
 
     static const std::unordered_map<FlatbufferSupportedTypes, std::string_view, FlatbufferSupportedTypesHash> c_flatbuffer_to_dev_type_statement_map =
     {
+        { FlatbufferSupportedTypes::LinearArrayBasic, c_flatbuffer_to_dev_type_conversion_linear_array_basic },
+        { FlatbufferSupportedTypes::LinearArrayStructs, c_flatbuffer_to_dev_type_conversion_linear_array_structs },
+        { FlatbufferSupportedTypes::LinearArrayEnums, c_flatbuffer_to_dev_type_conversion_linear_array_enums },
+        { FlatbufferSupportedTypes::LinearArrayWString, c_flatbuffer_to_dev_type_conversion_linear_array_wstring },
+        { FlatbufferSupportedTypes::LinearVectorBasic, c_flatbuffer_to_dev_type_conversion_linear_vector_basic },
+        { FlatbufferSupportedTypes::LinearVectorEnums, c_flatbuffer_to_dev_type_conversion_linear_vector_enums },
+        { FlatbufferSupportedTypes::LinearVectorStructs, c_flatbuffer_to_dev_type_conversion_linear_vector_structs },
+        { FlatbufferSupportedTypes::LinearVectorWString, c_flatbuffer_to_dev_type_conversion_linear_vector_wstring },
         { FlatbufferSupportedTypes::PtrForPrimitive, c_flatbuffer_to_dev_type_conversion_ptr_for_primitive },
         { FlatbufferSupportedTypes::PtrForEnum, c_flatbuffer_to_dev_type_conversion_ptr_for_enum },
         { FlatbufferSupportedTypes::PtrForStruct, c_flatbuffer_to_dev_type_conversion_ptr_for_struct },
@@ -64,6 +72,14 @@ namespace CodeGeneration::Flatbuffers::Cpp
 
     static const std::unordered_map<FlatbufferSupportedTypes, std::string_view, FlatbufferSupportedTypesHash> c_dev_type_to_flatbuffer_statement_map =
     {
+        { FlatbufferSupportedTypes::LinearArrayBasic, c_dev_type_to_flatbuffer_conversion_linear_array_basic },
+        { FlatbufferSupportedTypes::LinearArrayStructs, c_dev_type_to_flatbuffer_conversion_linear_array_structs },
+        { FlatbufferSupportedTypes::LinearArrayEnums, c_dev_type_to_flatbuffer_conversion_linear_array_enums },
+        { FlatbufferSupportedTypes::LinearArrayWString, c_dev_type_to_flatbuffer_conversion_linear_array_wstrings },
+        { FlatbufferSupportedTypes::LinearVectorBasic, c_dev_type_to_flatbuffer_conversion_linear_vector_basic },
+        { FlatbufferSupportedTypes::LinearVectorEnums, c_dev_type_to_flatbuffer_conversion_linear_vector_enums },
+        { FlatbufferSupportedTypes::LinearVectorStructs, c_dev_type_to_flatbuffer_conversion_linear_vector_structs },
+        { FlatbufferSupportedTypes::LinearVectorWString, c_dev_type_to_flatbuffer_conversion_linear_vector_wstrings },
         { FlatbufferSupportedTypes::PtrForPrimitive, c_dev_type_to_flatbuffer_conversion_ptr_for_primitive },
         { FlatbufferSupportedTypes::PtrForEnum, c_dev_type_to_flatbuffer_conversion_ptr_for_enum },
         { FlatbufferSupportedTypes::PtrForStruct, c_dev_type_to_flatbuffer_conversion_ptr_for_struct },

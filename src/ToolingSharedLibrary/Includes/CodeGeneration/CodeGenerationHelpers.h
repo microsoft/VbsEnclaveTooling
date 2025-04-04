@@ -340,28 +340,7 @@ namespace CodeGeneration
         EdlTypeKind::Vector,
     };
 
-<<<<<<< HEAD
-    inline bool TypeContainsIterator(const Declaration& declaration)
-    {
-        if (!declaration.m_array_dimensions.empty())
-        {
-            return true;
-        }
-
-        if (declaration.m_edl_type_info.m_type_kind == EdlTypeKind::String ||
-            declaration.m_edl_type_info.m_type_kind == EdlTypeKind::String ||
-            declaration.m_edl_type_info.m_type_kind == EdlTypeKind::WString)
-        {
-            return true;
-        }
-
-        return false;
-    }
-
-    inline std::string GetSimpleTypeInfo(const EdlTypeInfo& info)
-=======
     inline std::string EdlTypeToCppType(const EdlTypeInfo& info)
->>>>>>> add-flatbuffer-conversion-functions-and-update-abi-and-tests
     {
         switch (info.m_type_kind)
         {
@@ -426,7 +405,7 @@ namespace CodeGeneration
     inline std::string AddVectorEncapulation(const Declaration& vector_declaration)
     {
         auto inner_type = vector_declaration.m_edl_type_info.inner_type;
-        auto inner_type_name = GetSimpleTypeInfo(*inner_type);
+        auto inner_type_name = EdlTypeToCppType(*inner_type);
         std::string type_with_ptr {};
 
         if (vector_declaration.HasPointer())
