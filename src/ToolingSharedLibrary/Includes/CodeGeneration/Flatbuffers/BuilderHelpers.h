@@ -13,6 +13,14 @@ namespace CodeGeneration::Flatbuffers
 {
     enum class FlatbufferSupportedTypes : std::uint32_t
     {
+        LinearArrayBasic,
+        LinearArrayEnums,
+        LinearArrayStructs,
+        LinearArrayWString,
+        LinearVectorBasic,
+        LinearVectorEnums,
+        LinearVectorStructs,
+        LinearVectorWString,
         PtrForStruct,
         PtrForEnum,
         PtrForPrimitive,
@@ -43,6 +51,26 @@ namespace CodeGeneration::Flatbuffers
     std::string BuildEnum(const DeveloperType& enum_type);
 
     std::string BuildTable(const std::vector<Declaration>& fields, std::string_view struct_name);
+
+    inline FlatbufferSupportedTypes GetSupportedFlatbufferTypeKindForVector(const Declaration& declaration)
+    {
+        auto inner_type = declaration.m_edl_type_info.inner_type;
+
+        if (inner_type && inner_type->m_type_kind == EdlTypeKind::Enum)
+        {
+            return FlatbufferSupportedTypes::LinearVectorEnums;
+        }
+        else if (inner_type && inner_type->m_type_kind == EdlTypeKind::Struct)
+        {
+            return FlatbufferSupportedTypes::LinearVectorStructs;
+        }
+        else if (inner_type && inner_type->m_type_kind == EdlTypeKind::WString)
+        {
+            return FlatbufferSupportedTypes::LinearVectorWString;
+        }
+
+        return FlatbufferSupportedTypes::LinearVectorBasic;
+    }
 
     // TODO: Make static map
     inline FlatbufferSupportedTypes GetSupportedFlatbufferTypeKind(const Declaration& declaration)
@@ -78,6 +106,8 @@ namespace CodeGeneration::Flatbuffers
                 return FlatbufferSupportedTypes::Enum;
             case EdlTypeKind::Struct:
                 return FlatbufferSupportedTypes::NestedStruct;
+            case EdlTypeKind::Vector:
+                return GetSupportedFlatbufferTypeKindForVector(declaration);
             default:
                 throw CodeGenerationException(
                     ErrorId::FlatbufferTypeNotCompatibleWithEdlType,

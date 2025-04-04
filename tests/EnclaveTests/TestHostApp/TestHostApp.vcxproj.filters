@@ -35,5 +35,8 @@
     <ClInclude Include="TestHelpers.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="HostTestHelpers.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

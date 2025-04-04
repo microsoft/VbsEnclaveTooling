@@ -128,7 +128,8 @@ namespace EdlProcessor
         String,
         WString,
         HRESULT,
-        UIntPtr
+        UIntPtr,
+        Vector,
     };
 
     struct ParsedAttributeInfo

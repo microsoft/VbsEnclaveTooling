@@ -55,7 +55,6 @@ namespace ErrorHelpers
         EdlTypenameInvalid,
         EdlArrayDimensionIdentifierInvalid,
         EdlOnlySingleDimensionsSupported,
-        EdlPointerSizeAttributeMissing,
         EdlPointerToVoidMustBeAnnotated,
         EdlPointerMustBeAnnotatedWithDirection,
         EdlPointerToArrayNotAllowed,
@@ -79,6 +78,10 @@ namespace ErrorHelpers
         FlatbufferCompilerError,
         FlatbufferTypeNotCompatibleWithEdlType,
         NotAFile,
+        EdlVectorMustHaveAValidType,
+        EdlVectorNameIdentifierNotFound,
+        EdlVectorDoesNotStartWithArrowBracket,
+        EdlTypeInVectorMustBePreviouslyDefined,
     };
 
     struct ErrorIdHash
@@ -132,7 +135,6 @@ namespace ErrorHelpers
         { ErrorId::EdlPointerToPointerInvalid, "VbsEnclaveTooling .edl files do not support pointer to pointer declarations." },
         { ErrorId::EdlTypenameInvalid, "Reached end of file and no definition was found for type '{}'." },
         { ErrorId::EdlArrayDimensionIdentifierInvalid, "'{}' not supported within array brackets. Arrays in VbsEnclaveTooling .edl files only support arrays with an integer literal '[5]' and arrays with string literals previously declared in the edl file e.g. '[int_max]'." },
-        { ErrorId::EdlPointerSizeAttributeMissing, "Pointer for '{}' on line '{}', column '{}' does not have a count attribute. The codegen layer will copy only 'sizeof({})' when copying the data this pointer points to between virtual trust layers." },
         { ErrorId::EdlPointerMustBeAnnotatedWithDirection, "Pointers must have a pointer direction. Use the 'in' or 'out' attribute." },
         { ErrorId::EdlPointerToArrayNotAllowed, "VbsEnclaveTooling .edl files do not support the pointers to arrays or vectors." },
         { ErrorId::EdlSizeOrCountAttributeNotFound, "Could not find '{}' size/count declaration in '{}'." },
@@ -148,6 +150,10 @@ namespace ErrorHelpers
         { ErrorId::EdlPointerToVoidMustBeAnnotated, "Pointers to void are not allowed. To use a pointer that does not have a type use the 'uintptr_t' type. Note: The codegen layer will only copy the 'uintptr_t' type, not the data it points to." },
         { ErrorId::EdlOnlySingleDimensionsSupported, "Only linear arrays and vectors are supported." },
         { ErrorId::EdlDeveloperTypesMustBeDefinedBeforeUse, "Developer types must be defined before using. Found '{}'" },
+        { ErrorId::EdlVectorMustHaveAValidType, "Vector must contain a valid type." },
+        { ErrorId::EdlVectorNameIdentifierNotFound, "Expected an identifier name for a vector but found '{}'" },
+        { ErrorId::EdlTypeInVectorMustBePreviouslyDefined, "Types in vectors must be previously defined. Found '{}'" },
+        { ErrorId::EdlVectorDoesNotStartWithArrowBracket, "Vectors must be declared with <T>. where T is a valid type" },
 
         // CodeGen errors
         { ErrorId::CodeGenUnableToOpenOutputFile, "Failed to open '{}' for writing." },

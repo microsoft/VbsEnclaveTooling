@@ -6,31 +6,12 @@
 #include <wil\resource.h>
 #include <WexTestClass.h>
 #include "TestHelpers.h"
-
+#include "HostTestHelpers.h"
 #include <VbsEnclave\HostApp\Stubs.h>
 
 using namespace VbsEnclave::VTL0_Stubs;
 using namespace WEX::Common;
 using namespace WEX::TestExecution;
-
-template <typename T>
-void VerifyNumericArray(T* data, size_t size)
-{
-    VERIFY_IS_NOT_NULL(data);
-    for (T i = 0; i < size; ++i)
-    {
-        VERIFY_ARE_EQUAL(data[i], i);
-    }
-}
-template <typename T>
-void VerifyContainsSameValuesArray(T* data, size_t size, T value)
-{
-    VERIFY_IS_NOT_NULL(data);
-    for (size_t i = 0; i < size; ++i)
-    {
-        VERIFY_ARE_EQUAL(data[i], value);
-    }
-}
 
 // This is only to encapsulate the win32 api calls too create/load/initialize/terminate
 // and delete the enclave. Note this doesn't use the SDK, to just focus on the codegen.
@@ -260,6 +241,194 @@ struct EnclaveTestClass
         VERIFY_NO_THROW(generated_enclave_class.ReturnNoParams_From_Enclave());
     }
 
+    TEST_METHOD(ReturnObjectInVector_From_Enclave_Test)
+    {
+        auto generated_enclave_class = TestEnclave(m_enclave);
+        std::vector<TestStruct1> result_expected(5, CreateTestStruct1());
+
+        // Note: Hresult is return by vtl1, and copied to vtl0 then returned to this function.
+        auto result = generated_enclave_class.ReturnObjectInVector_From_Enclave();
+        VERIFY_IS_TRUE(result.size() == 5);
+        VERIFY_IS_TRUE(std::equal(result.begin(), result.end(), result_expected.begin(), CompareTestStruct1));
+    }
+
+    TEST_METHOD(PassingPrimitivesAsVector_To_Enclave_Test)
+    {
+        auto generated_enclave_class = TestEnclave(m_enclave);
+        std::vector<std::int8_t> arg1(c_data_size, std::numeric_limits<std::int8_t>::max());
+        std::vector<std::int16_t> arg2(c_data_size, std::numeric_limits<std::int16_t>::max());
+        std::vector<std::int32_t> arg3(c_data_size, std::numeric_limits<std::int32_t>::max());
+        std::vector<std::int8_t> arg4(c_data_size, std::numeric_limits<std::int8_t>::max());
+        std::vector<std::int16_t> arg5(c_data_size, std::numeric_limits<std::int16_t>::max());
+        std::vector<std::int32_t> arg6(c_data_size, std::numeric_limits<std::int32_t>::max());
+        std::vector<std::int8_t> arg7;
+        std::vector<std::int16_t> arg8;
+        std::vector<std::int32_t> arg9;
+
+        // Note: Hresult is returned by vtl1, and copied to vtl0 then returned to this function.
+        VERIFY_SUCCEEDED(generated_enclave_class.PassingPrimitivesInVector_To_Enclave(
+            arg1,
+            arg2,
+            arg3,
+            arg4,
+            arg5,
+            arg6,
+            arg7,
+            arg8,
+            arg9));
+
+        // The in-out parameters should have been filled in by the abi in vtl1 based on the result from
+        // the vtl1 version of the function
+        VerifyContainsSameValuesArray(arg1.data(), c_data_size, std::numeric_limits<std::int8_t>::max()); // in param shouldn't have changed.
+        VerifyContainsSameValuesArray(arg2.data(), c_data_size, std::numeric_limits<std::int16_t>::max());// in param shouldn't have changed.
+        VerifyContainsSameValuesArray(arg3.data(), c_data_size, std::numeric_limits<std::int32_t>::max());// in param shouldn't have changed.
+        VerifyNumericArray(arg4.data(), c_arbitrary_size_1); // inout param updated.
+        VerifyNumericArray(arg5.data(), c_arbitrary_size_2); // inout param updated.
+        VerifyNumericArray(arg6.data(), c_arbitrary_size_1); // inout param updated.
+        VerifyNumericArray(arg7.data(), c_arbitrary_size_1); // out param updated.
+        VerifyNumericArray(arg8.data(), c_arbitrary_size_2);// out param updated.
+        VerifyNumericArray(arg9.data(), c_arbitrary_size_1);// out param updated.
+    }
+
+    TEST_METHOD(ComplexPassingofTypesWithVectors_To_Enclave_Test)
+    {
+        auto generated_enclave_class = TestEnclave(m_enclave);
+        auto expect_val1 = CreateTestStruct1();
+        auto expect_val2 = CreateTestStruct2();
+        auto expect_val3 = CreateTestStruct3();
+        TestStruct1 arg1 = expect_val1;
+        TestStruct2 arg2 {};
+        TestStruct3 arg3 {};
+        std::vector<TestStruct1> arg4_expected(5, expect_val1);
+        std::vector<TestStruct1> arg4 = arg4_expected;
+        std::vector<TestStruct2> arg5_expected(5, expect_val2);
+        std::vector<TestStruct2> arg5(1, expect_val2);
+        std::vector<TestStruct3> arg6_expected(5, expect_val3);
+        std::vector<TestStruct3> arg6 {};
+
+        // Note: Hresult is returned by vtl1, and copied to vtl0 then returned to this function.
+        auto result = generated_enclave_class.ComplexPassingofTypesWithVectors_To_Enclave(
+            arg1,
+            arg2,
+            arg3,
+            arg4,
+            arg5,
+            arg6);
+
+        // The out parameters should have been filled in by the abi in vtl1 based on the result from
+        // the vtl1 version of the function
+        VERIFY_IS_TRUE(CompareTestStruct1(arg1, expect_val1));
+        VERIFY_IS_TRUE(CompareTestStruct2(arg2, expect_val2));
+        VERIFY_IS_TRUE(CompareTestStruct3(arg3, expect_val3));
+        VERIFY_IS_TRUE(std::equal(arg4.begin(), arg4.end(), arg4_expected.begin(), CompareTestStruct1));
+        VERIFY_IS_TRUE(std::equal(arg5.begin(), arg5.end(), arg5_expected.begin(), CompareTestStruct2));
+        VERIFY_IS_TRUE(std::equal(arg6.begin(), arg6.end(), arg6_expected.begin(), CompareTestStruct3));
+    }
+
+    TEST_METHOD(PassingStringTypes_To_Enclave_Test)
+    {
+        auto generated_enclave_class = TestEnclave(m_enclave);
+        std::string arg1 = "test";
+        std::string arg2 = "test2";
+        std::string arg3 {};
+        std::vector<std::string> arg4_expected(5, "test4");
+        std::vector<std::string> arg4 = arg4_expected;
+        std::vector<std::string> arg5_expected(5, "test5 was updated");
+        std::vector<std::string> arg5(5, "test5");
+        std::vector<std::string> arg6_expected(5, "test6 was returned as out");
+
+        std::vector<std::string> arg6 {};
+
+        // Note: Hresult is returned by vtl1, and copied to vtl0 then returned to this function.
+        auto result = generated_enclave_class.PassingStringTypes_To_Enclave(
+             arg1,
+            arg2,
+            arg3,
+            arg4,
+            arg5,
+            arg6);
+
+        // The out parameters should have been filled in by the abi in vtl1 based on the result from
+        // the vtl1 version of the function
+        VERIFY_ARE_EQUAL("return result", result);
+        VERIFY_ARE_EQUAL("test", arg1);
+        VERIFY_ARE_EQUAL("test2 updated", arg2);
+        VERIFY_ARE_EQUAL("test3 returned", arg3);
+        VERIFY_IS_TRUE(std::equal(arg4.begin(), arg4.end(), arg4_expected.begin()));
+        VERIFY_IS_TRUE(std::equal(arg5.begin(), arg5.end(), arg5_expected.begin()));
+        VERIFY_IS_TRUE(std::equal(arg6.begin(), arg6.end(), arg6_expected.begin()));
+    }
+
+    TEST_METHOD(PassingWStringTypes_To_Enclave_Test)
+    {
+        auto generated_enclave_class = TestEnclave(m_enclave);
+        std::wstring arg1 = L"test";
+        std::wstring arg2 = L"test2";
+        std::wstring arg3 {};
+        std::vector<std::wstring> arg4_expected(5, L"test4");
+        std::vector<std::wstring> arg4 = arg4_expected;
+        std::vector<std::wstring> arg5_expected(5, L"test5 was updated");
+        std::vector<std::wstring> arg5(5, L"test5");
+        std::vector<std::wstring> arg6_expected(5, L"test6 was returned as out");
+
+        std::vector<std::wstring> arg6 {};
+
+        // Note: Hresult is returned by vtl1, and copied to vtl0 then returned to this function.
+        auto result = generated_enclave_class.PassingWStringTypes_To_Enclave(
+             arg1,
+            arg2,
+            arg3,
+            arg4,
+            arg5,
+            arg6);
+
+        // The out parameters should have been filled in by the abi in vtl1 based on the result from
+        // the vtl1 version of the function
+        VERIFY_ARE_EQUAL(L"return result", result);
+        VERIFY_ARE_EQUAL(L"test", arg1);
+        VERIFY_ARE_EQUAL(L"test2 updated", arg2);
+        VERIFY_ARE_EQUAL(L"test3 returned", arg3);
+        VERIFY_IS_TRUE(std::equal(arg4.begin(), arg4.end(), arg4_expected.begin()));
+        VERIFY_IS_TRUE(std::equal(arg5.begin(), arg5.end(), arg5_expected.begin()));
+        VERIFY_IS_TRUE(std::equal(arg6.begin(), arg6.end(), arg6_expected.begin()));
+    }
+
+    TEST_METHOD(PassingArrayTypes_To_Enclave_Test)
+    {
+        auto generated_enclave_class = TestEnclave(m_enclave);
+        std::array<TestStruct1, 2> arg1 = {CreateTestStruct1(), CreateTestStruct1()};
+        std::array<TestStruct1, 2> arg1_expected = {CreateTestStruct1(), CreateTestStruct1()};
+        std::array<std::string, 2> arg2 = {"test2", "test2"};
+        std::array<std::string, 2> arg2_expected = {"test2 updated", "test2 updated"};
+        std::array<std::wstring, 2> arg3 {};
+        std::array<std::wstring, 2> arg3_expected = {L"test2 updated", L"test2 updated"};
+        std::array<TestStruct2, 2> arg4 = {CreateTestStruct2(), CreateTestStruct2()};
+        auto arg4_expect_val = CreateTestStruct2();
+        arg4_expect_val.field1.array1 = {10, 9, 8, 7, 6, 5, 4, 3, 2, 1};
+        std::array<TestStruct2, 2> arg4_expected = {arg4_expect_val, arg4_expect_val};
+        std::array<TestStruct3, 2> arg5 {};
+        std::array<TestStruct3, 2> arg5_expected = {CreateTestStruct3(), CreateTestStruct3()};
+        NestedStructWithArray nested_array_result = CreateNestedStructWithArray();
+
+        // Note: NestedStructWithArray is returned by vtl1, and copied to vtl0 then returned to this function.
+        auto result = generated_enclave_class.PassingArrayTypes_To_Enclave(
+             arg1,
+            arg2,
+            arg3,
+            arg4,
+            arg5);
+
+        // The out parameters should have been filled in by the abi in vtl1 based on the result from
+        // the vtl1 version of the function
+        VERIFY_IS_TRUE(CompareNestedStructWithArray(result, nested_array_result));
+        VERIFY_IS_TRUE(std::equal(arg1.begin(), arg1.end(), arg1_expected.begin(), CompareTestStruct1));
+        VERIFY_IS_TRUE(std::equal(arg2.begin(), arg2.end(), arg2_expected.begin()));
+        VERIFY_IS_TRUE(std::equal(arg3.begin(), arg3.end(), arg3_expected.begin()));
+        VERIFY_IS_TRUE(std::equal(arg4.begin(), arg4.end(), arg4_expected.begin(), CompareTestStruct2));
+        VERIFY_IS_TRUE(std::equal(arg5.begin(), arg5.end(), arg5_expected.begin(), CompareTestStruct3));
+
+    }
+
     #pragma endregion // End of HostApp to Enclave Tests
 
     #pragma region Enclave to HostApp Tests
@@ -339,6 +508,54 @@ struct EnclaveTestClass
 
         // function returns void so make sure it doesn't throw
         VERIFY_NO_THROW(generated_enclave_class.Start_ReturnNoParams_From_HostApp_Callback_Test());
+    }
+
+    TEST_METHOD(Start_ReturnObjectInVector_From_HostApp_Callback_Test)
+    {
+        auto generated_enclave_class = TestEnclave(m_enclave);
+
+        // Note: Hresult is returned by vtl1, and copied to vtl0 then returned to this function.
+        VERIFY_SUCCEEDED(generated_enclave_class.Start_ReturnObjectInVector_From_HostApp_Callback_Test());
+    }
+
+    TEST_METHOD(Start_PassingPrimitivesInVector_To_HostApp_Callback_Test)
+    {
+        auto generated_enclave_class = TestEnclave(m_enclave);
+
+        // Note: Hresult is returned by vtl1, and copied to vtl0 then returned to this function.
+        VERIFY_SUCCEEDED(generated_enclave_class.Start_PassingPrimitivesInVector_To_HostApp_Callback_Test());
+    }
+
+    TEST_METHOD(Start_ComplexPassingofTypesWithVectors_To_HostApp_Callback_Test)
+    {
+        auto generated_enclave_class = TestEnclave(m_enclave);
+
+        // Note: Hresult is returned by vtl1, and copied to vtl0 then returned to this function.
+        VERIFY_SUCCEEDED(generated_enclave_class.Start_ComplexPassingofTypesWithVectors_To_HostApp_Callback_Test());
+    }
+
+    TEST_METHOD(Start_PassingStringTypes_To_HostApp_Callback_Test)
+    {
+        auto generated_enclave_class = TestEnclave(m_enclave);
+
+        // Note: Hresult is returned by vtl1, and copied to vtl0 then returned to this function.
+        VERIFY_SUCCEEDED(generated_enclave_class.Start_PassingStringTypes_To_HostApp_Callback_Test());
+    }
+
+    TEST_METHOD(Start_PassingWStringTypes_To_HostApp_Callback_Test)
+    {
+        auto generated_enclave_class = TestEnclave(m_enclave);
+
+        // Note: Hresult is returned by vtl1, and copied to vtl0 then returned to this function.
+        VERIFY_SUCCEEDED(generated_enclave_class.Start_PassingWStringTypes_To_HostApp_Callback_Test());
+    }
+
+    TEST_METHOD(Start_PassingArrayTypes_To_HostApp_Callback_Test)
+    {
+        auto generated_enclave_class = TestEnclave(m_enclave);
+
+        // Note: Hresult is returned by vtl1, and copied to vtl0 then returned to this function.
+        VERIFY_SUCCEEDED(generated_enclave_class.Start_PassingArrayTypes_To_HostApp_Callback_Test());
     }
 
     #pragma endregion // Enclave to HostApp tests happen in vtl1

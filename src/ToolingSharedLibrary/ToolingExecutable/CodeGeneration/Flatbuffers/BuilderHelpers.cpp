@@ -145,6 +145,14 @@ namespace CodeGeneration::Flatbuffers
                     declaration.m_name,
                     GetFlatBufferType(declaration.m_edl_type_info));
             }
+            else if (declaration.IsEdlType(EdlTypeKind::Vector))
+            {
+                auto& inner_type = declaration.m_edl_type_info.inner_type;
+                table_body << std::format(
+                    "    {} : [{}];\n",
+                    declaration.m_name,
+                    GetFlatBufferType(*inner_type));
+            }
             else if (declaration.IsEdlType(EdlTypeKind::Struct))
             {
                 table_body << std::format(

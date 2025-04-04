@@ -95,6 +95,50 @@ R"(
 
     // Dev type to flatbuffer strings
 
+    static inline constexpr std::string_view c_dev_type_to_flatbuffer_conversion_linear_array_basic =
+R"(        
+        {}.assign({}.begin(), {}.end());
+)";
+
+    static inline constexpr std::string_view c_dev_type_to_flatbuffer_conversion_linear_array_structs =
+R"(        
+        {}.resize({}.size());
+        std::transform({}.begin(), {}.end(), {}.begin(), [](const auto& elem) {{ return {}::ToFlatBuffer(elem); }});
+)";
+
+    static inline constexpr std::string_view c_dev_type_to_flatbuffer_conversion_linear_array_enums =
+R"(        
+        {}.resize({}.size());
+        std::transform({}.begin(), {}.end(), {}.begin(), ConvertEnum<DeveloperTypes::{}, FlatbuffersDevTypes::{}>);       
+)";
+
+    static inline constexpr std::string_view c_dev_type_to_flatbuffer_conversion_linear_array_wstrings =
+R"(        
+        {}.resize({}.size());
+        std::transform({}.begin(), {}.end(), {}.begin(), CreateWStringT);)";
+
+    static inline constexpr std::string_view c_dev_type_to_flatbuffer_conversion_linear_vector_basic =
+R"(        
+        {}.assign({}.begin(), {}.end());
+)";
+
+    static inline constexpr std::string_view c_dev_type_to_flatbuffer_conversion_linear_vector_enums =
+R"(        
+        {}.resize({}.size());
+        std::transform({}.begin(), {}.end(), {}.begin(), ConvertEnum<DeveloperTypes::{}, FlatbuffersDevTypes::{}>);       
+)";
+
+    static inline constexpr std::string_view c_dev_type_to_flatbuffer_conversion_linear_vector_structs =
+R"(        
+        {}.resize({}.size());
+        std::transform({}.begin(), {}.end(), {}.begin(), [](const auto& elem) {{ return {}::ToFlatBuffer(elem); }});
+)";
+
+    static inline constexpr std::string_view c_dev_type_to_flatbuffer_conversion_linear_vector_wstrings =
+R"(       
+        {}.resize({}.size());
+        std::transform({}.begin(), {}.end(), {}.begin(), CreateWStringT);)";
+
     static inline constexpr std::string_view c_dev_type_to_flatbuffer_conversion_ptr_base_smartptr =
 R"(
         if ({})
@@ -132,6 +176,77 @@ R"(
 )";
 
     // flatbuffer to dev type strings
+
+    static inline constexpr std::string_view c_flatbuffer_to_dev_type_conversion_linear_array_basic =
+R"(         
+        if (!{}.empty() && {}.size() <= {})
+        {{
+            std::copy({}.begin(), {}.end(), {}.begin());
+        }}
+)";
+
+    static inline constexpr std::string_view c_flatbuffer_to_dev_type_conversion_linear_array_structs =
+R"(         
+        if (!{}.empty() && {}.size() <= {})
+        {{
+            for(size_t i = 0; i < {}.size() ; i++)
+            {{
+                if ({}[i] == nullptr) continue;
+                {}[i] = {}::{}({}[i]);
+            }}
+        }}
+)";
+
+    static inline constexpr std::string_view c_flatbuffer_to_dev_type_conversion_linear_array_enums =
+R"(         
+        if (!{}.empty() && {}.size() <= {})
+        {{
+            std::transform({}.begin(), {}.end(), {}.begin(), ConvertEnum<FlatbuffersDevTypes::{}, DeveloperTypes::{}>);       
+        }}
+)";
+
+    static inline constexpr std::string_view c_flatbuffer_to_dev_type_conversion_linear_array_wstring =
+R"(         
+        if (!{}.empty() && {}.size() <= {})
+        {{
+            for(size_t i = 0; i < {}.size() ; i++)
+            {{
+                if ({}[i] == nullptr) continue;
+                {}[i] = ConvertToStdWString({}[i]);
+            }}
+        }}
+)";
+
+    static inline constexpr std::string_view c_flatbuffer_to_dev_type_conversion_linear_vector_basic =
+R"(        
+        {}.assign({}.begin(), {}.end());
+)";
+
+    static inline constexpr std::string_view c_flatbuffer_to_dev_type_conversion_linear_vector_enums =
+R"(        
+        {}.resize({}.size());
+        std::transform({}.begin(), {}.end(), {}.begin(), ConvertEnum<FlatbuffersDevTypes::{}, DeveloperTypes::{}>);       
+)";
+
+    static inline constexpr std::string_view c_flatbuffer_to_dev_type_conversion_linear_vector_structs =
+R"(        
+        {}.resize({}.size());
+        for(size_t i = 0; i < {}.size() ; i ++)
+        {{
+            if ({}[i] == nullptr) continue;
+            {}[i] = {}::{}({}[i]);
+        }}
+)";
+
+    static inline constexpr std::string_view c_flatbuffer_to_dev_type_conversion_linear_vector_wstring =
+R"(         
+        {}.resize({}.size());
+        for(size_t i = 0; i < {}.size() ; i++)
+        {{
+            if ({}[i] == nullptr) continue;
+            {}[i] = ConvertToStdWString({}[i]);
+        }}
+)";
 
     static inline constexpr std::string_view c_flatbuffer_to_dev_type_conversion_param_ptr_base_str =
 R"(       

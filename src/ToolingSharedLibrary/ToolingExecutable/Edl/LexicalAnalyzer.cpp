@@ -199,6 +199,8 @@ namespace EdlProcessor
             case RIGHT_ROUND_BRACKET:
             case LEFT_SQUARE_BRACKET:
             case RIGHT_SQUARE_BRACKET:
+            case RIGHT_ARROW_BRACKET:
+            case LEFT_ARROW_BRACKET:
             case ASTERISK:
             case COMMA:
             case SEMI_COLON:

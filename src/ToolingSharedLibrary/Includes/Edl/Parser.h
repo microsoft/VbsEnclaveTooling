@@ -71,6 +71,7 @@ namespace EdlProcessor
         Function ParseFunctionDeclaration();
         EdlTypeInfo ParseDeclarationTypeInfo();
         ArrayDimensions ParseArrayDimensions();
+        EdlTypeInfo ParseVector();
 
         std::optional<ParsedAttributeInfo> ParseAttributes(
             const DeclarationParentKind& parent_kind,
