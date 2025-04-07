@@ -42,5 +42,24 @@ namespace sample
             veil::any::args::data_blob tag;
             veil::any::args::data_blob decryptedInputBytes;
         };
+
+        struct RunHelloSecuredEncryptionKeyExample_LoadEncryptionKeyThreadpool
+        {
+            veil::any::args::data_blob securedEncryptionKeyBytes;
+            std::wstring dataToEncrypt1;
+            std::wstring dataToEncrypt2;
+            bool isToBeEncrypted = false; // Controls if the Load flow is used for encryption or decryption
+            veil::any::logger::eventLevel activityLevel;
+            std::wstring logFilePath;
+
+            // out
+            veil::any::args::data_blob resealedEncryptionKeyBytes;
+            veil::any::args::data_blob encryptedInputBytes1;
+            veil::any::args::data_blob encryptedInputBytes2;
+            veil::any::args::data_blob tag1;
+            veil::any::args::data_blob tag2;
+            veil::any::args::data_blob decryptedInputBytes1;
+            veil::any::args::data_blob decryptedInputBytes2;
+        };
     }
 }

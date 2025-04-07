@@ -8,3 +8,4 @@ EXPORTS
         RunTaskpoolExample
         RunHelloSecuredEncryptionKeyExample_CreateEncryptionKey
         RunHelloSecuredEncryptionKeyExample_LoadEncryptionKey
+        RunHelloSecuredEncryptionKeyExample_LoadEncryptionKeyThreadpool
