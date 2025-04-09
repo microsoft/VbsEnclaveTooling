@@ -58,7 +58,7 @@
             <AdditionalDependencies>$(VbsEnclaveNugetPackHostLibPath);%(AdditionalDependencies)</AdditionalDependencies>
         </Link>
         <Link Condition="$(VbsEnclaveVirtualTrustLayer) == 'Enclave' AND '$(VbsEnclaveEdlPath)' != ''">
-            <ModuleDefinitionFile>$(VbsEnclaveGeneratedFilesDir)\VbsEnclave\Enclave\vbsenclave.def</ModuleDefinitionFile>
+            <ModuleDefinitionFile Condition="'$(UseGeneratedModuleDefinitionFile)' != 'false'">$(VbsEnclaveGeneratedFilesDir)\VbsEnclave\Enclave\vbsenclave.def</ModuleDefinitionFile>
         </Link>
     </ItemDefinitionGroup>
 

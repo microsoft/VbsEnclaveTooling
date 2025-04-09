@@ -31,6 +31,7 @@
     <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <Import Project="$(ProjectDir)..\SampleEnclave.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|ARM64'" Label="Configuration">
     <ConfigurationType>DynamicLibrary</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
@@ -62,7 +63,6 @@
   </ImportGroup>
   <ImportGroup Condition="exists('..\packages\Microsoft.Windows.VbsEnclaveTooling.0.0.0\src\VbsEnclaveSDK\veil_any_inc\veil_any_inc.vcxitems')" Label="Shared">
     <Import Project="..\packages\Microsoft.Windows.VbsEnclaveTooling.0.0.0\src\VbsEnclaveSDK\veil_any_inc\veil_any_inc.vcxitems" Label="Shared" />
-    <Import Project="..\sample_any_inc\sample_any_inc.vcxitems" Label="Shared" />
   </ImportGroup>
   <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|ARM64'">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
@@ -80,7 +80,7 @@
     <!-- Default value for the certificate name -->
     <EnclaveCertName>TheDefaultTestEnclaveCertName</EnclaveCertName>
   </PropertyGroup>
-  <Import Project="ConfigOverrides.props" Condition="Exists('ConfigOverrides.props')" />
+  <Import Project="config.overrides.props" Condition="Exists('config.overrides.props')" />
   <PropertyGroup>
     <WindowsSDK_LibraryPath_Platform>$(WindowsSDKLibDir)\um\$(Platform)</WindowsSDK_LibraryPath_Platform>
     <VBS_Enclave_Dependencies>$(WindowsSDK_LibraryPath_Platform)\vertdll.lib;$(WindowsSDK_LibraryPath_Platform)\bcrypt.lib</VBS_Enclave_Dependencies>
@@ -95,6 +95,9 @@
   <PropertyGroup>
     <VEIIDExeFullPath>$(WindowsSDKBuildToolsBinVersionedArchFolder)\veiid.exe</VEIIDExeFullPath>
     <VEIID_Command>$(VEIIDExeFullPath) "$(OutDir)$(TargetName)$(TargetExt)"</VEIID_Command>
+  </PropertyGroup>
+  <PropertyGroup>
+    <UseGeneratedModuleDefinitionFile>false</UseGeneratedModuleDefinitionFile>
   </PropertyGroup>
   <!-- Undocked UCRT configuration. -->
   <PropertyGroup>
@@ -149,9 +152,9 @@
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>_DEBUG;SAMPLEENCLAVE_EXPORTS;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>__ENCLAVE_PROJECT__;_DEBUG;SAMPLEENCLAVE_EXPORTS;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <PrecompiledHeader>Use</PrecompiledHeader>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
       <AdditionalIncludeDirectories>$(MSBUILDThisFileDirectory)..\sample_any_inc;$(MSBUILDThisFileDirectory)..\packages\Microsoft.Windows.VbsEnclaveTooling.0.0.0\src\VbsEnclaveSDK\veil_enclave;$(MSBUILDThisFileDirectory)..\packages\Microsoft.Windows.VbsEnclaveTooling.0.0.0\src\VbsEnclaveSDK\veil_any_inc;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp20</LanguageStandard>

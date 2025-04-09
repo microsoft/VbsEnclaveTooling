@@ -9,11 +9,21 @@
 #define ENCLAVE_FUNCTION extern "C" PVOID WINAPI
 #endif
 
+#ifndef HRESULT_TO_PVOID
 #define HRESULT_TO_PVOID(hr) ((PVOID)((ULONG_PTR)(hr) & 0x00000000FFFFFFFF))
-#define PVOID_TO_HRESULT(p) ((HRESULT)((ULONG_PTR)(p) & 0x00000000FFFFFFFF))
+#endif
 
+#ifndef PVOID_TO_HRESULT
+#define PVOID_TO_HRESULT(p) ((HRESULT)((ULONG_PTR)(p) & 0x00000000FFFFFFFF))
+#endif
+
+#ifndef RETURN_HR_AS_PVOID
 #define RETURN_HR_AS_PVOID(x) return veil::hr_to_pvoid(x);
+#endif
+
+#ifndef RETURN_PVOID_AS_HR
 #define RETURN_PVOID_AS_HR(x) return veil::pvoid_to_hr(x);
+#endif
 
 namespace veil
 {

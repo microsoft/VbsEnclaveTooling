@@ -5,7 +5,8 @@ EXPORTS
         VeilEnclaveSdkEntrypoint
 
         ; AppEnclave exports here
-        RunTaskpoolExample
-        RunHelloSecuredEncryptionKeyExample_CreateEncryptionKey
-        RunHelloSecuredEncryptionKeyExample_LoadEncryptionKey
-        RunHelloSecuredEncryptionKeyExample_LoadEncryptionKeyThreadpool
+         RunTaskpoolExample0_Generated_Stub
+         RunHelloSecuredEncryptionKeyExample_CreateEncryptionKey1_Generated_Stub
+         RunHelloSecuredEncryptionKeyExample_LoadEncryptionKey2_Generated_Stub
+         RunHelloSecuredEncryptionKeyExample_LoadEncryptionKeyThreadpool3_Generated_Stub
+        __AbiRegisterVtl0Callbacks__
