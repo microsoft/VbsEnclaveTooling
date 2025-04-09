@@ -69,7 +69,6 @@
     <VEIIDExeFullPath>$(WindowsSDKBuildToolsBinVersionedArchFolder)\veiid.exe</VEIIDExeFullPath>
     <VEIID_Command>$(VEIIDExeFullPath) "$(OutDir)$(TargetName)$(TargetExt)"</VEIID_Command>
   </PropertyGroup>
-  </PropertyGroup>
   <PropertyGroup>
     <UseGeneratedModuleDefinitionFile>false</UseGeneratedModuleDefinitionFile>
   </PropertyGroup>
