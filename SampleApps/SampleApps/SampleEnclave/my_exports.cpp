@@ -558,7 +558,9 @@ bool RunHelloSecuredEncryptionKeyExample_LoadEncryptionKeyThreadpoolImpl(_In_ sa
             {
                 if (data->isToBeEncrypted)
                 {
-                    debug_print(L"hello from encryption task: %d", i);
+                    auto logPrefix = L"[THREAD " + std::to_wstring(i) + L"]";
+                    auto helloStr = logPrefix + L" Hello from encryption task.";
+                    debug_print(helloStr.c_str());
                     sample::args::RunHelloSecuredEncryptionKeyExample_LoadEncryptionKey threadData;
                     threadData.securedEncryptionKeyBytes.data = data->securedEncryptionKeyBytes.data;
                     threadData.securedEncryptionKeyBytes.size = data->securedEncryptionKeyBytes.size;
@@ -573,7 +575,7 @@ bool RunHelloSecuredEncryptionKeyExample_LoadEncryptionKeyThreadpoolImpl(_In_ sa
                     if (!RunHelloSecuredEncryptionKeyExample_LoadEncryptionKeyImpl(
                             &threadData, 
                             true /* called from threadPool */,
-                            L"[THREAD " + std::to_wstring(i) + L"]",
+                            logPrefix,
                             (i == 0) ? &data->encryptedInputBytes1 : &data->encryptedInputBytes2,
                             (i == 0) ? &data->tag1 : &data->tag2))
                     {}

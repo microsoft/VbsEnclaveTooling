@@ -242,8 +242,8 @@ int DecryptFlowThreadpool(
     auto decryptedInputBytes1 = std::span<uint8_t>(reinterpret_cast<uint8_t*>(data.decryptedInputBytes1.data), data.decryptedInputBytes1.size);
     auto decryptedInputBytes2 = std::span<uint8_t>(reinterpret_cast<uint8_t*>(data.decryptedInputBytes2.data), data.decryptedInputBytes2.size);
 
-    std::wcout << L"Decryption completed in Enclave. Decrypted first string: " << std::wstring(reinterpret_cast<const wchar_t*>(decryptedInputBytes1.data()), decryptedInputBytes1.size() / 2) << std::endl;
-    std::wcout << L"Decryption completed in Enclave. Decrypted second string: " << std::wstring(reinterpret_cast<const wchar_t*>(decryptedInputBytes2.data()), decryptedInputBytes2.size() / 2) << std::endl;
+    std::wcout << L"Decryption completed in Enclave.\n Decrypted first string: " << std::wstring(reinterpret_cast<const wchar_t*>(decryptedInputBytes1.data()), decryptedInputBytes1.size() / 2) << std::endl;
+    std::wcout << L"Decryption completed in Enclave.\n Decrypted second string: " << std::wstring(reinterpret_cast<const wchar_t*>(decryptedInputBytes2.data()), decryptedInputBytes2.size() / 2) << std::endl;
     veilLog.AddTimestampedLog(
         L"[Host] Decryption completed in Enclave. Decrypted first string: " + std::wstring(reinterpret_cast<const wchar_t*>(decryptedInputBytes1.data()), decryptedInputBytes1.size() / 2),
         veil::any::logger::eventLevel::EVENT_LEVEL_CRITICAL);
@@ -306,7 +306,7 @@ int mainEncryptDecrpyt(uint32_t activityLevel)
                 std::filesystem::create_directories(encryptedDataDirPath);
                 std::filesystem::create_directories(encrytedKeyDirPath);
                 EncryptFlow(enclave.get(), input, keyMoniker, keyFilePath, encryptedInputFilePath, tagFilePath, veilLog);
-                std::wcout << L"Encryption in Enclave completed. Encrypted bytes are saved to disk in " << encryptedInputFilePath << std::endl;
+                std::wcout << L"Encryption in Enclave completed. \n Encrypted bytes are saved to disk in " << encryptedInputFilePath << std::endl;
                 veilLog.AddTimestampedLog(
                     L"[Host] Encryption in Enclave completed. Encrypted bytes are saved to disk in " + encryptedInputFilePath,
                     veil::any::logger::eventLevel::EVENT_LEVEL_CRITICAL);
@@ -397,9 +397,9 @@ int mainEncryptDecrpytThreadpool(uint32_t activityLevel)
     bool programExecuted = false;
 
     veil::vtl0::logger::logger veilLog(
-    L"VeilSampleApp",
-    L"70F7212C-1F84-4B86-B550-3D5AE82EC779" /*Generated GUID*/,
-    static_cast<veil::any::logger::eventLevel>(activityLevel));
+        L"VeilSampleApp",
+        L"70F7212C-1F84-4B86-B550-3D5AE82EC779" /*Generated GUID*/,
+        static_cast<veil::any::logger::eventLevel>(activityLevel));
     veilLog.AddTimestampedLog(L"[Host] Starting from host", veil::any::logger::eventLevel::EVENT_LEVEL_CRITICAL);
 
     constexpr PCWSTR keyMoniker = L"MyHelloKey-001";
@@ -409,9 +409,9 @@ int mainEncryptDecrpytThreadpool(uint32_t activityLevel)
 
     do
     {
-        std::cout << "\n*** Multi-string Encryption and Decryption Menu ***\n";
-        std::cout << "1. Encrypt strings\n";
-        std::cout << "2. Decrypt strings\n";
+        std::cout << "\n*** Multi-threaded encryption and decryption menu ***\n";
+        std::cout << "1. Encrypt two strings\n";
+        std::cout << "2. Decrypt the strings\n";
         std::cout << "Enter your choice: ";
         std::cin >> choice;
 
@@ -426,9 +426,9 @@ int mainEncryptDecrpytThreadpool(uint32_t activityLevel)
                 std::filesystem::create_directories(encryptedDataDirPath);
                 std::filesystem::create_directories(encrytedKeyDirPath);
                 EncryptFlowThreadpool(enclave.get(), input1, input2, keyMoniker, keyFilePath, encryptedInputFilePath, tagFilePath, veilLog);
-                std::wcout << L"Encryption in Enclave threadpool completed. Encrypted bytes are saved to disk in " << encryptedInputFilePath << std::endl;;
+                std::wcout << L"Encryption in Enclave threadpool completed. \n Encrypted bytes are saved to disk in " << encryptedDataDirPath << std::endl;;
                 veilLog.AddTimestampedLog(
-                    L"[Host] Encryption in Enclave threadpool completed. Encrypted bytes are saved to disk in " + encryptedInputFilePath,
+                    L"[Host] Encryption in Enclave threadpool completed. \n Encrypted bytes are saved to disk in " + encryptedDataDirPath,
                     veil::any::logger::eventLevel::EVENT_LEVEL_CRITICAL);
                 programExecuted = true;
                 break;
