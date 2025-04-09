@@ -10,8 +10,6 @@ using namespace VbsEnclaveABI::Shared;
 // Every function in this file should only be used within the HostApp
 namespace VbsEnclaveABI::HostApp
 {
-    static inline std::string_view c_register_callbacks_abi_name = "__AbiRegisterVtl0Callbacks__";
-
     // VTL0 allocation callback
     static inline void* AllocateVtl0MemoryCallback(_In_ void* context)
     {

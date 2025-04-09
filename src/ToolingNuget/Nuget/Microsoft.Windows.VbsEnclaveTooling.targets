@@ -39,7 +39,7 @@
             </VbsEnclaveToolingExecutionCommand>
         </PropertyGroup>
 
-        <Exec Command="$(VbsEnclaveToolingExecutionCommand)" />
+        <Exec Condition="'$(VbsEnclaveSkipCodegen)' != 'true'" Command="$(VbsEnclaveToolingExecutionCommand)" />
         <Message Text="Generated '$(VbsEnclaveCodeGenLanguage)' code in output directory: '$(VbsEnclaveGeneratedFilesDir)'" Importance="high" />
     </Target>
 
@@ -51,11 +51,11 @@
 
         <!-- Make sure our cpp support static library is added as an enclaves linker dependency -->
         <Link Condition="$(VbsEnclaveVirtualTrustLayer) == 'Enclave' ">
-            <AdditionalDependencies>$(VbsEnclaveCppSupportLib);$(VbsEnclaveNugetPackEnclaveLibPath);%(AdditionalDependencies)</AdditionalDependencies>
+            <AdditionalDependencies Condition="'$(VbsEnclaveIncludeSdk)' != 'false'">$(VbsEnclaveCppSupportLib);$(VbsEnclaveNugetPackEnclaveLibPath);%(AdditionalDependencies)</AdditionalDependencies>
         </Link>
 
         <Link Condition="$(VbsEnclaveVirtualTrustLayer) == 'HostApp' ">
-            <AdditionalDependencies>$(VbsEnclaveNugetPackHostLibPath);%(AdditionalDependencies)</AdditionalDependencies>
+            <AdditionalDependencies Condition="'$(VbsEnclaveIncludeSdk)' != 'false'">$(VbsEnclaveNugetPackHostLibPath);%(AdditionalDependencies)</AdditionalDependencies>
         </Link>
         <Link Condition="$(VbsEnclaveVirtualTrustLayer) == 'Enclave' AND '$(VbsEnclaveEdlPath)' != ''">
             <ModuleDefinitionFile Condition="'$(UseGeneratedModuleDefinitionFile)' != 'false'">$(VbsEnclaveGeneratedFilesDir)\VbsEnclave\Enclave\vbsenclave.def</ModuleDefinitionFile>

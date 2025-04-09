@@ -3,6 +3,9 @@
 
 #pragma once
 
+#ifndef WIL_FOR_ENCLAVES_H
+#define WIL_FOR_ENCLAVES_H
+
 // Redirect tracelogging's macros to an enclave helper that routes them towards the real thing
 
 #define TLG_HAVE_EVENT_SET_INFORMATION 1
@@ -96,3 +99,5 @@ BOOL InitOnceCompleteEnclave(_Inout_ LPINIT_ONCE lpInitOnce, _In_ DWORD dwFlags,
 #undef InitOnceBeginInitialize
 #undef InitOnceComplete
 #undef GetModuleHandleW
+
+#endif

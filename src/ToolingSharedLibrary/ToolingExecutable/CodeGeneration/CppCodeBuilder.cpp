@@ -524,7 +524,12 @@ namespace CodeGeneration
         bool should_be_static,
         const FunctionParametersInfo& param_info)
     {
+#if 0
+        // todo: bug: this is not working as expected. The static keyword seems like it should be an "inline " keyword
         std::string static_part = should_be_static ? c_static_keyword.data(): "";
+#else
+        std::string static_part = should_be_static ? "inline " : "";
+#endif
 
         auto function_declaration = std::format(
             "{}{} {}{}",
@@ -729,8 +734,14 @@ namespace CodeGeneration
         vtl0_class_public_portion << vtl0_side_of_vtl1_developer_impl_functions.str();
 
         // Add register callbacks abi export to module file and add it at the end of the vtl1 stubs file.
-        vtl1_generated_module_exports << c_vtl1_register_callbacks_abi_export_name;
-        vtl1_abi_boundary_functions << c_vtl1_register_callbacks_abi_export;
+        std::string callbacks_name = std::format(
+            c_vtl1_register_callbacks_abi_export_name,
+            generated_namespace);
+
+        vtl1_generated_module_exports << callbacks_name;
+        vtl1_abi_boundary_functions << std::format(
+            c_vtl1_register_callbacks_abi_export,
+            callbacks_name);
 
         auto vtl1_stubs_in_namespace =
             std::format(c_vtl1_enclave_stub_namespace, generated_namespace, vtl1_abi_boundary_functions.str());

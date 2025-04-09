@@ -6,10 +6,6 @@
 #include <array>
 #include <stdexcept>
 
-#include <veil.any.h>
-
-#include <enclave_interface.vtl1.h>
-#include <export_helpers.vtl1.h>
 #include <crypto.vtl1.h>
 #include <logger.vtl1.h>
 #include <taskpool.vtl1.h>

@@ -14,6 +14,14 @@ int
 wmain([[maybe_unused]] _In_ int argc, [[maybe_unused]] _In_reads_(argc) wchar_t** argv)
 try
 {
+    // Print diagnostic messages to the console for developer convenience
+    wil::SetResultLoggingCallback([] (wil::FailureInfo const& failure) noexcept
+    {
+        wchar_t message[1024];
+        wil::GetFailureLogString(message, ARRAYSIZE(message), failure);
+        wprintf(L"Diagnostic message: %ls\n", message);
+    });
+
     if (argc != 2)
     {
         std::wcerr << L"Usage: " << argv[0] << L"--taskpool" << std::endl;

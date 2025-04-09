@@ -18,12 +18,6 @@
     <ClCompile Include="taskpool.vtl0.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="callbacks.vtl0.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="exports.vtl0.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="enclave_api.vtl0.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -31,6 +25,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="logger.vtl0.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="vtl0_functions.vtl0.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -42,12 +39,6 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="taskpool.vtl0.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="exports.vtl0.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="callbacks.vtl0.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="utils.vtl0.h">

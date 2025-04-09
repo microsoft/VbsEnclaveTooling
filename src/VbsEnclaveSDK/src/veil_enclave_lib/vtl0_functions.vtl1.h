@@ -3,74 +3,44 @@
 
 #pragma once
 
-#include <array>
 #include <string>
 
 #include "wil/stl.h"
 
 #include "utils.vtl1.h"
-#include "registered_callbacks.vtl1.h"
 
+namespace veil::vtl1::implementation::vtl0_functions::callouts
+{
+    HRESULT printf_callback(_In_ const std::string& str);
+    HRESULT wprintf_callback(_In_ const std::wstring& str);
+}
 
 namespace veil::vtl1::vtl0_functions
 {
-    // todo: stand-in type until tooling+marshalling code is online
-    //  <This is ** not ** a smart pointer>
-    struct VTL0_PTR
-    {
-        VTL0_PTR(void* memory)
-            : m_dangerous(memory)
-        {
-        }
-
-        void* m_dangerous;
-    };
-
-    inline VTL0_PTR malloc(size_t size)
-    {
-        // TODO:Branden security-todo
-        // 
-        // Ensure malloc implements all relevant vulnerabilities handled by OpenEnclave.
-        // i.e. 8-byte alignment to prevent 'Processor MMIO Stale Data Vulnerabilities'
-        // that propagate stale data into core fill buffers.  It may be that they don't
-        // apply to software enclaves.
-        // 
-        // See here:
-        //  https://github.com/openenclave/openenclave/blob/master/docs/GettingStartedDocs/SecurityGuideForMMIOVulnerabilities.md
-        //  https://docs.kernel.org/admin-guide/hw-vuln/processor_mmio_stale_data.html
-        //  https://www.intel.com/content/www/us/en/developer/articles/technical/software-security-guidance/technical-documentation/processor-mmio-stale-data-vulnerabilities.html
-
-        void* output;
-        auto malloc = veil::vtl1::implementation::get_callback(veil::implementation::callback_id::malloc);
-        THROW_IF_WIN32_BOOL_FALSE(::CallEnclave(malloc, reinterpret_cast<void*>(size), TRUE, reinterpret_cast<void**>(&output)));
-        return { output };
-    }
-
-    inline void free(void* memory) noexcept
-    {
-        void* output;
-        auto free = veil::vtl1::implementation::get_callback(veil::implementation::callback_id::free);
-        LOG_IF_WIN32_BOOL_FALSE(::CallEnclave(free, reinterpret_cast<void*>(memory), TRUE, reinterpret_cast<void**>(&output)));
-        LOG_IF_FAILED(pvoid_to_hr(output));
-    }
-
     namespace details
     {
-        template <typename T>
-        struct string_traits;
+        // printf_callout
+        template <typename string_type>
+        struct printf_callout;
 
         template <>
-        struct string_traits<std::string>
+        struct printf_callout<std::string>
         {
-            static inline char nul_char = '\0';
-            static inline veil::implementation::callback_id callback_id = veil::implementation::callback_id::printf;
+            template <typename... Args>
+            static void call(const std::string& str)
+            {
+                THROW_IF_FAILED(veil::vtl1::implementation::vtl0_functions::callouts::printf_callback(str));
+            }
         };
 
         template <>
-        struct string_traits<std::wstring>
+        struct printf_callout<std::wstring>
         {
-            static inline wchar_t nul_char = L'\0';
-            static inline veil::implementation::callback_id callback_id = veil::implementation::callback_id::wprintf;
+            template <typename... Args>
+            static void call(const std::wstring& str)
+            {
+                THROW_IF_FAILED(veil::vtl1::implementation::vtl0_functions::callouts::wprintf_callback(str));
+            }
         };
 
         // StringCchPrintf
@@ -117,23 +87,7 @@ namespace veil::vtl1::vtl0_functions
             if (veil::vtl1::is_enclave_full_debug_enabled())
             {
                 auto str = details::format_string<string_type>::call(formatString, std::forward<Ts>(args)...);
-
-                void* output{};
-
-                size_t len = str.size();
-                size_t cbBuffer = (len + 1) * sizeof(string_type::value_type);
-
-                auto allocation = veil::vtl1::vtl0_functions::malloc(cbBuffer);
-                THROW_IF_NULL_ALLOC(allocation.m_dangerous);
-
-                auto buffer = reinterpret_cast<string_type::value_type*>(allocation.m_dangerous);
-
-                memcpy(buffer, str.c_str(), cbBuffer);
-                buffer[len] = string_traits<string_type>::nul_char;
-
-                auto funcPrintf = veil::vtl1::implementation::get_callback(string_traits<string_type>::callback_id);
-                THROW_IF_WIN32_BOOL_FALSE(::CallEnclave(funcPrintf, reinterpret_cast<void*>(buffer), TRUE, reinterpret_cast<void**>(&output)));
-                THROW_IF_FAILED(pvoid_to_hr(output));
+                details::printf_callout<string_type>::call(str);
             }
             else
             {

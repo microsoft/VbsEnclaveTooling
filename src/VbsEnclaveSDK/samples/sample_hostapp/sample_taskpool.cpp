@@ -7,7 +7,7 @@
 
 #include <enclave_api.vtl0.h>
 
-#include <sample_arguments.any.h>
+#include <VbsEnclave\HostApp\Stubs.h>
 
 namespace Samples::Taskpool
 {
@@ -31,10 +31,12 @@ namespace Samples::Taskpool
         // Register framework callbacks
         veil::vtl0::enclave_api::register_callbacks(enclave.get());
 
+        // Initialize enclave interface
+        auto enclaveInterface = sample_abi::VTL0_Stubs::export_interface(enclave.get());
+        THROW_IF_FAILED(enclaveInterface.RegisterVtl0Callbacks());
+
         // Call into enclave to 'RunTaskpoolExample' export
-        sample::args::RunTaskpoolExample data;
-        data.threadCount = THREAD_COUNT - 1;
-        THROW_IF_FAILED(veil::vtl0::enclave::call_enclave(enclave.get(), "RunTaskpoolExample", data));
+        enclaveInterface.RunTaskpoolExample(THREAD_COUNT - 1);
 
         std::wcout << L"Finished sample: Taskpool..." << std::endl;
     }

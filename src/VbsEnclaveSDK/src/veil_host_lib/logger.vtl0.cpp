@@ -3,29 +3,17 @@
 
 #include "pch.h"
 
-#include <format>
-
-#include <gsl/gsl_util>
-
-#include <sddl.h>
-
 #include "logger.vtl0.h"
-#include "utils.any.h"
+
+#include <VbsEnclave\HostApp\Stubs.h>
 
 namespace veil::vtl0::logger
 {
     std::mutex logMutex;
 }
 
-namespace simplified
+HRESULT veil_abi::VTL0_Stubs::export_interface::add_log_callback(_In_ const std::wstring& log, _In_ const std::wstring& log_file_path)
 {
-    static void add_log(veil::any::implementation::args::add_log* data)
-    {
-        veil::vtl0::logger::logger::AddTimestampedLog(data->log, data->logFilePath);
-    }
-}
-
-namespace veil::vtl0::implementation::callbacks
-{
-    VEIL_ABI_FUNCTION_SIMPLIFIED(add_log)
+    veil::vtl0::logger::logger::AddTimestampedLog(log, log_file_path);
+    return S_OK;
 }

@@ -8,19 +8,16 @@
 #include <wil/resource.h>
 #include <wil/token_helpers.h>
 
-#include "callbacks.vtl0.h"
 #include "enclave_api.vtl0.h"
-#include "exports.vtl0.h"
+
+#include <VbsEnclave\HostApp\Stubs.h>
 
 namespace veil::vtl0::enclave_api
 {
-    void unlock_for_app_user(void* enclave)
-    {
-        // todo
-    }
-
     void register_callbacks(void* enclave)
     {
-        THROW_IF_FAILED(veil::vtl0::exports::register_callbacks(enclave, veil::vtl0::implementation::callbacks::callback_addresses));
+        // Initialize enclave interface
+        auto enclaveInterface = veil_abi::VTL0_Stubs::export_interface(enclave);
+        THROW_IF_FAILED(enclaveInterface.RegisterVtl0Callbacks());
     }
 }

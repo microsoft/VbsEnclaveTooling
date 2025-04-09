@@ -3,28 +3,19 @@
 
 #pragma once
 
-#include <queue>
 #include <future>
 #include <mutex>
-#include <vector>
+#include <queue>
 #include <thread>
-
-#include "..\veil_any_inc\veil.any.h"
-#include "..\veil_any_inc\veil_arguments.any.h"
-
-#include "enclave_api.vtl0.h"
-#include "exports.vtl0.h"
+#include <vector>
 
 //
 // See taskpool.vtl1.h for usage.
 //
 
-namespace veil::vtl0::implementation::callbacks
+namespace veil::vtl0::implementation::callins
 {
-    void* taskpool_make(void* args) noexcept;
-    void* taskpool_delete(void* args) noexcept;
-    void* taskpool_schedule_task(void* args) noexcept;
-    void* taskpool_cancel_queued_tasks(void* args) noexcept;
+    HRESULT taskpool_run_task(_In_ void* enclave, _In_ const std::uint64_t taskpool_instance_vtl1, _In_ const std::uint64_t task_id);
 }
 
 namespace veil::vtl0::implementation
@@ -122,10 +113,7 @@ namespace veil::vtl0::implementation
 
                 // Run task
                 //      Signal VTL1 to run the task - this is a blocking call, even if there is no VTL1 thread ready
-                veil::any::implementation::args::taskpool_run_task data = {};
-                data.taskpoolInstanceVtl1 = m_taskpoolInstance_vtl1;
-                data.taskId = taskHandle;
-                THROW_IF_FAILED(veil::vtl0::enclave::implementation::call_enclave_function(m_enclave, veil::implementation::export_ordinals::taskpool_run_task, data));
+                THROW_IF_FAILED(veil::vtl0::implementation::callins::taskpool_run_task(m_enclave, m_taskpoolInstance_vtl1, taskHandle));
             }
         }
 

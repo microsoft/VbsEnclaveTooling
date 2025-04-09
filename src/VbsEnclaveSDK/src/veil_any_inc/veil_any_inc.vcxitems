@@ -17,8 +17,5 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="$(MSBuildThisFileDirectory)logger.any.h" />
-    <ClInclude Include="$(MSBuildThisFileDirectory)utils.any.h" />
-    <ClInclude Include="$(MSBuildThisFileDirectory)veil_arguments.any.h" />
-    <ClInclude Include="$(MSBuildThisFileDirectory)veil.any.h" />
   </ItemGroup>
 </Project>

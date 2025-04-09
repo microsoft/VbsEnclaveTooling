@@ -123,8 +123,21 @@ namespace CodeGeneration
 
             // Add the register callbacks abi function and combine the two streams
             // that contain the vtl0 public class methods.
+            std::string callbacks_name = std::format(
+                c_vtl1_register_callbacks_abi_export_name,
+                m_generated_namespace_name);
+
+            std::string callbacks_name_with_quotes = std::format("{}{}{}",
+                "\"",
+                callbacks_name,
+                "\"");
+
+            std::string vtl0_register_callbacks_abi_function = std::format(
+                c_vtl0_register_callbacks_abi_function,
+                callbacks_name_with_quotes);
+
             enclave_to_host_content.m_vtl0_class_public_content 
-                << c_vtl0_register_callbacks_abi_function
+                << vtl0_register_callbacks_abi_function
                 << host_to_enclave_content.m_vtl0_class_public_content.str();
 
             auto vtl0_class_header = CombineAndBuildHostAppEnclaveClass(

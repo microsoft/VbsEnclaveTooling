@@ -1,0 +1,11 @@
+// Copyright (c) Microsoft Corporation.
+// Licensed under the MIT License.
+
+enclave
+{
+    trusted
+    {
+        void RunTaskpoolExample(uint32_t thread_count);
+    };
+
+};

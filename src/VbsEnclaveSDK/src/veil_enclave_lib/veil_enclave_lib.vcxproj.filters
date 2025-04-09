@@ -18,19 +18,10 @@
     <ClInclude Include="pch.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="enclave_interface.vtl1.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="utils.vtl1.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="export_helpers.vtl1.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="taskpool.vtl1.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="exports.vtl1.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="future.vtl1.h">
@@ -40,12 +31,6 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="vtl0_functions.vtl1.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="registered_callbacks.vtl1.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="memory.vtl1.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="crypto.vtl1.h">
@@ -59,19 +44,13 @@
     <ClCompile Include="pch.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="export_helpers.vtl1.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="exports.vtl1.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="export_abi.vtl1.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="taskpool.vtl1.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="registered_callbacks.vtl1.cpp">
+    <ClCompile Include="logger.vtl1.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="vtl0_functions.vtl1.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

@@ -85,17 +85,17 @@ using namespace DeveloperTypes;\n\
 // START: DO NOT MODIFY: For internal abi usage
 namespace VbsEnclaveABI::Enclave::VTL0CallBackHelpers
 {{
-    LPENCLAVE_ROUTINE s_vtl0_allocation_function = nullptr;
-    LPENCLAVE_ROUTINE s_vtl0_deallocation_function = nullptr;
-    wil::srwlock s_vtl0_function_table_lock {{}};
-    bool s_are_functions_registered {{}};
-    std::unordered_map<std::uint32_t, std::uint64_t> s_vtl0_function_table{{}};
+    __declspec(selectany) LPENCLAVE_ROUTINE s_vtl0_allocation_function = nullptr;
+    __declspec(selectany) LPENCLAVE_ROUTINE s_vtl0_deallocation_function = nullptr;
+    __declspec(selectany) wil::srwlock s_vtl0_function_table_lock {{}};
+    __declspec(selectany) bool s_are_functions_registered {{}};
+    __declspec(selectany) std::unordered_map<std::uint32_t, std::uint64_t> s_vtl0_function_table{{}};
 }}
 namespace VbsEnclaveABI::Enclave::MemoryChecks
 {{
-    LPCVOID s_enclave_memory_begin = nullptr; // inclusive
-    LPCVOID s_enclave_memory_end = nullptr;   // exclusive
-    std::atomic<bool> s_memory_bounds_calculated = {{}};
+    __declspec(selectany) LPCVOID s_enclave_memory_begin = nullptr; // inclusive
+    __declspec(selectany) LPCVOID s_enclave_memory_end = nullptr;   // exclusive
+    __declspec(selectany) std::atomic<bool> s_memory_bounds_calculated = {{}};
 }}
 // END: DO NOT MODIFY: For internal abi usage
 namespace {}
@@ -325,66 +325,66 @@ R"(     {}_Generated_Stub
 
     static inline constexpr std::string_view c_vtl0_register_callbacks_abi_function = R"(
         HRESULT RegisterVtl0Callbacks()
-        {
+        {{
             auto lock = m_register_callbacks_lock.lock_exclusive();
 
             if (m_callbacks_registered)
-            {
+            {{
                 return S_OK;;
-            }
+            }}
 
-            FlatbuffersDevTypes::AbiRegisterVtl0Callbacks_argsT input {};
+            FlatbuffersDevTypes::AbiRegisterVtl0Callbacks_argsT input {{}};
             input.callbacks.resize(m_callbacks.size());
             std::copy(m_callbacks.begin(), m_callbacks.end(), input.callbacks.begin());
             flatbuffers::FlatBufferBuilder builder = PackFlatbuffer(input);
             using ReturnParamsT = FlatbuffersDevTypes::AbiRegisterVtl0Callbacks_argsT;
-            ReturnParamsT out_args {};
+            ReturnParamsT out_args {{}};
 
             HRESULT hr = CallVtl1ExportFromVtl0<ReturnParamsT>(
                 m_enclave,
-                c_register_callbacks_abi_name,
+                {},
                 builder,
                 out_args);
             RETURN_IF_FAILED(hr);
 
             if (SUCCEEDED(out_args.m__return_value_))
-            {
+            {{
                 m_callbacks_registered = true;
-            }
+            }}
 
             return out_args.m__return_value_;
-        }
+        }}
 )";
 
-    static inline constexpr std::string_view c_vtl1_register_callbacks_abi_export_name = "    __AbiRegisterVtl0Callbacks__";
+    static inline constexpr std::string_view c_vtl1_register_callbacks_abi_export_name = "__AbiRegisterVtl0Callbacks_{}__";
 
     static inline constexpr std::string_view c_vtl1_register_callbacks_abi_export = R"(
         void RegisterVtl0Callbacks(
             _In_ FlatbuffersDevTypes::AbiRegisterVtl0Callbacks_argsT in_params,
             _Inout_ flatbuffers::FlatBufferBuilder& flatbuffer_out_params_builder)
-        {
+        {{
             THROW_IF_FAILED(AddVtl0FunctionsToTable(in_params.callbacks));
 
-            FlatbuffersDevTypes::AbiRegisterVtl0Callbacks_argsT  result{};
+            FlatbuffersDevTypes::AbiRegisterVtl0Callbacks_argsT  result{{}};
             result.m__return_value_ = S_OK;
 
             flatbuffer_out_params_builder = PackFlatbuffer(result);
-        }
+        }}
 
-        void* CALLBACK __AbiRegisterVtl0Callbacks__(void* function_context)
+        void* CALLBACK {}(void* function_context)
         try
-        {
+        {{
             using ParamsT = FlatbuffersDevTypes::AbiRegisterVtl0Callbacks_argsT;
             HRESULT hr = CallVtl1ExportFromVtl1<ParamsT, decltype(RegisterVtl0Callbacks)>(function_context, RegisterVtl0Callbacks);
             LOG_IF_FAILED(hr);
             return ABI_HRESULT_TO_PVOID(hr);
-        }
+        }}
         catch (...)
-        {
+        {{
             HRESULT hr = wil::ResultFromCaughtException();
             LOG_IF_FAILED(hr);
             return ABI_HRESULT_TO_PVOID(hr);
-        }
+        }}
 )";
 
     static inline constexpr std::string_view c_vtl0_class_structure =

@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="..\..\packages\Microsoft.Windows.VbsEnclaveTooling.0.0.0\build\native\Microsoft.Windows.VbsEnclaveTooling.props" Condition="Exists('..\..\packages\Microsoft.Windows.VbsEnclaveTooling.0.0.0\build\native\Microsoft.Windows.VbsEnclaveTooling.props')" />
   <Import Project="$(SolutionDir)packages\MsGsl.3.1.0.2\build\native\MsGsl.props" Condition="Exists('$(SolutionDir)packages\MsGsl.3.1.0.2\build\native\MsGsl.props')" />
   <Import Project="$(SolutionDir)packages\Microsoft.Windows.SDK.BuildTools.10.0.26100.1742\build\Microsoft.Windows.SDK.BuildTools.props" Condition="Exists('$(SolutionDir)packages\Microsoft.Windows.SDK.BuildTools.10.0.26100.1742\build\Microsoft.Windows.SDK.BuildTools.props')" />
   <Import Project="$(SolutionDir)packages\Microsoft.Windows.SDK.CPP.x64.10.0.26100.2454\build\native\Microsoft.Windows.SDK.cpp.x64.props" Condition="Exists('$(SolutionDir)packages\Microsoft.Windows.SDK.CPP.x64.10.0.26100.2454\build\native\Microsoft.Windows.SDK.cpp.x64.props')" />
@@ -34,6 +35,7 @@
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <Import Project="$(ProjectDir)..\..\veil_abi.props" />
   <ImportGroup Label="Shared">
     <Import Project="..\veil_any_inc\veil_any_inc.vcxitems" Label="Shared" />
   </ImportGroup>
@@ -47,6 +49,7 @@
   </PropertyGroup>
   <ImportGroup Label="Shared">
     <Import Project="$(SolutionDir)packages\Microsoft.Windows.ImplementationLibrary.1.0.240803.1\build\native\Microsoft.Windows.ImplementationLibrary.targets" Condition="Exists('$(SolutionDir)packages\Microsoft.Windows.ImplementationLibrary.1.0.240803.1\build\native\Microsoft.Windows.ImplementationLibrary.targets')" />
+    <Import Project="..\..\packages\Microsoft.Windows.VbsEnclaveTooling.0.0.0\build\native\Microsoft.Windows.VbsEnclaveTooling.targets" Condition="Exists('..\..\packages\Microsoft.Windows.VbsEnclaveTooling.0.0.0\build\native\Microsoft.Windows.VbsEnclaveTooling.targets')" />
   </ImportGroup>
   <PropertyGroup>
     <WindowsSDK_LibraryPath_Platform>$(WindowsSDKLibDir)\um\$(Platform)</WindowsSDK_LibraryPath_Platform>
@@ -63,6 +66,11 @@
     <VEIIDExeFullPath>$(WindowsSDKBuildToolsBinVersionedArchFolder)\veiid.exe</VEIIDExeFullPath>
     <VEIID_Command>$(VEIIDExeFullPath) "$(OutDir)$(TargetName)$(TargetExt)"</VEIID_Command>
   </PropertyGroup>
+  <PropertyGroup>
+    <VbsEnclaveVirtualTrustLayer>Enclave</VbsEnclaveVirtualTrustLayer>
+    <VbsEnclaveIncludeSdk>false</VbsEnclaveIncludeSdk>
+    <VbsEnclaveSkipCodegen>false</VbsEnclaveSkipCodegen>
+  </PropertyGroup>
   <!-- Undocked UCRT configuration. -->
   <PropertyGroup>
     <UndockedSettingsLoaded>True</UndockedSettingsLoaded>
@@ -71,13 +79,13 @@
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)'=='Debug'">
     <ClCompile>
-      <PreprocessorDefinitions>_DEBUG;CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>__ENCLAVE_PROJECT__;_DEBUG;CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
     </ClCompile>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)'=='Release'">
     <ClCompile>
-      <PreprocessorDefinitions>NDEBUG;CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>__ENCLAVE_PROJECT__;NDEBUG;CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
     </ClCompile>
   </ItemDefinitionGroup>
@@ -91,7 +99,7 @@
       <BasicRuntimeChecks>Default</BasicRuntimeChecks>
       <LanguageStandard_C>stdc17</LanguageStandard_C>
       <RuntimeTypeInfo>false</RuntimeTypeInfo>
-      <PrecompiledHeader>Use</PrecompiledHeader>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
       <AdditionalIncludeDirectories>$(WindowsSdk_EnclaveIncludes_Path)\um;$(WindowsSdk_EnclaveIncludes_Path)\shared;$(WindowsSdk_EnclaveIncludes_Path)\ucrt;$(SolutionDir)..\..\Common\veil_enclave_wil_inc;$(MSBUILDThisFileDirectory)..\veil_enclave_inc;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp20</LanguageStandard>
@@ -111,32 +119,25 @@
       <Command>$(VEIID_Command)</Command>
       -->
     </PostBuildEvent>
+    <Lib />
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="crypto.vtl1.h" />
-    <ClInclude Include="export_helpers.vtl1.h" />
-    <ClInclude Include="enclave_interface.vtl1.h" />
-    <ClInclude Include="exports.vtl1.h" />
     <ClInclude Include="future.vtl1.h" />
-    <ClInclude Include="memory.vtl1.h" />
-    <ClInclude Include="ngc.vtl1.h" />
     <ClInclude Include="object_table.vtl1.h" />
     <ClInclude Include="logger.vtl1.h" />
     <ClInclude Include="vtl0_functions.vtl1.h" />
     <ClInclude Include="pch.h" />
-    <ClInclude Include="registered_callbacks.vtl1.h" />
     <ClInclude Include="taskpool.vtl1.h" />
     <ClInclude Include="utils.vtl1.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="export_abi.vtl1.cpp" />
-    <ClCompile Include="export_helpers.vtl1.cpp" />
-    <ClCompile Include="exports.vtl1.cpp" />
+    <ClCompile Include="logger.vtl1.cpp" />
     <ClCompile Include="pch.cpp">
       <PrecompiledHeader>Create</PrecompiledHeader>
     </ClCompile>
-    <ClCompile Include="registered_callbacks.vtl1.cpp" />
     <ClCompile Include="taskpool.vtl1.cpp" />
+    <ClCompile Include="vtl0_functions.vtl1.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ItemGroup>
@@ -158,5 +159,7 @@
     <Error Condition="!Exists('$(SolutionDir)packages\Microsoft.Windows.SDK.BuildTools.10.0.26100.1742\build\Microsoft.Windows.SDK.BuildTools.props')" Text="$([System.String]::Format('$(ErrorText)', '$(SolutionDir)packages\Microsoft.Windows.SDK.BuildTools.10.0.26100.1742\build\Microsoft.Windows.SDK.BuildTools.props'))" />
     <Error Condition="!Exists('$(SolutionDir)packages\Microsoft.Windows.SDK.BuildTools.10.0.26100.1742\build\Microsoft.Windows.SDK.BuildTools.targets')" Text="$([System.String]::Format('$(ErrorText)', '$(SolutionDir)packages\Microsoft.Windows.SDK.BuildTools.10.0.26100.1742\build\Microsoft.Windows.SDK.BuildTools.targets'))" />
     <Error Condition="!Exists('$(SolutionDir)packages\MsGsl.3.1.0.2\build\native\MsGsl.props')" Text="$([System.String]::Format('$(ErrorText)', '$(SolutionDir)packages\MsGsl.3.1.0.2\build\native\MsGsl.props'))" />
+    <Error Condition="!Exists('..\..\packages\Microsoft.Windows.VbsEnclaveTooling.0.0.0\build\native\Microsoft.Windows.VbsEnclaveTooling.props')" Text="$([System.String]::Format('$(ErrorText)', '..\..\packages\Microsoft.Windows.VbsEnclaveTooling.0.0.0\build\native\Microsoft.Windows.VbsEnclaveTooling.props'))" />
+    <Error Condition="!Exists('..\..\packages\Microsoft.Windows.VbsEnclaveTooling.0.0.0\build\native\Microsoft.Windows.VbsEnclaveTooling.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\..\packages\Microsoft.Windows.VbsEnclaveTooling.0.0.0\build\native\Microsoft.Windows.VbsEnclaveTooling.targets'))" />
   </Target>
 </Project>
