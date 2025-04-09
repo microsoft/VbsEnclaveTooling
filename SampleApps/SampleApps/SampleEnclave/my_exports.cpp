@@ -415,72 +415,108 @@ catch (...)
     RETURN_HR_AS_PVOID(wil::ResultFromCaughtException());
 }
 
-bool RunHelloSecuredEncryptionKeyExample_LoadEncryptionKeyImpl(_In_ sample::args::RunHelloSecuredEncryptionKeyExample_LoadEncryptionKey* data)
+bool RunHelloSecuredEncryptionKeyExample_LoadEncryptionKeyImpl(
+   _In_ sample::args::RunHelloSecuredEncryptionKeyExample_LoadEncryptionKey* data,
+   _In_ bool calledFromThreadpool = false,
+   _In_ std::wstring logPrefix = L"",
+   _Out_ veil::any::args::data_blob* encryptedInputBytes = nullptr,
+   _Out_ veil::any::args::data_blob* encryptionTag = nullptr,
+   _Out_ veil::any::args::data_blob* decryptedInputBytes = nullptr)
 {
-    using namespace veil::vtl1::vtl0_functions;
-    const bool requireEnclaveOwnerIdMatchesHelloContainerSecureId = false;
+   using namespace veil::vtl1::vtl0_functions;
+   const bool requireEnclaveOwnerIdMatchesHelloContainerSecureId = false;
 
-    veil::vtl1::logger::implementation::add_log_from_enclave(
-        L"[Enclave] In RunHelloSecuredEncryptionKeyExample_LoadEncryptionKeyImpl",
-        veil::any::logger::eventLevel::EVENT_LEVEL_CRITICAL,
-        data->activityLevel,
-        data->logFilePath);
-    
-    debug_print("");
-    debug_print(L"[Load flow]");
-    debug_print("");
+   veil::vtl1::logger::implementation::add_log_from_enclave(
+       L"[Enclave] In RunHelloSecuredEncryptionKeyExample_LoadEncryptionKeyImpl",
+       veil::any::logger::eventLevel::EVENT_LEVEL_CRITICAL,
+       data->activityLevel,
+       data->logFilePath);
 
-    debug_print(L"1. Unsealing our encryption key (only our enclave can succeed this operation)");
-    auto [unsealedBytes, unsealingFlags] = veil::vtl1::crypto::unseal_data(data->securedEncryptionKeyBytes);
-    debug_print(L" ...CHECKPOINT: unsealed byte count: = %d", unsealedBytes.size());
-    debug_print("");
-    
-    // Arbitrary metadata that must match what's encoded in the serialized key blob
-    std::wstring expectedCustomData = L"usage=for_decryption";
+   debug_print("%ws", logPrefix.c_str());
+   debug_print("");
+   debug_print(L"[Load flow]");
+   debug_print("");
 
-    // Decrypt the encryption key
-    debug_print(L"2. Unsecuring our encryption key with Hello");
-    auto encryptionKey = veil::vtl1::hello::reveal_encryption_key_with_hello(unsealedBytes, veil::vtl1::as_data_span(expectedCustomData), requireEnclaveOwnerIdMatchesHelloContainerSecureId);
-    debug_print(L" ...CHECKPOINT: encryption key handle: = %d", encryptionKey.get());
-    debug_print("");
+   debug_print("%ws", logPrefix.c_str());
+   debug_print(L"1. Unsealing our encryption key (only our enclave can succeed this operation)");
+   auto [unsealedBytes, unsealingFlags] = veil::vtl1::crypto::unseal_data(data->securedEncryptionKeyBytes);
+   debug_print("%ws", logPrefix.c_str());
+   debug_print(L" ...CHECKPOINT: unsealed byte count: = %d", unsealedBytes.size());
+   debug_print("");
+   
+   // Arbitrary metadata that must match what's encoded in the serialized key blob
+   std::wstring expectedCustomData = L"usage=for_decryption";
 
-    if (data->isToBeEncrypted)
-    {
-        //
-        // Now let's encrypt the input data with our encryption key
-        //
+   // Decrypt the encryption key
+   debug_print("%ws", logPrefix.c_str());
+   debug_print(L"2. Unsecuring our encryption key with Hello");
+   auto encryptionKey = veil::vtl1::hello::reveal_encryption_key_with_hello(unsealedBytes, veil::vtl1::as_data_span(expectedCustomData), requireEnclaveOwnerIdMatchesHelloContainerSecureId);
+   debug_print("%ws", logPrefix.c_str());
+   debug_print(L" ...CHECKPOINT: encryption key handle: = %d", encryptionKey.get());
+   debug_print("");
 
-        // Encrypting the user input data
-        auto const SOME_PLAIN_TEXT = data->dataToEncrypt.c_str();
+   if (data->isToBeEncrypted)
+   {
+       //
+       // Now let's encrypt the input data with our encryption key
+       //
 
-        // Let's encrypt the input text
-        debug_print(L"3. Encrypting input text.");
-        auto [encryptedText, tag] = veil::vtl1::crypto::encrypt(encryptionKey.get(), veil::vtl1::as_data_span(SOME_PLAIN_TEXT), veil::vtl1::crypto::zero_nonce);
-        debug_print(L" ...CHECKPOINT: encrypted text's byte count: = %d", encryptedText.size());
-        debug_print("");
+       // Encrypting the user input data
+       auto const SOME_PLAIN_TEXT = data->dataToEncrypt.c_str();
 
-        // Return the encrypted input to vtl0 host caller...
-        auto buffer_vtl0 = veil::vtl1::memory::copy_to_vtl0_data_blob(&data->encryptedInputBytes, encryptedText);
-        buffer_vtl0.release();
+       // Let's encrypt the input text
+       debug_print("%ws", logPrefix.c_str());
+       debug_print(L"3. Encrypting input text.");
+       auto [encryptedText, tag] = veil::vtl1::crypto::encrypt(encryptionKey.get(), veil::vtl1::as_data_span(SOME_PLAIN_TEXT), veil::vtl1::crypto::zero_nonce);
+       debug_print("%ws", logPrefix.c_str());
+       debug_print(L" ...CHECKPOINT: encrypted text's byte count: = %d", encryptedText.size());
+       debug_print("");
 
-        auto buffer1_vtl0 = veil::vtl1::memory::copy_to_vtl0_data_blob(&data->tag, tag);
-        buffer1_vtl0.release();
-    }
-    else
-    {
-        // Let's decrypt the stored encrypted input
-        debug_print(L"4. Decrypting text...");
-        auto decryptedText = veil::vtl1::crypto::decrypt(encryptionKey.get(), data->encryptedInputBytes, veil::vtl1::crypto::zero_nonce, data->tag);
-        std::wstring decryptedString = veil::vtl1::to_wstring(decryptedText);
-        debug_print(L" ...CHECKPOINT: decrypted text: = %ws", decryptedString.c_str());
-        debug_print("");
+       if (!calledFromThreadpool)
+       {
+           // Return the encrypted input to vtl0 host caller...
+           auto buffer_vtl0 = veil::vtl1::memory::copy_to_vtl0_data_blob(&data->encryptedInputBytes, encryptedText);
+           buffer_vtl0.release();
 
-        // Return the decrypted input to vtl0 host caller...
-        auto buffer_vtl0 = veil::vtl1::memory::copy_to_vtl0_data_blob(&data->decryptedInputBytes, decryptedText);
-        buffer_vtl0.release();
-    }
+           auto buffer1_vtl0 = veil::vtl1::memory::copy_to_vtl0_data_blob(&data->tag, tag);
+           buffer1_vtl0.release();
+       }
+       else
+       {
+           // Return the encrypted input to vtl0 host caller...
+           auto buffer_vtl0 = veil::vtl1::memory::copy_to_vtl0_data_blob(encryptedInputBytes, encryptedText);
+           buffer_vtl0.release();
 
-    return true;
+           auto buffer1_vtl0 = veil::vtl1::memory::copy_to_vtl0_data_blob(encryptionTag, tag);
+           buffer1_vtl0.release();
+       }
+   }
+   else
+   {
+       // Let's decrypt the stored encrypted input
+       debug_print("%ws", logPrefix.c_str());
+       debug_print(L"4. Decrypting text...");
+       auto decryptedText = veil::vtl1::crypto::decrypt(encryptionKey.get(), data->encryptedInputBytes, veil::vtl1::crypto::zero_nonce, data->tag);
+       std::wstring decryptedString = veil::vtl1::to_wstring(decryptedText);
+       debug_print("%ws", logPrefix.c_str());
+       debug_print(L" ...CHECKPOINT: decrypted text: = %ws", decryptedString.c_str());
+       debug_print("");
+
+       if (!calledFromThreadpool)
+       {
+           // Return the decrypted input to vtl0 host caller...
+           auto buffer_vtl0 = veil::vtl1::memory::copy_to_vtl0_data_blob(&data->decryptedInputBytes, decryptedText);
+           buffer_vtl0.release();
+       }
+       else
+       {
+           // Return the decrypted input to vtl0 host caller...
+           auto buffer_vtl0 = veil::vtl1::memory::copy_to_vtl0_data_blob(decryptedInputBytes, decryptedText);
+           buffer_vtl0.release();
+       }
+   }
+
+   return true;
 }
 
 ENCLAVE_FUNCTION RunHelloSecuredEncryptionKeyExample_LoadEncryptionKey(_In_ PVOID pv) noexcept try
@@ -488,6 +524,119 @@ ENCLAVE_FUNCTION RunHelloSecuredEncryptionKeyExample_LoadEncryptionKey(_In_ PVOI
     auto data = reinterpret_cast<sample::args::RunHelloSecuredEncryptionKeyExample_LoadEncryptionKey*>(pv);
     if (!RunHelloSecuredEncryptionKeyExample_LoadEncryptionKeyImpl(data)) 
     { }
+    return nullptr;
+}
+catch (...)
+{
+    using namespace veil::vtl1::vtl0_functions;
+    auto error = veil::vtl1::implementation::export_helpers::get_back_thread_enclave_error(GetCurrentThreadId());
+    debug_print(error->wmessage);
+
+    LOG_CAUGHT_EXCEPTION();
+    RETURN_HR_AS_PVOID(wil::ResultFromCaughtException());
+}
+
+bool RunHelloSecuredEncryptionKeyExample_LoadEncryptionKeyThreadpoolImpl(_In_ sample::args::RunHelloSecuredEncryptionKeyExample_LoadEncryptionKeyThreadpool* data)
+{
+    using namespace veil::vtl1::vtl0_functions;
+    auto threadCount = 2;
+
+    debug_print(L"Creating taskpool with '%d' threads...", threadCount);
+
+    auto tasks = std::vector<veil::vtl1::future<void>>();
+
+    std::atomic<bool> ranLastTask = false;
+
+    // taskpool
+    {
+        auto taskpool = veil::vtl1::taskpool(threadCount, true);
+
+        // Use up all the threads
+        for (uint32_t i = 0; i < threadCount; i++)
+        {
+            auto task = taskpool.queue_task([=] ()
+            {
+                if (data->isToBeEncrypted)
+                {
+                    auto logPrefix = L"[THREAD " + std::to_wstring(i) + L"]";
+                    auto helloStr = logPrefix + L" Hello from encryption task.";
+                    debug_print(helloStr.c_str());
+                    sample::args::RunHelloSecuredEncryptionKeyExample_LoadEncryptionKey threadData;
+                    threadData.securedEncryptionKeyBytes.data = data->securedEncryptionKeyBytes.data;
+                    threadData.securedEncryptionKeyBytes.size = data->securedEncryptionKeyBytes.size;
+                    threadData.dataToEncrypt = (i == 0) ? data->dataToEncrypt1 : data->dataToEncrypt2;
+                    threadData.isToBeEncrypted = data->isToBeEncrypted;
+                    threadData.logFilePath = data->logFilePath;
+                    threadData.activityLevel = data->activityLevel;
+
+                    wil::secure_vector<uint8_t>* encryptedInputBytes = nullptr;
+                    std::array<uint8_t, 16Ui64>* encryptionTag = nullptr;
+
+                    if (!RunHelloSecuredEncryptionKeyExample_LoadEncryptionKeyImpl(
+                            &threadData, 
+                            true /* called from threadPool */,
+                            logPrefix,
+                            (i == 0) ? &data->encryptedInputBytes1 : &data->encryptedInputBytes2,
+                            (i == 0) ? &data->tag1 : &data->tag2))
+                    {}
+                }
+                else
+                {
+                    debug_print(L"hello from decryption task: %d", i);
+                    sample::args::RunHelloSecuredEncryptionKeyExample_LoadEncryptionKey threadData;
+                    threadData.securedEncryptionKeyBytes.data = data->securedEncryptionKeyBytes.data;
+                    threadData.securedEncryptionKeyBytes.size = data->securedEncryptionKeyBytes.size;
+                    threadData.encryptedInputBytes.data = (i == 0) ? data->encryptedInputBytes1.data : data->encryptedInputBytes2.data;
+                    threadData.encryptedInputBytes.size = (i == 0) ? data->encryptedInputBytes1.size : data->encryptedInputBytes2.size;
+                    threadData.isToBeEncrypted = data->isToBeEncrypted;
+                    threadData.tag.data = (i == 0) ? data->tag1.data : data->tag2.data;
+                    threadData.tag.size = (i == 0) ? data->tag1.size : data->tag2.size;
+                    threadData.logFilePath = data->logFilePath;
+                    threadData.activityLevel = data->activityLevel;
+
+                    wil::secure_vector<uint8_t>* decryptedInputBytes = nullptr;
+
+                    if (!RunHelloSecuredEncryptionKeyExample_LoadEncryptionKeyImpl(
+                            &threadData,
+                            true /* called from threadPool */, 
+                            L"[THREAD " + std::to_wstring(i) + L"]",
+                            nullptr /* encryptedInputBytes- not used */,
+                            nullptr /* encryptionTag- not used */,
+                            (i == 0) ? &data->decryptedInputBytes1 : &data->decryptedInputBytes2))
+                    {
+                    }
+                }
+            });
+            tasks.push_back(std::move(task));
+        }
+
+        auto task = taskpool.queue_task([&ranLastTask] ()
+        {
+            ranLastTask = true;
+            debug_print(L"...you SHOULD see this message...");
+        });
+        tasks.push_back(std::move(task));
+
+        debug_print(L"Waiting for taskpool to destruct...");
+    }
+
+    if (!ranLastTask)
+    {
+        debug_print(L"ERROR: Taskpool destructed before all tasks finished.");
+    }
+    else
+    {
+        debug_print(L"SUCCESS: Taskpool destructed after all tasks finished.");
+    }
+
+    return true;
+}
+
+ENCLAVE_FUNCTION RunHelloSecuredEncryptionKeyExample_LoadEncryptionKeyThreadpool(_In_ PVOID pv) noexcept try
+{
+    auto data = reinterpret_cast<sample::args::RunHelloSecuredEncryptionKeyExample_LoadEncryptionKeyThreadpool*>(pv);
+    if (!RunHelloSecuredEncryptionKeyExample_LoadEncryptionKeyThreadpoolImpl(data))
+    {}
     return nullptr;
 }
 catch (...)
