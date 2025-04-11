@@ -16,7 +16,7 @@ try
 {
     if (argc != 2)
     {
-        std::wcerr << L"Usage: " << argv[0] << L"--taskpool | --hello " << std::endl;
+        std::wcerr << L"Usage: " << argv[0] << L"--taskpool" << std::endl;
         THROW_HR(E_INVALIDARG);
     }
 
@@ -26,13 +26,9 @@ try
     {
         Samples::Taskpool::main();
     }
-    else if (arg == L"--hello")
-    {
-        Samples::HelloSecuredEncryptionKey::main();
-    }
     else
     {
-        std::wcerr << L"Invalid argument. Use --taskpool or --hello." << std::endl;
+        std::wcerr << L"Invalid argument. Use --taskpool." << std::endl;
         THROW_HR(E_INVALIDARG);
     }
 

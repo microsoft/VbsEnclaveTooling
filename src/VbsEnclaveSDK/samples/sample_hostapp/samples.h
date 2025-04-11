@@ -7,8 +7,3 @@ namespace Samples::Taskpool
 {
     void main();
 }
-
-namespace Samples::HelloSecuredEncryptionKey
-{
-    void main();
-}

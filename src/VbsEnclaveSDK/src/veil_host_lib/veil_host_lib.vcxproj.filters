@@ -30,10 +30,7 @@
     <ClCompile Include="utils.vtl0.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="hello.vtl0.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="telemetry.vtl0.cpp">
+    <ClCompile Include="logger.vtl0.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -56,10 +53,7 @@
     <ClInclude Include="utils.vtl0.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="hello.vtl0.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="telemetry.vtl0.h">
+    <ClInclude Include="logger.vtl0.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

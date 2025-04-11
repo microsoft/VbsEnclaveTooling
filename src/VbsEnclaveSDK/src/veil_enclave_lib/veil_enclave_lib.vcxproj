@@ -118,7 +118,6 @@
     <ClInclude Include="enclave_interface.vtl1.h" />
     <ClInclude Include="exports.vtl1.h" />
     <ClInclude Include="future.vtl1.h" />
-    <ClInclude Include="hello.vtl1.h" />
     <ClInclude Include="memory.vtl1.h" />
     <ClInclude Include="ngc.vtl1.h" />
     <ClInclude Include="object_table.vtl1.h" />

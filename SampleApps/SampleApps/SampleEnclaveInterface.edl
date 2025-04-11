@@ -8,14 +8,13 @@ enclave
     {
         HRESULT RunTaskpoolExample(uint32_t thread_count);
         
-        HRESULT RunHelloSecuredEncryptionKeyExample_CreateEncryptionKey(
-            wstring hello_key_name,
+        HRESULT RunEncryptionKeyExample_CreateEncryptionKey(
             uint32_t activity_level,
             wstring log_file_path,
             [out] vector<uint8_t> secured_encryption_key_bytes
             );
 
-        HRESULT RunHelloSecuredEncryptionKeyExample_LoadEncryptionKey(
+        HRESULT RunEncryptionKeyExample_LoadEncryptionKey(
             vector<uint8_t> secured_encryption_key_bytes,
             wstring data_to_encrypt,
             bool is_to_be_encrypted, // Controls if the Load flow is used for encryption or decryption
@@ -27,7 +26,7 @@ enclave
             [out] wstring decrypted_input_bytes
             );
 
-        HRESULT RunHelloSecuredEncryptionKeyExample_LoadEncryptionKeyThreadpool(
+        HRESULT RunEncryptionKeyExample_LoadEncryptionKeyThreadpool(
             vector<uint8_t> secured_encryption_key_bytes,
             wstring data_to_encrypt_1,
             wstring data_to_encrypt_2,

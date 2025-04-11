@@ -24,15 +24,15 @@
     <ClCompile Include="pch.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="sample_helloSecuredEncryptionKey.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="samples.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="sample_utils.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

@@ -12,8 +12,6 @@
 #include "logger.vtl0.h"
 #include "utils.any.h"
 
-#include "hello.vtl0.h"
-
 namespace veil::vtl0::logger
 {
     std::mutex logMutex;

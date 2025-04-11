@@ -48,16 +48,10 @@
     <ClInclude Include="memory.vtl1.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="hello.vtl1.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="crypto.vtl1.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="ngc.vtl1.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="telemetry.vtl1.h">
+    <ClInclude Include="logger.vtl1.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

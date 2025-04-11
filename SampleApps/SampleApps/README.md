@@ -1,4 +1,4 @@
-Running the sample host app, encrypt and decrypt data in enclave
+Running the sample host app
 ======================================================================
 
 Steps
@@ -7,8 +7,6 @@ Steps
 1. Running in a VM using Visual Studio
 	- Create a VM, turn on Windows Security -> Device Security -> Core Isolation -> Memory integrity. Restart the VM. 
 You would be running your app here.
-	- Set up Accounts -> Sign-in options -> Windows Hello PIN. Make sure you are in a Basic session, otherwise Windows 
-Hello settings are not available.
 	- Please make sure you have Microsoft.Windows.SDK.cpp version 10.0.26100.2454 installed on your host machine where 
 you would be building code. You may have to downgrade your SDK version if needed.
 	- Install Visual Studio Remote Debugger in your VM. 
@@ -62,21 +60,6 @@ Steps
 
     // Register framework callbacks
     veil::vtl0::enclave_api::register_callbacks(enclave.get());
-
-	- Encrypt flow:
-		- Call into Enclave to create an encryption key. Encrytion key will be Windows Hello encrypted and sealed by the
- enclave, can only be unsealed by the same enclave and decrypted by Windows Hello.
-		  veil::vtl0::enclave::call_enclave(enclave, "RunHelloSecuredEncryptionKeyExample_CreateEncryptionKey", data);
-		- Write the Hello encrypted, enclave sealed encryption key bytes received from the Enclave to a file on disk.
-		- Pass the encryption key bytes and the input to be encrypted into the Enclave for encryption
-		  veil::vtl0::enclave::call_enclave(enclave, "RunHelloSecuredEncryptionKeyExample_LoadEncryptionKey", loadData);
-		- Write the encrypted data back to a file on disk.  
-		  
-	- Decrpyt flow:
-		- Load the encryption key bytes and encryted data bytes from disk.
-		- Pass the encrypted key and the data to be decrypted in the Enclave.
-		  veil::vtl0::enclave::call_enclave(enclave, "RunHelloSecuredEncryptionKeyExample_LoadEncryptionKey", data);
-		- Decrypted data is passed back to the host app.
 		  
 1. Create enclave dll- SampleEnclave.dll
 
@@ -88,17 +71,6 @@ dll).
 https://learn.microsoft.com/en-us/windows/win32/trusted-execution/vbs-enclaves-dev-guide#:~:text=Before%20we%20can%2
 0build%20the%20test%20enclave%20DLL%2C%20some%20changes%20to%20the%20compiler%20and%20linker%20configurations%20are%
 20required%3A
-		
-	- Implement RunHelloSecuredEncryptionKeyExample_CreateEncryptionKey
-		- Create a hello key for the root of our Hello-secured encryption key
-		- Generate an encryption key
-		- Secure our encryption key with Hello
-		- Seal encryption key so only our enclave may open it
-		- Return the secured encryption key to vtl0 host caller
-	- Implement RunHelloSecuredEncryptionKeyExample_LoadEncryptionKey
-		- Unseal the encrypted encryption key bytes received from the host
-		- Decrypt the encryption key using Windows Hello
-		- Use the encryption key to encrypt/decrypt input data.
 
 1. Telemetry support
 

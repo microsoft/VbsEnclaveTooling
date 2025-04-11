@@ -20,19 +20,9 @@
 
 namespace fs = std::filesystem;
 
-std::wstring FormatUserHelloKeyName(PCWSTR name)
-{
-    static constexpr wchar_t c_formatString[] = L"//{}//{}";
-    wil::unique_hlocal_string userSidString;
-    THROW_IF_WIN32_BOOL_FALSE(ConvertSidToStringSid(wil::get_token_information<TOKEN_USER>()->User.Sid, &userSidString));
-
-    return std::format(c_formatString, userSidString.get(), name);
-}
-
 int EncryptFlow(
     void* enclave, 
     const std::wstring& input, 
-    PCWSTR keyMoniker, 
     const std::filesystem::path& keyFilePath,
     const std::filesystem::path& encryptedInputFilePath,
     const std::filesystem::path& tagFilePath,
@@ -41,11 +31,8 @@ int EncryptFlow(
     //
     // [Create flow]
     // 
-    //  Generate hello-secured key in enclave, then pass the encrypted key bytes to vtl0
+    //  Generate secured key in enclave, then pass the encrypted key bytes to vtl0
     //
-    
-    // Name of a hello key that will be the "root" of our encryption ancestry
-    auto helloKeyName = FormatUserHelloKeyName(keyMoniker);
 
     // Initialize enclave interface
     auto enclaveInterface = VbsEnclave::VTL0_Stubs::SampleEnclave(enclave);
@@ -53,21 +40,17 @@ int EncryptFlow(
 
     // Call into enclave
     auto securedEncryptionKeyBytes = std::vector<uint8_t>{};
-    THROW_IF_FAILED(enclaveInterface.RunHelloSecuredEncryptionKeyExample_CreateEncryptionKey(
-        helloKeyName,
+    THROW_IF_FAILED(enclaveInterface.RunEncryptionKeyExample_CreateEncryptionKey(
         (const uint32_t)veilLog.GetLogLevel(),
         veilLog.GetLogFilePath(),
         securedEncryptionKeyBytes
     ));
 
-    // We now have our encryption key's bytes, which are "hello-secured" and sealed!
+    // We now have our encryption key's bytes, which are sealed!
     //
-    //  Meaning of "hello-secured" and sealed:
-    //      1. Our encryption key is encrypted by a 'KEK' key (*not persisted anywhere*) that
-    //          can only be re-materialized my NGC if user enters their Hello PIN or biometric auth
-    //          ('proof of presence').
+    //  Meaning of sealed:
     //
-    //      2. Our encryption key is sealed by the enclave (i.e. can only be unsealed
+    //      1. Our encryption key is sealed by the enclave (i.e. can only be unsealed
     //          by the sealing-enclave or an enclave signed with compatible signature).
 
     // Save securedEncryptionKeyBytes to disk
@@ -84,7 +67,7 @@ int EncryptFlow(
     auto encryptedInputBytes = std::vector<uint8_t>{};
     auto tag = std::vector<uint8_t>{};
     auto decryptedData = std::wstring{};
-    THROW_IF_FAILED(enclaveInterface.RunHelloSecuredEncryptionKeyExample_LoadEncryptionKey(
+    THROW_IF_FAILED(enclaveInterface.RunEncryptionKeyExample_LoadEncryptionKey(
         securedEncryptionKeyBytes,
         input,
         true,
@@ -108,7 +91,6 @@ int EncryptFlow(
 
 int DecryptFlow(
     void* enclave,
-    PCWSTR keyMoniker,
     const std::filesystem::path& keyFilePath,
     const std::filesystem::path& encryptedInputFilePath,
     const std::filesystem::path& tagFilePath,
@@ -132,7 +114,7 @@ int DecryptFlow(
     // Call into enclave
     auto resealedEncryptionKeyBytes = std::vector<uint8_t>{};
     auto decryptedData = std::wstring{};
-    THROW_IF_FAILED(enclaveInterface.RunHelloSecuredEncryptionKeyExample_LoadEncryptionKey(
+    THROW_IF_FAILED(enclaveInterface.RunEncryptionKeyExample_LoadEncryptionKey(
         securedEncryptionKeyBytes,
         {},
         false,
@@ -159,7 +141,6 @@ int EncryptFlowThreadpool(
     void* enclave,
     const std::wstring& input1,
     const std::wstring& input2,
-    PCWSTR keyMoniker,
     const std::filesystem::path& keyFilePath,
     const std::filesystem::path& encryptedInputFilePath,
     const std::filesystem::path& tagFilePath,
@@ -168,11 +149,8 @@ int EncryptFlowThreadpool(
     //
     // [Create flow]
     // 
-    //  Generate hello-secured key in enclave, then pass the encrypted key bytes to vtl0
+    //  Generate secured key in enclave, then pass the encrypted key bytes to vtl0
     //
-
-    // Name of a hello key that will be the "root" of our encryption ancestry
-    auto helloKeyName = FormatUserHelloKeyName(keyMoniker);
 
     // Initialize enclave interface
     auto enclaveInterface = VbsEnclave::VTL0_Stubs::SampleEnclave(enclave);
@@ -180,21 +158,17 @@ int EncryptFlowThreadpool(
 
     // Call into enclave
     auto securedEncryptionKeyBytes = std::vector<uint8_t> {};
-    THROW_IF_FAILED(enclaveInterface.RunHelloSecuredEncryptionKeyExample_CreateEncryptionKey(
-        helloKeyName,
+    THROW_IF_FAILED(enclaveInterface.RunEncryptionKeyExample_CreateEncryptionKey(
         (const uint32_t)veilLog.GetLogLevel(),
         veilLog.GetLogFilePath(),
         securedEncryptionKeyBytes
     ));
 
-    // We now have our encryption key's bytes, which are "hello-secured" and sealed!
+    // We now have our encryption key's bytes, which are sealed!
     //
-    //  Meaning of "hello-secured" and sealed:
-    //      1. Our encryption key is encrypted by a 'KEK' key (*not persisted anywhere*) that
-    //          can only be re-materialized my NGC if user enters their Hello PIN or biometric auth
-    //          ('proof of presence').
+    //  Meaning of sealed:
     //
-    //      2. Our encryption key is sealed by the enclave (i.e. can only be unsealed
+    //      1. Our encryption key is sealed by the enclave (i.e. can only be unsealed
     //          by the sealing-enclave or an enclave signed with compatible signature).
 
     // Save securedEncryptionKeyBytes to disk
@@ -214,7 +188,7 @@ int EncryptFlowThreadpool(
     auto tag2 = std::vector<uint8_t> {};
     auto decryptedInputBytes1 = std::wstring {};
     auto decryptedInputBytes2 = std::wstring {};
-    THROW_IF_FAILED(enclaveInterface.RunHelloSecuredEncryptionKeyExample_LoadEncryptionKeyThreadpool(
+    THROW_IF_FAILED(enclaveInterface.RunEncryptionKeyExample_LoadEncryptionKeyThreadpool(
         securedEncryptionKeyBytes,
         input1,
         input2,
@@ -270,7 +244,7 @@ int DecryptFlowThreadpool(
     auto resealedEncryptionKeyBytes = std::vector<uint8_t> {};
     auto decryptedInputBytes1 = std::wstring {};
     auto decryptedInputBytes2 = std::wstring {};
-    THROW_IF_FAILED(enclaveInterface.RunHelloSecuredEncryptionKeyExample_LoadEncryptionKeyThreadpool(
+    THROW_IF_FAILED(enclaveInterface.RunEncryptionKeyExample_LoadEncryptionKeyThreadpool(
         securedEncryptionKeyBytes,
         {},
         {},
@@ -331,9 +305,9 @@ int mainEncryptDecrpyt(uint32_t activityLevel)
     // Register framework callbacks
     veil::vtl0::enclave_api::register_callbacks(enclave.get());
 
-    constexpr PCWSTR keyMoniker = L"MyHelloKey-001";
+    constexpr PCWSTR keyMoniker = L"MyEncryptionKey-001";
 
-    // File with hello-secured encryption key bytes
+    // File with secured encryption key bytes
     auto keyFilePath = std::filesystem::path(encrytedKeyDirPath) / keyMoniker;
 
     do
@@ -352,7 +326,7 @@ int mainEncryptDecrpyt(uint32_t activityLevel)
                 std::getline(std::wcin, input);    
                 std::filesystem::create_directories(encryptedDataDirPath);
                 std::filesystem::create_directories(encrytedKeyDirPath);
-                EncryptFlow(enclave.get(), input, keyMoniker, keyFilePath, encryptedInputFilePath, tagFilePath, veilLog);
+                EncryptFlow(enclave.get(), input, keyFilePath, encryptedInputFilePath, tagFilePath, veilLog);
                 std::wcout << L"Encryption in Enclave completed. \n Encrypted bytes are saved to disk in " << encryptedInputFilePath << std::endl;
                 veilLog.AddTimestampedLog(
                     L"[Host] Encryption in Enclave completed. Encrypted bytes are saved to disk in " + encryptedInputFilePath,
@@ -361,7 +335,7 @@ int mainEncryptDecrpyt(uint32_t activityLevel)
                 break;
 
             case 2:
-                DecryptFlow(enclave.get(), keyMoniker, keyFilePath, encryptedInputFilePath, tagFilePath, veilLog);
+                DecryptFlow(enclave.get(), keyFilePath, encryptedInputFilePath, tagFilePath, veilLog);
                 std::filesystem::remove(keyFilePath);
                 std::filesystem::remove(encryptedInputFilePath);
                 std::filesystem::remove(tagFilePath);
@@ -451,9 +425,9 @@ int mainEncryptDecrpytThreadpool(uint32_t activityLevel)
         static_cast<veil::any::logger::eventLevel>(activityLevel));
     veilLog.AddTimestampedLog(L"[Host] Starting from host", veil::any::logger::eventLevel::EVENT_LEVEL_CRITICAL);
 
-    constexpr PCWSTR keyMoniker = L"MyHelloKey-001";
+    constexpr PCWSTR keyMoniker = L"MyEncryptionKey-001";
 
-    // File with hello-secured encryption key bytes
+    // File with secured encryption key bytes
     auto keyFilePath = std::filesystem::path(encrytedKeyDirPath) / keyMoniker;
 
     do
@@ -474,7 +448,7 @@ int mainEncryptDecrpytThreadpool(uint32_t activityLevel)
                 std::getline(std::wcin, input2);
                 std::filesystem::create_directories(encryptedDataDirPath);
                 std::filesystem::create_directories(encrytedKeyDirPath);
-                EncryptFlowThreadpool(enclave.get(), input1, input2, keyMoniker, keyFilePath, encryptedInputFilePath, tagFilePath, veilLog);
+                EncryptFlowThreadpool(enclave.get(), input1, input2, keyFilePath, encryptedInputFilePath, tagFilePath, veilLog);
                 std::wcout << L"Encryption in Enclave threadpool completed. \n Encrypted bytes are saved to disk in " << encryptedDataDirPath << std::endl;;
                 veilLog.AddTimestampedLog(
                     L"[Host] Encryption in Enclave threadpool completed. \n Encrypted bytes are saved to disk in " + encryptedDataDirPath,

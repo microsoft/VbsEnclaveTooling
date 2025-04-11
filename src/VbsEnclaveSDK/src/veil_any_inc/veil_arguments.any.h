@@ -6,7 +6,6 @@
 #include <span>
 
 #include "veil.any.h"
-#include "hello.any.h"
 
 #ifndef ENCLAVE_REPORT_DATA_LENGTH
 #define ENCLAVE_REPORT_DATA_LENGTH 64
@@ -86,54 +85,10 @@ namespace veil::any
             {
                 void* taskpoolInstanceVtl0;
             };
-            
+
             //
-            // hello-secured encryption key
+            // logger
             //
-            struct hellokeys_create_or_open_hello_key
-            {
-                wchar_t helloKeyName[256];
-                wchar_t pinMessage[256];
-                bool openOnly;
-
-                // out
-                NCRYPT_KEY_HANDLE helloKeyHandle;
-                bool createdKey;
-            };
-            
-            struct hellokeys_get_challenge
-            {
-                NCRYPT_KEY_HANDLE helloKeyHandle;
-
-                // out
-                std::vector<uint8_t>* challenge; // TODO:SECURITY-TOOLING fix complex type
-            };
-
-            struct hellokeys_send_attestation_report
-            {
-                NCRYPT_KEY_HANDLE helloKeyHandle;
-                veil::any::args::data_blob report;
-            };
-
-            struct hellokeys_finalize_key
-            {
-                NCRYPT_KEY_HANDLE helloKeyHandle;
-                NCRYPT_NGC_CACHE_CONFIG cacheConfig;
-                bool promptForUnlock;
-
-                // out
-            };
-
-            struct hellokeys_send_ngc_request
-            {
-                NCRYPT_KEY_HANDLE helloKeyHandle;
-                bool promptForUnlock;
-                veil::any::args::data_blob requests[3];
-
-                // out
-                veil::any::args::data_blob responses[3];
-            };
-
             struct add_log
             {
                 wchar_t log[2048];

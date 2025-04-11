@@ -10,7 +10,7 @@
 
 #include <enclave_interface.vtl1.h>
 #include <export_helpers.vtl1.h>
-#include <hello.vtl1.h>
+#include <crypto.vtl1.h>
 #include <logger.vtl1.h>
 #include <taskpool.vtl1.h>
 #include <vtl0_functions.vtl1.h>
@@ -288,17 +288,16 @@ HRESULT VbsEnclave::VTL1_Declarations::RunTaskpoolExample(_In_ const std::uint32
 }
 
 //
-// Hello-secured encryption key
+// Secured encryption key
 //
-HRESULT VbsEnclave::VTL1_Declarations::RunHelloSecuredEncryptionKeyExample_CreateEncryptionKey(_In_ const std::wstring& helloKeyName, _In_ const std::uint32_t activity_level, _In_ const std::wstring& logFilePath, _Out_  std::vector<std::uint8_t>& securedEncryptionKeyBytes)
+HRESULT VbsEnclave::VTL1_Declarations::RunEncryptionKeyExample_CreateEncryptionKey(_In_ const std::uint32_t activity_level, _In_ const std::wstring& logFilePath, _Out_  std::vector<std::uint8_t>& securedEncryptionKeyBytes)
 {
     using namespace veil::vtl1::vtl0_functions;
     
     auto activityLevel = (veil::any::logger::eventLevel)activity_level;
 
-    const bool requireEnclaveOwnerIdMatchesHelloContainerSecureId = false;
     veil::vtl1::logger::implementation::add_log_from_enclave(
-        L"[Enclave] In RunHelloSecuredEncryptionKeyExample_CreateEncryptionKeyImpl", 
+        L"[Enclave] In RunEncryptionKeyExample_CreateEncryptionKeyImpl", 
         veil::any::logger::eventLevel::EVENT_LEVEL_CRITICAL,
         activityLevel,
         logFilePath);
@@ -312,18 +311,10 @@ HRESULT VbsEnclave::VTL1_Declarations::RunHelloSecuredEncryptionKeyExample_Creat
         activityLevel,
         logFilePath);
     
-    // Create a hello key for the root of our Hello-secured encryption key
-    debug_print(L"1. Creating a 'Hello' key: %ws", helloKeyName.c_str());
-    veil::vtl1::logger::implementation::add_log_from_enclave(
-        L"[Enclave] Creating a 'Hello' key: " + helloKeyName,
-        veil::any::logger::eventLevel::EVENT_LEVEL_INFO,
-        activityLevel,
-        logFilePath);
-    auto [helloKey, createdKey] = veil::vtl1::hello::create_or_open_hello_key(helloKeyName, L"Let's secure the encryption key with this Hello key!");
     debug_print("");
 
     // Generate our encryption key
-    debug_print(L"2. Generating our encryption key");
+    debug_print(L"1. Generating our encryption key");
     veil::vtl1::logger::implementation::add_log_from_enclave(
         L"[Enclave] Generating our encryption key",
         veil::any::logger::eventLevel::EVENT_LEVEL_INFO,
@@ -338,32 +329,6 @@ HRESULT VbsEnclave::VTL1_Declarations::RunHelloSecuredEncryptionKeyExample_Creat
         activityLevel,
         logFilePath);
     debug_print("");
-
-    // Arbitrary metadata to encode in the final secured serialized key material blob saved on disk
-    std::wstring customData = L"usage=for_decryption";
-
-    // Secure our encryption key with Hello
-    debug_print(L"3. Securing our encryption key with Hello");
-    veil::vtl1::logger::implementation::add_log_from_enclave(
-        L"[Enclave] Securing our encryption key with Hello",
-        veil::any::logger::eventLevel::EVENT_LEVEL_INFO,
-        activityLevel,
-        logFilePath);
-    auto serializedHelloSecuredKey = veil::vtl1::hello::conceal_encryption_key_with_hello(
-        helloKey.get(),
-        helloKeyName,
-        STANDARD_HELLO_KEY_CACHE_CONFIG,
-        encryptionKeyBytes,
-        veil::vtl1::as_data_span(customData),
-        requireEnclaveOwnerIdMatchesHelloContainerSecureId);
-    debug_print(L" ...CHECKPOINT: secured encryption key material byte count: %d", serializedHelloSecuredKey.size());
-    logSizeStr = std::to_wstring(serializedHelloSecuredKey.size());
-    veil::vtl1::logger::implementation::add_log_from_enclave(
-        L"[Enclave] Secured encryption key material byte count: " + logSizeStr,
-        veil::any::logger::eventLevel::EVENT_LEVEL_CRITICAL,
-        activityLevel,
-        logFilePath);
-    debug_print("");
     
     // Seal it so only our enclave may open it
     debug_print(L"4. Sealing the serialized key material for our enclave only");
@@ -372,7 +337,7 @@ HRESULT VbsEnclave::VTL1_Declarations::RunHelloSecuredEncryptionKeyExample_Creat
         veil::any::logger::eventLevel::EVENT_LEVEL_INFO,
         activityLevel,
         logFilePath);
-    auto sealedKeyMaterial = veil::vtl1::crypto::seal_data(serializedHelloSecuredKey, ENCLAVE_IDENTITY_POLICY_SEAL_SAME_IMAGE, ENCLAVE_RUNTIME_POLICY_ALLOW_FULL_DEBUG);
+    auto sealedKeyMaterial = veil::vtl1::crypto::seal_data(encryptionKeyBytes, ENCLAVE_IDENTITY_POLICY_SEAL_SAME_IMAGE, ENCLAVE_RUNTIME_POLICY_ALLOW_FULL_DEBUG);
     debug_print(L" ...CHECKPOINT: sealed key material byte count: %d", sealedKeyMaterial.size());
     logSizeStr = std::to_wstring(sealedKeyMaterial.size());
     veil::vtl1::logger::implementation::add_log_from_enclave(
@@ -391,7 +356,7 @@ HRESULT VbsEnclave::VTL1_Declarations::RunHelloSecuredEncryptionKeyExample_Creat
     return S_OK;
 }
 
-HRESULT RunHelloSecuredEncryptionKeyExample_LoadEncryptionKeyImpl(
+HRESULT RunEncryptionKeyExample_LoadEncryptionKeyImpl(
     _In_ const std::vector<std::uint8_t>& securedEncryptionKeyBytes,
     _In_ const std::wstring& dataToEncrypt,
     _In_ const bool isToBeEncrypted,
@@ -408,12 +373,11 @@ HRESULT RunHelloSecuredEncryptionKeyExample_LoadEncryptionKeyImpl(
     _Inout_opt_  std::wstring* threadpool_decryptedInputBytes = nullptr)
 {
    using namespace veil::vtl1::vtl0_functions;
-   const bool requireEnclaveOwnerIdMatchesHelloContainerSecureId = false;
 
     auto activityLevel = (veil::any::logger::eventLevel)activity_level;
 
     veil::vtl1::logger::implementation::add_log_from_enclave(
-        L"[Enclave] In RunHelloSecuredEncryptionKeyExample_LoadEncryptionKeyImpl",
+        L"[Enclave] In RunEncryptionKeyExample_LoadEncryptionKeyImpl",
         veil::any::logger::eventLevel::EVENT_LEVEL_CRITICAL,
         activityLevel,
         logFilePath);
@@ -430,16 +394,8 @@ HRESULT RunHelloSecuredEncryptionKeyExample_LoadEncryptionKeyImpl(
     debug_print(L" ...CHECKPOINT: unsealed byte count: = %d", unsealedBytes.size());
     debug_print("");
 
-    // Arbitrary metadata that must match what's encoded in the serialized key blob
-    std::wstring expectedCustomData = L"usage=for_decryption";
-
-   // Decrypt the encryption key
-   debug_print("%ws", logPrefix.c_str());
-   debug_print(L"2. Unsecuring our encryption key with Hello");
-   auto encryptionKey = veil::vtl1::hello::reveal_encryption_key_with_hello(unsealedBytes, veil::vtl1::as_data_span(expectedCustomData), requireEnclaveOwnerIdMatchesHelloContainerSecureId);
-   debug_print("%ws", logPrefix.c_str());
-   debug_print(L" ...CHECKPOINT: encryption key handle: = %d", encryptionKey.get());
-   debug_print("");
+   // Get the encryption key
+    auto encryptionKey = veil::vtl1::crypto::create_symmetric_key(unsealedBytes);
 
    if (isToBeEncrypted)
    {
@@ -452,7 +408,7 @@ HRESULT RunHelloSecuredEncryptionKeyExample_LoadEncryptionKeyImpl(
 
        // Let's encrypt the input text
        debug_print("%ws", logPrefix.c_str());
-       debug_print(L"3. Encrypting input text.");
+       debug_print(L"2. Encrypting input text.");
        auto [encryptedText, encryptionTag] = veil::vtl1::crypto::encrypt(encryptionKey.get(), veil::vtl1::as_data_span(SOME_PLAIN_TEXT), veil::vtl1::crypto::zero_nonce);
        debug_print("%ws", logPrefix.c_str());
        debug_print(L" ...CHECKPOINT: encrypted text's byte count: = %d", encryptedText.size());
@@ -475,7 +431,7 @@ HRESULT RunHelloSecuredEncryptionKeyExample_LoadEncryptionKeyImpl(
    {
        // Let's decrypt the stored encrypted input
        debug_print("%ws", logPrefix.c_str());
-       debug_print(L"4. Decrypting text...");
+       debug_print(L"3. Decrypting text...");
        auto decryptedText = veil::vtl1::crypto::decrypt(encryptionKey.get(), encryptedInputBytes, veil::vtl1::crypto::zero_nonce, tag);
        std::wstring decryptedString = veil::vtl1::to_wstring(decryptedText);
        debug_print("%ws", logPrefix.c_str());
@@ -497,7 +453,7 @@ HRESULT RunHelloSecuredEncryptionKeyExample_LoadEncryptionKeyImpl(
    return true;
 }
 
-HRESULT VbsEnclave::VTL1_Declarations::RunHelloSecuredEncryptionKeyExample_LoadEncryptionKey(_In_ const std::vector<std::uint8_t>& securedEncryptionKeyBytes,
+HRESULT VbsEnclave::VTL1_Declarations::RunEncryptionKeyExample_LoadEncryptionKey(_In_ const std::vector<std::uint8_t>& securedEncryptionKeyBytes,
     _In_ const std::wstring& dataToEncrypt,
     _In_ const bool isToBeEncrypted,
     _In_ const std::uint32_t activity_level,
@@ -507,7 +463,7 @@ HRESULT VbsEnclave::VTL1_Declarations::RunHelloSecuredEncryptionKeyExample_LoadE
     _Out_  std::vector<std::uint8_t>& tag,
     _Out_  std::wstring& decryptedInputBytes)
 {
-    RETURN_IF_FAILED(RunHelloSecuredEncryptionKeyExample_LoadEncryptionKeyImpl(
+    RETURN_IF_FAILED(RunEncryptionKeyExample_LoadEncryptionKeyImpl(
         securedEncryptionKeyBytes,
         dataToEncrypt,
         isToBeEncrypted,
@@ -521,7 +477,7 @@ HRESULT VbsEnclave::VTL1_Declarations::RunHelloSecuredEncryptionKeyExample_LoadE
     return S_OK;
 }
 
-HRESULT VbsEnclave::VTL1_Declarations::RunHelloSecuredEncryptionKeyExample_LoadEncryptionKeyThreadpool(_In_ const std::vector<std::uint8_t>& securedEncryptionKeyBytes, _In_ const std::wstring& dataToEncrypt1, _In_ const std::wstring& dataToEncrypt2, _In_ const bool isToBeEncrypted, _In_ const std::uint32_t activity_level, _In_ const std::wstring& logFilePath, _Out_  std::vector<std::uint8_t>& resealedEncryptionKeyBytes, _Inout_  std::vector<std::uint8_t>& encryptedInputBytes1, _Inout_  std::vector<std::uint8_t>& encryptedInputBytes2, _Inout_  std::vector<std::uint8_t>& tag1, _Inout_  std::vector<std::uint8_t>& tag2, _Out_  std::wstring& decryptedInputBytes1, _Out_  std::wstring& decryptedInputBytes2)
+HRESULT VbsEnclave::VTL1_Declarations::RunEncryptionKeyExample_LoadEncryptionKeyThreadpool(_In_ const std::vector<std::uint8_t>& securedEncryptionKeyBytes, _In_ const std::wstring& dataToEncrypt1, _In_ const std::wstring& dataToEncrypt2, _In_ const bool isToBeEncrypted, _In_ const std::uint32_t activity_level, _In_ const std::wstring& logFilePath, _Out_  std::vector<std::uint8_t>& resealedEncryptionKeyBytes, _Inout_  std::vector<std::uint8_t>& encryptedInputBytes1, _Inout_  std::vector<std::uint8_t>& encryptedInputBytes2, _Inout_  std::vector<std::uint8_t>& tag1, _Inout_  std::vector<std::uint8_t>& tag2, _Out_  std::wstring& decryptedInputBytes1, _Out_  std::wstring& decryptedInputBytes2)
 {
     using namespace veil::vtl1::vtl0_functions;
     auto threadCount = 2u;
@@ -551,7 +507,7 @@ HRESULT VbsEnclave::VTL1_Declarations::RunHelloSecuredEncryptionKeyExample_LoadE
                     auto b = std::vector<uint8_t> {};
                     auto c = std::vector<uint8_t> {};
                     auto d = std::wstring {};
-                    if (FAILED(RunHelloSecuredEncryptionKeyExample_LoadEncryptionKeyImpl(
+                    if (FAILED(RunEncryptionKeyExample_LoadEncryptionKeyImpl(
                             securedEncryptionKeyBytes,
                             (i == 0) ? dataToEncrypt1 : dataToEncrypt2,
                             isToBeEncrypted,
@@ -573,7 +529,7 @@ HRESULT VbsEnclave::VTL1_Declarations::RunHelloSecuredEncryptionKeyExample_LoadE
 
                     auto a = std::vector<uint8_t> {};
                     auto b = std::wstring {};
-                    if (FAILED(RunHelloSecuredEncryptionKeyExample_LoadEncryptionKeyImpl(
+                    if (FAILED(RunEncryptionKeyExample_LoadEncryptionKeyImpl(
                         securedEncryptionKeyBytes,
                         {},
                         isToBeEncrypted,

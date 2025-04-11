@@ -96,12 +96,6 @@ namespace veil
             taskpool_delete,
             taskpool_schedule_task,
             taskpool_cancel_queued_tasks,
-            hellokeys_create_or_open_hello_key,
-            hellokeys_close_handle_vtl1_ncrypt_key,
-            hellokeys_get_challenge,
-            hellokeys_send_attestation_report,
-            hellokeys_finalize_key,
-            hellokeys_send_ngc_request,
             add_log,
             __count__ // keep as last entry
         };
