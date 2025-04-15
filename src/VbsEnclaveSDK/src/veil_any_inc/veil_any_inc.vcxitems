@@ -17,5 +17,6 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="$(MSBuildThisFileDirectory)logger.any.h" />
+    <ClInclude Include="$(MSBuildThisFileDirectory)taskpool.any.h" />
   </ItemGroup>
 </Project>

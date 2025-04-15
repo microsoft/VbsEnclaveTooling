@@ -3,13 +3,19 @@
 
 #include "pch.h"
 
-#include "taskpool.vtl0.h"
+#define VEIL_IMPLEMENTATION
 
 #include <VbsEnclave\HostApp\Stubs.h>
 
+#include "taskpool.any.h"
+#include "taskpool.vtl0.h"
+
+
+namespace abi = veil::any::implementation::taskpool;
+
 HRESULT veil_abi::VTL0_Stubs::export_interface::taskpool_make_callback(_In_ const ULongPtr& enclave, _In_ const std::uint64_t taskpool_instance_vtl1, _In_ const std::uint32_t thread_count, _In_ const bool must_finish_all_queued_tasks, _Out_  ULongPtr& taskpool_instance_vtl0)
 {
-    auto taskpoolInstanceVtl0 = std::make_unique<veil::vtl0::implementation::taskpool_backing_threads>((void*)enclave.value, taskpool_instance_vtl1, thread_count, must_finish_all_queued_tasks);
+    auto taskpoolInstanceVtl0 = std::make_unique<veil::vtl0::implementation::taskpool_backing_threads>(abi::from_abi(enclave), taskpool_instance_vtl1, thread_count, must_finish_all_queued_tasks);
     taskpool_instance_vtl0.value = reinterpret_cast<uint64_t>(taskpoolInstanceVtl0.release()); // let the vtl0 counterpart be owned by vtl1 taskpool
     return S_OK;
 }
