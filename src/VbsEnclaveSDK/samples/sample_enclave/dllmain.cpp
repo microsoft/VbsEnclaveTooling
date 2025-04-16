@@ -5,8 +5,6 @@
 
 #include <array>
 
-#include "enclave_interface.vtl1.h"
-
 #define SAMPLE_ENCLAVE_FAMILY_ID \
     { \
         0xED, 0X1D, 0xD0, 0x21, 0xC1, 0xB3, 0x42, 0x4C, \

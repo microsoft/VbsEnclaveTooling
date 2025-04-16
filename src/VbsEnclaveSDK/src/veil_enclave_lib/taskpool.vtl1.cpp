@@ -3,51 +3,91 @@
 
 #include "pch.h"
 
+#define VEIL_IMPLEMENTATION
+
 #include <functional>
 #include <map>
 #include <mutex>
 #include <vector>
 
-#include "..\veil_any_inc\veil.any.h"
+#include <VbsEnclave\Enclave\Implementations.h>
 
+#include "taskpool.any.h"
 #include "taskpool.vtl1.h"
 
 
 // object table entries
 namespace veil::vtl1::implementation
 {
-    weak_object_table<keepalive_object_proxy<taskpool>>& get_taskpool_object_table()
+    weak_object_table<keepalive_object_proxy<veil::vtl1::taskpool>>& get_taskpool_object_table()
     {
-        static weak_object_table<keepalive_object_proxy<taskpool>> s_taskpoolWeakReferences;
+        static weak_object_table<keepalive_object_proxy<veil::vtl1::taskpool>> s_taskpoolWeakReferences;
         return s_taskpoolWeakReferences;
     }
 }
 
 // call ins
-namespace veil::vtl1::implementation::exports
+namespace veil_abi
 {
-    // A VTL0 backing thread calls this entrypoint to (finally) run the task via its id
-    HRESULT taskpool_run_task(_Inout_ veil::any::implementation::args::taskpool_run_task* params)
-    try
+    namespace VTL1_Declarations
     {
-        auto taskpoolId = params->taskpoolInstanceVtl1;
-
-        if (auto objectProxy = get_taskpool_object_table().resolve_strong_reference(taskpoolId))
+        HRESULT taskpool_run_task(_In_ const std::uint64_t taskpool_instance_vtl1, _In_ const std::uint64_t task_id)
         {
-            // We have a strong-reference to an object_proxy that keeps the taskpool alive.
-            //  (The taskpool's dtor has promised to block until we release all strong references
-            //   to the object_proxy)
+            auto taskpoolId = taskpool_instance_vtl1;
 
-            // Get the taskpool
-            auto& taskpoolInstance = objectProxy->object();
+            if (auto objectProxy = veil::vtl1::implementation::get_taskpool_object_table().resolve_strong_reference(taskpoolId))
+            {
+                // We have a strong-reference to an object_proxy that keeps the taskpool alive.
+                //  (The taskpool's dtor has promised to block until we release all strong references
+                //   to the object_proxy)
 
-            // Run the task
-            taskpoolInstance.run_task(params->taskId);
+                // Get the taskpool
+                auto& taskpoolInstance = objectProxy->object();
 
-            return S_OK;
+                // Run the task
+                taskpoolInstance.run_task(task_id);
+
+                return S_OK;
+            }
+
+            THROW_HR(HRESULT_FROM_WIN32(ERROR_RESOURCE_NOT_ONLINE)); // ERROR_NOT_READY? ERROR_INVALID_STATE?
         }
-
-        THROW_HR(HRESULT_FROM_WIN32(ERROR_RESOURCE_NOT_ONLINE)); // ERROR_NOT_READY? ERROR_INVALID_STATE?
     }
-    CATCH_RETURN()
+}
+
+namespace veil::vtl1::implementation::taskpool::callouts
+{
+    namespace abi = veil::any::implementation::taskpool;
+
+    HRESULT taskpool_make_callback(_In_ const void* enclave, _In_ const std::uint64_t taskpool_instance_vtl1, _In_ const std::uint32_t thread_count, _In_ const bool must_finish_all_queued_tasks, _Out_  void** taskpool_instance_vtl0)
+    {
+        auto taskpoolInstanceVtl0 = DeveloperTypes::ULongPtr {};
+        RETURN_IF_FAILED(veil_abi::VTL0_Callbacks::taskpool_make_callback(
+            abi::to_abi(enclave),
+            taskpool_instance_vtl1,
+            thread_count,
+            must_finish_all_queued_tasks,
+            taskpoolInstanceVtl0));
+        *taskpool_instance_vtl0 = abi::from_abi(taskpoolInstanceVtl0);
+        return S_OK;
+    }
+
+    HRESULT taskpool_delete_callback(_In_ const void* taskpool_instance_vtl0)
+    {
+        RETURN_IF_FAILED(veil_abi::VTL0_Callbacks::taskpool_delete_callback(abi::to_abi(taskpool_instance_vtl0)));
+        return S_OK;
+    }
+
+    HRESULT taskpool_schedule_task_callback(_In_ const void* taskpool_instance_vtl0, _In_ const std::uint64_t task_id)
+    {
+        RETURN_IF_FAILED(veil_abi::VTL0_Callbacks::taskpool_schedule_task_callback(abi::to_abi(taskpool_instance_vtl0), task_id));
+        return S_OK;
+    }
+
+    HRESULT taskpool_cancel_queued_tasks_callback(_In_ const void* taskpool_instance_vtl0)
+    {
+        RETURN_IF_FAILED(veil_abi::VTL0_Callbacks::taskpool_cancel_queued_tasks_callback(abi::to_abi(taskpool_instance_vtl0)));
+        return S_OK;
+    }
+
 }

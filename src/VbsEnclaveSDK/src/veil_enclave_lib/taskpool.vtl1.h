@@ -7,21 +7,7 @@
 #include <map>
 
 #include "future.vtl1.h"
-#include "memory.vtl1.h"
 #include "object_table.vtl1.h"
-#include "registered_callbacks.vtl1.h"
-#include "utils.vtl1.h"
-#include "vtl0_functions.vtl1.h"
-
-#include "..\veil_any_inc\veil_arguments.any.h"
-
-//
-// TODO: SECURITY
-// 
-// Call-in and callback data/buffer memcpying, bounds-checks + TOCTOU
-// safety is missing and waiting for the .edl tooling codegen work
-// implemented & consumed.
-//
 
 /*
 
@@ -90,16 +76,18 @@ namespace veil::vtl1
     struct taskpool;
 }
 
-// call ins
-namespace veil::vtl1::implementation::exports
-{
-    HRESULT taskpool_run_task(_Inout_ veil::any::implementation::args::taskpool_run_task* params);
-}
-
 // object table entries
 namespace veil::vtl1::implementation
 {
-    weak_object_table<keepalive_object_proxy<taskpool>>& get_taskpool_object_table();
+    weak_object_table<keepalive_object_proxy<veil::vtl1::taskpool>>& get_taskpool_object_table();
+}
+
+namespace veil::vtl1::implementation::taskpool::callouts
+{
+    HRESULT taskpool_make_callback(_In_ const void* enclave, _In_ const std::uint64_t taskpool_instance_vtl1, _In_ const std::uint32_t thread_count, _In_ const bool must_finish_all_queued_tasks, _Out_  void** taskpool_instance_vtl0);
+    HRESULT taskpool_delete_callback(_In_ const void* taskpool_instance_vtl0);
+    HRESULT taskpool_schedule_task_callback(_In_ const void* taskpool_instance_vtl0, _In_ const std::uint64_t task_id);
+    HRESULT taskpool_cancel_queued_tasks_callback(_In_ const void* taskpool_instance_vtl0);
 }
 
 // impl
@@ -131,19 +119,8 @@ namespace veil::vtl1
 
             void* enclave = veil::vtl1::enclave_information().BaseAddress;
 
-            // Call out to VTL0 to create the backing threads (TODO:NOT SAFE UNTIL TOOLING WORK COMPLETE)
-            auto makeTaskpoolArgs = veil::vtl1::memory::allocate_vtl0<veil::any::implementation::args::taskpool_make>();
-
-            void* output{};
-            auto makeTaskpool = veil::vtl1::implementation::get_callback(veil::implementation::callback_id::taskpool_make);
-            makeTaskpoolArgs->enclave = enclave;
-            makeTaskpoolArgs->taskpoolInstanceVtl1 = static_cast<uint64_t>(m_objectTableEntryId);
-            makeTaskpoolArgs->threadCount = threadCount;
-            makeTaskpoolArgs->mustFinishAllQueuedTasks = mustFinishAllQueuedTasks;
-            THROW_IF_WIN32_BOOL_FALSE(::CallEnclave(makeTaskpool, reinterpret_cast<void*>(makeTaskpoolArgs.get()), TRUE, reinterpret_cast<void**>(&output)));
-            THROW_IF_FAILED(pvoid_to_hr(output));
-
-            m_taskpoolInstanceVtl0 = makeTaskpoolArgs->taskpoolInstanceVtl0;
+            // Call out to VTL0 to create the backing threads
+            THROW_IF_FAILED(veil::vtl1::implementation::taskpool::callouts::taskpool_make_callback(enclave, static_cast<uint64_t>(m_objectTableEntryId), threadCount, mustFinishAllQueuedTasks, &m_taskpoolInstanceVtl0));
         }
 
         // Delete copy
@@ -156,15 +133,8 @@ namespace veil::vtl1
 
         ~taskpool()
         {
-            auto deleteTaskpoolArgs = veil::vtl1::memory::allocate_vtl0<veil::any::implementation::args::taskpool_delete>();
-            deleteTaskpoolArgs->taskpoolInstanceVtl0 = m_taskpoolInstanceVtl0;
-
-            // Call out to VTL0 to delete the backing threads (TODO:NOT SAFE UNTIL TOOLING WORK COMPLETE)
-            void* output{};
-            auto deleteTaskpool = veil::vtl1::implementation::get_callback(veil::implementation::callback_id::taskpool_delete);
-            deleteTaskpoolArgs->taskpoolInstanceVtl0 = m_taskpoolInstanceVtl0;
-            THROW_IF_WIN32_BOOL_FALSE(::CallEnclave(deleteTaskpool, reinterpret_cast<void*>(deleteTaskpoolArgs.get()), TRUE, reinterpret_cast<void**>(&output)));
-            THROW_IF_FAILED(pvoid_to_hr(output));
+            // Call out to VTL0 to delete the backing threads
+            THROW_IF_FAILED(veil::vtl1::implementation::taskpool::callouts::taskpool_delete_callback(m_taskpoolInstanceVtl0));
 
             // Erase weak reference from weak object table so nobody else can run tasks
             veil::vtl1::implementation::get_taskpool_object_table().erase(m_objectTableEntryId);
@@ -220,15 +190,8 @@ namespace veil::vtl1
             // Store the task in an object table, getting an id we can share with VTL0
             auto taskId = m_tasks.store(std::move(func));
 
-            auto taskHandleArgs = veil::vtl1::memory::allocate_vtl0<veil::any::implementation::args::taskpool_schedule_task>();
-            taskHandleArgs->taskpoolInstanceVtl0 = m_taskpoolInstanceVtl0;
-            taskHandleArgs->taskId = taskId;
-
-            // Call out to VTL0 to get the task scheduled (into the VTL0 std::deque instance) so it can eventually be scheduled on a VTL0 backing thread.  (TODO:NOT SAFE UNTIL TOOLING WORK COMPLETE)
-            void* output{};
-            auto vtl0_scheduleTask_callback = veil::vtl1::implementation::get_callback(veil::implementation::callback_id::taskpool_schedule_task);
-            THROW_IF_WIN32_BOOL_FALSE(::CallEnclave(vtl0_scheduleTask_callback, reinterpret_cast<void*>(taskHandleArgs.get()), TRUE, reinterpret_cast<void**>(&output)));
-            THROW_IF_FAILED(pvoid_to_hr(output));
+            // Call out to VTL0 to get the task scheduled (into the VTL0 std::deque instance) so it can eventually be scheduled on a VTL0 backing thread.
+            THROW_IF_FAILED(veil::vtl1::implementation::taskpool::callouts::taskpool_schedule_task_callback(m_taskpoolInstanceVtl0, taskId));
 
             return fut;
         }
@@ -261,15 +224,7 @@ namespace veil::vtl1
             m_cancelledId = m_tasks.peek_next_id();
             m_tasks.clear();
 
-            auto args = veil::vtl1::memory::allocate_vtl0<veil::any::implementation::args::taskpool_cancel_queued_tasks>();
-            args->taskpoolInstanceVtl0 = m_taskpoolInstanceVtl0;
-
-            // Call out to VTL0 to delete the backing threads (TODO:NOT SAFE UNTIL TOOLING WORK COMPLETE)
-            void* output {};
-            auto func = veil::vtl1::implementation::get_callback(veil::implementation::callback_id::taskpool_cancel_queued_tasks);
-            args->taskpoolInstanceVtl0 = m_taskpoolInstanceVtl0;
-            THROW_IF_WIN32_BOOL_FALSE(::CallEnclave(func, reinterpret_cast<void*>(args.get()), TRUE, reinterpret_cast<void**>(&output)));
-            THROW_IF_FAILED(pvoid_to_hr(output));
+            THROW_IF_FAILED(veil::vtl1::implementation::taskpool::callouts::taskpool_cancel_queued_tasks_callback(m_taskpoolInstanceVtl0));
         }
 
     private:
@@ -286,5 +241,3 @@ namespace veil::vtl1
         std::atomic<size_t> m_cancelledId{};
     };
 }
-
-

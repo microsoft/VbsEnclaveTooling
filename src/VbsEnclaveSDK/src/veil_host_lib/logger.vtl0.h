@@ -3,22 +3,14 @@
 
 #pragma once
 
-#include <span>
-#include <string>
-#include <string_view>
-#include <iostream>
-#include <fstream>
 #include <filesystem>
-#include <wil/resource.h>
+#include <fstream>
+#include <string>
 #include <mutex>
-#include <thread>
 
-#include "veil.any.h"
+#include <wil/resource.h>
+
 #include "logger.any.h"
-#include "veil_arguments.any.h"
-
-#include "enclave_api.vtl0.h"
-#include "exports.vtl0.h"
 
 namespace veil::vtl0::implementation::callbacks
 {

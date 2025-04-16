@@ -3,29 +3,10 @@
 
 #include "pch.h"
 
-#include <array>
-#include <stdexcept>
-
-#include <veil.any.h>
-
-#include <enclave_interface.vtl1.h>
-#include <export_helpers.vtl1.h>
 #include <taskpool.vtl1.h>
 #include <vtl0_functions.vtl1.h>
 
-#include "sample_arguments.any.h"
-
-//
-// My app exports: My app-enclave's exports
-//
-ENCLAVE_FUNCTION MySaveScreenshotExport(_In_ PVOID params)
-{
-    (void)params;
-
-    // ..code here..
-
-    return 0;
-}
+#include <VbsEnclave\Enclave\Implementations.h>
 
 //
 // Some sample code
@@ -34,11 +15,11 @@ ENCLAVE_FUNCTION MySaveScreenshotExport(_In_ PVOID params)
 namespace RunTaskpoolExamples
 {
 
-    void Test_Dont_WaitForAllTasksToFinish(_In_ sample::args::RunTaskpoolExample* data)
+    void Test_Dont_WaitForAllTasksToFinish(uint32_t threadCount)
     {
         using namespace veil::vtl1::vtl0_functions;
 
-        debug_print(L"Creating taskpool with '%d' threads...", data->threadCount);
+        debug_print(L"Creating taskpool with '%d' threads...", threadCount);
 
         auto tasks = std::vector<veil::vtl1::future<void>>();
 
@@ -46,10 +27,10 @@ namespace RunTaskpoolExamples
 
         // taskpool
         {
-            auto taskpool = veil::vtl1::taskpool(data->threadCount, false);
+            auto taskpool = veil::vtl1::taskpool(threadCount, false);
 
             // Use up all the threads
-            for (uint32_t i = 0; i < data->threadCount; i++)
+            for (uint32_t i = 0; i < threadCount; i++)
             {
                 auto task = taskpool.queue_task([=]()
                 {
@@ -88,11 +69,11 @@ namespace RunTaskpoolExamples
         }
     }
 
-    void Test_Do_WaitForAllTasksToFinish(_In_ sample::args::RunTaskpoolExample* data)
+    void Test_Do_WaitForAllTasksToFinish(uint32_t threadCount)
     {
         using namespace veil::vtl1::vtl0_functions;
 
-        debug_print(L"Creating taskpool with '%d' threads...", data->threadCount);
+        debug_print(L"Creating taskpool with '%d' threads...", threadCount);
 
         auto tasks = std::vector<veil::vtl1::future<void>>();
 
@@ -100,10 +81,10 @@ namespace RunTaskpoolExamples
 
         // taskpool
         {
-            auto taskpool = veil::vtl1::taskpool(data->threadCount, true);
+            auto taskpool = veil::vtl1::taskpool(threadCount, true);
 
             // Use up all the threads
-            for (uint32_t i = 0; i < data->threadCount; i++)
+            for (uint32_t i = 0; i < threadCount; i++)
             {
                 auto task = taskpool.queue_task([=]()
                 {
@@ -133,11 +114,11 @@ namespace RunTaskpoolExamples
         }
     }
 
-    void Test_Cancellation(_In_ sample::args::RunTaskpoolExample* data)
+    void Test_Cancellation(uint32_t threadCount)
     {
         using namespace veil::vtl1::vtl0_functions;
 
-        debug_print(L"Creating taskpool with '%d' threads...", data->threadCount);
+        debug_print(L"Creating taskpool with '%d' threads...", threadCount);
 
         auto tasks = std::vector<veil::vtl1::future<void>>();
 
@@ -145,10 +126,10 @@ namespace RunTaskpoolExamples
 
         // taskpool
         {
-            auto taskpool = veil::vtl1::taskpool(data->threadCount, true);
+            auto taskpool = veil::vtl1::taskpool(threadCount, true);
 
             // Use up all the threads
-            for (uint32_t i = 0; i < data->threadCount; i++)
+            for (uint32_t i = 0; i < threadCount; i++)
             {
                 auto task = taskpool.queue_task([=]()
                 {
@@ -180,13 +161,13 @@ namespace RunTaskpoolExamples
         }
     }
 
-    void UsageExample(_In_ sample::args::RunTaskpoolExample* data)
+    void UsageExample(uint32_t threadCount)
     {
         using namespace veil::vtl1::vtl0_functions;
 
-        debug_print(L"Creating taskpool with '%d' threads...", data->threadCount);
+        debug_print(L"Creating taskpool with '%d' threads...", threadCount);
 
-        auto taskpool = veil::vtl1::taskpool(data->threadCount, true);
+        auto taskpool = veil::vtl1::taskpool(threadCount, true);
 
         auto task_1 = taskpool.queue_task([=]()
         {
@@ -223,13 +204,13 @@ namespace RunTaskpoolExamples
         debug_print(L"Waiting for taskpool to destruct...");
     }
 
-    void UsageExceptionExample(_In_ sample::args::RunTaskpoolExample* data)
+    void UsageExceptionExample(uint32_t threadCount)
     {
         using namespace veil::vtl1::vtl0_functions;
 
-        debug_print(L"Creating taskpool with '%d' threads...", data->threadCount);
+        debug_print(L"Creating taskpool with '%d' threads...", threadCount);
 
-        auto taskpool = veil::vtl1::taskpool(data->threadCount, true);
+        auto taskpool = veil::vtl1::taskpool(threadCount, true);
 
         auto task1 = taskpool.queue_task([=]()
         {
@@ -273,44 +254,29 @@ namespace RunTaskpoolExamples
 }
 
 //
-// Taskpool
+// Exports
 //
-void RunTaskpoolExampleImpl(_In_ sample::args::RunTaskpoolExample* data)
+void sample_abi::VTL1_Declarations::RunTaskpoolExample(_In_ const std::uint32_t thread_count)
 {
     using namespace veil::vtl1::vtl0_functions;
 
     debug_print(L"TEST: Taskpool destruction, don't wait for all tasks to finish");
-    RunTaskpoolExamples::Test_Dont_WaitForAllTasksToFinish(data);
+    RunTaskpoolExamples::Test_Dont_WaitForAllTasksToFinish(thread_count);
     debug_print(L"");
 
     debug_print(L"TEST: Taskpool destruction, wait for all tasks to finish");
-    RunTaskpoolExamples::Test_Do_WaitForAllTasksToFinish(data);
+    RunTaskpoolExamples::Test_Do_WaitForAllTasksToFinish(thread_count);
     debug_print(L"");
 
     debug_print(L"TEST: Taskpool cancellation");
-    RunTaskpoolExamples::Test_Cancellation(data);
+    RunTaskpoolExamples::Test_Cancellation(thread_count);
     debug_print(L"");
 
     debug_print(L"USAGE");
-    RunTaskpoolExamples::UsageExample(data);
+    RunTaskpoolExamples::UsageExample(thread_count);
     debug_print(L"");
 
     debug_print(L"USAGE EXCEPTIONS");
-    RunTaskpoolExamples::UsageExceptionExample(data);
+    RunTaskpoolExamples::UsageExceptionExample(thread_count);
     debug_print(L"");
-}
-
-ENCLAVE_FUNCTION RunTaskpoolExample(_In_ PVOID pv) noexcept try
-{
-    // TODO: Use tooling codegen to create your exports, or manually use the
-    // vtl0_ptr secure pointers.
-    // RunTaskpoolExampleImpl(vtl0_ptr<RunTaslpoolExampleArgs>(pv));
-    auto data = reinterpret_cast<sample::args::RunTaskpoolExample*>(pv);
-    RunTaskpoolExampleImpl(data);
-    return nullptr;
-}
-catch (...)
-{
-    LOG_CAUGHT_EXCEPTION();
-    RETURN_HR_AS_PVOID(wil::ResultFromCaughtException());
 }

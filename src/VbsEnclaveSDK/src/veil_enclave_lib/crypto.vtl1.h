@@ -54,7 +54,7 @@ namespace veil::vtl1::crypto
         return nonceBuffer;
     }
 
-    BCRYPT_AUTHENTICATED_CIPHER_MODE_INFO make_BCRYPT_AUTHENTICATED_CIPHER_MODE_INFO(std::span<uint8_t const> nonce, std::span<uint8_t const> tag)
+    inline BCRYPT_AUTHENTICATED_CIPHER_MODE_INFO make_BCRYPT_AUTHENTICATED_CIPHER_MODE_INFO(std::span<uint8_t const> nonce, std::span<uint8_t const> tag)
     {
         BCRYPT_AUTHENTICATED_CIPHER_MODE_INFO cipherInfo {};
         BCRYPT_INIT_AUTH_MODE_INFO(cipherInfo);
@@ -183,7 +183,7 @@ namespace veil::vtl1::crypto
     //
     // Encrypt (with cipherinfo)
     //
-    wil::secure_vector<uint8_t> encrypt(BCRYPT_KEY_HANDLE symmetricKey, std::span<uint8_t const> plaintext, const BCRYPT_AUTHENTICATED_CIPHER_MODE_INFO* cipherInfo)
+    inline wil::secure_vector<uint8_t> encrypt(BCRYPT_KEY_HANDLE symmetricKey, std::span<uint8_t const> plaintext, const BCRYPT_AUTHENTICATED_CIPHER_MODE_INFO* cipherInfo)
     {
         // In AES-GCM ciphertext and plaintext lengths are the same
         wil::secure_vector<uint8_t> ciphertext(plaintext.size());
@@ -206,7 +206,7 @@ namespace veil::vtl1::crypto
         return ciphertext;
     }
 
-    wil::secure_vector<uint8_t> decrypt(BCRYPT_KEY_HANDLE symmetricKey, std::span<uint8_t const> ciphertext, const BCRYPT_AUTHENTICATED_CIPHER_MODE_INFO* cipherInfo)
+    inline wil::secure_vector<uint8_t> decrypt(BCRYPT_KEY_HANDLE symmetricKey, std::span<uint8_t const> ciphertext, const BCRYPT_AUTHENTICATED_CIPHER_MODE_INFO* cipherInfo)
     {
         // In AES-GCM ciphertext and plaintext lengths are the same
         wil::secure_vector<uint8_t> plaintext(ciphertext.size());
@@ -231,7 +231,7 @@ namespace veil::vtl1::crypto
     //
     // Encrypt simplified
     //
-    std::pair<
+    inline std::pair<
         wil::secure_vector<uint8_t>,
         std::array<uint8_t, TAG_SIZE>>
         encrypt(BCRYPT_KEY_HANDLE symmetricKey, std::span<uint8_t const> plaintext, std::span<uint8_t const> nonce)
@@ -242,7 +242,7 @@ namespace veil::vtl1::crypto
         return {ciphertext, tag};
     }
 
-    wil::secure_vector<uint8_t> decrypt(BCRYPT_KEY_HANDLE symmetricKey, std::span<uint8_t const> ciphertext, std::span<uint8_t const> nonce, std::span<uint8_t const> tag)
+    inline wil::secure_vector<uint8_t> decrypt(BCRYPT_KEY_HANDLE symmetricKey, std::span<uint8_t const> ciphertext, std::span<uint8_t const> nonce, std::span<uint8_t const> tag)
     {
         auto cipherInfo = make_BCRYPT_AUTHENTICATED_CIPHER_MODE_INFO(nonce, tag);
         return decrypt(symmetricKey, ciphertext, &cipherInfo);
@@ -251,7 +251,7 @@ namespace veil::vtl1::crypto
     //
     // Encrypt with tag
     //
-    wil::secure_vector<uint8_t> encrypt_and_tag(BCRYPT_KEY_HANDLE key, std::span<uint8_t const> plaintext, std::span<uint8_t const> nonce)
+    inline wil::secure_vector<uint8_t> encrypt_and_tag(BCRYPT_KEY_HANDLE key, std::span<uint8_t const> plaintext, std::span<uint8_t const> nonce)
     {
         // This produces an output containing the {data}{tag:16}. The nonce is always zero.
         uint8_t tag[TAG_SIZE] = {0};
@@ -263,12 +263,12 @@ namespace veil::vtl1::crypto
         return encryptedContent;
     }
 
-    wil::secure_vector<uint8_t> encrypt_and_tag(BCRYPT_KEY_HANDLE key, std::span<uint8_t const> plaintext)
+    inline wil::secure_vector<uint8_t> encrypt_and_tag(BCRYPT_KEY_HANDLE key, std::span<uint8_t const> plaintext)
     {
         return encrypt_and_tag(key, plaintext, zero_nonce);
     }
 
-    wil::secure_vector<uint8_t> decrypt_and_untag(BCRYPT_KEY_HANDLE key, std::span<uint8_t const> ciphertext, std::span<uint8_t const> nonce)
+    inline wil::secure_vector<uint8_t> decrypt_and_untag(BCRYPT_KEY_HANDLE key, std::span<uint8_t const> ciphertext, std::span<uint8_t const> nonce)
     {
         // The payload consists of the {data}{tag}. The size of the payload must be at least the size of the tag.
         // This method always uses a zero nonce.
@@ -283,7 +283,7 @@ namespace veil::vtl1::crypto
         return decryptedContent;
     }
 
-    wil::secure_vector<uint8_t> decrypt_and_untag(BCRYPT_KEY_HANDLE key, std::span<uint8_t const> ciphertext)
+    inline wil::secure_vector<uint8_t> decrypt_and_untag(BCRYPT_KEY_HANDLE key, std::span<uint8_t const> ciphertext)
     {
         return decrypt_and_untag(key, ciphertext, zero_nonce);
     }
@@ -291,7 +291,7 @@ namespace veil::vtl1::crypto
     //
     // Sealing encryption
     //
-    wil::secure_vector<uint8_t> seal_data(std::span<const uint8_t> unsealedData, ENCLAVE_SEALING_IDENTITY_POLICY identityPolicy, UINT32 runtimePolicy)
+    inline wil::secure_vector<uint8_t> seal_data(std::span<const uint8_t> unsealedData, ENCLAVE_SEALING_IDENTITY_POLICY identityPolicy, UINT32 runtimePolicy)
     {
         UINT32 sealedSize = 0;
         THROW_IF_FAILED(::EnclaveSealData(
@@ -316,7 +316,7 @@ namespace veil::vtl1::crypto
         return sealedBytes;
     }
 
-    std::pair<wil::secure_vector<uint8_t>, UINT32> unseal_data(std::span<uint8_t const> sealedBytes)
+    inline std::pair<wil::secure_vector<uint8_t>, UINT32> unseal_data(std::span<uint8_t const> sealedBytes)
     {
         UINT32 unsealedDataSize;
         THROW_IF_FAILED(::EnclaveUnsealData(
