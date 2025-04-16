@@ -55,4 +55,3 @@ namespace veil::vtl0::implementation::callins
         return S_OK;
     }
 }
-

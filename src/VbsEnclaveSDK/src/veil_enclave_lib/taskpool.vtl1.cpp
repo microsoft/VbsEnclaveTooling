@@ -91,5 +91,3 @@ namespace veil::vtl1::implementation::taskpool::callouts
     }
 
 }
-
-
