@@ -3,6 +3,7 @@
 
 #pragma once
 
+#include <span>
 #include <wil/stl.h>
 #include <gsl/gsl_util>
 

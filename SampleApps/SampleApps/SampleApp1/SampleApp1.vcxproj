@@ -118,6 +118,7 @@
       <ConformanceMode>true</ConformanceMode>
       <AdditionalIncludeDirectories>$(MSBUILDThisFileDirectory)..\sample_any_inc;$(MSBUILDThisFileDirectory)..\packages\Microsoft.Windows.VbsEnclaveTooling.0.0.0\src\VbsEnclaveSDK\veil_host;$(MSBUILDThisFileDirectory)..\packages\Microsoft.Windows.VbsEnclaveTooling.0.0.0\src\VbsEnclaveSDK\veil_any_inc;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp20</LanguageStandard>
+      <LanguageStandard_C>stdc17</LanguageStandard_C>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
