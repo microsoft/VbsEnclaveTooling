@@ -157,7 +157,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <None Include="Microsoft.Windows.VbsEnclaveTooling.nuspec" />
+    <None Include="Nuget\Microsoft.Windows.VbsEnclaveTooling.nuspec" />
     <None Include="..\ToolingNuget\Nuget\Microsoft.Windows.VbsEnclaveTooling.props" />
     <None Include="..\ToolingNuget\Nuget\Microsoft.Windows.VbsEnclaveTooling.targets" />
     <None Include="..\ToolingNuget\Nuget\VisualStudioUiBuild.targets" />
@@ -169,6 +169,8 @@
       <Project>{8068fe68-f1dc-4a82-b2a8-97ae1a48d571}</Project>
     </ProjectReference>
   </ItemGroup>
+  <Import Project="..\ToolingNuget\Nuget\Microsoft.Windows.VbsEnclaveTooling.targets" />
+  <Import Project="..\ToolingNuget\Nuget\VisualStudioUiBuild.targets" />
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
     <Import Project="..\..\packages\Microsoft.Windows.SDK.BuildTools.10.0.22621.756\build\Microsoft.Windows.SDK.BuildTools.targets" Condition="Exists('..\..\packages\Microsoft.Windows.SDK.BuildTools.10.0.22621.756\build\Microsoft.Windows.SDK.BuildTools.targets')" />

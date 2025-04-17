@@ -83,6 +83,10 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "veil_host_lib", "src\VbsEnc
 	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ToolingOnlyNuget", "src\ToolingOnlyNuget\ToolingOnlyNuget.vcxproj", "{1EC49385-89BB-4439-83DA-8D0374291F40}"
+	ProjectSection(ProjectDependencies) = postProject
+		{26116633-98EC-4EAC-859C-139D020D10C9} = {26116633-98EC-4EAC-859C-139D020D10C9}
+		{27C99E39-8373-4559-83D7-F21B5134EB83} = {27C99E39-8373-4559-83D7-F21B5134EB83}
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
