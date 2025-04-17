@@ -28,8 +28,8 @@
     <file src="$vbsenclavetooling_arm64_exe$" target="bin\arm64"/>
     <file src="$vcpkg_sources$\**" target="vcpkg\"/>
     <file src="$vcpkg_tools$\**" target="vcpkg\tools"/>
-    <file src="Microsoft.Windows.VbsEnclaveTooling.props" target="build\native"/>
-    <file src="Microsoft.Windows.VbsEnclaveTooling.targets" target="build\native"/>
+    <file src="..\..\ToolingNuget\Nuget\Microsoft.Windows.VbsEnclaveTooling.props" target="build\native"/>
+    <file src="..\..\ToolingNuget\Nuget\Microsoft.Windows.VbsEnclaveTooling.targets" target="build\native"/>
     <file src="..\..\ToolingSharedLibrary\Includes\VbsEnclaveABI\**" target="src\VbsEnclaveABI\" />
     <file src="..\..\..\Common\veil_enclave_wil_inc\**" target="src\" />
     <file src="$vbsenclavetooling_cpp_support_x64_lib$" target="lib\native\x64"/>
