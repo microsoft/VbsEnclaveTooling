@@ -5,6 +5,7 @@ VisualStudioVersion = 17.9.34902.65
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ToolingNuget", "src\ToolingNuget\ToolingNuget.vcxproj", "{0900AF8B-EE9B-4208-97A5-225BDBAD01BA}"
 	ProjectSection(ProjectDependencies) = postProject
+		{1EC49385-89BB-4439-83DA-8D0374291F40} = {1EC49385-89BB-4439-83DA-8D0374291F40}
 		{26116633-98EC-4EAC-859C-139D020D10C9} = {26116633-98EC-4EAC-859C-139D020D10C9}
 		{323433E4-11D6-4B5B-93E4-04504E2EF0E1} = {323433E4-11D6-4B5B-93E4-04504E2EF0E1}
 		{EE419DF4-62DC-4827-A0FC-727709B90C06} = {EE419DF4-62DC-4827-A0FC-727709B90C06}
@@ -33,6 +34,9 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "BuildScripts", "BuildScript
 	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "UnitTests", "tests\UnitTests\UnitTests.vcxproj", "{4FA028C0-329C-4B6B-BC9F-FFC23B409EC1}"
+	ProjectSection(ProjectDependencies) = postProject
+		{0900AF8B-EE9B-4208-97A5-225BDBAD01BA} = {0900AF8B-EE9B-4208-97A5-225BDBAD01BA}
+	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ToolingSharedLibrary", "src\ToolingSharedLibrary\ToolingSharedLibrary.vcxproj", "{27C99E39-8373-4559-83D7-F21B5134EB83}"
 EndProject
@@ -69,8 +73,16 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "SharedFiles", "SharedFiles"
 	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "veil_enclave_lib", "src\VbsEnclaveSDK\src\veil_enclave_lib\veil_enclave_lib.vcxproj", "{323433E4-11D6-4B5B-93E4-04504E2EF0E1}"
+	ProjectSection(ProjectDependencies) = postProject
+		{1EC49385-89BB-4439-83DA-8D0374291F40} = {1EC49385-89BB-4439-83DA-8D0374291F40}
+	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "veil_host_lib", "src\VbsEnclaveSDK\src\veil_host_lib\veil_host_lib.vcxproj", "{EE419DF4-62DC-4827-A0FC-727709B90C06}"
+	ProjectSection(ProjectDependencies) = postProject
+		{1EC49385-89BB-4439-83DA-8D0374291F40} = {1EC49385-89BB-4439-83DA-8D0374291F40}
+	EndProjectSection
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ToolingOnlyNuget", "src\ToolingOnlyNuget\ToolingOnlyNuget.vcxproj", "{1EC49385-89BB-4439-83DA-8D0374291F40}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -153,6 +165,14 @@ Global
 		{EE419DF4-62DC-4827-A0FC-727709B90C06}.Release|ARM64.Build.0 = Release|ARM64
 		{EE419DF4-62DC-4827-A0FC-727709B90C06}.Release|x64.ActiveCfg = Release|x64
 		{EE419DF4-62DC-4827-A0FC-727709B90C06}.Release|x64.Build.0 = Release|x64
+		{1EC49385-89BB-4439-83DA-8D0374291F40}.Debug|ARM64.ActiveCfg = Debug|ARM64
+		{1EC49385-89BB-4439-83DA-8D0374291F40}.Debug|ARM64.Build.0 = Debug|ARM64
+		{1EC49385-89BB-4439-83DA-8D0374291F40}.Debug|x64.ActiveCfg = Debug|x64
+		{1EC49385-89BB-4439-83DA-8D0374291F40}.Debug|x64.Build.0 = Debug|x64
+		{1EC49385-89BB-4439-83DA-8D0374291F40}.Release|ARM64.ActiveCfg = Release|ARM64
+		{1EC49385-89BB-4439-83DA-8D0374291F40}.Release|ARM64.Build.0 = Release|ARM64
+		{1EC49385-89BB-4439-83DA-8D0374291F40}.Release|x64.ActiveCfg = Release|x64
+		{1EC49385-89BB-4439-83DA-8D0374291F40}.Release|x64.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
