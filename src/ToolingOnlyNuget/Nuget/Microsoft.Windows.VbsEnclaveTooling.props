@@ -1,0 +1,17 @@
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+
+    <PropertyGroup>
+        <!-- Start -->
+        <!-- 
+            Defaults for vbsenclavetooling.exe. The developer must at least provide an absolute path to their .edl file
+            via the <VbsEnclaveEdlPath /> attribute or there will be a build error advising that the path doesn't exist.
+        -->
+        <VbsEnclaveEdlPath></VbsEnclaveEdlPath>
+        <VbsEnclaveCodeGenLanguage Condition="'$(VbsEnclaveCodeGenLanguage)' == ''">C++</VbsEnclaveCodeGenLanguage>
+        <VbsEnclaveErrorHandling Condition="'$(VbsEnclaveErrorHandling)' == ''">ErrorCode</VbsEnclaveErrorHandling>
+        <VbsEnclaveVirtualTrustLayer Condition="'$(VbsEnclaveVirtualTrustLayer)' == ''">HostApp</VbsEnclaveVirtualTrustLayer>
+        <VbsEnclaveVtl0ClassName></VbsEnclaveVtl0ClassName>
+        <VbsEnclaveNamespace></VbsEnclaveNamespace>
+        <!-- End -->
+    </PropertyGroup>
+</Project>
