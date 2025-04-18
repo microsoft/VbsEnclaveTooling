@@ -51,7 +51,8 @@
 
         <!-- Make sure our cpp support static library is added as an enclaves linker dependency -->
         <Link Condition="$(VbsEnclaveVirtualTrustLayer) == 'Enclave' ">
-            <AdditionalDependencies Condition="'$(VbsEnclaveIncludeSdk)' != 'false'">$(VbsEnclaveCppSupportLib);$(VbsEnclaveNugetPackEnclaveLibPath);%(AdditionalDependencies)</AdditionalDependencies>
+            <AdditionalDependencies>$(VbsEnclaveCppSupportLib);%(AdditionalDependencies)</AdditionalDependencies>
+            <AdditionalDependencies Condition="'$(VbsEnclaveIncludeSdk)' != 'false'">$(VbsEnclaveNugetPackEnclaveLibPath);%(AdditionalDependencies)</AdditionalDependencies>
         </Link>
 
         <Link Condition="$(VbsEnclaveVirtualTrustLayer) == 'HostApp' ">
