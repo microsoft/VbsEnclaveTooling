@@ -1,0 +1,196 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.9.34902.65
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ToolingNuget", "src\ToolingNuget\ToolingNuget.vcxproj", "{0900AF8B-EE9B-4208-97A5-225BDBAD01BA}"
+	ProjectSection(ProjectDependencies) = postProject
+		{1EC49385-89BB-4439-83DA-8D0374291F40} = {1EC49385-89BB-4439-83DA-8D0374291F40}
+		{26116633-98EC-4EAC-859C-139D020D10C9} = {26116633-98EC-4EAC-859C-139D020D10C9}
+		{323433E4-11D6-4B5B-93E4-04504E2EF0E1} = {323433E4-11D6-4B5B-93E4-04504E2EF0E1}
+		{EE419DF4-62DC-4827-A0FC-727709B90C06} = {EE419DF4-62DC-4827-A0FC-727709B90C06}
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{1542CC01-B383-491A-96C3-36FCAB8791A2}"
+	ProjectSection(SolutionItems) = preProject
+		.editorconfig = .editorconfig
+		.gitattributes = .gitattributes
+		.gitignore = .gitignore
+		Directory.Build.props = Directory.Build.props
+		Directory.Build.targets = Directory.Build.targets
+		LICENSE.txt = LICENSE.txt
+		nuget.config = nuget.config
+		README.md = README.md
+	EndProjectSection
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ToolingExecutable", "src\ToolingExecutable\ToolingExecutable.vcxproj", "{8068FE68-F1DC-4A82-B2A8-97AE1A48D571}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "BuildScripts", "BuildScripts", "{E2DFF69F-9D18-460B-AB88-FB7A55A28EBC}"
+	ProjectSection(SolutionItems) = preProject
+		buildScripts\build.cmd = buildScripts\build.cmd
+		buildScripts\build.ps1 = buildScripts\build.ps1
+		buildScripts\NugetExeDownloader.ps1 = buildScripts\NugetExeDownloader.ps1
+		buildScripts\PackageNuget.ps1 = buildScripts\PackageNuget.ps1
+	EndProjectSection
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "UnitTests", "tests\UnitTests\UnitTests.vcxproj", "{4FA028C0-329C-4B6B-BC9F-FFC23B409EC1}"
+	ProjectSection(ProjectDependencies) = postProject
+		{0900AF8B-EE9B-4208-97A5-225BDBAD01BA} = {0900AF8B-EE9B-4208-97A5-225BDBAD01BA}
+	EndProjectSection
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ToolingSharedLibrary", "src\ToolingSharedLibrary\ToolingSharedLibrary.vcxproj", "{27C99E39-8373-4559-83D7-F21B5134EB83}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "docs", "docs", "{890A5ACE-43AB-4957-B32A-7720ED8ED565}"
+	ProjectSection(SolutionItems) = preProject
+		docs\CodeGeneration.md = docs\CodeGeneration.md
+		docs\Edl.md = docs\Edl.md
+		docs\VbsEnclaveToolingAbi.md = docs\VbsEnclaveToolingAbi.md
+	EndProjectSection
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "TestEnclave", "tests\EnclaveTests\TestEnclave\TestEnclave.vcxproj", "{F4A39F44-E333-48A9-B793-B97366FE00AF}"
+	ProjectSection(ProjectDependencies) = postProject
+		{0900AF8B-EE9B-4208-97A5-225BDBAD01BA} = {0900AF8B-EE9B-4208-97A5-225BDBAD01BA}
+	EndProjectSection
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "veil_enclave_cpp_support_lib", "Common\veil_enclave_cpp_support_lib\veil_enclave_cpp_support_lib.vcxproj", "{26116633-98EC-4EAC-859C-139D020D10C9}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "EnclaveTests", "EnclaveTests", "{2F6D61DA-0D52-4B60-9FB6-8372E7B2089F}"
+	ProjectSection(SolutionItems) = preProject
+		tests\EnclaveTests\Microsoft.Windows.VbsEnclaveTooling.0.0.0.nupkg = tests\EnclaveTests\Microsoft.Windows.VbsEnclaveTooling.0.0.0.nupkg
+	EndProjectSection
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "TestHostApp", "tests\EnclaveTests\TestHostApp\TestHostApp.vcxproj", "{7B34DEC6-2C34-4C89-B9E1-3EBFF0118DAF}"
+	ProjectSection(ProjectDependencies) = postProject
+		{F4A39F44-E333-48A9-B793-B97366FE00AF} = {F4A39F44-E333-48A9-B793-B97366FE00AF}
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "SharedFiles", "SharedFiles", "{00ADD4B8-7C9D-407F-9D1F-91DEEE0C3A7D}"
+	ProjectSection(SolutionItems) = preProject
+		tests\EnclaveTests\CodeGenTestFunctions.edl = tests\EnclaveTests\CodeGenTestFunctions.edl
+		tests\EnclaveTests\README.md = tests\EnclaveTests\README.md
+		tests\EnclaveTests\run-enclave-tests.ps1 = tests\EnclaveTests\run-enclave-tests.ps1
+		tests\EnclaveTests\TestEnclaveAndHostAppShared.targets = tests\EnclaveTests\TestEnclaveAndHostAppShared.targets
+	EndProjectSection
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "veil_enclave_lib", "src\VbsEnclaveSDK\src\veil_enclave_lib\veil_enclave_lib.vcxproj", "{323433E4-11D6-4B5B-93E4-04504E2EF0E1}"
+	ProjectSection(ProjectDependencies) = postProject
+		{1EC49385-89BB-4439-83DA-8D0374291F40} = {1EC49385-89BB-4439-83DA-8D0374291F40}
+	EndProjectSection
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "veil_host_lib", "src\VbsEnclaveSDK\src\veil_host_lib\veil_host_lib.vcxproj", "{EE419DF4-62DC-4827-A0FC-727709B90C06}"
+	ProjectSection(ProjectDependencies) = postProject
+		{1EC49385-89BB-4439-83DA-8D0374291F40} = {1EC49385-89BB-4439-83DA-8D0374291F40}
+	EndProjectSection
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ToolingOnlyNuget", "src\ToolingOnlyNuget\ToolingOnlyNuget.vcxproj", "{1EC49385-89BB-4439-83DA-8D0374291F40}"
+	ProjectSection(ProjectDependencies) = postProject
+		{26116633-98EC-4EAC-859C-139D020D10C9} = {26116633-98EC-4EAC-859C-139D020D10C9}
+		{27C99E39-8373-4559-83D7-F21B5134EB83} = {27C99E39-8373-4559-83D7-F21B5134EB83}
+	EndProjectSection
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|ARM64 = Debug|ARM64
+		Debug|x64 = Debug|x64
+		Release|ARM64 = Release|ARM64
+		Release|x64 = Release|x64
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{0900AF8B-EE9B-4208-97A5-225BDBAD01BA}.Debug|ARM64.ActiveCfg = Debug|ARM64
+		{0900AF8B-EE9B-4208-97A5-225BDBAD01BA}.Debug|ARM64.Build.0 = Debug|ARM64
+		{0900AF8B-EE9B-4208-97A5-225BDBAD01BA}.Debug|x64.ActiveCfg = Debug|x64
+		{0900AF8B-EE9B-4208-97A5-225BDBAD01BA}.Debug|x64.Build.0 = Debug|x64
+		{0900AF8B-EE9B-4208-97A5-225BDBAD01BA}.Release|ARM64.ActiveCfg = Release|ARM64
+		{0900AF8B-EE9B-4208-97A5-225BDBAD01BA}.Release|ARM64.Build.0 = Release|ARM64
+		{0900AF8B-EE9B-4208-97A5-225BDBAD01BA}.Release|x64.ActiveCfg = Release|x64
+		{0900AF8B-EE9B-4208-97A5-225BDBAD01BA}.Release|x64.Build.0 = Release|x64
+		{8068FE68-F1DC-4A82-B2A8-97AE1A48D571}.Debug|ARM64.ActiveCfg = Debug|ARM64
+		{8068FE68-F1DC-4A82-B2A8-97AE1A48D571}.Debug|ARM64.Build.0 = Debug|ARM64
+		{8068FE68-F1DC-4A82-B2A8-97AE1A48D571}.Debug|x64.ActiveCfg = Debug|x64
+		{8068FE68-F1DC-4A82-B2A8-97AE1A48D571}.Debug|x64.Build.0 = Debug|x64
+		{8068FE68-F1DC-4A82-B2A8-97AE1A48D571}.Release|ARM64.ActiveCfg = Release|ARM64
+		{8068FE68-F1DC-4A82-B2A8-97AE1A48D571}.Release|ARM64.Build.0 = Release|ARM64
+		{8068FE68-F1DC-4A82-B2A8-97AE1A48D571}.Release|x64.ActiveCfg = Release|x64
+		{8068FE68-F1DC-4A82-B2A8-97AE1A48D571}.Release|x64.Build.0 = Release|x64
+		{4FA028C0-329C-4B6B-BC9F-FFC23B409EC1}.Debug|ARM64.ActiveCfg = Debug|ARM64
+		{4FA028C0-329C-4B6B-BC9F-FFC23B409EC1}.Debug|ARM64.Build.0 = Debug|ARM64
+		{4FA028C0-329C-4B6B-BC9F-FFC23B409EC1}.Debug|x64.ActiveCfg = Debug|x64
+		{4FA028C0-329C-4B6B-BC9F-FFC23B409EC1}.Debug|x64.Build.0 = Debug|x64
+		{4FA028C0-329C-4B6B-BC9F-FFC23B409EC1}.Release|ARM64.ActiveCfg = Release|ARM64
+		{4FA028C0-329C-4B6B-BC9F-FFC23B409EC1}.Release|ARM64.Build.0 = Release|ARM64
+		{4FA028C0-329C-4B6B-BC9F-FFC23B409EC1}.Release|x64.ActiveCfg = Release|x64
+		{4FA028C0-329C-4B6B-BC9F-FFC23B409EC1}.Release|x64.Build.0 = Release|x64
+		{27C99E39-8373-4559-83D7-F21B5134EB83}.Debug|ARM64.ActiveCfg = Debug|ARM64
+		{27C99E39-8373-4559-83D7-F21B5134EB83}.Debug|ARM64.Build.0 = Debug|ARM64
+		{27C99E39-8373-4559-83D7-F21B5134EB83}.Debug|x64.ActiveCfg = Debug|x64
+		{27C99E39-8373-4559-83D7-F21B5134EB83}.Debug|x64.Build.0 = Debug|x64
+		{27C99E39-8373-4559-83D7-F21B5134EB83}.Release|ARM64.ActiveCfg = Release|ARM64
+		{27C99E39-8373-4559-83D7-F21B5134EB83}.Release|ARM64.Build.0 = Release|ARM64
+		{27C99E39-8373-4559-83D7-F21B5134EB83}.Release|x64.ActiveCfg = Release|x64
+		{27C99E39-8373-4559-83D7-F21B5134EB83}.Release|x64.Build.0 = Release|x64
+		{F4A39F44-E333-48A9-B793-B97366FE00AF}.Debug|ARM64.ActiveCfg = Debug|ARM64
+		{F4A39F44-E333-48A9-B793-B97366FE00AF}.Debug|ARM64.Build.0 = Debug|ARM64
+		{F4A39F44-E333-48A9-B793-B97366FE00AF}.Debug|x64.ActiveCfg = Debug|x64
+		{F4A39F44-E333-48A9-B793-B97366FE00AF}.Debug|x64.Build.0 = Debug|x64
+		{F4A39F44-E333-48A9-B793-B97366FE00AF}.Release|ARM64.ActiveCfg = Release|ARM64
+		{F4A39F44-E333-48A9-B793-B97366FE00AF}.Release|ARM64.Build.0 = Release|ARM64
+		{F4A39F44-E333-48A9-B793-B97366FE00AF}.Release|x64.ActiveCfg = Release|x64
+		{F4A39F44-E333-48A9-B793-B97366FE00AF}.Release|x64.Build.0 = Release|x64
+		{26116633-98EC-4EAC-859C-139D020D10C9}.Debug|ARM64.ActiveCfg = Debug|ARM64
+		{26116633-98EC-4EAC-859C-139D020D10C9}.Debug|ARM64.Build.0 = Debug|ARM64
+		{26116633-98EC-4EAC-859C-139D020D10C9}.Debug|x64.ActiveCfg = Debug|x64
+		{26116633-98EC-4EAC-859C-139D020D10C9}.Debug|x64.Build.0 = Debug|x64
+		{26116633-98EC-4EAC-859C-139D020D10C9}.Release|ARM64.ActiveCfg = Release|ARM64
+		{26116633-98EC-4EAC-859C-139D020D10C9}.Release|ARM64.Build.0 = Release|ARM64
+		{26116633-98EC-4EAC-859C-139D020D10C9}.Release|x64.ActiveCfg = Release|x64
+		{26116633-98EC-4EAC-859C-139D020D10C9}.Release|x64.Build.0 = Release|x64
+		{7B34DEC6-2C34-4C89-B9E1-3EBFF0118DAF}.Debug|ARM64.ActiveCfg = Debug|ARM64
+		{7B34DEC6-2C34-4C89-B9E1-3EBFF0118DAF}.Debug|ARM64.Build.0 = Debug|ARM64
+		{7B34DEC6-2C34-4C89-B9E1-3EBFF0118DAF}.Debug|x64.ActiveCfg = Debug|x64
+		{7B34DEC6-2C34-4C89-B9E1-3EBFF0118DAF}.Debug|x64.Build.0 = Debug|x64
+		{7B34DEC6-2C34-4C89-B9E1-3EBFF0118DAF}.Debug|x64.Deploy.0 = Debug|x64
+		{7B34DEC6-2C34-4C89-B9E1-3EBFF0118DAF}.Release|ARM64.ActiveCfg = Release|ARM64
+		{7B34DEC6-2C34-4C89-B9E1-3EBFF0118DAF}.Release|ARM64.Build.0 = Release|ARM64
+		{7B34DEC6-2C34-4C89-B9E1-3EBFF0118DAF}.Release|x64.ActiveCfg = Release|x64
+		{7B34DEC6-2C34-4C89-B9E1-3EBFF0118DAF}.Release|x64.Build.0 = Release|x64
+		{323433E4-11D6-4B5B-93E4-04504E2EF0E1}.Debug|ARM64.ActiveCfg = Debug|ARM64
+		{323433E4-11D6-4B5B-93E4-04504E2EF0E1}.Debug|ARM64.Build.0 = Debug|ARM64
+		{323433E4-11D6-4B5B-93E4-04504E2EF0E1}.Debug|x64.ActiveCfg = Debug|x64
+		{323433E4-11D6-4B5B-93E4-04504E2EF0E1}.Debug|x64.Build.0 = Debug|x64
+		{323433E4-11D6-4B5B-93E4-04504E2EF0E1}.Release|ARM64.ActiveCfg = Release|ARM64
+		{323433E4-11D6-4B5B-93E4-04504E2EF0E1}.Release|ARM64.Build.0 = Release|ARM64
+		{323433E4-11D6-4B5B-93E4-04504E2EF0E1}.Release|x64.ActiveCfg = Release|x64
+		{323433E4-11D6-4B5B-93E4-04504E2EF0E1}.Release|x64.Build.0 = Release|x64
+		{EE419DF4-62DC-4827-A0FC-727709B90C06}.Debug|ARM64.ActiveCfg = Debug|ARM64
+		{EE419DF4-62DC-4827-A0FC-727709B90C06}.Debug|ARM64.Build.0 = Debug|ARM64
+		{EE419DF4-62DC-4827-A0FC-727709B90C06}.Debug|x64.ActiveCfg = Debug|x64
+		{EE419DF4-62DC-4827-A0FC-727709B90C06}.Debug|x64.Build.0 = Debug|x64
+		{EE419DF4-62DC-4827-A0FC-727709B90C06}.Release|ARM64.ActiveCfg = Release|ARM64
+		{EE419DF4-62DC-4827-A0FC-727709B90C06}.Release|ARM64.Build.0 = Release|ARM64
+		{EE419DF4-62DC-4827-A0FC-727709B90C06}.Release|x64.ActiveCfg = Release|x64
+		{EE419DF4-62DC-4827-A0FC-727709B90C06}.Release|x64.Build.0 = Release|x64
+		{1EC49385-89BB-4439-83DA-8D0374291F40}.Debug|ARM64.ActiveCfg = Debug|ARM64
+		{1EC49385-89BB-4439-83DA-8D0374291F40}.Debug|ARM64.Build.0 = Debug|ARM64
+		{1EC49385-89BB-4439-83DA-8D0374291F40}.Debug|x64.ActiveCfg = Debug|x64
+		{1EC49385-89BB-4439-83DA-8D0374291F40}.Debug|x64.Build.0 = Debug|x64
+		{1EC49385-89BB-4439-83DA-8D0374291F40}.Release|ARM64.ActiveCfg = Release|ARM64
+		{1EC49385-89BB-4439-83DA-8D0374291F40}.Release|ARM64.Build.0 = Release|ARM64
+		{1EC49385-89BB-4439-83DA-8D0374291F40}.Release|x64.ActiveCfg = Release|x64
+		{1EC49385-89BB-4439-83DA-8D0374291F40}.Release|x64.Build.0 = Release|x64
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{F4A39F44-E333-48A9-B793-B97366FE00AF} = {2F6D61DA-0D52-4B60-9FB6-8372E7B2089F}
+		{7B34DEC6-2C34-4C89-B9E1-3EBFF0118DAF} = {2F6D61DA-0D52-4B60-9FB6-8372E7B2089F}
+		{00ADD4B8-7C9D-407F-9D1F-91DEEE0C3A7D} = {2F6D61DA-0D52-4B60-9FB6-8372E7B2089F}
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {166D23FF-1362-43F2-BEE7-58FDCDB133DF}
+	EndGlobalSection
+	GlobalSection(SharedMSBuildProjectFiles) = preSolution
+		src\VbsEnclaveSDK\src\veil_any_inc\veil_any_inc.vcxitems*{323433e4-11d6-4b5b-93e4-04504e2ef0e1}*SharedItemsImports = 4
+		src\VbsEnclaveSDK\src\veil_any_inc\veil_any_inc.vcxitems*{ee419df4-62dc-4827-a0fc-727709b90c06}*SharedItemsImports = 4
+	EndGlobalSection
+EndGlobal

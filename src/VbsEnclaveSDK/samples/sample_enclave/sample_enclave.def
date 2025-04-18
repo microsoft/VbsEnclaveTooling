@@ -1,0 +1,10 @@
+LIBRARY
+
+EXPORTS
+        ; [Codegen] Veil Enclave SDK entrypoints
+         taskpool_run_task0_Generated_Stub
+        __AbiRegisterVtl0Callbacks_veil_abi__
+        
+        ; [Codegen] Sample app entrypoints
+        RunTaskpoolExample0_Generated_Stub
+        __AbiRegisterVtl0Callbacks_sample_abi__

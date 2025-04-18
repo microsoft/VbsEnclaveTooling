@@ -1,0 +1,165 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$(SolutionDir)packages\Microsoft.Windows.VbsEnclaveToolingOnly.0.0.0\build\native\Microsoft.Windows.VbsEnclaveTooling.props" Condition="Exists('$(SolutionDir)packages\Microsoft.Windows.VbsEnclaveToolingOnly.0.0.0\build\native\Microsoft.Windows.VbsEnclaveTooling.props')" />
+  <Import Project="$(SolutionDir)packages\MsGsl.3.1.0.2\build\native\MsGsl.props" Condition="Exists('$(SolutionDir)packages\MsGsl.3.1.0.2\build\native\MsGsl.props')" />
+  <Import Project="$(SolutionDir)packages\Microsoft.Windows.SDK.BuildTools.10.0.26100.1742\build\Microsoft.Windows.SDK.BuildTools.props" Condition="Exists('$(SolutionDir)packages\Microsoft.Windows.SDK.BuildTools.10.0.26100.1742\build\Microsoft.Windows.SDK.BuildTools.props')" />
+  <Import Project="$(SolutionDir)packages\Microsoft.Windows.SDK.CPP.x64.10.0.26100.2454\build\native\Microsoft.Windows.SDK.cpp.x64.props" Condition="Exists('$(SolutionDir)packages\Microsoft.Windows.SDK.CPP.x64.10.0.26100.2454\build\native\Microsoft.Windows.SDK.cpp.x64.props')" />
+  <Import Project="$(SolutionDir)packages\Microsoft.Windows.SDK.CPP.10.0.26100.2454\build\native\Microsoft.Windows.SDK.cpp.props" Condition="Exists('$(SolutionDir)packages\Microsoft.Windows.SDK.CPP.10.0.26100.2454\build\native\Microsoft.Windows.SDK.cpp.props')" />
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|ARM64">
+      <Configuration>Debug</Configuration>
+      <Platform>ARM64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|ARM64">
+      <Configuration>Release</Configuration>
+      <Platform>ARM64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Debug|x64">
+      <Configuration>Debug</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|x64">
+      <Configuration>Release</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <VCProjectVersion>16.0</VCProjectVersion>
+    <Keyword>Win32Proj</Keyword>
+    <ProjectGuid>{323433E4-11D6-4B5B-93E4-04504E2EF0E1}</ProjectGuid>
+    <RootNamespace>veil_enclave_lib</RootNamespace>
+    <WindowsTargetPlatformVersion>10.0.22621.0</WindowsTargetPlatformVersion>
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <PlatformToolset>v143</PlatformToolset>
+    <ProjectName>veil_enclave_lib</ProjectName>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <Import Project="$(ProjectDir)..\..\veil_abi.props" />
+  <ImportGroup Label="Shared">
+    <Import Project="..\veil_any_inc\veil_any_inc.vcxitems" Label="Shared" />
+  </ImportGroup>
+  <ImportGroup Label="ExtensionSettings" />
+  <PropertyGroup>
+    <TargetName>veil_enclave_lib</TargetName>
+    <LinkIncremental>false</LinkIncremental>
+  </PropertyGroup>
+  <PropertyGroup>
+    <IncludePath>$(VC_IncludePath);$(WindowsSDK_IncludePath)</IncludePath>
+  </PropertyGroup>
+  <ImportGroup Label="Shared">
+    <Import Project="$(SolutionDir)packages\Microsoft.Windows.ImplementationLibrary.1.0.240803.1\build\native\Microsoft.Windows.ImplementationLibrary.targets" Condition="Exists('$(SolutionDir)packages\Microsoft.Windows.ImplementationLibrary.1.0.240803.1\build\native\Microsoft.Windows.ImplementationLibrary.targets')" />
+    <Import Project="$(SolutionDir)packages\Microsoft.Windows.VbsEnclaveToolingOnly.0.0.0\build\native\Microsoft.Windows.VbsEnclaveTooling.targets" Condition="Exists('$(SolutionDir)packages\Microsoft.Windows.VbsEnclaveToolingOnly.0.0.0\build\native\Microsoft.Windows.VbsEnclaveTooling.targets')" />
+  </ImportGroup>
+  <PropertyGroup>
+    <WindowsSDK_LibraryPath_Platform>$(WindowsSDKLibDir)\um\$(Platform)</WindowsSDK_LibraryPath_Platform>
+    <VBS_Enclave_Dependencies>$(WindowsSDK_LibraryPath_Platform)\vertdll.lib;$(WindowsSDK_LibraryPath_Platform)\bcrypt.lib</VBS_Enclave_Dependencies>
+    <VC_LibraryPath_Enclave>$(VC_LibraryPath_VC_x64_Desktop)\..\$(Platform)\enclave</VC_LibraryPath_Enclave>
+    <WindowsSDK_LibraryPath_Enclave>$(WindowsSDK_LibraryPath)\..\ucrt_enclave\$(Platform)</WindowsSDK_LibraryPath_Enclave>
+    <VBS_Enclave_Dependencies>$(VC_LibraryPath_Enclave)\libcmt.lib;$(VC_LibraryPath_Enclave)\libvcruntime.lib;$(winsdk_cpp_x64_root)\um\x64\vertdll.lib;$(winsdk_cpp_x64_root)\um\x64\bcrypt.lib;$(winsdk_cpp_x64_root)\ucrt_enclave\x64\ucrt.lib</VBS_Enclave_Dependencies>
+  </PropertyGroup>
+  <PropertyGroup>
+    <!-- Unclear why this variable doesn't exist in the .nuget pkg for the SDK -->
+    <WindowsSdk_EnclaveIncludes_Path>$(WindowsSdkDir)Include\$(WindowsSDKBuildToolsVersion)</WindowsSdk_EnclaveIncludes_Path>
+  </PropertyGroup>
+  <PropertyGroup>
+    <VEIIDExeFullPath>$(WindowsSDKBuildToolsBinVersionedArchFolder)\veiid.exe</VEIIDExeFullPath>
+    <VEIID_Command>$(VEIIDExeFullPath) "$(OutDir)$(TargetName)$(TargetExt)"</VEIID_Command>
+  </PropertyGroup>
+  <PropertyGroup>
+    <VbsEnclaveVirtualTrustLayer>Enclave</VbsEnclaveVirtualTrustLayer>
+    <VbsEnclaveIncludeSdk>false</VbsEnclaveIncludeSdk>
+    <VbsEnclaveSkipCodegen>false</VbsEnclaveSkipCodegen>
+  </PropertyGroup>
+  <!-- Undocked UCRT configuration. -->
+  <PropertyGroup>
+    <UndockedSettingsLoaded>True</UndockedSettingsLoaded>
+    <UseCrtSDKReferenceStaticWarning>False</UseCrtSDKReferenceStaticWarning>
+    <UseEnclave>True</UseEnclave>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)'=='Debug'">
+    <ClCompile>
+      <PreprocessorDefinitions>__ENCLAVE_PROJECT__;_DEBUG;CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
+    </ClCompile>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)'=='Release'">
+    <ClCompile>
+      <PreprocessorDefinitions>__ENCLAVE_PROJECT__;NDEBUG;CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
+    </ClCompile>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup>
+    <ClCompile>
+      <WarningLevel>Level4</WarningLevel>
+      <TreatWarningAsError>true</TreatWarningAsError>
+      <DisableSpecificWarnings>%(DisableSpecificWarnings)</DisableSpecificWarnings>
+      <SDLCheck>true</SDLCheck>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+      <BasicRuntimeChecks>Default</BasicRuntimeChecks>
+      <LanguageStandard_C>stdc17</LanguageStandard_C>
+      <RuntimeTypeInfo>false</RuntimeTypeInfo>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
+      <AdditionalIncludeDirectories>$(WindowsSdk_EnclaveIncludes_Path)\um;$(WindowsSdk_EnclaveIncludes_Path)\shared;$(WindowsSdk_EnclaveIncludes_Path)\ucrt;$(SolutionDir)..\..\Common\veil_enclave_wil_inc;$(MSBUILDThisFileDirectory)..\veil_enclave_inc;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <LanguageStandard>stdcpp20</LanguageStandard>
+    </ClCompile>
+    <Link>
+      <SubSystem>Console</SubSystem>
+      <AdditionalDependencies>$(VBS_Enclave_Dependencies)</AdditionalDependencies>
+      <AdditionalOptions>/INTEGRITYCHECK /ENCLAVE /GUARD:MIXED</AdditionalOptions>
+      <ModuleDefinitionFile>veil_enclave_lib.def</ModuleDefinitionFile>
+      <CETCompat Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</CETCompat>
+      <IgnoreAllDefaultLibraries>true</IgnoreAllDefaultLibraries>
+    </Link>
+    <PostBuildEvent>
+      <Message>Apply VEIID Protection</Message>
+      <!--
+        Skip veiid.exe for static library
+      <Command>$(VEIID_Command)</Command>
+      -->
+    </PostBuildEvent>
+    <Lib />
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <ClInclude Include="crypto.vtl1.h" />
+    <ClInclude Include="future.vtl1.h" />
+    <ClInclude Include="object_table.vtl1.h" />
+    <ClInclude Include="logger.vtl1.h" />
+    <ClInclude Include="vtl0_functions.vtl1.h" />
+    <ClInclude Include="pch.h" />
+    <ClInclude Include="taskpool.vtl1.h" />
+    <ClInclude Include="utils.vtl1.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="logger.vtl1.cpp" />
+    <ClCompile Include="pch.cpp">
+      <PrecompiledHeader>Create</PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="taskpool.vtl1.cpp" />
+    <ClCompile Include="vtl0_functions.vtl1.cpp" />
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ItemGroup>
+    <None Include="packages.config" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(ProjectDir)..\..\..\..\Common\veil_enclave_cpp_support_lib\veil_enclave_cpp_support_lib.vcxproj">
+      <Project>{26116633-98ec-4eac-859c-139d020d10c9}</Project>
+    </ProjectReference>
+  </ItemGroup>
+  <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
+    <PropertyGroup>
+      <ErrorText>This project references NuGet package(s) that are missing on this computer. Use NuGet Package Restore to download them.  For more information, see http://go.microsoft.com/fwlink/?LinkID=322105. The missing file is {0}.</ErrorText>
+    </PropertyGroup>
+    <Error Condition="!Exists('$(SolutionDir)packages\Microsoft.Windows.ImplementationLibrary.1.0.240803.1\build\native\Microsoft.Windows.ImplementationLibrary.targets')" Text="$([System.String]::Format('$(ErrorText)', '$(SolutionDir)packages\Microsoft.Windows.ImplementationLibrary.1.0.240803.1\build\native\Microsoft.Windows.ImplementationLibrary.targets'))" />
+    <Error Condition="!Exists('$(SolutionDir)packages\Microsoft.Windows.SDK.CPP.10.0.26100.2454\build\native\Microsoft.Windows.SDK.cpp.props')" Text="$([System.String]::Format('$(ErrorText)', '$(SolutionDir)packages\Microsoft.Windows.SDK.CPP.10.0.26100.2454\build\native\Microsoft.Windows.SDK.cpp.props'))" />
+    <Error Condition="!Exists('$(SolutionDir)packages\Microsoft.Windows.SDK.CPP.10.0.26100.2454\build\native\Microsoft.Windows.SDK.cpp.targets')" Text="$([System.String]::Format('$(ErrorText)', '$(SolutionDir)packages\Microsoft.Windows.SDK.CPP.10.0.26100.2454\build\native\Microsoft.Windows.SDK.cpp.targets'))" />
+    <Error Condition="!Exists('$(SolutionDir)packages\Microsoft.Windows.SDK.CPP.x64.10.0.26100.2454\build\native\Microsoft.Windows.SDK.cpp.x64.props')" Text="$([System.String]::Format('$(ErrorText)', '$(SolutionDir)packages\Microsoft.Windows.SDK.CPP.x64.10.0.26100.2454\build\native\Microsoft.Windows.SDK.cpp.x64.props'))" />
+    <Error Condition="!Exists('$(SolutionDir)packages\Microsoft.Windows.SDK.BuildTools.10.0.26100.1742\build\Microsoft.Windows.SDK.BuildTools.props')" Text="$([System.String]::Format('$(ErrorText)', '$(SolutionDir)packages\Microsoft.Windows.SDK.BuildTools.10.0.26100.1742\build\Microsoft.Windows.SDK.BuildTools.props'))" />
+    <Error Condition="!Exists('$(SolutionDir)packages\Microsoft.Windows.SDK.BuildTools.10.0.26100.1742\build\Microsoft.Windows.SDK.BuildTools.targets')" Text="$([System.String]::Format('$(ErrorText)', '$(SolutionDir)packages\Microsoft.Windows.SDK.BuildTools.10.0.26100.1742\build\Microsoft.Windows.SDK.BuildTools.targets'))" />
+    <Error Condition="!Exists('$(SolutionDir)packages\MsGsl.3.1.0.2\build\native\MsGsl.props')" Text="$([System.String]::Format('$(ErrorText)', '$(SolutionDir)packages\MsGsl.3.1.0.2\build\native\MsGsl.props'))" />
+    <Error Condition="!Exists('$(SolutionDir)\packages\Microsoft.Windows.VbsEnclaveToolingOnly.0.0.0\build\native\Microsoft.Windows.VbsEnclaveTooling.props')" Text="$([System.String]::Format('$(ErrorText)', '$(SolutionDir)\packages\Microsoft.Windows.VbsEnclaveToolingOnly.0.0.0\build\native\Microsoft.Windows.VbsEnclaveTooling.props'))" />
+    <Error Condition="!Exists('$(SolutionDir)\packages\Microsoft.Windows.VbsEnclaveToolingOnly.0.0.0\build\native\Microsoft.Windows.VbsEnclaveTooling.targets')" Text="$([System.String]::Format('$(ErrorText)', '$(SolutionDir)\packages\Microsoft.Windows.VbsEnclaveToolingOnly.0.0.0\build\native\Microsoft.Windows.VbsEnclaveTooling.targets'))" />
+  </Target>
+</Project>

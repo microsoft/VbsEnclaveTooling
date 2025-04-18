@@ -1,0 +1,50 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.13.35818.85
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "SampleHostApp", "SampleApp1\SampleApp1.vcxproj", "{11FB32AD-E46A-4755-AE54-EDD286FF17D9}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "SampleEnclave", "SampleEnclave\SampleEnclave.vcxproj", "{D2C762E2-0DE1-4F72-98C9-75F7BD69D17E}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Edl", "Edl", "{02EA681E-C7D8-13C7-8484-4AC65E1B71E8}"
+	ProjectSection(SolutionItems) = preProject
+		SampleEnclaveInterface.edl = SampleEnclaveInterface.edl
+	EndProjectSection
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|ARM64 = Debug|ARM64
+		Debug|x64 = Debug|x64
+		Release|ARM64 = Release|ARM64
+		Release|x64 = Release|x64
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{11FB32AD-E46A-4755-AE54-EDD286FF17D9}.Debug|ARM64.ActiveCfg = Debug|ARM64
+		{11FB32AD-E46A-4755-AE54-EDD286FF17D9}.Debug|ARM64.Build.0 = Debug|ARM64
+		{11FB32AD-E46A-4755-AE54-EDD286FF17D9}.Debug|x64.ActiveCfg = Debug|x64
+		{11FB32AD-E46A-4755-AE54-EDD286FF17D9}.Debug|x64.Build.0 = Debug|x64
+		{11FB32AD-E46A-4755-AE54-EDD286FF17D9}.Debug|x64.Deploy.0 = Debug|x64
+		{11FB32AD-E46A-4755-AE54-EDD286FF17D9}.Release|ARM64.ActiveCfg = Release|ARM64
+		{11FB32AD-E46A-4755-AE54-EDD286FF17D9}.Release|ARM64.Build.0 = Release|ARM64
+		{11FB32AD-E46A-4755-AE54-EDD286FF17D9}.Release|x64.ActiveCfg = Release|x64
+		{11FB32AD-E46A-4755-AE54-EDD286FF17D9}.Release|x64.Build.0 = Release|x64
+		{D2C762E2-0DE1-4F72-98C9-75F7BD69D17E}.Debug|ARM64.ActiveCfg = Debug|ARM64
+		{D2C762E2-0DE1-4F72-98C9-75F7BD69D17E}.Debug|ARM64.Build.0 = Debug|ARM64
+		{D2C762E2-0DE1-4F72-98C9-75F7BD69D17E}.Debug|x64.ActiveCfg = Debug|x64
+		{D2C762E2-0DE1-4F72-98C9-75F7BD69D17E}.Debug|x64.Build.0 = Debug|x64
+		{D2C762E2-0DE1-4F72-98C9-75F7BD69D17E}.Release|ARM64.ActiveCfg = Release|ARM64
+		{D2C762E2-0DE1-4F72-98C9-75F7BD69D17E}.Release|ARM64.Build.0 = Release|ARM64
+		{D2C762E2-0DE1-4F72-98C9-75F7BD69D17E}.Release|x64.ActiveCfg = Release|x64
+		{D2C762E2-0DE1-4F72-98C9-75F7BD69D17E}.Release|x64.Build.0 = Release|x64
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {2CC90DE8-BC52-49A9-9902-2F8382149CFC}
+	EndGlobalSection
+	GlobalSection(SharedMSBuildProjectFiles) = preSolution
+		packages\Microsoft.Windows.VbsEnclaveTooling.0.0.0\src\VbsEnclaveSDK\veil_any_inc\veil_any_inc.vcxitems*{d2c762e2-0de1-4f72-98c9-75f7bd69d17e}*SharedItemsImports = 4
+	EndGlobalSection
+EndGlobal

@@ -1,0 +1,5 @@
+*       text=auto
+*       text eol=crlf
+*.png   -text
+*.exe   -text
+*.nupkg -text

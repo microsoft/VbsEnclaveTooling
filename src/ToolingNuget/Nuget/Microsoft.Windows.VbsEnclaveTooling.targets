@@ -1,0 +1,76 @@
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+    <PropertyGroup>
+        <!-- 
+            When other projects include a nuget package (e.g this one) to their vs project it is placed in <ProjectRoot>\packages\<name of nuget package>.
+            The <VbsEnclavePackageDir> should always point to this folder. Our targets file (VbsEnclaveTooling.targets) will be placed in
+            <ProjectRoot>\packages\<name of nuget package>\build\native. 
+         -->
+        <VbsEnclavePackageDir>$([System.IO.Path]::GetFullPath($(MSBuildThisFileDirectory)))..\..\</VbsEnclavePackageDir>
+        <VbsEnclaveExeFilePath>$(VbsEnclavePackageDir)bin\$(Platform)\vbsenclavetooling.exe</VbsEnclaveExeFilePath>
+        <VbsEnclavePackageEnclaveAbiPath>$(VbsEnclavePackageDir)src\VbsEnclaveABI</VbsEnclavePackageEnclaveAbiPath>
+        <VbsEnclaveDeveloperEdlFileName>$([System.IO.Path]::GetFileName('$(VbsEnclaveEdlPath)'))</VbsEnclaveDeveloperEdlFileName>
+        <VbsEnclaveGeneratedFilesDir>$(ProjectDir)Generated Files</VbsEnclaveGeneratedFilesDir>
+        <VbsEnclaveCppSupportLib>$(VbsEnclavePackageDir)lib\native\$(Platform)\veil_enclave_cpp_support_lib.lib</VbsEnclaveCppSupportLib>
+        <VbsEnclaveSDKSrc>$(VbsEnclavePackageDir)src\VbsEnclaveSDK</VbsEnclaveSDKSrc>
+        <VbsEnclaveNugetPackEnclaveLibPath>$(VbsEnclavePackageDir)lib\native\$(Platform)\veil_enclave_lib.lib</VbsEnclaveNugetPackEnclaveLibPath>
+        <VbsEnclaveNugetPackHostLibPath>$(VbsEnclavePackageDir)lib\native\$(Platform)\veil_host_lib.lib</VbsEnclaveNugetPackHostLibPath>
+        <VcpkgSupportDir>$(VbsEnclavePackageDir)vcpkg</VcpkgSupportDir>
+        <FlatbuffersSupportLib>$(VcpkgSupportDir)\lib\flatbuffers.lib</FlatbuffersSupportLib>
+        <FlatbuffersCompiler>$(VcpkgSupportDir)\tools\flatbuffers\flatc.exe</FlatbuffersCompiler>
+        <VcpkgIncludesDir>$(VcpkgSupportDir)\include</VcpkgIncludesDir>
+    </PropertyGroup>
+
+    <!-- The below targets/Items are ran at build time for any project that consumes the VbsEnclaveTooling nuget package. -->
+
+    <!-- Only run the VbsEnclaveCodeGeneration target if the developer passed in a value for <VbsEnclaveEdlPath> -->
+    <Target
+        Name="VbsEnclaveCodeGeneration"
+        BeforeTargets="ClCompile;ClInclude"
+        Condition="'$(VbsEnclaveEdlPath)' != ''">
+        <Message Text="Generating enclave code using '$(VbsEnclaveCodeGenLanguage)'" Importance="high" />
+        <!-- Ensure that the Edl file exists -->
+        <Error Condition="!Exists('$(VbsEnclaveEdlPath)')" Text="The specified .edl file '$(VbsEnclaveEdlPath)' does not exist. Make sure the path to the .edl file is valid and inside the 'VbsEnclaveEdlPath' attribute in the packages .targets file." />
+        <Error Condition="!Exists('$(VbsEnclaveExeFilePath)')" Text="Couldn't find tooling executable file '$(VbsEnclaveExeFilePath)'. Make sure the path to the executable file is valid and inside the 'VbsEnclaveExeFilePath' attribute in the packages .targets file." />
+
+        <!-- Generate the codegen files using the vbsenclavetooling-->
+        <PropertyGroup>
+            <VbsEnclaveToolingExecutionCommand>
+                "$(VbsEnclaveExeFilePath)" --Language "$(VbsEnclaveCodeGenLanguage)" --EdlPath "$(VbsEnclaveEdlPath)" --ErrorHandling "$(VbsEnclaveErrorHandling)" --OutputDirectory "$(VbsEnclaveGeneratedFilesDir)" --VirtualTrustLayer "$(VbsEnclaveVirtualTrustLayer)" --Vtl0ClassName "$(VbsEnclaveVtl0ClassName)" --Namespace "$(VbsEnclaveNamespace)" --FlatbuffersCompilerPath "$(FlatbuffersCompiler)"
+            </VbsEnclaveToolingExecutionCommand>
+        </PropertyGroup>
+
+        <Exec Condition="'$(VbsEnclaveSkipCodegen)' != 'true'" Command="$(VbsEnclaveToolingExecutionCommand)" />
+        <Message Text="Generated '$(VbsEnclaveCodeGenLanguage)' code in output directory: '$(VbsEnclaveGeneratedFilesDir)'" Importance="high" />
+    </Target>
+
+    <ItemDefinitionGroup>
+        <!-- Add the enclave ABI headers and also the generated headers to the consuming projects include path-->
+        <ClCompile>
+            <AdditionalIncludeDirectories>$(VcpkgIncludesDir);$(VbsEnclavePackageDir)src\;$(VbsEnclaveGeneratedFilesDir);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+        </ClCompile>
+
+        <!-- Make sure our cpp support static library is added as an enclaves linker dependency -->
+        <Link Condition="$(VbsEnclaveVirtualTrustLayer) == 'Enclave' ">
+            <AdditionalDependencies>$(VbsEnclaveCppSupportLib);%(AdditionalDependencies)</AdditionalDependencies>
+            <AdditionalDependencies Condition="'$(VbsEnclaveIncludeSdk)' != 'false'">$(VbsEnclaveNugetPackEnclaveLibPath);%(AdditionalDependencies)</AdditionalDependencies>
+        </Link>
+
+        <Link Condition="$(VbsEnclaveVirtualTrustLayer) == 'HostApp' ">
+            <AdditionalDependencies Condition="'$(VbsEnclaveIncludeSdk)' != 'false'">$(VbsEnclaveNugetPackHostLibPath);%(AdditionalDependencies)</AdditionalDependencies>
+        </Link>
+        <Link Condition="$(VbsEnclaveVirtualTrustLayer) == 'Enclave' AND '$(VbsEnclaveEdlPath)' != ''">
+            <ModuleDefinitionFile Condition="'$(UseGeneratedModuleDefinitionFile)' != 'false'">$(VbsEnclaveGeneratedFilesDir)\VbsEnclave\Enclave\vbsenclave.def</ModuleDefinitionFile>
+        </Link>
+    </ItemDefinitionGroup>
+
+    <Target Name="AddGeneratedFilesToBuild"
+            BeforeTargets="ClCompile;ClInclude">
+        <!-- Make sure the generated cpp files are added to build without the developer needing to explicitly add them to their project. -->
+        <ItemGroup>
+            <_WildCardClCompileFor_Cpp Include="$(VbsEnclaveGeneratedFilesDir)\VbsEnclave\**\*.cpp" />
+            <_WildCardClCompileFor_Cpp_h Include="$(VbsEnclaveGeneratedFilesDir)\VbsEnclave\**\*.h" />
+            <ClCompile Include="@(_WildCardClCompileFor_Cpp)"  />
+            <ClInclude Include="@(_WildCardClCompileFor_Cpp_h)"  />
+        </ItemGroup>
+    </Target>    
+</Project>

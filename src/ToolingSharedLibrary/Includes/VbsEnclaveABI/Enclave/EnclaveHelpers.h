@@ -1,0 +1,183 @@
+// Copyright (c) Microsoft Corporation.
+// Licensed under the MIT License.
+#pragma once 
+
+// __ENCLAVE_PROJECT__ must be defined inside the enclave project only. If it is defined
+// inside the host, the host won't build as winenclaveapi
+// is not compatible in an non enclave environment.
+#ifdef __ENCLAVE_PROJECT__
+
+#include <VbsEnclaveABI\Shared\VbsEnclaveAbiBase.h>
+#include <VbsEnclaveABI\Enclave\Vtl0Pointers.h>
+#include <VbsEnclaveABI\Enclave\MemoryAllocation.h>
+
+using namespace VbsEnclaveABI::Enclave::EnclaveMemoryAllocation;
+using namespace VbsEnclaveABI::Enclave::Pointers;
+using namespace VbsEnclaveABI::Shared;
+
+// Content of this file should only be used within an enclave.
+namespace VbsEnclaveABI::Enclave
+{
+    // This will only be available in debug mode. Accessor Functions have not been ported to GE_Current yet
+    // so these place holders will be used until then. This will mean release mode won't build which
+    // should be fine until its ported in Feburary, at which point this entire ifndef block can be removed.
+    #ifndef NDEBUG
+        // REMOVE WHEN PORTED to GE_Current
+        HRESULT static inline
+            EnclaveCopyIntoEnclave(
+                _Out_writes_bytes_(NumberOfBytes) VOID* EnclaveAddress,
+                _In_reads_bytes_(NumberOfBytes) const VOID* UnsecureAddress,
+                _In_ SIZE_T NumberOfBytes
+            )
+        {
+            RETURN_IF_FAILED(CheckForVTL1Buffer(EnclaveAddress, NumberOfBytes));
+            RETURN_IF_FAILED(CheckForVTL0Buffer(UnsecureAddress, NumberOfBytes));
+            memcpy_s(EnclaveAddress, NumberOfBytes, UnsecureAddress, NumberOfBytes);
+            return S_OK;
+        }
+
+        // REPLACE WITH REAL FUNCTIONS WHEN PORTED to GE_Current
+        HRESULT static inline
+            EnclaveCopyOutOfEnclave(
+                _Out_writes_bytes_(NumberOfBytes) VOID* UnsecureAddress,
+                _In_reads_bytes_(NumberOfBytes) const VOID* EnclaveAddress,
+                _In_ SIZE_T NumberOfBytes
+            )
+        {
+            RETURN_IF_FAILED(CheckForVTL1Buffer(EnclaveAddress, NumberOfBytes));
+            RETURN_IF_FAILED(CheckForVTL0Buffer(UnsecureAddress, NumberOfBytes));
+            memcpy_s(UnsecureAddress, NumberOfBytes, EnclaveAddress, NumberOfBytes);
+            return S_OK;
+        }
+    #endif
+
+    // Generated ABI export functions in VTL1 call this function as an entry point to calling
+    // its associated VTL1 ABI impl function.
+    template <typename ParamsT, typename FuncImplT>
+    static inline HRESULT CallVtl1ExportFromVtl1(
+        _In_ void* context,
+        _In_ FuncImplT abi_impl_func)
+    {
+        auto function_context = reinterpret_cast<EnclaveFunctionContext*>(context);
+        RETURN_HR_IF_NULL(E_INVALIDARG, function_context);
+        auto vtl0_context_ptr = vtl0_ptr<EnclaveFunctionContext>(function_context);
+        wil::unique_process_heap_ptr<EnclaveFunctionContext> copied_vtl0_context {
+            static_cast<EnclaveFunctionContext*>(AllocateMemory(sizeof(EnclaveFunctionContext)))};
+        RETURN_IF_NULL_ALLOC(copied_vtl0_context.get());
+
+        RETURN_IF_FAILED(EnclaveCopyIntoEnclave(
+            copied_vtl0_context.get(),
+            vtl0_context_ptr.get(),
+            sizeof(EnclaveFunctionContext)));
+        
+        size_t forward_params_size = copied_vtl0_context->m_forwarded_parameters.buffer_size;
+        auto forward_params_buffer = copied_vtl0_context->m_forwarded_parameters.buffer;
+        THROW_HR_IF(E_INVALIDARG, forward_params_size > 0 && forward_params_buffer == nullptr);
+
+        wil::unique_process_heap_ptr<std::uint8_t> input_buffer {
+           static_cast<std::uint8_t*>(AllocateMemory(forward_params_size))};
+        RETURN_IF_NULL_ALLOC(input_buffer.get());
+        RETURN_IF_FAILED(EnclaveCopyIntoEnclave(
+            input_buffer.get(),
+            forward_params_buffer,
+            forward_params_size));
+
+        auto flatbuffer_in_params = UnpackFlatbufferWithSize<ParamsT>(input_buffer.get(), forward_params_size);
+        flatbuffers::FlatBufferBuilder flatbuffer_out_params_builder {};
+        abi_impl_func(flatbuffer_in_params, flatbuffer_out_params_builder);
+
+        // VTL0 will free this memory.
+        vtl0_memory_ptr<std::uint8_t> vtl0_return_params;
+        RETURN_IF_FAILED(AllocateVtl0Memory(&vtl0_return_params, flatbuffer_out_params_builder.GetSize()));
+        RETURN_IF_NULL_ALLOC(vtl0_return_params.get());
+        RETURN_IF_FAILED(EnclaveCopyOutOfEnclave(
+            vtl0_return_params.get(),
+            flatbuffer_out_params_builder.GetBufferPointer(),
+            flatbuffer_out_params_builder.GetSize()));
+
+        vtl0_context_ptr->m_returned_parameters.buffer = vtl0_return_params.get();
+        vtl0_context_ptr->m_returned_parameters.buffer_size = flatbuffer_out_params_builder.GetSize();
+        vtl0_return_params.release();
+
+        return S_OK;
+    }
+
+    // Abi functions in VTL1 call this function as an entry point to calling
+    // its associated VTL0 callback.
+    template <typename ParamsT, typename ReturnParamsT>
+    static inline HRESULT CallVtl0CallbackFromVtl1(
+        _In_ std::uint32_t function_index,
+        _In_ flatbuffers::FlatBufferBuilder& flatbuffer_in_params_builder,
+        _Inout_ ReturnParamsT& callback_result)
+    {
+        bool func_index_in_table = s_vtl0_function_table.contains(function_index);
+        RETURN_HR_IF(E_INVALIDARG, !func_index_in_table);
+
+        vtl0_memory_ptr<std::uint8_t> vtl0_in_params;
+        RETURN_IF_FAILED(AllocateVtl0Memory(&vtl0_in_params, flatbuffer_in_params_builder.GetSize()));
+        RETURN_IF_NULL_ALLOC(vtl0_in_params.get());
+        RETURN_IF_FAILED(EnclaveCopyOutOfEnclave(
+            vtl0_in_params.get(),
+            flatbuffer_in_params_builder.GetBufferPointer(),
+            flatbuffer_in_params_builder.GetSize()));
+
+        EnclaveFunctionContext vtl1_outgoing_context {};
+        vtl1_outgoing_context.m_forwarded_parameters.buffer = vtl0_in_params.get();
+        vtl1_outgoing_context.m_forwarded_parameters.buffer_size = flatbuffer_in_params_builder.GetSize();
+        vtl1_outgoing_context.m_returned_parameters.buffer = nullptr;
+        vtl1_outgoing_context.m_returned_parameters.buffer_size = 0;
+
+        vtl0_memory_ptr<EnclaveFunctionContext> vtl0_context_ptr;
+        RETURN_IF_FAILED(AllocateVtl0Memory(&vtl0_context_ptr, sizeof(EnclaveFunctionContext)));
+        RETURN_IF_NULL_ALLOC(vtl0_context_ptr.get());
+
+        RETURN_IF_FAILED(EnclaveCopyOutOfEnclave(
+            vtl0_context_ptr.get(),
+            &vtl1_outgoing_context,
+            sizeof(EnclaveFunctionContext)));
+
+        void* vtl0_output_buffer;
+        auto vtl0_callback = reinterpret_cast<LPENCLAVE_ROUTINE>(s_vtl0_function_table.at(function_index));
+
+        RETURN_IF_WIN32_BOOL_FALSE((CallEnclave(
+            vtl0_callback,
+            reinterpret_cast<void*>(vtl0_context_ptr.get()),
+            TRUE,
+            &vtl0_output_buffer)));
+        RETURN_IF_FAILED(ABI_PVOID_TO_HRESULT(vtl0_output_buffer));
+
+        EnclaveFunctionContext vtl1_incoming_context {};
+        RETURN_IF_FAILED((EnclaveCopyIntoEnclave(
+            &vtl1_incoming_context,
+            vtl0_context_ptr.get(),
+            sizeof(EnclaveFunctionContext))));
+
+        // Make sure returned params are freed before we leave the function.
+        auto vtl0_return_params_ptr =
+            reinterpret_cast<uint8_t*>(vtl1_incoming_context.m_returned_parameters.buffer);
+
+        auto vtl0_return_params = vtl0_memory_ptr<uint8_t>(vtl0_return_params_ptr);
+
+        // return parameters should have a value e.g ParameterContainer<SomeType>
+        // TODO: should create custom hresult to differentiate from others, here.
+        RETURN_HR_IF_NULL(E_INVALIDARG, vtl0_return_params.get());
+
+        auto return_buffer_size = vtl1_incoming_context.m_returned_parameters.buffer_size;
+        auto return_buffer = vtl1_incoming_context.m_returned_parameters.buffer;
+        THROW_HR_IF(E_INVALIDARG, return_buffer_size > 0 && return_buffer == nullptr);
+
+        wil::unique_process_heap_ptr<uint8_t> vtl1_returned_parameters {
+           reinterpret_cast<uint8_t*>(AllocateMemory(return_buffer_size))};
+        RETURN_IF_NULL_ALLOC(vtl1_returned_parameters.get());
+
+        RETURN_IF_FAILED(EnclaveCopyIntoEnclave(
+            vtl1_returned_parameters.get(),
+            vtl0_return_params.get(),
+            vtl1_incoming_context.m_returned_parameters.buffer_size));
+
+        callback_result = UnpackFlatbufferWithSize<ReturnParamsT>(vtl1_returned_parameters.get(), return_buffer_size);
+        return S_OK;
+    }
+}
+
+#endif // end __ENCLAVE_PROJECT__

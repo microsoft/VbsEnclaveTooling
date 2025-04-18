@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+    <!-- 
+    Sign enclave during build time:
+    Update EnclaveSignRootCertName with the name of the test certificate name that will be used to sign the enclave dll.
+    Note: If remote deploying the dll to a remote machine, the remote machine must also have the certificate installed/imported
+    onto it first before the dll can be used on it.
+  -->
+    <PropertyGroup>
+        <!-- 
+            Add your own certificate here. See step 3 in the enclave development guide:
+            https://learn.microsoft.com/windows/win32/trusted-execution/vbs-enclaves-dev-guide#step-3-signing-vbs-enclave-dlls
+        -->
+        <EnclaveSignRootCertName></EnclaveSignRootCertName>
+        <EnclaveSignTargetName>$(OutDir)$(TargetName).dll</EnclaveSignTargetName>
+        <VbsEnclaveToolingLocalPackageDir>$(SolutionDir)\packages\Microsoft.Windows.VbsEnclaveTooling.0.0.0</VbsEnclaveToolingLocalPackageDir>
+
+        <!-- Make sure the VirtualTrustLayer is set to Enclave so the enclave generated files get added at compile time -->
+        <VbsEnclaveVirtualTrustLayer>Enclave</VbsEnclaveVirtualTrustLayer>
+    </PropertyGroup>
+    <Target
+      Name="TestSignEnclaves"
+      Condition="$(EnclaveSignRootCertName) != ''"
+      AfterTargets="Build">
+        <Message Importance="high" Text="Signing $(EnclaveSignTargetName) for enclave use with test cert"/>
+        <Exec Command="signtool sign /ph /a /fd SHA256 /r &quot;$(EnclaveSignRootCertName)&quot; &quot;$(EnclaveSignTargetName)&quot;"/>
+    </Target>
+
+    <!-- 
+        Before the build starts delete the Microsoft.Windows.VbsEnclaveTooling.0.0.0 package so it can be reinstalled with any new content if it
+        exists.
+    -->
+    <Target
+      Name="DeleteTestVbsEnclavePackage"
+      Condition="Exists('$(VbsEnclaveToolingLocalPackageDir)')"
+      BeforeTargets="ClCompile;ClInclude;AddLocalNuGetPackageBeforeBuild">
+        <Message Importance="high" Text="Deleting the local $(VbsEnclaveToolingLocalPackageDir) folder so it can be reinstalled by nuget."/>
+        <RemoveDir Directories="$(VbsEnclaveToolingLocalPackageDir)" />
+    </Target>
+</Project>
