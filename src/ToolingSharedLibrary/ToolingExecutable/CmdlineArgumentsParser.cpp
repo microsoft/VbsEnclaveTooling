@@ -79,6 +79,12 @@ bool CmdlineArgumentsParser::ParseArguments(int argc, char* argv[])
             CHECK_SUCCESS(GetFlatbuffersCompilerPathFromArgs(++i, argv, argc, m_flatbuffer_compiler_path));
             args_found++;
         }
+        else if (arg == "--AddSdkLinkage")
+        {
+            m_add_sdk_linkage = true;
+            i++;
+            args_found++;
+        }
         else
         {
             PrintError(ErrorId::InvalidArgument, arg);

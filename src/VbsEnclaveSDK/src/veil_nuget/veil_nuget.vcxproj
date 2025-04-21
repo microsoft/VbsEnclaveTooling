@@ -1,6 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  <Import Project="..\..\packages\Microsoft.Windows.SDK.BuildTools.10.0.22621.756\build\Microsoft.Windows.SDK.BuildTools.props" Condition="Exists('..\..\packages\Microsoft.Windows.SDK.BuildTools.10.0.22621.756\build\Microsoft.Windows.SDK.BuildTools.props')" />
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Debug|ARM64">
       <Configuration>Debug</Configuration>
@@ -22,10 +21,10 @@
   <PropertyGroup Label="Globals">
     <VCProjectVersion>17.0</VCProjectVersion>
     <Keyword>Win32Proj</Keyword>
-    <ProjectGuid>{1EC49385-89BB-4439-83DA-8D0374291F40}</ProjectGuid>
-    <RootNamespace>ToolingNuget</RootNamespace>
+    <ProjectGuid>{0900af8b-ee9b-4208-97a5-225bdbad01ba}</ProjectGuid>
+    <RootNamespace>veil_nuget</RootNamespace>
     <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
-    <ProjectName>ToolingOnlyNuget</ProjectName>
+    <ProjectName>veil_nuget</ProjectName>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
@@ -74,16 +73,16 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LibraryPath>$(LibraryPath)</LibraryPath>
-    <TargetName>ToolingNuget</TargetName>
+    <TargetName>veil_nuget</TargetName>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|ARM64'">
-    <TargetName>ToolingNuget</TargetName>
+    <TargetName>veil_nuget</TargetName>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <TargetName>ToolingNuget</TargetName>
+    <TargetName>veil_nuget</TargetName>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|ARM64'">
-    <TargetName>ToolingNuget</TargetName>
+    <TargetName>veil_nuget</TargetName>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
@@ -157,29 +156,21 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <None Include="Nuget\Microsoft.Windows.VbsEnclaveTooling.nuspec" />
-    <None Include="..\ToolingNuget\Nuget\Microsoft.Windows.VbsEnclaveTooling.props" />
-    <None Include="..\ToolingNuget\Nuget\Microsoft.Windows.VbsEnclaveTooling.targets" />
-    <None Include="..\ToolingNuget\Nuget\VisualStudioUiBuild.targets" />
+    <None Include="Nuget\Microsoft.Windows.VbsEnclave.SDK.nuspec" />
+    <None Include="Nuget\Microsoft.Windows.VbsEnclave.SDK.props" />
+    <None Include="Nuget\Microsoft.Windows.VbsEnclave.SDK.targets" />
+    <None Include="Nuget\VisualStudioUiBuild.targets" />
     <None Include="packages.config" />
     <None Include="README.md" />
   </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\ToolingExecutable\ToolingExecutable.vcxproj">
-      <Project>{8068fe68-f1dc-4a82-b2a8-97ae1a48d571}</Project>
-    </ProjectReference>
-  </ItemGroup>
-  <Import Project="..\ToolingNuget\Nuget\Microsoft.Windows.VbsEnclaveTooling.targets" />
-  <Import Project="..\ToolingNuget\Nuget\VisualStudioUiBuild.targets" />
+  <Import Project="Nuget\Microsoft.Windows.VbsEnclave.SDK.targets" />
+  <Import Project="Nuget\VisualStudioUiBuild.targets" />
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
-    <Import Project="..\..\packages\Microsoft.Windows.SDK.BuildTools.10.0.22621.756\build\Microsoft.Windows.SDK.BuildTools.targets" Condition="Exists('..\..\packages\Microsoft.Windows.SDK.BuildTools.10.0.22621.756\build\Microsoft.Windows.SDK.BuildTools.targets')" />
   </ImportGroup>
   <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
     <PropertyGroup>
       <ErrorText>This project references NuGet package(s) that are missing on this computer. Use NuGet Package Restore to download them.  For more information, see http://go.microsoft.com/fwlink/?LinkID=322105. The missing file is {0}.</ErrorText>
     </PropertyGroup>
-    <Error Condition="!Exists('..\..\packages\Microsoft.Windows.SDK.BuildTools.10.0.22621.756\build\Microsoft.Windows.SDK.BuildTools.props')" Text="$([System.String]::Format('$(ErrorText)', '..\..\packages\Microsoft.Windows.SDK.BuildTools.10.0.22621.756\build\Microsoft.Windows.SDK.BuildTools.props'))" />
-    <Error Condition="!Exists('..\..\packages\Microsoft.Windows.SDK.BuildTools.10.0.22621.756\build\Microsoft.Windows.SDK.BuildTools.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\..\packages\Microsoft.Windows.SDK.BuildTools.10.0.22621.756\build\Microsoft.Windows.SDK.BuildTools.targets'))" />
   </Target>
 </Project>

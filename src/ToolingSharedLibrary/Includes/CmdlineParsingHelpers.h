@@ -4,6 +4,8 @@
 #pragma once
 #include <pch.h>
 #include "ErrorHelpers.h"
+#include <wil\resource.h>
+#include <wil\win32_helpers.h>
 
 using namespace ErrorHelpers;
 
@@ -13,6 +15,8 @@ using namespace ErrorHelpers;
 
 namespace CmdlineParsingHelpers
 {   
+    inline constexpr std::string_view g_internal_sdk_edl_name = "veil_abi.edl";
+
     static inline void PrintUsage() {
         std::cout
             << "\n"
@@ -32,6 +36,7 @@ namespace CmdlineParsingHelpers
             << "  --Vtl0ClassName <name_of_class>                      name of the vtl0 class that will be generated for use by the hostapp. (By default this is the name of the .edl file with the word 'Wrapper' appended to it).\n"
             << "  --Namespace <name_of_class>                          name of the namespace that all generated code will be encapsulated in. (By default this is the name of the .edl file).\n"
             << "  --FlatbuffersCompilerPath <absolute_path_to_file>    Absolute path to the flatbuffer compiler for the language provided in '--Language'. (By default this is the current directory.). The executable must be called flatc.exe and must be an official version of the flatbuffer compiler. \n"
+            << "  --AddSdkLinkage                                      Adds #pragma statements to the generated code that will export the VbsEnclave SDK functions into the consuming enclave projects dll. The SDK .edl is expected to be in the same directory as the tooling .exe. For internal usage.\n"
             << std::endl;
     }
 
@@ -214,5 +219,14 @@ namespace CmdlineParsingHelpers
         // not compile. So, we're ok with the 3 checks above.
         flatbuffers_compiler_path = args[index];
         return ErrorId::Success;
+    }
+
+    inline std::filesystem::path GetInternalSdkEdlFile()
+    {
+        std::filesystem::path return_path{};
+        wil::unique_cotaskmem_string path;
+        THROW_IF_FAILED(wil::GetModuleFileNameW(nullptr, path));
+        auto exe_path = return_path / path.get();
+        return exe_path.parent_path() / g_internal_sdk_edl_name;
     }
 }

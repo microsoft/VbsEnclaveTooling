@@ -14,11 +14,11 @@ namespace VbsEnclaveABI::Enclave
 {
     namespace VTL0CallBackHelpers
     {
-        extern LPENCLAVE_ROUTINE s_vtl0_allocation_function;
-        extern LPENCLAVE_ROUTINE s_vtl0_deallocation_function;
-        extern wil::srwlock s_vtl0_function_table_lock;
-        extern bool s_are_functions_registered;
-        extern std::unordered_map<std::uint32_t, std::uint64_t> s_vtl0_function_table;
+        inline LPENCLAVE_ROUTINE s_vtl0_allocation_function;
+        inline LPENCLAVE_ROUTINE s_vtl0_deallocation_function;
+        inline wil::srwlock s_vtl0_function_table_lock;
+        inline bool s_are_functions_registered;
+        inline std::unordered_map<std::uint32_t, std::uint64_t> s_vtl0_function_table;
         static constexpr size_t minimum_number_of_callbacks = 2;
 
         static inline HRESULT AddVtl0FunctionsToTable(_In_ const std::vector<std::uint64_t>& stub_functions)

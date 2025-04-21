@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  <Import Project="$(SolutionDir)packages\Microsoft.Windows.VbsEnclaveToolingOnly.0.0.0\build\native\Microsoft.Windows.VbsEnclaveTooling.props" Condition="Exists('$(SolutionDir)packages\Microsoft.Windows.VbsEnclaveToolingOnly.0.0.0\build\native\Microsoft.Windows.VbsEnclaveTooling.props')" />
+  <Import Project="$(SolutionDir)packages\Microsoft.Windows.VbsEnclave.CodeGenerator.0.0.0\build\native\Microsoft.Windows.VbsEnclave.CodeGenerator.props" Condition="Exists('$(SolutionDir)packages\Microsoft.Windows.VbsEnclave.CodeGenerator.0.0.0\build\native\Microsoft.Windows.VbsEnclave.CodeGenerator.props')" />
   <Import Project="$(SolutionDir)packages\MsGsl.3.1.0.2\build\native\MsGsl.props" Condition="Exists('$(SolutionDir)packages\MsGsl.3.1.0.2\build\native\MsGsl.props')" />
   <Import Project="$(SolutionDir)packages\Microsoft.Windows.SDK.BuildTools.10.0.26100.1742\build\Microsoft.Windows.SDK.BuildTools.props" Condition="Exists('$(SolutionDir)packages\Microsoft.Windows.SDK.BuildTools.10.0.26100.1742\build\Microsoft.Windows.SDK.BuildTools.props')" />
   <Import Project="$(SolutionDir)packages\Microsoft.Windows.SDK.CPP.x64.10.0.26100.2454\build\native\Microsoft.Windows.SDK.cpp.x64.props" Condition="Exists('$(SolutionDir)packages\Microsoft.Windows.SDK.CPP.x64.10.0.26100.2454\build\native\Microsoft.Windows.SDK.cpp.x64.props')" />
@@ -49,7 +49,7 @@
   </PropertyGroup>
   <ImportGroup Label="Shared">
     <Import Project="$(SolutionDir)packages\Microsoft.Windows.ImplementationLibrary.1.0.240803.1\build\native\Microsoft.Windows.ImplementationLibrary.targets" Condition="Exists('$(SolutionDir)packages\Microsoft.Windows.ImplementationLibrary.1.0.240803.1\build\native\Microsoft.Windows.ImplementationLibrary.targets')" />
-    <Import Project="$(SolutionDir)packages\Microsoft.Windows.VbsEnclaveToolingOnly.0.0.0\build\native\Microsoft.Windows.VbsEnclaveTooling.targets" Condition="Exists('$(SolutionDir)packages\Microsoft.Windows.VbsEnclaveToolingOnly.0.0.0\build\native\Microsoft.Windows.VbsEnclaveTooling.targets')" />
+    <Import Project="$(SolutionDir)packages\Microsoft.Windows.VbsEnclave.CodeGenerator.0.0.0\build\native\Microsoft.Windows.VbsEnclave.CodeGenerator.targets" Condition="Exists('$(SolutionDir)packages\Microsoft.Windows.VbsEnclave.CodeGenerator.0.0.0\build\native\Microsoft.Windows.VbsEnclave.CodeGenerator.targets')" />
   </ImportGroup>
   <PropertyGroup>
     <WindowsSDK_LibraryPath_Platform>$(WindowsSDKLibDir)\um\$(Platform)</WindowsSDK_LibraryPath_Platform>
@@ -68,8 +68,6 @@
   </PropertyGroup>
   <PropertyGroup>
     <VbsEnclaveVirtualTrustLayer>Enclave</VbsEnclaveVirtualTrustLayer>
-    <VbsEnclaveIncludeSdk>false</VbsEnclaveIncludeSdk>
-    <VbsEnclaveSkipCodegen>false</VbsEnclaveSkipCodegen>
   </PropertyGroup>
   <!-- Undocked UCRT configuration. -->
   <PropertyGroup>
@@ -143,12 +141,7 @@
   <ItemGroup>
     <None Include="packages.config" />
   </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="$(ProjectDir)..\..\..\..\Common\veil_enclave_cpp_support_lib\veil_enclave_cpp_support_lib.vcxproj">
-      <Project>{26116633-98ec-4eac-859c-139d020d10c9}</Project>
-    </ProjectReference>
-  </ItemGroup>
-  <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
+    <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
     <PropertyGroup>
       <ErrorText>This project references NuGet package(s) that are missing on this computer. Use NuGet Package Restore to download them.  For more information, see http://go.microsoft.com/fwlink/?LinkID=322105. The missing file is {0}.</ErrorText>
     </PropertyGroup>
@@ -159,7 +152,7 @@
     <Error Condition="!Exists('$(SolutionDir)packages\Microsoft.Windows.SDK.BuildTools.10.0.26100.1742\build\Microsoft.Windows.SDK.BuildTools.props')" Text="$([System.String]::Format('$(ErrorText)', '$(SolutionDir)packages\Microsoft.Windows.SDK.BuildTools.10.0.26100.1742\build\Microsoft.Windows.SDK.BuildTools.props'))" />
     <Error Condition="!Exists('$(SolutionDir)packages\Microsoft.Windows.SDK.BuildTools.10.0.26100.1742\build\Microsoft.Windows.SDK.BuildTools.targets')" Text="$([System.String]::Format('$(ErrorText)', '$(SolutionDir)packages\Microsoft.Windows.SDK.BuildTools.10.0.26100.1742\build\Microsoft.Windows.SDK.BuildTools.targets'))" />
     <Error Condition="!Exists('$(SolutionDir)packages\MsGsl.3.1.0.2\build\native\MsGsl.props')" Text="$([System.String]::Format('$(ErrorText)', '$(SolutionDir)packages\MsGsl.3.1.0.2\build\native\MsGsl.props'))" />
-    <Error Condition="!Exists('$(SolutionDir)\packages\Microsoft.Windows.VbsEnclaveToolingOnly.0.0.0\build\native\Microsoft.Windows.VbsEnclaveTooling.props')" Text="$([System.String]::Format('$(ErrorText)', '$(SolutionDir)\packages\Microsoft.Windows.VbsEnclaveToolingOnly.0.0.0\build\native\Microsoft.Windows.VbsEnclaveTooling.props'))" />
-    <Error Condition="!Exists('$(SolutionDir)\packages\Microsoft.Windows.VbsEnclaveToolingOnly.0.0.0\build\native\Microsoft.Windows.VbsEnclaveTooling.targets')" Text="$([System.String]::Format('$(ErrorText)', '$(SolutionDir)\packages\Microsoft.Windows.VbsEnclaveToolingOnly.0.0.0\build\native\Microsoft.Windows.VbsEnclaveTooling.targets'))" />
+    <Error Condition="!Exists('$(SolutionDir)\packages\Microsoft.Windows.VbsEnclave.CodeGenerator.0.0.0\build\native\Microsoft.Windows.VbsEnclave.CodeGenerator.props')" Text="$([System.String]::Format('$(ErrorText)', '$(SolutionDir)\packages\Microsoft.Windows.VbsEnclave.CodeGenerator.0.0.0\build\native\Microsoft.Windows.VbsEnclave.CodeGenerator.props'))" />
+    <Error Condition="!Exists('$(SolutionDir)\packages\Microsoft.Windows.VbsEnclave.CodeGenerator.0.0.0\build\native\Microsoft.Windows.VbsEnclave.CodeGenerator.targets')" Text="$([System.String]::Format('$(ErrorText)', '$(SolutionDir)\packages\Microsoft.Windows.VbsEnclave.CodeGenerator.0.0.0\build\native\Microsoft.Windows.VbsEnclave.CodeGenerator.targets'))" />
   </Target>
 </Project>

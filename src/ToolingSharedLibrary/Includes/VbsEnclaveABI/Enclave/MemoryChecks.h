@@ -12,9 +12,9 @@
 
 namespace VbsEnclaveABI::Enclave::MemoryChecks
 {
-    extern LPCVOID s_enclave_memory_begin; // inclusive
-    extern LPCVOID s_enclave_memory_end;   // exclusive
-    extern std::atomic<bool> s_memory_bounds_calculated;
+    inline LPCVOID s_enclave_memory_begin; // inclusive
+    inline LPCVOID s_enclave_memory_end;   // exclusive
+    inline std::atomic<bool> s_memory_bounds_calculated;
 
     static inline HRESULT InitializeEnclaveDetails()
     {

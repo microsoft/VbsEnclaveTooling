@@ -5,7 +5,7 @@
 
 #include <iostream>
 
-#include <enclave_api.vtl0.h>
+#include <veil_host\enclave_api.vtl0.h>
 
 #include <VbsEnclave\HostApp\Stubs.h>
 

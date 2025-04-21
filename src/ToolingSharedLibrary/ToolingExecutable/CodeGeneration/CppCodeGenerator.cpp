@@ -17,6 +17,7 @@ namespace CodeGeneration
 {
     CppCodeGenerator::CppCodeGenerator(
         const Edl& edl,
+        const std::optional<Edl>& sdk_edl,
         const std::filesystem::path& output_path,
         ErrorHandlingKind error_handling,
         VirtualTrustLayerKind trust_layer,
@@ -53,6 +54,14 @@ namespace CodeGeneration
             m_flatbuffer_compiler_path = std::format(
                 c_flatbuffer_compiler_default_path,
                 std::filesystem::current_path().generic_string());
+        }
+
+        if (sdk_edl.has_value())
+        {
+            for (auto& [name, function] : sdk_edl.value().m_trusted_functions)
+            {
+                m_sdk_trusted_function_abi_names.push_back(function.abi_m_name);
+            }
         }
     }
 
@@ -116,6 +125,36 @@ namespace CodeGeneration
                 enclave_types_header);
 
             SaveFileToOutputFolder(c_flatbuffer_fbs_filename, enclave_headers_location, flatbuffer_schema);
+
+            auto exports_folder = enclave_headers_location / "Exports";
+
+            std::string exported_declarations_header = BuildVtl1ExportedFunctionDeclarationsHeader(
+                m_generated_namespace_name,
+                m_edl.m_trusted_functions);
+
+            SaveFileToOutputFolder(
+                c_enclave_exports_header,
+                exports_folder,
+                exported_declarations_header);
+
+            std::string exported_definitions_source = BuildVtl1ExportedFunctionsSourcefile(
+                m_generated_namespace_name,
+                m_sdk_trusted_function_abi_names,
+                m_edl.m_trusted_functions);
+
+            SaveFileToOutputFolder(
+                c_enclave_exports_source,
+                exports_folder,
+                exported_definitions_source);
+
+            std::string boundary_stubs_header = BuildVtl1BoundaryFunctionsStubHeader(
+                m_generated_namespace_name,
+                m_edl.m_trusted_functions);
+
+            SaveFileToOutputFolder(
+                c_stubs_header_for_enclave_exports,
+                exports_folder,
+                boundary_stubs_header);
         }
         else if (m_virtual_trust_layer_kind == VirtualTrustLayerKind::HostApp)
         {

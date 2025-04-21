@@ -1,13 +1,13 @@
 <?xml version="1.0"?>
 <package xmlns="http://schemas.microsoft.com/packaging/2013/05/nuspec.xsd">
   <metadata minClientVersion="2.5">
-    <id>Microsoft.Windows.VbsEnclaveToolingOnly</id>
+    <id>Microsoft.Windows.VbsEnclave.SDK</id>
     <version>$target_version$</version>
-    <title>Vbs Enclave Tooling</title>
+    <title>Vbs Enclave Tooling SDK</title>
     <authors>Microsoft</authors>
     <owners>Microsoft</owners>
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
-    <description>Virtual based secure enclave tooling is used to make interacting with vbs enclaves easier for developers. It supports features like code generation between your app and your enclave to marshal into and out of the enclave.</description>
+    <description>The virtual based secure enclave SDK is used to make interacting with vbs enclaves easier for developers. It supports features like queuing work onto vtl0 taskpools from vtl1.</description>
     <tags>vbs enclave virtual secure vbsenclave native nativepackage</tags>
     <license type="file">LICENSE</license>
     <readme>README.md</readme>
@@ -23,15 +23,17 @@
     </dependencies>
   </metadata>
   <files>
-    <file src="..\..\..\LICENSE"/>
-    <file src="$vbsenclavetooling_x64_exe$" target="bin\x64"/>
-    <file src="$vbsenclavetooling_arm64_exe$" target="bin\arm64"/>
-    <file src="$vcpkg_sources$\**" target="vcpkg\"/>
-    <file src="$vcpkg_tools$\**" target="vcpkg\tools"/>
-    <file src="..\..\ToolingNuget\Nuget\Microsoft.Windows.VbsEnclaveTooling.props" target="build\native"/>
-    <file src="..\..\ToolingNuget\Nuget\Microsoft.Windows.VbsEnclaveTooling.targets" target="build\native"/>
-    <file src="..\..\ToolingSharedLibrary\Includes\VbsEnclaveABI\**" target="src\VbsEnclaveABI\" />
-    <file src="..\..\..\Common\veil_enclave_wil_inc\**" target="src\" />
+    <file src="..\..\..\..\..\LICENSE"/>
+    <file src="Microsoft.Windows.VbsEnclave.SDK.targets" target="build\native"/>
+    <file src="Microsoft.Windows.VbsEnclave.SDK.props" target="build\native"/>
+    <file src="..\..\veil_enclave_lib\**\*.h" target="src\VbsEnclaveSDK\veil_enclave" />
+    <file src="..\..\veil_host_lib\**\*.h" target="src\VbsEnclaveSDK\veil_host" />
+    <file src="..\..\veil_any_inc\**" target="src\VbsEnclaveSDK\veil_any_inc" />
+    <file src="..\..\..\..\..\Common\veil_enclave_wil_inc\**" target="src\" />
+    <file src="$vbsenclave_sdk_enclave_x64_lib$" target="lib\native\x64"/>
+    <file src="$vbsenclave_sdk_enclave_arm64_lib$" target="lib\native\arm64"/>
+    <file src="$vbsenclave_sdk_host_x64_lib$" target="lib\native\x64"/>
+    <file src="$vbsenclave_sdk_host_arm64_lib$" target="lib\native\arm64"/>
     <file src="$vbsenclavetooling_cpp_support_x64_lib$" target="lib\native\x64"/>
     <file src="$vbsenclavetooling_cpp_support_arm64_lib$" target="lib\native\arm64"/>
     <file src="..\..\..\README.md"/>

@@ -35,8 +35,17 @@ int main(int argc, char* argv[])
     {
         auto edl_parser = EdlParser(argument_parser.EdlFilePath());
         Edl edl = edl_parser.Parse();
+        std::optional<Edl> sdk_edl{};
+
+        if (argument_parser.ShouldAddSdkLinkage())
+        {
+            auto sdk_edl_parser = EdlParser(GetInternalSdkEdlFile());
+            sdk_edl = sdk_edl_parser.Parse();
+        }
+
         auto cpp_code_generator = CppCodeGenerator(
             std::move(edl),
+            sdk_edl,
             argument_parser.OutDirectory(),
             argument_parser.ErrorHandling(),
             argument_parser.VirtualTrustLayer(),
