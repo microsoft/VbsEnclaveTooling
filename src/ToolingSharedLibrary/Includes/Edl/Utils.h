@@ -8,7 +8,6 @@
 
 #pragma once
 #include <pch.h>
-#include <unordered_set>
 
 namespace EdlProcessor
 {
@@ -42,14 +41,6 @@ namespace EdlProcessor
     constexpr const std::uint32_t MINIMUM_HEX_LENGTH = 3;
     constexpr const std::uint32_t HEX_PREFIX_LENGTH = 2;
     constexpr const char* HEX_PREFIX[HEX_PREFIX_LENGTH] = { "0x", "0X"};
-
-    struct EdlTypeToHash
-    {
-        std::size_t operator()(EdlTypeKind type) const
-        {
-            return std::hash<std::uint32_t>()(static_cast<std::uint32_t>(type));
-        }
-    };
 
     // Special keyword for internal use for the anonymous enum value.
     constexpr const char* EDL_ANONYMOUS_ENUM_KEYWORD = "__anonymous_enum";
@@ -108,26 +99,6 @@ namespace EdlProcessor
         { "size_t", EdlTypeKind::SizeT },
         { "uintptr_t", EdlTypeKind::UIntPtr },
         { "vector", EdlTypeKind::Vector },
-    };
-
-    static const std::unordered_set<EdlTypeKind, EdlTypeToHash> c_edlTypes_primitive_set =
-    {
-        EdlTypeKind::Bool,
-        EdlTypeKind::Char,
-        EdlTypeKind::Float,
-        EdlTypeKind::Double,
-        EdlTypeKind::Int8,
-        EdlTypeKind::Int16,
-        EdlTypeKind::Int32,
-        EdlTypeKind::Int64,
-        EdlTypeKind::UInt8,
-        EdlTypeKind::UInt16,
-        EdlTypeKind::UInt32,
-        EdlTypeKind::UInt64,
-        EdlTypeKind::WChar,
-        EdlTypeKind::Enum,
-        EdlTypeKind::HRESULT,
-        EdlTypeKind::SizeT,
     };
 
     static inline bool IsHexPrefix(const char* token_start)

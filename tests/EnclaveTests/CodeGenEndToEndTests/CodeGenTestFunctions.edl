@@ -17,6 +17,7 @@ enclave
         Hex_val1 = 0x01,
         Hex_val2,
         Hex_val3,
+        Hex_val4 = 0xFF
     };
 
     // Decimal enum example
@@ -109,6 +110,16 @@ enclave
             DecimalEnum enum_val,
             int8_t int8_val);
 
+        HRESULT TestPassingPrimitivesAsInOutValues_To_Enclave(
+            [in, out] bool bool_val,
+            [in, out] HexEnum enum_val,
+            [in, out] int8_t int8_val);
+
+        HRESULT TestPassingPrimitivesAsOutValues_To_Enclave(
+            [out] bool bool_val,
+            [out] HexEnum enum_val,
+            [out] int8_t int8_val);
+
         // Pointers should have an in or out direction. Otherwise the codegen layer will see them as [in] parameters.
         HRESULT TestPassingPrimitivesAsInPointers_To_Enclave(
             [in] uint8_t* uint8_val,
@@ -193,6 +204,8 @@ enclave
         // Vtl1 can't test vtl0 callbacks unless we start them from vtl0. These functions
         // are just used to allow us to start the callback tests.
         HRESULT Start_TestPassingPrimitivesAsValues_To_HostApp_Callback_Test();
+        HRESULT Start_TestPassingPrimitivesAsInOutValues_To_HostApp_Callback_Test();
+        HRESULT Start_TestPassingPrimitivesAsOutValues_To_HostApp_Callback_Test();
         HRESULT Start_TestPassingPrimitivesAsInPointers_To_HostApp_Callback_Test();
         HRESULT Start_TestPassingPrimitivesAsInOutPointers_To_HostApp_Callback_Test();
         HRESULT Start_TestPassingPrimitivesAsOutPointers_To_HostApp_Callback_Test(); 
@@ -217,6 +230,16 @@ enclave
             bool bool_val,
             DecimalEnum enum_val,
             int8_t int8_val);
+
+        HRESULT TestPassingPrimitivesAsInOutValues_To_HostApp(
+            [in, out] bool bool_val,
+            [in, out] HexEnum enum_val,
+            [in, out] int8_t int8_val);
+
+        HRESULT TestPassingPrimitivesAsOutValues_To_HostApp(
+            [out] bool bool_val,
+            [out] HexEnum enum_val,
+            [out] int8_t int8_val);
 
         // Pointers should have an in or out direction. Otherwise the codegen layer will see them as [in] parameters.
         HRESULT TestPassingPrimitivesAsInPointers_To_HostApp(

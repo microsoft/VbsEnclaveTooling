@@ -37,14 +37,48 @@ StructWithNoPointers TestEnclave::ReturnStructWithValues_From_HostApp_callback()
 }
 
 HRESULT TestEnclave::TestPassingPrimitivesAsValues_To_HostApp_callback(
-    _In_ const bool bool_val,
-    _In_ const DecimalEnum enum_val,
-    _In_ const std::int8_t int8_val)
+    _In_ bool bool_val,
+    _In_ DecimalEnum enum_val,
+    _In_ std::int8_t int8_val)
 {
     // Confirm vtl1 parameters were correctly copied to vtl0 memory.
     THROW_HR_IF(E_INVALIDARG, bool_val != true);
     THROW_HR_IF(E_INVALIDARG, enum_val != DecimalEnum::Deci_val2);
     THROW_HR_IF(E_INVALIDARG, int8_val != std::numeric_limits<std::int8_t>::max());
+
+    return S_OK;
+}
+
+HRESULT TestEnclave::TestPassingPrimitivesAsInOutValues_To_HostApp_callback(
+    _Inout_ bool& bool_val,
+    _Inout_ HexEnum& enum_val,
+    _Inout_ std::int8_t& int8_val)
+{
+    // Confirm vtl1 parameters were correctly copied to vtl0 memory.
+    THROW_HR_IF(E_INVALIDARG, bool_val != true);
+    THROW_HR_IF(E_INVALIDARG, enum_val != HexEnum::Hex_val4);
+    THROW_HR_IF(E_INVALIDARG, int8_val != std::numeric_limits<std::int8_t>::max());
+
+    bool_val = false;
+    enum_val = HexEnum::Hex_val3;
+    int8_val = 100;
+
+    return S_OK;
+}
+
+HRESULT TestEnclave::TestPassingPrimitivesAsOutValues_To_HostApp_callback(
+    _Out_ bool& bool_val,
+    _Out_ HexEnum& enum_val,
+    _Out_ std::int8_t& int8_val)
+{
+    // Confirm vtl1 parameters were correctly copied to vtl0 memory.
+    THROW_HR_IF(E_INVALIDARG, bool_val != false);
+    THROW_HR_IF(E_INVALIDARG, enum_val != HexEnum::Hex_val1);
+    THROW_HR_IF(E_INVALIDARG, int8_val != 0);
+
+    bool_val = true;
+    enum_val = HexEnum::Hex_val4;
+    int8_val = std::numeric_limits<std::int8_t>::max();
 
     return S_OK;
 }

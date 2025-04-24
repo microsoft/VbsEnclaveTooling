@@ -265,9 +265,13 @@ namespace CodeGeneration
 
     inline std::string GetParameterQualifier(const Declaration& declaration)
     {
+        // only non primitive in parameters should contain const qualifier
         if (declaration.IsInParameterOnly())
         {
-            return "const";
+            if (declaration.HasPointer() || !declaration.IsPrimitiveType())
+            {
+                return "const";
+            }
         }
 
         return {};
@@ -283,7 +287,8 @@ namespace CodeGeneration
             return {};
         }
         
-        if (!declaration.HasPointer() && c_edlTypes_primitive_set.contains(declaration.m_edl_type_info.m_type_kind))
+        // Primitive In parameters should not have a reference declarator.
+        if (declaration.IsInParameterOnly() && declaration.IsPrimitiveType())
         {
             return {};
         }
