@@ -95,6 +95,22 @@ using namespace DeveloperTypes;\n\
 ";
 
     static inline constexpr std::string_view c_vtl1_enclave_stub_namespace = R"(
+// START: DO NOT MODIFY: For internal abi usage
+namespace VbsEnclaveABI::Enclave::VTL0CallBackHelpers
+{{
+    __declspec(selectany) LPENCLAVE_ROUTINE s_vtl0_allocation_function = nullptr;
+    __declspec(selectany) LPENCLAVE_ROUTINE s_vtl0_deallocation_function = nullptr;
+    __declspec(selectany) wil::srwlock s_vtl0_function_table_lock {{}};
+    __declspec(selectany) bool s_are_functions_registered {{}};
+    __declspec(selectany) std::unordered_map<std::uint32_t, std::uint64_t> s_vtl0_function_table{{}};
+}}
+namespace VbsEnclaveABI::Enclave::MemoryChecks
+{{
+    __declspec(selectany) LPCVOID s_enclave_memory_begin = nullptr; // inclusive
+    __declspec(selectany) LPCVOID s_enclave_memory_end = nullptr;   // exclusive
+    __declspec(selectany) std::atomic<bool> s_memory_bounds_calculated = {{}};
+}}
+// END: DO NOT MODIFY: For internal abi usage
 namespace {}
 {{
     namespace VTL1_Stubs
