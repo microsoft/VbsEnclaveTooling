@@ -61,7 +61,7 @@ namespace veil::vtl1::implementation::taskpool::callouts
 
     HRESULT taskpool_make_callback(_In_ const void* enclave, _In_ const std::uint64_t taskpool_instance_vtl1, _In_ const std::uint32_t thread_count, _In_ const bool must_finish_all_queued_tasks, _Out_  void** taskpool_instance_vtl0)
     {
-        auto taskpoolInstanceVtl0 = DeveloperTypes::ULongPtr {};
+        auto taskpoolInstanceVtl0 = uintptr_t {};
         RETURN_IF_FAILED(veil_abi::VTL0_Callbacks::taskpool_make_callback(
             abi::to_abi(enclave),
             taskpool_instance_vtl1,
