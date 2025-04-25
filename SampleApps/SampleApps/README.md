@@ -47,7 +47,7 @@ Developer flow: Create a host app, encrypt and decrypt data in enclave
 Steps
 ------------
 1. In your host app set up enclave as shown below
-
+```
     // Create app+user enclave identity
     auto ownerId = veil::vtl0::appmodel::owner_id();
 
@@ -60,17 +60,13 @@ Steps
 
     // Register framework callbacks
     veil::vtl0::enclave_api::register_callbacks(enclave.get());
-		  
+```		  
 1. Create enclave dll- SampleEnclave.dll
 
 	Refer to VBS Enclave development guide: 
 https://learn.microsoft.com/en-us/windows/win32/trusted-execution/vbs-enclaves-dev-guide
-	Make sure you have made the following changes to the compiler and linker configurations of your Enclave dll (VS 
+	Make sure you have made the following [changes to the compiler and linker configurations of your Enclave dll] (https://learn.microsoft.com/en-us/windows/win32/trusted-execution/vbs-enclaves-dev-guide#:~:text=Before%20we%20can%20build%20the%20test%20enclave%20DLL%2C%20some%20changes%20to%20the%20compiler%20and%20linker%20configurations%20are%20required%3A) (VS 
 dll). 
-	
-https://learn.microsoft.com/en-us/windows/win32/trusted-execution/vbs-enclaves-dev-guide#:~:text=Before%20we%20can%2
-0build%20the%20test%20enclave%20DLL%2C%20some%20changes%20to%20the%20compiler%20and%20linker%20configurations%20are%
-20required%3A
 
 1. Telemetry support
 
