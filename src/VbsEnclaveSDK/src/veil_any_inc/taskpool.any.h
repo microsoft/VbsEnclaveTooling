@@ -7,16 +7,16 @@
 
 namespace veil::any::implementation::taskpool
 {
-    DeveloperTypes::ULongPtr to_abi(const void* enclave)
+    uintptr_t to_abi(const void* enclave)
     {
-        auto ptr = DeveloperTypes::ULongPtr {};
-        ptr.value = reinterpret_cast<uint64_t>(enclave);
+        auto ptr = uintptr_t {};
+        ptr = reinterpret_cast<uint64_t>(enclave);
         return ptr;
     }
 
-    void* from_abi(const DeveloperTypes::ULongPtr& ptr)
+    void* from_abi(uintptr_t ptr)
     {
-        return reinterpret_cast<void*>(ptr.value);
+        return reinterpret_cast<void*>(ptr);
     }
 }
 

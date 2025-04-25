@@ -3,11 +3,6 @@
 
 enclave
 {
-    struct ULongPtr
-    {
-        uint64_t value;
-    };
-    
     trusted
     {
         HRESULT taskpool_run_task(
@@ -24,24 +19,24 @@ enclave
 
         // taskpool
         HRESULT taskpool_make(
-            ULongPtr enclave,
+            uintptr_t enclave,
             uint64_t taskpool_instance_vtl1,
             uint32_t thread_count,
             bool must_finish_all_queued_tasks,
-            [out] ULongPtr taskpool_instance_vtl0
+            [out] uintptr_t taskpool_instance_vtl0
         );
 
         HRESULT taskpool_delete(
-            ULongPtr taskpool_instance_vtl0
+            uintptr_t taskpool_instance_vtl0
         );
 
         HRESULT taskpool_schedule_task(
-            ULongPtr taskpool_instance_vtl0,
+            uintptr_t taskpool_instance_vtl0,
             uint64_t task_id
         );
         
         HRESULT taskpool_cancel_queued_tasks(
-            ULongPtr taskpool_instance_vtl0
+            uintptr_t taskpool_instance_vtl0
         );
 
         // logger
