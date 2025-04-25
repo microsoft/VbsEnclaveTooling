@@ -155,6 +155,7 @@ namespace EdlProcessor
         EdlTypeKind::UInt16,
         EdlTypeKind::UInt32,
         EdlTypeKind::UInt64,
+        EdlTypeKind::UIntPtr,
         EdlTypeKind::WChar,
         EdlTypeKind::Enum,
         EdlTypeKind::HRESULT,
