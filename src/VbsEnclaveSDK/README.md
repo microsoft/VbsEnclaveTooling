@@ -10,7 +10,7 @@ produces a static library for the hostApp and one for the enclave.
 This is still being fleshed out but you can view the usage patterns in both
 the `sample_enclave` and `sample_hostapp` projects. Note about building
 the sample enclave project locally. You can follow the instructions here: 
-[Signing VBS enclave DLLs](https://learn.microsoft.com/en-us/windows/win32/trusted-execution/vbs-enclaves-dev-guide#step-3-signing-vbs-enclave-dlls),
+[Signing VBS enclave DLLs](https://learn.microsoft.com/windows/win32/trusted-execution/vbs-enclaves-dev-guide#step-3-signing-vbs-enclave-dlls),
 to create a certificate for your enclave. Then you can edit the `EnclaveCertName`
 property within the `sample_enclave` vcxproj file located here
 in the [sample_enclave.vcxproj](https://github.com/microsoft/VbsEnclaveTooling/blob/8179c372186bd7ab1f1d68ac044fe4a98ccc7eef/src/VbsEnclaveSDK/samples/sample_enclave/sample_enclave.vcxproj#L54)

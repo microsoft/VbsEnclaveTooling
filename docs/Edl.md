@@ -9,7 +9,7 @@ header file.
 
 .edl files are used as the artifact developers provide to the tool, so that it may generate code that will marshal data into and
 out of the enclave. The generated code generates stub functions based on the functions provided within the .edl and these stub
-functions use the [CallEnclave](https://learn.microsoft.com/en-us/windows/win32/api/enclaveapi/nf-enclaveapi-callenclave) api to
+functions use the [CallEnclave](https://learn.microsoft.com/windows/win32/api/enclaveapi/nf-enclaveapi-callenclave) api to
 pass data between the hostApp and the enclave. The marshaling is handled within these stub functions.
 
 ## Some basics

@@ -18,7 +18,7 @@ Building locally
 
 *The code generator uses Google Flatbuffers to facilite marshaling data into and out of the enclave.
 This means we take Flatbuffers as a dependency, specifically in our `ToolingSharedLibrary` project.
-We use [vcpkg](https://learn.microsoft.com/en-us/vcpkg/get_started/overview) to add the flatbuffer compiler and header files into our nuget package. To build the
+We use [vcpkg](https://learn.microsoft.com/vcpkg/get_started/overview) to add the flatbuffer compiler and header files into our nuget package. To build the
 repository you will need to install/integrate `vcpkg` into your visual studio application inorder 
 to build this repository.*
 
