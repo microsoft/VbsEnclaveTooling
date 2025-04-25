@@ -10,9 +10,9 @@ You would be running your app here.
 	- Please make sure you have Microsoft.Windows.SDK.cpp version 10.0.26100.2454 installed on your host machine where 
 you would be building code. You may have to downgrade your SDK version if needed.
 	- Install Visual Studio Remote Debugger in your VM. 
-https://learn.microsoft.com/en-us/visualstudio/debugger/remote-debugging?view=vs-2022
+https://learn.microsoft.com/visualstudio/debugger/remote-debugging?view=vs-2022
 	- Set up Visual Studio remote debugger for the Host app. 
-https://learn.microsoft.com/en-us/visualstudio/debugger/remote-debugging?view=vs-2022
+https://learn.microsoft.com/visualstudio/debugger/remote-debugging?view=vs-2022
 	- Make sure you have the enclave dll available in the working directory of the VM. You can specify the absolute dll 
 path in Visual Studio -> SampleHostApp -> Properties -> Debugging -> Remote Windows Debugger -> Additional files to 
 let VS do place it on the VM.
@@ -25,7 +25,7 @@ help debug.
 1. Known issues:
 	- No certificates were found that met all the given criteria.
 		- Make sure to go through Step 3 in 
-https://learn.microsoft.com/en-us/windows/win32/trusted-execution/vbs-enclaves-dev-guide and run the following 
+https://learn.microsoft.com/windows/win32/trusted-execution/vbs-enclaves-dev-guide and run the following 
 commands.
 		- PS C:\WINDOWS\system32> New-SelfSignedCertificate -CertStoreLocation Cert:\\CurrentUser\\My -DnsName 
 "TheDefaultTestEnclaveCertName" -KeyUsage DigitalSignature -KeySpec Signature -KeyLength 2048 -KeyAlgorithm RSA 
@@ -47,7 +47,7 @@ Developer flow: Create a host app, encrypt and decrypt data in enclave
 Steps
 ------------
 1. In your host app set up enclave as shown below
-
+```C++
     // Create app+user enclave identity
     auto ownerId = veil::vtl0::appmodel::owner_id();
 
@@ -60,17 +60,11 @@ Steps
 
     // Register framework callbacks
     veil::vtl0::enclave_api::register_callbacks(enclave.get());
-		  
+```		  
 1. Create enclave dll- SampleEnclave.dll
 
 	Refer to VBS Enclave development guide: 
-https://learn.microsoft.com/en-us/windows/win32/trusted-execution/vbs-enclaves-dev-guide
-	Make sure you have made the following changes to the compiler and linker configurations of your Enclave dll (VS 
-dll). 
-	
-https://learn.microsoft.com/en-us/windows/win32/trusted-execution/vbs-enclaves-dev-guide#:~:text=Before%20we%20can%2
-0build%20the%20test%20enclave%20DLL%2C%20some%20changes%20to%20the%20compiler%20and%20linker%20configurations%20are%
-20required%3A
+https://learn.microsoft.com/windows/win32/trusted-execution/vbs-enclaves-dev-guide. Make sure you have made the following [changes to the compiler and linker configurations of your Enclave dll](https://learn.microsoft.com/windows/win32/trusted-execution/vbs-enclaves-dev-guide#:~:text=Before%20we%20can%20build%20the%20test%20enclave%20DLL%2C%20some%20changes%20to%20the%20compiler%20and%20linker%20configurations%20are%20required%3A) (VS dll). 
 
 1. Telemetry support
 
