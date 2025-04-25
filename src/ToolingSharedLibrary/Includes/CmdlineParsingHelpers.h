@@ -4,6 +4,8 @@
 #pragma once
 #include <pch.h>
 #include "ErrorHelpers.h"
+#include <wil\resource.h>
+#include <wil\win32_helpers.h>
 
 using namespace ErrorHelpers;
 
@@ -13,6 +15,8 @@ using namespace ErrorHelpers;
 
 namespace CmdlineParsingHelpers
 {   
+    inline constexpr std::string_view g_internal_sdk_edl_name = "veil_abi.edl";
+
     static inline void PrintUsage() {
         std::cout
             << "\n"

@@ -10,8 +10,14 @@ EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "veil_enclave_lib", "src\veil_enclave_lib\veil_enclave_lib.vcxproj", "{323433E4-11D6-4B5B-93E4-04504E2EF0E1}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "sample_enclave", "samples\sample_enclave\sample_enclave.vcxproj", "{4F3B74F2-8C5D-449E-9841-ED5FCF6372DE}"
+	ProjectSection(ProjectDependencies) = postProject
+		{0900AF8B-EE9B-4208-97A5-225BDBAD01BA} = {0900AF8B-EE9B-4208-97A5-225BDBAD01BA}
+	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "sample_hostapp", "samples\sample_hostapp\sample_hostapp.vcxproj", "{FE406A85-1FC5-43DD-B4BB-20B024407B83}"
+	ProjectSection(ProjectDependencies) = postProject
+		{0900AF8B-EE9B-4208-97A5-225BDBAD01BA} = {0900AF8B-EE9B-4208-97A5-225BDBAD01BA}
+	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "veil_host_lib", "src\veil_host_lib\veil_host_lib.vcxproj", "{EE419DF4-62DC-4827-A0FC-727709B90C06}"
 EndProject
@@ -23,6 +29,19 @@ EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "edl_sample", "edl_sample", "{193B25ED-43AC-4A27-992E-0075C82354B2}"
 	ProjectSection(SolutionItems) = preProject
 		samples\sample_abi.edl = samples\sample_abi.edl
+	EndProjectSection
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "veil_nuget", "src\veil_nuget\veil_nuget.vcxproj", "{0900AF8B-EE9B-4208-97A5-225BDBAD01BA}"
+	ProjectSection(ProjectDependencies) = postProject
+		{26116633-98EC-4EAC-859C-139D020D10C9} = {26116633-98EC-4EAC-859C-139D020D10C9}
+		{323433E4-11D6-4B5B-93E4-04504E2EF0E1} = {323433E4-11D6-4B5B-93E4-04504E2EF0E1}
+		{EE419DF4-62DC-4827-A0FC-727709B90C06} = {EE419DF4-62DC-4827-A0FC-727709B90C06}
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{8EC462FD-D22E-90A8-E5CE-7E832BA40C5D}"
+	ProjectSection(SolutionItems) = preProject
+		nuget.config = nuget.config
+		README.md = README.md
 	EndProjectSection
 EndProject
 Global
@@ -74,7 +93,6 @@ Global
 		{4F3B74F2-8C5D-449E-9841-ED5FCF6372DE}.Debug|ARM64.ActiveCfg = Debug|ARM64
 		{4F3B74F2-8C5D-449E-9841-ED5FCF6372DE}.Debug|ARM64.Build.0 = Debug|ARM64
 		{4F3B74F2-8C5D-449E-9841-ED5FCF6372DE}.Debug|x64.ActiveCfg = Debug|x64
-		{4F3B74F2-8C5D-449E-9841-ED5FCF6372DE}.Debug|x64.Build.0 = Debug|x64
 		{4F3B74F2-8C5D-449E-9841-ED5FCF6372DE}.Debug|x86.ActiveCfg = Debug|x64
 		{4F3B74F2-8C5D-449E-9841-ED5FCF6372DE}.Debug|x86.Build.0 = Debug|x64
 		{4F3B74F2-8C5D-449E-9841-ED5FCF6372DE}.Release|Any CPU.ActiveCfg = Release|x64
@@ -91,7 +109,6 @@ Global
 		{FE406A85-1FC5-43DD-B4BB-20B024407B83}.Debug|ARM64.ActiveCfg = Debug|ARM64
 		{FE406A85-1FC5-43DD-B4BB-20B024407B83}.Debug|ARM64.Build.0 = Debug|ARM64
 		{FE406A85-1FC5-43DD-B4BB-20B024407B83}.Debug|x64.ActiveCfg = Debug|x64
-		{FE406A85-1FC5-43DD-B4BB-20B024407B83}.Debug|x64.Build.0 = Debug|x64
 		{FE406A85-1FC5-43DD-B4BB-20B024407B83}.Debug|x64.Deploy.0 = Debug|x64
 		{FE406A85-1FC5-43DD-B4BB-20B024407B83}.Debug|x86.ActiveCfg = Debug|x64
 		{FE406A85-1FC5-43DD-B4BB-20B024407B83}.Debug|x86.Build.0 = Debug|x64
@@ -123,6 +140,22 @@ Global
 		{EE419DF4-62DC-4827-A0FC-727709B90C06}.Release|x64.Build.0 = Release|x64
 		{EE419DF4-62DC-4827-A0FC-727709B90C06}.Release|x86.ActiveCfg = Release|x64
 		{EE419DF4-62DC-4827-A0FC-727709B90C06}.Release|x86.Build.0 = Release|x64
+		{0900AF8B-EE9B-4208-97A5-225BDBAD01BA}.Debug|Any CPU.ActiveCfg = Debug|x64
+		{0900AF8B-EE9B-4208-97A5-225BDBAD01BA}.Debug|Any CPU.Build.0 = Debug|x64
+		{0900AF8B-EE9B-4208-97A5-225BDBAD01BA}.Debug|ARM64.ActiveCfg = Debug|ARM64
+		{0900AF8B-EE9B-4208-97A5-225BDBAD01BA}.Debug|ARM64.Build.0 = Debug|ARM64
+		{0900AF8B-EE9B-4208-97A5-225BDBAD01BA}.Debug|x64.ActiveCfg = Debug|x64
+		{0900AF8B-EE9B-4208-97A5-225BDBAD01BA}.Debug|x64.Build.0 = Debug|x64
+		{0900AF8B-EE9B-4208-97A5-225BDBAD01BA}.Debug|x86.ActiveCfg = Debug|x64
+		{0900AF8B-EE9B-4208-97A5-225BDBAD01BA}.Debug|x86.Build.0 = Debug|x64
+		{0900AF8B-EE9B-4208-97A5-225BDBAD01BA}.Release|Any CPU.ActiveCfg = Release|x64
+		{0900AF8B-EE9B-4208-97A5-225BDBAD01BA}.Release|Any CPU.Build.0 = Release|x64
+		{0900AF8B-EE9B-4208-97A5-225BDBAD01BA}.Release|ARM64.ActiveCfg = Release|ARM64
+		{0900AF8B-EE9B-4208-97A5-225BDBAD01BA}.Release|ARM64.Build.0 = Release|ARM64
+		{0900AF8B-EE9B-4208-97A5-225BDBAD01BA}.Release|x64.ActiveCfg = Release|x64
+		{0900AF8B-EE9B-4208-97A5-225BDBAD01BA}.Release|x64.Build.0 = Release|x64
+		{0900AF8B-EE9B-4208-97A5-225BDBAD01BA}.Release|x86.ActiveCfg = Release|x64
+		{0900AF8B-EE9B-4208-97A5-225BDBAD01BA}.Release|x86.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

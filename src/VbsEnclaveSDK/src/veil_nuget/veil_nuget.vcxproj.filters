@@ -16,10 +16,13 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
-    <None Include="Nuget\Microsoft.Windows.VbsEnclaveTooling.props" />
-    <None Include="Nuget\Microsoft.Windows.VbsEnclaveTooling.targets" />
-    <None Include="Nuget\Microsoft.Windows.VbsEnclaveTooling.nuspec" />
     <None Include="Nuget\VisualStudioUiBuild.targets" />
     <None Include="README.md" />
+    <None Include="Nuget\Microsoft.Windows.VbsEnclave.SDK.nuspec" />
+    <None Include="Nuget\Microsoft.Windows.VbsEnclave.SDK.props" />
+    <None Include="Nuget\Microsoft.Windows.VbsEnclave.SDK.targets" />
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="Nuget\Microsoft.Windows.VbsEnclave.SDK.props" />
   </ItemGroup>
 </Project>

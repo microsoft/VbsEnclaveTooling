@@ -116,6 +116,26 @@ namespace CodeGeneration
                 enclave_types_header);
 
             SaveFileToOutputFolder(c_flatbuffer_fbs_filename, enclave_headers_location, flatbuffer_schema);
+
+            auto exports_folder = enclave_headers_location / "Exports";
+
+            std::string exported_definitions_source = BuildVtl1ExportedFunctionsSourcefile(
+                m_generated_namespace_name,
+                m_edl.m_trusted_functions);
+
+            SaveFileToOutputFolder(
+                std::format(c_enclave_exports_source, m_generated_namespace_name),
+                exports_folder,
+                exported_definitions_source);
+
+            std::string boundary_stubs_header = BuildVtl1BoundaryFunctionsStubHeader(
+                m_generated_namespace_name,
+                m_edl.m_trusted_functions);
+
+            SaveFileToOutputFolder(
+                std::format(c_stubs_header_for_enclave_exports, m_generated_namespace_name),
+                exports_folder,
+                boundary_stubs_header);
         }
         else if (m_virtual_trust_layer_kind == VirtualTrustLayerKind::HostApp)
         {

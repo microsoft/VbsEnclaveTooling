@@ -1,14 +1,3 @@
 LIBRARY
 
 EXPORTS
-        ; [Codegen] Veil Enclave SDK entrypoints
-         taskpool_run_task0_Generated_Stub
-        __AbiRegisterVtl0Callbacks_veil_abi__
-
-        ; [Codegen] Sample app entrypoints
-         RunEncryptionKeyExample_LoadEncryptionKey2_Generated_Stub
-         RunTaskpoolExample0_Generated_Stub
-         RunEncryptionKeyExample_CreateEncryptionKey1_Generated_Stub
-         RunEncryptionKeyExample_LoadEncryptionKeyThreadpool3_Generated_Stub
-        __AbiRegisterVtl0Callbacks_VbsEnclave__
-        __AbiRegisterVtl0Callbacks_veil_abi__

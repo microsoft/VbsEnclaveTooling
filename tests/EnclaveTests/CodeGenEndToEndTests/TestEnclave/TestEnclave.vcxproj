@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  <Import Project="..\..\..\packages\Microsoft.Windows.VbsEnclaveTooling.0.0.0\build\native\Microsoft.Windows.VbsEnclaveTooling.props" Condition="Exists('..\..\..\packages\Microsoft.Windows.VbsEnclaveTooling.0.0.0\build\native\Microsoft.Windows.VbsEnclaveTooling.props')" />
-  <ItemGroup Label="ProjectConfigurations">
+    <Import Project="$(SolutionDir)packages\Microsoft.Windows.VbsEnclave.SDK.0.0.0\build\native\Microsoft.Windows.VbsEnclave.SDK.props" Condition="Exists('$(SolutionDir)packages\Microsoft.Windows.VbsEnclave.SDK.0.0.0\build\native\Microsoft.Windows.VbsEnclave.SDK.props')" />
+    <Import Project="$(SolutionDir)packages\Microsoft.Windows.VbsEnclave.CodeGenerator.0.0.0\build\native\Microsoft.Windows.VbsEnclave.CodeGenerator.props" Condition="Exists('$(SolutionDir)packages\Microsoft.Windows.VbsEnclave.CodeGenerator.0.0.0\build\native\Microsoft.Windows.VbsEnclave.CodeGenerator.props')" />    <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Debug|ARM64">
       <Configuration>Debug</Configuration>
       <Platform>ARM64</Platform>
@@ -122,7 +122,7 @@
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
       <LanguageStandard>stdcpp20</LanguageStandard>
       <LanguageStandard_C>stdc17</LanguageStandard_C>
-      <AdditionalIncludeDirectories>$(SolutionDir)\Common\veil_enclave_wil_inc;$(ProjectDir)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)</AdditionalIncludeDirectories>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
       <BasicRuntimeChecks>Default</BasicRuntimeChecks>
     </ClCompile>
@@ -145,7 +145,7 @@
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <LanguageStandard>stdcpp20</LanguageStandard>
       <LanguageStandard_C>stdc17</LanguageStandard_C>
-      <AdditionalIncludeDirectories>$(SolutionDir)\Common\veil_enclave_wil_inc;$(ProjectDir)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -191,7 +191,7 @@
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <LanguageStandard>stdcpp20</LanguageStandard>
       <LanguageStandard_C>stdc17</LanguageStandard_C>
-      <AdditionalIncludeDirectories>$(SolutionDir)\Common\veil_enclave_wil_inc;$(ProjectDir)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -211,17 +211,20 @@
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
-    <Import Project="..\..\..\packages\Microsoft.Windows.ImplementationLibrary.1.0.240803.1\build\native\Microsoft.Windows.ImplementationLibrary.targets" Condition="Exists('..\..\..\packages\Microsoft.Windows.ImplementationLibrary.1.0.240803.1\build\native\Microsoft.Windows.ImplementationLibrary.targets')" />
+    <Import Project="$(SolutionDir)packages\Microsoft.Windows.ImplementationLibrary.1.0.240803.1\build\native\Microsoft.Windows.ImplementationLibrary.targets" Condition="Exists('$(SolutionDir)packages\Microsoft.Windows.ImplementationLibrary.1.0.240803.1\build\native\Microsoft.Windows.ImplementationLibrary.targets')" />
+    <Import Project="$(SolutionDir)packages\Microsoft.Windows.VbsEnclave.CodeGenerator.0.0.0\build\native\Microsoft.Windows.VbsEnclave.CodeGenerator.targets" Condition="Exists('$(SolutionDir)packages\Microsoft.Windows.VbsEnclave.CodeGenerator.0.0.0\build\native\Microsoft.Windows.VbsEnclave.CodeGenerator.targets')" />
+    <Import Project="$(SolutionDir)packages\Microsoft.Windows.VbsEnclave.SDK.0.0.0\build\native\Microsoft.Windows.VbsEnclave.SDK.targets" Condition="Exists('$(SolutionDir)packages\Microsoft.Windows.VbsEnclave.SDK.0.0.0\build\native\Microsoft.Windows.VbsEnclave.SDK.targets')" />
   </ImportGroup>
   <Import Project="$(ProjectDir)\EnclaveBuild.targets" Condition="Exists('$(ProjectDir)\EnclaveBuild.targets')" />
   <Import Project="$(ProjectDir)..\TestEnclaveAndHostAppShared.targets" Condition="Exists('$(ProjectDir)..\TestEnclaveAndHostAppShared.targets')" />
-  <Import Project="..\..\..\packages\Microsoft.Windows.VbsEnclaveTooling.0.0.0\build\native\Microsoft.Windows.VbsEnclaveTooling.targets" Condition="Exists('..\..\..\packages\Microsoft.Windows.VbsEnclaveTooling.0.0.0\build\native\Microsoft.Windows.VbsEnclaveTooling.targets')" />
   <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
     <PropertyGroup>
       <ErrorText>This project references NuGet package(s) that are missing on this computer. Use NuGet Package Restore to download them.  For more information, see http://go.microsoft.com/fwlink/?LinkID=322105. The missing file is {0}.</ErrorText>
     </PropertyGroup>
-    <Error Condition="!Exists('..\..\..\packages\Microsoft.Windows.ImplementationLibrary.1.0.240803.1\build\native\Microsoft.Windows.ImplementationLibrary.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\..\..\packages\Microsoft.Windows.ImplementationLibrary.1.0.240803.1\build\native\Microsoft.Windows.ImplementationLibrary.targets'))" />
-    <Error Condition="!Exists('..\..\..\packages\Microsoft.Windows.VbsEnclaveTooling.0.0.0\build\native\Microsoft.Windows.VbsEnclaveTooling.props')" Text="$([System.String]::Format('$(ErrorText)', '..\..\..\packages\Microsoft.Windows.VbsEnclaveTooling.0.0.0\build\native\Microsoft.Windows.VbsEnclaveTooling.props'))" />
-    <Error Condition="!Exists('..\..\..\packages\Microsoft.Windows.VbsEnclaveTooling.0.0.0\build\native\Microsoft.Windows.VbsEnclaveTooling.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\..\..\packages\Microsoft.Windows.VbsEnclaveTooling.0.0.0\build\native\Microsoft.Windows.VbsEnclaveTooling.targets'))" />
+    <Error Condition="!Exists('$(SolutionDir)packages\Microsoft.Windows.ImplementationLibrary.1.0.240803.1\build\native\Microsoft.Windows.ImplementationLibrary.targets')" Text="$([System.String]::Format('$(ErrorText)', '$(SolutionDir)packages\Microsoft.Windows.ImplementationLibrary.1.0.240803.1\build\native\Microsoft.Windows.ImplementationLibrary.targets'))" />
+    <Error Condition="!Exists('$(SolutionDir)packages\Microsoft.Windows.VbsEnclave.CodeGenerator.0.0.0\build\native\Microsoft.Windows.VbsEnclave.CodeGenerator.props')" Text="$([System.String]::Format('$(ErrorText)', '$(SolutionDir)packages\Microsoft.Windows.VbsEnclave.CodeGenerator.0.0.0\build\native\Microsoft.Windows.VbsEnclave.CodeGenerator.props'))" />
+    <Error Condition="!Exists('$(SolutionDir)packages\Microsoft.Windows.VbsEnclave.CodeGenerator.0.0.0\build\native\Microsoft.Windows.VbsEnclave.CodeGenerator.targets')" Text="$([System.String]::Format('$(ErrorText)', '$(SolutionDir)packages\Microsoft.Windows.VbsEnclave.CodeGenerator.0.0.0\build\native\Microsoft.Windows.VbsEnclave.CodeGenerator.targets'))" />
+    <Error Condition="!Exists('$(SolutionDir)packages\Microsoft.Windows.VbsEnclave.SDK.0.0.0\build\native\Microsoft.Windows.VbsEnclave.SDK.props')" Text="$([System.String]::Format('$(ErrorText)', '$(SolutionDir)packages\Microsoft.Windows.VbsEnclave.SDK.0.0.0\build\native\Microsoft.Windows.VbsEnclave.SDK.props'))" />
+    <Error Condition="!Exists('$(SolutionDir)packages\Microsoft.Windows.VbsEnclave.SDK.0.0.0\build\native\Microsoft.Windows.VbsEnclave.SDK.targets')" Text="$([System.String]::Format('$(ErrorText)', '$(SolutionDir)packages\Microsoft.Windows.VbsEnclave.SDK.0.0.0\build\native\Microsoft.Windows.VbsEnclave.SDK.targets'))" />
   </Target>
 </Project>

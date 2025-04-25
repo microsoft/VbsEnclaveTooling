@@ -72,7 +72,7 @@ namespace VbsEnclaveABI::Enclave
         
         size_t forward_params_size = copied_vtl0_context->m_forwarded_parameters.buffer_size;
         auto forward_params_buffer = copied_vtl0_context->m_forwarded_parameters.buffer;
-        THROW_HR_IF(E_INVALIDARG, forward_params_size > 0 && forward_params_buffer == nullptr);
+        RETURN_HR_IF(E_INVALIDARG, forward_params_size > 0 && forward_params_buffer == nullptr);
 
         wil::unique_process_heap_ptr<std::uint8_t> input_buffer {
            static_cast<std::uint8_t*>(AllocateMemory(forward_params_size))};
@@ -164,7 +164,7 @@ namespace VbsEnclaveABI::Enclave
 
         auto return_buffer_size = vtl1_incoming_context.m_returned_parameters.buffer_size;
         auto return_buffer = vtl1_incoming_context.m_returned_parameters.buffer;
-        THROW_HR_IF(E_INVALIDARG, return_buffer_size > 0 && return_buffer == nullptr);
+        RETURN_HR_IF(E_INVALIDARG, return_buffer_size > 0 && return_buffer == nullptr);
 
         wil::unique_process_heap_ptr<uint8_t> vtl1_returned_parameters {
            reinterpret_cast<uint8_t*>(AllocateMemory(return_buffer_size))};

@@ -1,6 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  <Import Project="..\..\packages\Microsoft.Windows.SDK.BuildTools.10.0.22621.756\build\Microsoft.Windows.SDK.BuildTools.props" Condition="Exists('..\..\packages\Microsoft.Windows.SDK.BuildTools.10.0.22621.756\build\Microsoft.Windows.SDK.BuildTools.props')" />
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Debug|ARM64">
       <Configuration>Debug</Configuration>
@@ -22,7 +21,7 @@
   <PropertyGroup Label="Globals">
     <VCProjectVersion>17.0</VCProjectVersion>
     <Keyword>Win32Proj</Keyword>
-    <ProjectGuid>{0900af8b-ee9b-4208-97a5-225bdbad01ba}</ProjectGuid>
+    <ProjectGuid>{1EC49385-89BB-4439-83DA-8D0374291F40}</ProjectGuid>
     <RootNamespace>ToolingNuget</RootNamespace>
     <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
     <ProjectName>ToolingNuget</ProjectName>
@@ -157,9 +156,10 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <None Include="Nuget\Microsoft.Windows.VbsEnclave.CodeGenerator.nuspec" />
+    <None Include="Nuget\Microsoft.Windows.VbsEnclave.CodeGenerator.props" />
+    <None Include="Nuget\Microsoft.Windows.VbsEnclave.CodeGenerator.targets" />
     <None Include="Nuget\Microsoft.Windows.VbsEnclaveTooling.nuspec" />
-    <None Include="Nuget\Microsoft.Windows.VbsEnclaveTooling.props" />
-    <None Include="Nuget\Microsoft.Windows.VbsEnclaveTooling.targets" />
     <None Include="Nuget\VisualStudioUiBuild.targets" />
     <None Include="packages.config" />
     <None Include="README.md" />
@@ -169,17 +169,14 @@
       <Project>{8068fe68-f1dc-4a82-b2a8-97ae1a48d571}</Project>
     </ProjectReference>
   </ItemGroup>
-  <Import Project="Nuget\Microsoft.Windows.VbsEnclaveTooling.targets" />
+  <Import Project="Nuget\Microsoft.Windows.VbsEnclave.CodeGenerator.targets" />
   <Import Project="Nuget\VisualStudioUiBuild.targets" />
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
-    <Import Project="..\..\packages\Microsoft.Windows.SDK.BuildTools.10.0.22621.756\build\Microsoft.Windows.SDK.BuildTools.targets" Condition="Exists('..\..\packages\Microsoft.Windows.SDK.BuildTools.10.0.22621.756\build\Microsoft.Windows.SDK.BuildTools.targets')" />
   </ImportGroup>
   <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
     <PropertyGroup>
       <ErrorText>This project references NuGet package(s) that are missing on this computer. Use NuGet Package Restore to download them.  For more information, see http://go.microsoft.com/fwlink/?LinkID=322105. The missing file is {0}.</ErrorText>
     </PropertyGroup>
-    <Error Condition="!Exists('..\..\packages\Microsoft.Windows.SDK.BuildTools.10.0.22621.756\build\Microsoft.Windows.SDK.BuildTools.props')" Text="$([System.String]::Format('$(ErrorText)', '..\..\packages\Microsoft.Windows.SDK.BuildTools.10.0.22621.756\build\Microsoft.Windows.SDK.BuildTools.props'))" />
-    <Error Condition="!Exists('..\..\packages\Microsoft.Windows.SDK.BuildTools.10.0.22621.756\build\Microsoft.Windows.SDK.BuildTools.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\..\packages\Microsoft.Windows.SDK.BuildTools.10.0.22621.756\build\Microsoft.Windows.SDK.BuildTools.targets'))" />
-  </Target>
+ </Target>
 </Project>

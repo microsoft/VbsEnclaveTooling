@@ -1,0 +1,42 @@
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+    <PropertyGroup>
+        <!-- 
+            When other projects include a nuget package (e.g this one) to their vs project it is placed in <ProjectRoot>\packages\<name of nuget package>.
+            The <VbsEnclaveSdkPackageDir> should always point to this folder. Our targets file will be placed in
+            <ProjectRoot>\packages\<name of nuget package>\build\native. 
+         -->
+        <VbsEnclaveSdkPackageDir>$([System.IO.Path]::GetFullPath($(MSBuildThisFileDirectory)))..\..\</VbsEnclaveSdkPackageDir>
+        <VbsEnclaveSDKSrc>$(VbsEnclaveSdkPackageDir)src</VbsEnclaveSDKSrc>
+        <VbsEnclaveCppSupportLib>$(VbsEnclaveSdkPackageDir)lib\native\$(Platform)\veil_enclave_cpp_support_lib.lib</VbsEnclaveCppSupportLib>
+        <VbsEnclaveNugetPackEnclaveLibPath>$(VbsEnclaveSdkPackageDir)lib\native\$(Platform)\veil_enclave_lib.lib</VbsEnclaveNugetPackEnclaveLibPath>
+        <VbsEnclaveNugetPackHostLibPath>$(VbsEnclaveSdkPackageDir)lib\native\$(Platform)\veil_host_lib.lib</VbsEnclaveNugetPackHostLibPath>
+    </PropertyGroup>
+
+    <ItemDefinitionGroup>
+        <ClCompile>
+            <AdditionalIncludeDirectories>$(VbsEnclaveSDKSrc);$(VbsEnclaveSdkPackageDir)\src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+        </ClCompile>
+
+        <Link Condition="$(VbsEnclaveVirtualTrustLayer) == 'Enclave'">
+            <AdditionalDependencies>$(VbsEnclaveCppSupportLib);$(VbsEnclaveNugetPackEnclaveLibPath);%(AdditionalDependencies)</AdditionalDependencies>
+
+        </Link>
+
+        <Link Condition="$(VbsEnclaveVirtualTrustLayer) == 'HostApp' ">
+            <AdditionalDependencies>$(VbsEnclaveNugetPackHostLibPath);%(AdditionalDependencies)</AdditionalDependencies>
+        </Link>
+
+    </ItemDefinitionGroup>
+
+    <Target Name="AddVeilExportFilesToBuild"
+        Condition="$(VbsEnclaveVirtualTrustLayer) == 'Enclave' "
+        BeforeTargets="ClCompile;ClInclude">
+        <!-- Make sure the generated exports cpp files are added to build without the developer needing to explicitly add them to their project. -->
+        <ItemGroup>
+            <_VeilWildCardClCompileFor_Cpp Include="$(VbsEnclaveSDKSrc)\Exports\**\*.cpp" />
+            <_VeilWildCardClCompileFor_Cpp_h Include="$(VbsEnclaveSDKSrc)\Exports\**\*.h" />
+            <ClCompile Include="@(_VeilWildCardClCompileFor_Cpp)"  />
+            <ClInclude Include="@(_VeilWildCardClCompileFor_Cpp_h)"  />
+        </ItemGroup>
+    </Target>
+</Project>

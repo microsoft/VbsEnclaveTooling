@@ -521,19 +521,14 @@ namespace CodeGeneration
     std::string CppCodeBuilder::BuildInitialCallerFunction(
         const Function& function,
         std::string_view abi_function_to_call,
-        bool should_be_static,
+        bool should_be_inline,
         const FunctionParametersInfo& param_info)
     {
-#if 0
-        // todo: bug: this is not working as expected. The static keyword seems like it should be an "inline " keyword
-        std::string static_part = should_be_static ? c_static_keyword.data(): "";
-#else
-        std::string static_part = should_be_static ? "inline " : "";
-#endif
+        std::string inline_part = should_be_inline ? "inline " : "";
 
         auto function_declaration = std::format(
             "{}{} {}{}",
-            static_part,
+            inline_part,
             param_info.m_function_return_value,
             function.m_name,
             BuildFunctionParameters(function, param_info));
@@ -919,5 +914,67 @@ namespace CodeGeneration
             c_autogen_header_string, 
             c_vtl1_enclave_func_impl_start_of_file,
             vtl1_impls_in_namespace);
+    }
+
+    std::string CppCodeBuilder::BuildVtl1ExportedFunctionsSourcefile(
+        std::string_view generated_namespace_name,
+        const std::unordered_map<std::string, Function>& developer_functions_to_export)
+    {
+        std::ostringstream exported_definitions {};
+        std::ostringstream pragma_link_statements {};
+
+        for (auto& [name, function] : developer_functions_to_export)
+        {
+            auto generated_func_name = std::format(c_generated_stub_name_no_quotes, function.abi_m_name);
+            exported_definitions << std::format(
+                c_enclave_export_func_definition,
+                generated_func_name,
+                generated_namespace_name,
+                generated_func_name);
+
+            pragma_link_statements << std::format(c_vtl1_sdk_pragma_statement, generated_func_name);
+        }
+
+        auto register_callbacks_name = std::format(c_vtl1_register_callbacks_abi_export_name, generated_namespace_name);
+
+        exported_definitions << std::format(
+                c_enclave_export_func_definition,
+                register_callbacks_name,
+                generated_namespace_name,
+                register_callbacks_name);
+
+        pragma_link_statements << std::format(c_vtl1_sdk_pragma_statement, register_callbacks_name);
+
+        return std::format(
+            c_vtl1_export_functions_source_file,
+            c_autogen_header_string,
+            generated_namespace_name,
+            pragma_link_statements.str(),
+            exported_definitions.str());
+    }
+
+    std::string CppCodeBuilder::BuildVtl1BoundaryFunctionsStubHeader(
+        std::string_view generated_namespace_name,
+        const std::unordered_map<std::string, Function>& functions)
+    {
+        std::ostringstream stub_declarations {};
+
+        for (auto& [name, function] : functions)
+        {
+            auto generated_func_name = std::format(c_generated_stub_name_no_quotes, function.abi_m_name);
+            stub_declarations << std::format(c_abi_boundary_func_declaration_for_stubs, generated_func_name);
+        }
+        
+        auto register_abi_declaration = std::format(
+            c_vtl1_register_callbacks_abi_export_name,
+            generated_namespace_name);
+
+        stub_declarations << std::format(c_abi_boundary_func_declaration_for_stubs, register_abi_declaration);
+
+        return std::format(
+            c_vtl1_export_stub_declarations_header,
+            c_autogen_header_string,
+            generated_namespace_name, 
+            stub_declarations.str());
     }
 }

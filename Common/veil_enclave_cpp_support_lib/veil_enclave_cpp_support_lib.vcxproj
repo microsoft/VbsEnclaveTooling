@@ -71,6 +71,7 @@
       <AdditionalIncludeDirectories>
       </AdditionalIncludeDirectories>
       <GuardEHContMetadata>true</GuardEHContMetadata>
+      <BrowseInformation Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</BrowseInformation>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>

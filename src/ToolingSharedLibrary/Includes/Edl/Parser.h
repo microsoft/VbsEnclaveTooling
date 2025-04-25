@@ -87,6 +87,7 @@ namespace EdlProcessor
         Token m_next_token {};
         std::uint32_t m_cur_line {};
         std::uint32_t m_cur_column {};
+        std::uint32_t m_abi_function_index {};
 
         std::vector<DeveloperType> m_developer_types_insertion_order_list {};
         std::unordered_map<std::string, DeveloperType> m_developer_types;

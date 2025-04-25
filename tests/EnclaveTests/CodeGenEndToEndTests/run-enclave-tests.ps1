@@ -35,11 +35,11 @@ param(
     [Parameter()]
     [ValidateSet('Debug', 'Release')]
     [string]$Configuration = "Debug",
-    [string]$outdir = "$PSScriptRoot\..\..\_build\$Architecture\$Configuration",
+    [string]$outdir = "$PSScriptRoot\_build\$Architecture\$Configuration",
     [string]$target = $DeviceAddress,
 
     # If we update Taef this path will need to be updated to the newer version
-    [string]$taef = "$PSScriptRoot\..\..\packages\Microsoft.Taef.10.93.240607003\build\Binaries\$Architecture\TE.exe",
+    [string]$taef = "$PSScriptRoot\packages\Microsoft.Taef.10.93.240607003\build\Binaries\$Architecture\TE.exe",
     [switch]$copy = ($null -ne $DeviceAddress),
 
     [Parameter()]
@@ -76,7 +76,7 @@ if ($copy)
 
     #Copy dll's needed to run taef to c:\taef_data on the target device. Make sure when Taef package is updated this version
     # number is also changes.
-    $taef_binaries_location = "$PSScriptRoot\..\..\packages\Microsoft.Taef.10.93.240607003\build\Binaries\$Architecture\*"
+    $taef_binaries_location = "$PSScriptRoot\packages\Microsoft.Taef.10.93.240607003\build\Binaries\$Architecture\*"
     putd $taef_binaries_location c:\taef_data\
 }
 

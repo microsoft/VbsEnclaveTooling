@@ -54,6 +54,7 @@
   <ItemGroup>
     <None Include="README.md" />
     <None Include="TestFiles\TrustedFunctionsCodeGen.edl" />
+    <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
     <CopyFileToFolders Include="TestFiles\ArrayTest.edl" />

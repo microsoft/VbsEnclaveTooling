@@ -1,18 +1,13 @@
 <Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
     <PropertyGroup>
-        <VbsEnclaveNugetSpecFilePath>$(ProjectDir)Nuget\Microsoft.Windows.VbsEnclaveTooling.nuspec</VbsEnclaveNugetSpecFilePath>
+        <VbsEnclaveNugetSpecFilePath>$(ProjectDir)Nuget\Microsoft.Windows.VbsEnclave.SDK.nuspec</VbsEnclaveNugetSpecFilePath>
         <VbsEnclaveNugetPackVersionNumber>0.0.0</VbsEnclaveNugetPackVersionNumber>
-
-        <!-- Property value should match the "ToolingExecutable" projects 'target name' property  -->
-        <VbsEnclaveNugetPackExePath>$(OutDir)vbsenclavetooling.exe</VbsEnclaveNugetPackExePath>
         <VbsEnclaveNugetPackCppSupportPath>$(OutDir)veil_enclave_cpp_support_lib.lib</VbsEnclaveNugetPackCppSupportPath>
         <VbsEnclaveNugetPackEnclaveLibPath>$(OutDir)veil_enclave_lib.lib</VbsEnclaveNugetPackEnclaveLibPath>
         <VbsEnclaveNugetPackHostLibPath>$(OutDir)veil_host_lib\veil_host_lib.lib</VbsEnclaveNugetPackHostLibPath>
-        <VcpkgSupportPath>$(SolutionDir)src\ToolingSharedLibrary\vcpkg_installed\$(Platform)-windows-static\$(Platform)-windows-static</VcpkgSupportPath>
-        <VcpkgToolsPath>$(SolutionDir)src\ToolingSharedLibrary\vcpkg_installed\$(Platform)-windows-static\$(Platform)-windows\tools</VcpkgToolsPath>
-        <VbsEnclaveNugetPackProperties>target_version=$(VbsEnclaveNugetPackVersionNumber);vbsenclavetooling_$(Platform)_exe=$(VbsEnclaveNugetPackExePath);vbsenclavetooling_cpp_support_$(Platform)_lib=$(VbsEnclaveNugetPackCppSupportPath);vbsenclavetooling_enclave_$(Platform)_lib=$(VbsEnclaveNugetPackEnclaveLibPath);vbsenclavetooling_host_$(Platform)_lib=$(VbsEnclaveNugetPackHostLibPath);vcpkg_sources=$(VcpkgSupportPath);vcpkg_tools=$(VcpkgToolsPath)</VbsEnclaveNugetPackProperties>
+        <VbsEnclaveNugetPackProperties>target_version=$(VbsEnclaveNugetPackVersionNumber);vbsenclave_sdk_enclave_$(Platform)_lib=$(VbsEnclaveNugetPackEnclaveLibPath);vbsenclave_sdk_host_$(Platform)_lib=$(VbsEnclaveNugetPackHostLibPath);vbsenclavetooling_cpp_support_$(Platform)_lib=$(VbsEnclaveNugetPackCppSupportPath);</VbsEnclaveNugetPackProperties>
         <VbsEnclaveNugetPackOutputDirectory>$(SolutionDir)_build</VbsEnclaveNugetPackOutputDirectory>
-        <VbsEnclaveNugetPackScriptFile>$(SolutionDir)buildScripts\PackageNuget.ps1</VbsEnclaveNugetPackScriptFile>
+        <VbsEnclaveNugetPackScriptFile>$(SolutionDir)..\..\buildScripts\PackageNuget.ps1</VbsEnclaveNugetPackScriptFile>
     </PropertyGroup>
     
     <!-- 
@@ -21,13 +16,8 @@
         creating the nuget package outside of visual studio.
     -->
 
-    <!-- 
-        Package the nuget in a file based on configuration and platform. For errors associated
-        with this target. Check that PackageNuget.ps1 in the buildScripts folder can still run
-        successfully in a visual studio developer powershell window.
-    -->
     <Target 
-        Name="PackVbsEnclaveToolingNuget" 
+        Name="PackVbsEnclaveSdkNuget" 
         AfterTargets="Build"
         Condition="'$(BuildingInsideVisualStudio)' == 'True'">
         <Message Text="Generating vbs enclave nuget package (.nupkg) for with configuration '$(Configuration)' and platform: '$(Platform)'" Importance="high" />

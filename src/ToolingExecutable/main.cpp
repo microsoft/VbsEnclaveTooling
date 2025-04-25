@@ -35,6 +35,7 @@ int main(int argc, char* argv[])
     {
         auto edl_parser = EdlParser(argument_parser.EdlFilePath());
         Edl edl = edl_parser.Parse();
+
         auto cpp_code_generator = CppCodeGenerator(
             std::move(edl),
             argument_parser.OutDirectory(),

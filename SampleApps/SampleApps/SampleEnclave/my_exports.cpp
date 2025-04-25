@@ -6,10 +6,10 @@
 #include <array>
 #include <stdexcept>
 
-#include <crypto.vtl1.h>
-#include <logger.vtl1.h>
-#include <taskpool.vtl1.h>
-#include <vtl0_functions.vtl1.h>
+#include <veil\enclave\crypto.vtl1.h>
+#include <veil\enclave\logger.vtl1.h>
+#include <veil\enclave\taskpool.vtl1.h>
+#include <veil\enclave\vtl0_functions.vtl1.h>
 
 #include <VbsEnclave\Enclave\Implementations.h>
 

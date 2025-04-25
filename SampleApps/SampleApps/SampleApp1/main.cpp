@@ -11,8 +11,8 @@
 #include <span>
 #include <sddl.h>
 
-#include <enclave_api.vtl0.h>
-#include <logger.vtl0.h>
+#include <veil\host\enclave_api.vtl0.h>
+#include <veil\host\logger.vtl0.h>
 
 #include "sample_utils.h"
 

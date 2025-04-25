@@ -13,6 +13,8 @@ using namespace EdlProcessor;
 
 namespace CodeGeneration
 {
+    inline constexpr std::string_view g_sdk_namespace_name = "veil_abi";
+
     namespace CppCodeBuilder
     {
         struct HostToEnclaveContent
@@ -81,7 +83,7 @@ namespace CodeGeneration
         std::string BuildInitialCallerFunction(
             const Function& function,
             std::string_view abi_function_to_call,
-            bool should_be_static,
+            bool should_be_inline,
             const FunctionParametersInfo& param_info);
 
         // Intended to forward parameters to the developers callback Impl
@@ -127,6 +129,14 @@ namespace CodeGeneration
             const std::ostringstream& vtl1_developer_declarations,
             const std::ostringstream& vtl1_callback_impl_functions,
             const std::ostringstream& vtl1_abi_impl_functions);
+
+        std::string BuildVtl1ExportedFunctionsSourcefile(
+            std::string_view generated_namespace_name,
+            const std::unordered_map<std::string, Function>& developer_functions_to_export);
+
+        std::string BuildVtl1BoundaryFunctionsStubHeader(
+            std::string_view generated_namespace_name,
+            const std::unordered_map<std::string, Function>& functions);
     };
 
     struct CppCodeGenerator
@@ -152,6 +162,7 @@ namespace CodeGeneration
         void CompileFlatbufferFile(std::filesystem::path save_location);
 
         Edl m_edl {};
+        std::vector<std::string> m_sdk_trusted_function_abi_names {};
         ErrorHandlingKind m_error_handling {};
         std::string_view m_generated_namespace_name{};
         std::string_view m_generated_vtl0_class_name {};
