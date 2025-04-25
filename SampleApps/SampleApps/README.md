@@ -47,7 +47,7 @@ Developer flow: Create a host app, encrypt and decrypt data in enclave
 Steps
 ------------
 1. In your host app set up enclave as shown below
-```
+```C++
     // Create app+user enclave identity
     auto ownerId = veil::vtl0::appmodel::owner_id();
 
