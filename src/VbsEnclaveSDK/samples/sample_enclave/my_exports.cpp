@@ -3,8 +3,8 @@
 
 #include "pch.h"
 
-#include <veil_enclave\taskpool.vtl1.h>
-#include <veil_enclave\vtl0_functions.vtl1.h>
+#include <veil\enclave\taskpool.vtl1.h>
+#include <veil\enclave\vtl0_functions.vtl1.h>
 
 #include <VbsEnclave\Enclave\Implementations.h>
 

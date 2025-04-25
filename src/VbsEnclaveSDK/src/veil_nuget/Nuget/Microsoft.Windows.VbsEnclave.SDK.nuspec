@@ -26,10 +26,10 @@
     <file src="..\..\..\..\..\LICENSE"/>
     <file src="Microsoft.Windows.VbsEnclave.SDK.targets" target="build\native"/>
     <file src="Microsoft.Windows.VbsEnclave.SDK.props" target="build\native"/>
-    <file src="..\..\veil_enclave_lib\**\*.h" exclude="..\..\veil_enclave_lib\Generated Files\**\*" target="src\VbsEnclaveSDK\veil_enclave" />
-    <file src="..\..\veil_enclave_lib\Generated Files\VbsEnclave\Enclave\Exports\*.*" target="src\VbsEnclaveSDK\exports" />
-    <file src="..\..\veil_host_lib\**\*.h" exclude="..\..\veil_enclave_lib\Generated Files\**\*" target="src\VbsEnclaveSDK\veil_host" />
-    <file src="..\..\veil_any_inc\**" target="src\VbsEnclaveSDK\veil_any_inc" />
+    <file src="..\..\veil_enclave_lib\**\*.h" exclude="..\..\veil_enclave_lib\Generated Files\**\*" target="src\veil\enclave" />
+    <file src="..\..\veil_enclave_lib\Generated Files\VbsEnclave\Enclave\Exports\*.*" target="src\exports" />
+    <file src="..\..\veil_host_lib\**\*.h" exclude="..\..\veil_enclave_lib\Generated Files\**\*" target="src\veil\host" />
+    <file src="..\..\veil_any_inc\**" target="src\veil\veil_any_inc" />
     <file src="..\..\..\..\..\Common\veil_enclave_wil_inc\**" target="src\" />
     <file src="$vbsenclave_sdk_enclave_x64_lib$" target="lib\native\x64"/>
     <file src="$vbsenclave_sdk_enclave_arm64_lib$" target="lib\native\arm64"/>

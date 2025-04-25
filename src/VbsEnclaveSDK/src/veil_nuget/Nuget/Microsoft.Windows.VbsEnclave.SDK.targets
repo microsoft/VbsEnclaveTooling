@@ -6,7 +6,7 @@
             <ProjectRoot>\packages\<name of nuget package>\build\native. 
          -->
         <VbsEnclaveSdkPackageDir>$([System.IO.Path]::GetFullPath($(MSBuildThisFileDirectory)))..\..\</VbsEnclaveSdkPackageDir>
-        <VbsEnclaveSDKSrc>$(VbsEnclaveSdkPackageDir)src\VbsEnclaveSDK</VbsEnclaveSDKSrc>
+        <VbsEnclaveSDKSrc>$(VbsEnclaveSdkPackageDir)src</VbsEnclaveSDKSrc>
         <VbsEnclaveCppSupportLib>$(VbsEnclaveSdkPackageDir)lib\native\$(Platform)\veil_enclave_cpp_support_lib.lib</VbsEnclaveCppSupportLib>
         <VbsEnclaveNugetPackEnclaveLibPath>$(VbsEnclaveSdkPackageDir)lib\native\$(Platform)\veil_enclave_lib.lib</VbsEnclaveNugetPackEnclaveLibPath>
         <VbsEnclaveNugetPackHostLibPath>$(VbsEnclaveSdkPackageDir)lib\native\$(Platform)\veil_host_lib.lib</VbsEnclaveNugetPackHostLibPath>
