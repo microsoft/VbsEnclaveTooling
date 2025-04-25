@@ -147,6 +147,42 @@ struct EnclaveTestClass
         VERIFY_SUCCEEDED(generated_enclave_class.TestPassingPrimitivesAsValues_To_Enclave(in_bool, in_enum, in_int8));
     }
 
+    TEST_METHOD(TestPassingPrimitivesAsInOutValues_To_Enclave_Test)
+    {
+        auto generated_enclave_class = TestEnclave(m_enclave);
+        auto in_out_bool = true;
+        auto in_out_enum = HexEnum::Hex_val4;
+        auto in_out_int8 = std::numeric_limits<std::int8_t>::max();
+
+        // Note: Hresult is returned by vtl1, and copied to vtl0 then returned to this function.
+        VERIFY_SUCCEEDED(generated_enclave_class.TestPassingPrimitivesAsInOutValues_To_Enclave(
+            in_out_bool,
+            in_out_enum,
+            in_out_int8));
+
+        VERIFY_ARE_EQUAL(false, in_out_bool);
+        VERIFY_ARE_EQUAL(static_cast<std::uint64_t>(HexEnum::Hex_val3), static_cast<std::uint64_t>(in_out_enum));
+        VERIFY_ARE_EQUAL(100, in_out_int8);
+    }
+
+    TEST_METHOD(TestPassingPrimitivesAsOutValues_To_Enclave_Test)
+    {
+        auto generated_enclave_class = TestEnclave(m_enclave);
+        bool out_bool{};
+        HexEnum out_enum{};
+        std::int8_t out_int8{};
+
+        // Note: Hresult is returned by vtl1, and copied to vtl0 then returned to this function.
+        VERIFY_SUCCEEDED(generated_enclave_class.TestPassingPrimitivesAsOutValues_To_Enclave(
+            out_bool, 
+            out_enum, 
+            out_int8));
+
+        VERIFY_ARE_EQUAL(true, out_bool);
+        VERIFY_ARE_EQUAL(static_cast<std::uint64_t>(HexEnum::Hex_val4), static_cast<std::uint64_t>(out_enum));
+        VERIFY_ARE_EQUAL(std::numeric_limits<std::int8_t>::max(), out_int8);
+    }
+
     TEST_METHOD(TestPassingPrimitivesAsInPointers_To_Enclave_Test)
     {
         auto generated_enclave_class = TestEnclave(m_enclave);
@@ -444,6 +480,22 @@ struct EnclaveTestClass
 
         // Note: Hresult is returned by vtl1, and copied to vtl0 then returned to this function.
         VERIFY_SUCCEEDED(generated_enclave_class.Start_TestPassingPrimitivesAsValues_To_HostApp_Callback_Test());
+    }
+
+    TEST_METHOD(Start_TestPassingPrimitivesAsInOutValues_To_HostApp_Callback_Test)
+    {
+        auto generated_enclave_class = TestEnclave(m_enclave);
+
+        // Note: Hresult is returned by vtl1, and copied to vtl0 then returned to this function.
+        VERIFY_SUCCEEDED(generated_enclave_class.Start_TestPassingPrimitivesAsInOutValues_To_HostApp_Callback_Test());
+    }
+
+    TEST_METHOD(Start_TestPassingPrimitivesAsOutValues_To_HostApp_Callback_Test)
+    {
+        auto generated_enclave_class = TestEnclave(m_enclave);
+
+        // Note: Hresult is returned by vtl1, and copied to vtl0 then returned to this function.
+        VERIFY_SUCCEEDED(generated_enclave_class.Start_TestPassingPrimitivesAsOutValues_To_HostApp_Callback_Test());
     }
 
     TEST_METHOD(Start_TestPassingPrimitivesAsInPointers_To_HostApp_Callback_Test)

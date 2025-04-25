@@ -8,6 +8,7 @@
 
 #pragma once
 #include <pch.h>
+#include <unordered_set>
 
 namespace EdlProcessor
 {
@@ -130,6 +131,35 @@ namespace EdlProcessor
         HRESULT,
         UIntPtr,
         Vector,
+    };
+
+    struct EdlTypeToHash
+    {
+        std::size_t operator()(EdlTypeKind type) const
+        {
+            return std::hash<std::uint32_t>()(static_cast<std::uint32_t>(type));
+        }
+    };
+
+    inline const std::unordered_set<EdlTypeKind, EdlTypeToHash> c_edlTypes_primitive_set =
+    {
+        EdlTypeKind::Bool,
+        EdlTypeKind::Char,
+        EdlTypeKind::Float,
+        EdlTypeKind::Double,
+        EdlTypeKind::Int8,
+        EdlTypeKind::Int16,
+        EdlTypeKind::Int32,
+        EdlTypeKind::Int64,
+        EdlTypeKind::UInt8,
+        EdlTypeKind::UInt16,
+        EdlTypeKind::UInt32,
+        EdlTypeKind::UInt64,
+        EdlTypeKind::UIntPtr,
+        EdlTypeKind::WChar,
+        EdlTypeKind::Enum,
+        EdlTypeKind::HRESULT,
+        EdlTypeKind::SizeT,
     };
 
     struct ParsedAttributeInfo
@@ -338,6 +368,16 @@ namespace EdlProcessor
             }
 
             return false;
+        }
+
+        bool IsPrimitiveType() const
+        {
+            if (!m_array_dimensions.empty())
+            {
+                return false;
+            }
+
+            return c_edlTypes_primitive_set.contains(m_edl_type_info.m_type_kind);
         }
 
         std::string GenerateTypeInfoString()

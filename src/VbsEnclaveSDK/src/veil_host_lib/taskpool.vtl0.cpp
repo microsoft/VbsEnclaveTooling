@@ -13,14 +13,14 @@
 
 namespace abi = veil::any::implementation::taskpool;
 
-HRESULT veil_abi::VTL0_Stubs::export_interface::taskpool_make_callback(_In_ const uintptr_t& enclave, _In_ const std::uint64_t taskpool_instance_vtl1, _In_ const std::uint32_t thread_count, _In_ const bool must_finish_all_queued_tasks, _Out_  uintptr_t& taskpool_instance_vtl0)
+HRESULT veil_abi::VTL0_Stubs::export_interface::taskpool_make_callback(_In_ uintptr_t enclave, _In_ std::uint64_t taskpool_instance_vtl1, _In_ std::uint32_t thread_count, _In_ bool must_finish_all_queued_tasks, _Out_  uintptr_t& taskpool_instance_vtl0)
 {
     auto taskpoolInstanceVtl0 = std::make_unique<veil::vtl0::implementation::taskpool_backing_threads>(abi::from_abi(enclave), taskpool_instance_vtl1, thread_count, must_finish_all_queued_tasks);
     taskpool_instance_vtl0 = reinterpret_cast<uint64_t>(taskpoolInstanceVtl0.release()); // let the vtl0 counterpart be owned by vtl1 taskpool
     return S_OK;
 }
 
-HRESULT veil_abi::VTL0_Stubs::export_interface::taskpool_delete_callback(_In_ const uintptr_t& taskpool_instance_vtl0)
+HRESULT veil_abi::VTL0_Stubs::export_interface::taskpool_delete_callback(_In_ uintptr_t taskpool_instance_vtl0)
 {
     using T = veil::vtl0::implementation::taskpool_backing_threads;
     auto taskpoolInstanceVtl0 = std::unique_ptr<T>(reinterpret_cast<T*>(taskpool_instance_vtl0));
@@ -28,14 +28,14 @@ HRESULT veil_abi::VTL0_Stubs::export_interface::taskpool_delete_callback(_In_ co
     return S_OK;
 }
 
-HRESULT veil_abi::VTL0_Stubs::export_interface::taskpool_schedule_task_callback(_In_ const uintptr_t& taskpool_instance_vtl0, _In_ const std::uint64_t task_id)
+HRESULT veil_abi::VTL0_Stubs::export_interface::taskpool_schedule_task_callback(_In_ uintptr_t taskpool_instance_vtl0, _In_ std::uint64_t task_id)
 {
     auto taskpoolInstance = reinterpret_cast<veil::vtl0::implementation::taskpool_backing_threads*>(taskpool_instance_vtl0);
     taskpoolInstance->queue_task(task_id);
     return S_OK;
 }
 
-HRESULT veil_abi::VTL0_Stubs::export_interface::taskpool_cancel_queued_tasks_callback(_In_ const uintptr_t& taskpool_instance_vtl0)
+HRESULT veil_abi::VTL0_Stubs::export_interface::taskpool_cancel_queued_tasks_callback(_In_ uintptr_t taskpool_instance_vtl0)
 {
     using T = veil::vtl0::implementation::taskpool_backing_threads;
     auto taskpoolInstanceVtl0 = reinterpret_cast<T*>(taskpool_instance_vtl0);
