@@ -249,8 +249,8 @@ std::string VTL1_Declarations::TrustedExample(
     _In_ const std::int64_t* some_ptr,
     _Out_ ExampleStruct& ex_struct)
 {
-    std::vector<std::int8_t> int8_vector(10);
-    std::iota(int8_vector.begin(), int8_vector.end(), 0);
+    int8_vec.resize(10);
+	std::iota(int8_vec.begin(), int8_vec.end(), 0);
     *ex_struct.int_ptr = 20;
     
     for (int i = 2; i < 6; i++)
