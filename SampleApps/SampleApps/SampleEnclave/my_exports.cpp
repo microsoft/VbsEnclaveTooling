@@ -260,6 +260,8 @@ HRESULT VbsEnclave::VTL1_Declarations::RunTaskpoolExample(_In_ const std::uint32
 {
     using namespace veil::vtl1::vtl0_functions;
 
+    VbsEnclave::VTL0_Callbacks::Hi_callback();
+
     debug_print(L"TEST: Taskpool destruction, don't wait for all tasks to finish");
     RunTaskpoolExamples::Test_Dont_WaitForAllTasksToFinish(threadCount);
     debug_print(L"");

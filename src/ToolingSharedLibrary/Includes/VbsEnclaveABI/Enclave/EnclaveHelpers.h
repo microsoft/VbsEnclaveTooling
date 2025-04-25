@@ -106,11 +106,12 @@ namespace VbsEnclaveABI::Enclave
     // its associated VTL0 callback.
     template <typename ParamsT, typename ReturnParamsT>
     static inline HRESULT CallVtl0CallbackFromVtl1(
+        _In_ const VbsEnclaveABI::Enclave::VTL0CallBackHelpers::CallbacksState& state,
         _In_ std::uint32_t function_index,
         _In_ flatbuffers::FlatBufferBuilder& flatbuffer_in_params_builder,
         _Inout_ ReturnParamsT& callback_result)
     {
-        bool func_index_in_table = s_vtl0_function_table.contains(function_index);
+        bool func_index_in_table = state.m_vtl0_function_table.contains(function_index);
         RETURN_HR_IF(E_INVALIDARG, !func_index_in_table);
 
         vtl0_memory_ptr<std::uint8_t> vtl0_in_params;
@@ -137,7 +138,7 @@ namespace VbsEnclaveABI::Enclave
             sizeof(EnclaveFunctionContext)));
 
         void* vtl0_output_buffer;
-        auto vtl0_callback = reinterpret_cast<LPENCLAVE_ROUTINE>(s_vtl0_function_table.at(function_index));
+        auto vtl0_callback = reinterpret_cast<LPENCLAVE_ROUTINE>(state.m_vtl0_function_table.at(function_index));
 
         RETURN_IF_WIN32_BOOL_FALSE((CallEnclave(
             vtl0_callback,

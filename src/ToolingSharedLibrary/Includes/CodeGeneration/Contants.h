@@ -98,8 +98,6 @@ namespace VbsEnclaveABI::Enclave::VTL0CallBackHelpers
     __declspec(selectany) LPENCLAVE_ROUTINE s_vtl0_allocation_function = nullptr;
     __declspec(selectany) LPENCLAVE_ROUTINE s_vtl0_deallocation_function = nullptr;
     __declspec(selectany) wil::srwlock s_vtl0_function_table_lock {{}};
-    __declspec(selectany) bool s_are_functions_registered {{}};
-    __declspec(selectany) std::unordered_map<std::uint32_t, std::uint64_t> s_vtl0_function_table{{}};
 }}
 namespace VbsEnclaveABI::Enclave::MemoryChecks
 {{
@@ -110,6 +108,8 @@ namespace VbsEnclaveABI::Enclave::MemoryChecks
 // END: DO NOT MODIFY: For internal abi usage
 namespace {}
 {{
+    VbsEnclaveABI::Enclave::VTL0CallBackHelpers::CallbacksState g_callbacks_state;
+
     namespace VTL1_Stubs
     {{
     {}
@@ -160,7 +160,7 @@ namespace {}
  R"(HRESULT hr = CallVtl0CallbackImplFromVtl0<ParamsT, ReturnParamsT, decltype({}_Abi_Impl)>(function_context, {}_Abi_Impl);)";
 
     static inline constexpr std::string_view c_vtl1_call_to_vtl0_callback =
- R"(THROW_IF_FAILED((CallVtl0CallbackFromVtl1<ParamsT, ReturnParamsT>({}U, flatbuffer_builder, function_result)));)";
+ R"(THROW_IF_FAILED((CallVtl0CallbackFromVtl1<ParamsT, ReturnParamsT>(g_callbacks_state, {}U, flatbuffer_builder, function_result)));)";
 
     // Using a R("...") that contains a " character with std::format ends up adding a \" to the string.
     // instead of the double quote itself. So, as a work around we'll use the old style of declaring a multi line string.
@@ -216,6 +216,8 @@ namespace {}\n\
     static inline constexpr std::string_view c_vtl1_enclave_func_impl_namespace = R"(
 namespace {}
 {{
+    extern VbsEnclaveABI::Enclave::VTL0CallBackHelpers::CallbacksState g_callbacks_state;
+
     namespace VTL1_Declarations
     {{
         {}
@@ -409,7 +411,7 @@ R"(     {}_Generated_Stub
             _In_ FlatbuffersDevTypes::AbiRegisterVtl0Callbacks_argsT in_params,
             _Inout_ flatbuffers::FlatBufferBuilder& flatbuffer_out_params_builder)
         {{
-            THROW_IF_FAILED(AddVtl0FunctionsToTable(in_params.callbacks));
+            THROW_IF_FAILED(AddVtl0FunctionsToTable(g_callbacks_state, in_params.callbacks));
 
             FlatbuffersDevTypes::AbiRegisterVtl0Callbacks_argsT  result{{}};
             result.m__return_value_ = S_OK;

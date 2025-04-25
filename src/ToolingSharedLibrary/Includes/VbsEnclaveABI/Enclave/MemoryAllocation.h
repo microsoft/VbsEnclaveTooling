@@ -14,21 +14,25 @@ namespace VbsEnclaveABI::Enclave
 {
     namespace VTL0CallBackHelpers
     {
+        struct CallbacksState
+        {
+            bool m_are_functions_registered {};
+            std::unordered_map<std::uint32_t, std::uint64_t> m_vtl0_function_table {};
+        };
+
         extern LPENCLAVE_ROUTINE s_vtl0_allocation_function;
         extern LPENCLAVE_ROUTINE s_vtl0_deallocation_function;
         extern wil::srwlock s_vtl0_function_table_lock;
-        extern bool s_are_functions_registered;
-        extern std::unordered_map<std::uint32_t, std::uint64_t> s_vtl0_function_table;
         static constexpr size_t minimum_number_of_callbacks = 2;
 
-        static inline HRESULT AddVtl0FunctionsToTable(_In_ const std::vector<std::uint64_t>& stub_functions)
+        static inline HRESULT AddVtl0FunctionsToTable(_Inout_ CallbacksState& state, _In_ const std::vector<std::uint64_t>& stub_functions)
         {
             auto lock = s_vtl0_function_table_lock.lock_exclusive();
 
             size_t callbacks_size = stub_functions.size();
             RETURN_HR_IF(E_INVALIDARG, callbacks_size < minimum_number_of_callbacks);
 
-            if (s_are_functions_registered)
+            if (state.m_are_functions_registered)
             {
                 return S_OK;
             }
@@ -41,19 +45,25 @@ namespace VbsEnclaveABI::Enclave
 
                 if (FAILED_LOG(hr))
                 {
-                    s_vtl0_function_table.clear();
+                    state.m_vtl0_function_table.clear();
                     return hr;
                 }
 
-                s_vtl0_function_table[i + 1U] = stub_functions[i];
+                state.m_vtl0_function_table[i + 1U] = stub_functions[i];
             }
 
             // first value should always be the allocation function and the second will always
             // be the deallocation function.
-            s_vtl0_allocation_function = reinterpret_cast<LPENCLAVE_ROUTINE>(s_vtl0_function_table[1]);
-            s_vtl0_deallocation_function = reinterpret_cast<LPENCLAVE_ROUTINE>(s_vtl0_function_table[2]);
+            if (!s_vtl0_allocation_function)
+            {
+                // Special-casing storage of allocation and deallocation functions into globals.
+                // This is a fragile design, but is the expedient way to get callbacks working from multiple
+                // registration sources without changing the interface of AllocateVtl0Memory/DeallocateVtl0Memory.
+                s_vtl0_allocation_function = reinterpret_cast<LPENCLAVE_ROUTINE>(state.m_vtl0_function_table[1]);
+                s_vtl0_deallocation_function = reinterpret_cast<LPENCLAVE_ROUTINE>(state.m_vtl0_function_table[2]);
+            }
 
-            s_are_functions_registered = true;
+            state.m_are_functions_registered = true;
 
             return S_OK;
         }

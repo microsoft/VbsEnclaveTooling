@@ -20,6 +20,11 @@
 
 namespace fs = std::filesystem;
 
+void VbsEnclave::VTL0_Stubs::SampleEnclave::Hi_callback(void)
+{
+    std::cout << "sdfdsfds :!!!!!!!!!!!!!!!!!!!!!!! ";
+}
+
 int EncryptFlow(
     void* enclave, 
     const std::wstring& input, 
