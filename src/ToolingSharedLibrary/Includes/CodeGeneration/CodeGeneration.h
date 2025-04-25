@@ -130,13 +130,8 @@ namespace CodeGeneration
             const std::ostringstream& vtl1_callback_impl_functions,
             const std::ostringstream& vtl1_abi_impl_functions);
 
-        std::string BuildVtl1ExportedFunctionDeclarationsHeader(
-           std::string_view generated_namespace_name,
-           const std::unordered_map<std::string, Function>& developer_functions_to_export);
-
         std::string BuildVtl1ExportedFunctionsSourcefile(
             std::string_view generated_namespace_name,
-            const std::vector<std::string>& sdk_trusted_function_abi_names,
             const std::unordered_map<std::string, Function>& developer_functions_to_export);
 
         std::string BuildVtl1BoundaryFunctionsStubHeader(
@@ -148,7 +143,6 @@ namespace CodeGeneration
     {
         CppCodeGenerator(
             const Edl& edl,
-            const std::optional<Edl>& sdk_edl,
             const std::filesystem::path& output_path,
             ErrorHandlingKind error_handling,
             VirtualTrustLayerKind trust_layer,

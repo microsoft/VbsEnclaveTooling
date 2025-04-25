@@ -17,7 +17,7 @@
             <AdditionalIncludeDirectories>$(VbsEnclaveSDKSrc);$(VbsEnclaveSdkPackageDir)\src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
         </ClCompile>
 
-        <Link Condition="$(VbsEnclaveVirtualTrustLayer) == 'Enclave' ">
+        <Link Condition="$(VbsEnclaveVirtualTrustLayer) == 'Enclave'">
             <AdditionalDependencies>$(VbsEnclaveCppSupportLib);$(VbsEnclaveNugetPackEnclaveLibPath);%(AdditionalDependencies)</AdditionalDependencies>
 
         </Link>
@@ -27,4 +27,16 @@
         </Link>
 
     </ItemDefinitionGroup>
+
+    <Target Name="AddVeilExportFilesToBuild"
+        Condition="$(VbsEnclaveVirtualTrustLayer) == 'Enclave' "
+        BeforeTargets="ClCompile;ClInclude">
+        <!-- Make sure the generated exports cpp files are added to build without the developer needing to explicitly add them to their project. -->
+        <ItemGroup>
+            <_VeilWildCardClCompileFor_Cpp Include="$(VbsEnclaveSDKSrc)\Exports\**\*.cpp" />
+            <_VeilWildCardClCompileFor_Cpp_h Include="$(VbsEnclaveSDKSrc)\Exports\**\*.h" />
+            <ClCompile Include="@(_VeilWildCardClCompileFor_Cpp)"  />
+            <ClInclude Include="@(_VeilWildCardClCompileFor_Cpp_h)"  />
+        </ItemGroup>
+    </Target>
 </Project>

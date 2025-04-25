@@ -76,9 +76,6 @@
     <Link>
       <SubSystem>Console</SubSystem>
     </Link>
-    <Bscmake>
-      <PreserveSbr Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</PreserveSbr>
-    </Bscmake>
   </ItemDefinitionGroup>
   <ItemGroup>
     <UES_ComponentOutputs Include="$(OutDir)\$(TargetName).lib" />

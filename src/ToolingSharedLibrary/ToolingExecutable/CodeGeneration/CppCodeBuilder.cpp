@@ -916,34 +916,13 @@ namespace CodeGeneration
             vtl1_impls_in_namespace);
     }
 
-    std::string CppCodeBuilder::BuildVtl1ExportedFunctionDeclarationsHeader(
-        std::string_view generated_namespace_name,
-        const std::unordered_map<std::string, Function>& developer_functions_to_export)
-    {
-        std::ostringstream exported_declarations {};
-
-        for (auto& [name, function] : developer_functions_to_export)
-        {
-            auto generated_func_name = std::format(c_generated_stub_name_no_quotes, function.abi_m_name);
-            exported_declarations << std::format(c_abi_boundary_func_declaration, generated_func_name) << "\n";
-        }
-
-        auto register_abi_declaration = std::format(c_vtl1_register_callbacks_abi_export_name, generated_namespace_name);
-        exported_declarations << std::format(c_abi_boundary_func_declaration, register_abi_declaration);
-
-        return std::format(
-            c_vtl1_extern_c_abi_function_declarations,
-            c_autogen_header_string,
-            exported_declarations.str());
-    }
-
     std::string CppCodeBuilder::BuildVtl1ExportedFunctionsSourcefile(
         std::string_view generated_namespace_name,
-        const std::vector<std::string>& sdk_trusted_function_abi_names,
         const std::unordered_map<std::string, Function>& developer_functions_to_export)
     {
         std::ostringstream exported_definitions {};
-        
+        std::ostringstream pragma_link_statements {};
+
         for (auto& [name, function] : developer_functions_to_export)
         {
             auto generated_func_name = std::format(c_generated_stub_name_no_quotes, function.abi_m_name);
@@ -952,6 +931,8 @@ namespace CodeGeneration
                 generated_func_name,
                 generated_namespace_name,
                 generated_func_name);
+
+            pragma_link_statements << std::format(c_vtl1_sdk_pragma_statement, generated_func_name);
         }
 
         auto register_callbacks_name = std::format(c_vtl1_register_callbacks_abi_export_name, generated_namespace_name);
@@ -961,30 +942,13 @@ namespace CodeGeneration
                 register_callbacks_name,
                 generated_namespace_name,
                 register_callbacks_name);
-        
-        // Since the enclave SDK is static lib based, we need to make sure its exported functions are linked into the
-        // consuming dll's export table. We do this by adding #pragma (linker, /Include) statements for each trusted
-        // sdk function inside the generated export.cpp file that hosts the developers own enclave exported functions.
-        std::ostringstream pragma_link_statements {};
 
-        if (!sdk_trusted_function_abi_names.empty())
-        {
-            for (auto& sdk_function_name : sdk_trusted_function_abi_names)
-            {
-                auto generated_func_name = std::format(c_generated_stub_name_no_quotes, sdk_function_name);
-                pragma_link_statements << std::format(c_vtl1_sdk_pragma_statement, generated_func_name);
-            }
-
-            auto register_sdk_callbacks_name = std::format(
-               c_vtl1_register_callbacks_abi_export_name,
-               g_sdk_namespace_name);
-
-            pragma_link_statements << std::format(c_vtl1_sdk_pragma_statement, register_sdk_callbacks_name);
-        }
+        pragma_link_statements << std::format(c_vtl1_sdk_pragma_statement, register_callbacks_name);
 
         return std::format(
-            c_vtl1_c_extern_abi_functions_header,
+            c_vtl1_export_functions_source_file,
             c_autogen_header_string,
+            generated_namespace_name,
             pragma_link_statements.str(),
             exported_definitions.str());
     }

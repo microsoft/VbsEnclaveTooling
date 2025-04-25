@@ -40,7 +40,7 @@ namespace VbsEnclaveABI::HostApp
 
         auto module = reinterpret_cast<HMODULE>(enclave_instance);
         auto proc_address = GetProcAddress(module, function_name.data());
-        THROW_LAST_ERROR_IF_NULL(proc_address);
+        RETURN_LAST_ERROR_IF_NULL(proc_address);
 
         auto routine = reinterpret_cast<PENCLAVE_ROUTINE>(proc_address);
         void* result_from_vtl1;
@@ -55,7 +55,7 @@ namespace VbsEnclaveABI::HostApp
         auto return_buffer_size = function_context.m_returned_parameters.buffer_size;
         wil::unique_process_heap_ptr<uint8_t> return_buffer {
             reinterpret_cast<uint8_t*>(function_context.m_returned_parameters.buffer)};
-        THROW_HR_IF(E_INVALIDARG, return_buffer_size > 0 && return_buffer.get() == nullptr);
+        RETURN_HR_IF(E_INVALIDARG, return_buffer_size > 0 && return_buffer.get() == nullptr);
         function_result = UnpackFlatbufferWithSize<ReturnParamsT>(return_buffer.get(), return_buffer_size);
         return S_OK;
     }
@@ -71,7 +71,7 @@ namespace VbsEnclaveABI::HostApp
         size_t forward_params_size = function_context->m_forwarded_parameters.buffer_size;
         RETURN_IF_NULL_ALLOC(forward_params_buffer);
 
-        THROW_HR_IF(E_INVALIDARG, forward_params_size > 0 && forward_params_buffer == nullptr);
+        RETURN_HR_IF(E_INVALIDARG, forward_params_size > 0 && forward_params_buffer == nullptr);
 
         auto flatbuffer_in_params = UnpackFlatbufferWithSize<ParamsT>(forward_params_buffer, forward_params_size);
         flatbuffers::FlatBufferBuilder flatbuffer_out_params_builder {};

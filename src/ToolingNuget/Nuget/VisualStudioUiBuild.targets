@@ -5,10 +5,9 @@
 
         <!-- Property value should match the "ToolingExecutable" projects 'target name' property  -->
         <VbsEnclaveNugetPackExePath>$(OutDir)edlcodegen.exe</VbsEnclaveNugetPackExePath>
-        <VbsEnclaveNugetPackSdkEdlPath>$(SolutionDir)src\VbsEnclaveSDK\veil_abi.edl</VbsEnclaveNugetPackSdkEdlPath>
         <VcpkgSupportPath>$(SolutionDir)src\ToolingSharedLibrary\vcpkg_installed\$(Platform)-windows-static\$(Platform)-windows-static</VcpkgSupportPath>
         <VcpkgToolsPath>$(SolutionDir)src\ToolingSharedLibrary\vcpkg_installed\$(Platform)-windows-static\$(Platform)-windows\tools</VcpkgToolsPath>
-        <VbsEnclaveNugetPackProperties>target_version=$(VbsEnclaveNugetPackVersionNumber);vbsenclavetooling_$(Platform)_exe=$(VbsEnclaveNugetPackExePath);vcpkg_sources=$(VcpkgSupportPath);vcpkg_tools=$(VcpkgToolsPath);vbsenclave_sdk_edl=$(VbsEnclaveNugetPackSdkEdlPath)</VbsEnclaveNugetPackProperties>
+        <VbsEnclaveNugetPackProperties>target_version=$(VbsEnclaveNugetPackVersionNumber);vbsenclavetooling_$(Platform)_exe=$(VbsEnclaveNugetPackExePath);vcpkg_sources=$(VcpkgSupportPath);vcpkg_tools=$(VcpkgToolsPath);</VbsEnclaveNugetPackProperties>
         <VbsEnclaveNugetPackOutputDirectory>$(SolutionDir)_build</VbsEnclaveNugetPackOutputDirectory>
         <VbsEnclaveNugetPackScriptFile>$(SolutionDir)buildScripts\PackageNuget.ps1</VbsEnclaveNugetPackScriptFile>
     </PropertyGroup>

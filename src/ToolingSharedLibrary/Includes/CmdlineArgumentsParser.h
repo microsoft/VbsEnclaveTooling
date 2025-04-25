@@ -33,14 +33,11 @@ namespace CmdlineParsingHelpers
 
         bool ParseSuccessful() const { return m_parse_successful; }
 
-        bool ShouldAddSdkLinkage() const { return m_add_sdk_linkage; }
-
     private:
 
         bool ParseArguments(int argc, char* argv[]);
 
         bool m_parse_successful = false;
-        bool m_add_sdk_linkage = false;
         std::string m_edl_path {};
         std::string m_out_directory {};
         std::string m_flatbuffer_compiler_path {};
