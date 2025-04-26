@@ -28,7 +28,7 @@ the `SampleApps` solution [here](https://github.com/microsoft/VbsEnclaveTooling/
 Consuming the SDK nuget package
 ------------
 Once the nuget package is built you can consume the `.nupkg` file that is generated
-in the `VbsEnclaveSdk\_build_` folder inside your hostApp or enclave project.
+in the `VbsEnclaveSdk\_build` folder inside your hostApp or enclave project.
 
 In a `<PropertyGroup />` in your *enclave* projects .vcxproj or .props file use:
 `<VbsEnclaveVirtualTrustLayer>Enclave</VbsEnclaveVirtualTrustLayer>`
@@ -39,9 +39,7 @@ enclaves dll at build time.
 In a `<PropertyGroup />` your *hostApp* projects .vcxproj or .props file use:
 `<VbsEnclaveVirtualTrustLayer>HostApp</VbsEnclaveVirtualTrustLayer>`
 
-- This will add the `veil_host_lib` static lib to your hostApps dll at build time.
-
-The respective 
+- This will add the `veil_host_lib` static lib to your hostApps dll at build time. 
 
 Supported features
 ------------

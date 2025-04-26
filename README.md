@@ -7,9 +7,8 @@ Coming soon.
 
 Official Nuget packages
 ------------
-`There are currently no official nuget packages for the vbs enclaves tooling project.`
-An official package will be added to nuget.org closer to our release date. See the 
-`Building locally` section for how you can use the tool before then.
+`There are currently no official nuget packages available in nuget.org for the SDk or the CodeGenerator nuget packages.`
+An official package will be added to our GitHub releases page closer to our release date.
 
 Building locally
 ------------
@@ -19,8 +18,7 @@ Building locally
 *The code generator uses Google Flatbuffers to facilite marshaling data into and out of the enclave.
 This means we take Flatbuffers as a dependency, specifically in our `ToolingSharedLibrary` project.
 We use [vcpkg](https://learn.microsoft.com/vcpkg/get_started/overview) to add the flatbuffer compiler and header files into our nuget package. To build the
-repository you will need to install/integrate `vcpkg` into your visual studio application inorder 
-to build this repository.*
+repository you will need to install/integrate `vcpkg` into your visual studio application.*
 
 Here are the instructions to integrate vcpkg into your visual studio application:
 
@@ -32,42 +30,39 @@ After this, you should be able to build the entire repository without issue. See
 #### Build instructions.
 The projects in this repository support only x64 and arm64 builds. 
 
-- To build the `VbsEnclaveTooling` executable on its own build the `ToolingExecutable` project
-- To build the VbsEnclaveTooling executable and also generate the `VbsEnclaveTooling` .nupkg file 
-  that can be added to your project there are two ways.
-  1. Build the `ToolingNuget` project in Visual Studio. This will generate a .nupkg
-     file in the `_build` directory and output the executable in `_build\$(platform)\$(configuration)`.
-  1. `OR` in a Visual Studio developer Powershell window run the `buildScripts\build.ps1` 
-     script. This will do the same as above.
+- In a PowerShell window run the `buildScripts\build.ps1` script. This will build the `CodeGenerator` and `SDK` nuget packages.
+Once this is complete the `CodeGenerator` nuget package can be found in `_build` and the `SDK` nuget package can be found in the`src\VbsEnclaveSDk\__build` folder.
 
-For F5 debugging VbsEnclaveTooling.exe locally, [see the ToolingExecutable projects instructions here](./src/ToolingExecutable/README.md)
-
-
-Using VbsEnclaveTooling.exe from within your own Visual Studio project to generate code
+CodeGenerator usage
 ------------
 
-Once you have built the nuget package, you can add it directly to your own visual studio
+Once you have built the `CodeGenerator` nuget package, you can add it directly to your own visual studio
 project by doing the following:
 
 1. Right click your project > Manage Nuget Packages... > click the gear icon on the top right
    of the page and add `<path-to-cloned-VbsEnclaveTooling-repo>\_build` as a package source and click ok.
 1. Switch the package source in the dropdown on the top right of the page to
    your new package source that points to the location above.
-1. You should now see the `VbsEnclaveTooling` nuget package show up in the browse list.
-1. Install it in your enclave project and your hostApp project.
-1. In your enclave projects .vcxproj file add the following inside a `<PropertyGroup>` attribute
-   `<VbsEnclaveEdlPath>Path-To-Your-.Edl-File</VbsEnclaveEdlPath>`
+1. You should now see the `Microsoft.Windows.VbsEnclave.Codegenerator` nuget package show up in the browse list.
+1. Install it in both your enclave project and your hostApp project.
+   
+In a `<PropertyGroup />` in your *enclave* projects .vcxproj or .props file use the following:
+`<VbsEnclaveVirtualTrustLayer>Enclave</VbsEnclaveVirtualTrustLayer>`
+`<VbsEnclaveEdlPath>Path-To-Your-.Edl-File</VbsEnclaveEdlPath>`
 
-*Note*: A new VbsEnclaveTooling .nupkg file is generated everytime you build the `ToolingNuget`
-project. It will appear as `Microsoft.Windows.VbsEnclaveTooling.0.0.0.nupkg` in the `_build` file.
+- This will kick off the code generation inside your *enclave* project at build time.
 
-If you already have it installed into your project, you will need to uninstall and reinstall it
-via the "Manage Nuget Packages" window/refresh the page. 
+In a `<PropertyGroup />` your *hostApp* projects .vcxproj or .props file use the following::
+`<VbsEnclaveVirtualTrustLayer>HostApp</VbsEnclaveVirtualTrustLayer>`
+`<VbsEnclaveEdlPath>Path-To-Your-.Edl-File</VbsEnclaveEdlPath>`
 
-This is helpful when you need to test changes made in the `ToolingExecutable`
-or the `ToolingSharedLibrary` projects inside a project that consumes the nuget package.
+- This will kick off the code generation inside your *hostApp* project at build time.
 
-VbsEnclaveSDK usage
+You can view other properties that can be used in the `ToolingExecutable` readme file [here](./src/ToolingExecutable/README.md).
+
+Also see the docs on the `.edl` format and `CodeGeneration` [here](./docs/edl.md) and [here](./docs/CodeGeneration.md) for more information on them.
+
+Vbs enclave implementation library (veil) usage
 ------------
 Currently the SDK is located inside a separate solution file called `vbs_enclave_implementation_library.sln` 
 located in `./src/VbsEnclaveSDK`.

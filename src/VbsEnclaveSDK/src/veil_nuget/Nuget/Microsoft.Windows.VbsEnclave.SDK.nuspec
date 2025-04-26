@@ -35,8 +35,8 @@
     <file src="$vbsenclave_sdk_enclave_arm64_lib$" target="lib\native\arm64"/>
     <file src="$vbsenclave_sdk_host_x64_lib$" target="lib\native\x64"/>
     <file src="$vbsenclave_sdk_host_arm64_lib$" target="lib\native\arm64"/>
-    <file src="$vbsenclavetooling_cpp_support_x64_lib$" target="lib\native\x64"/>
-    <file src="$vbsenclavetooling_cpp_support_arm64_lib$" target="lib\native\arm64"/>
+    <file src="$vbsenclave_sdk_cpp_support_x64_lib$" target="lib\native\x64"/>
+    <file src="$vbsenclave_sdk_cpp_support_arm64_lib$" target="lib\native\arm64"/>
     <file src="..\..\..\README.md"/>
   </files>
 </package>
