@@ -15,7 +15,6 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <None Include="packages.config" />
     <None Include="Nuget\Microsoft.Windows.VbsEnclaveTooling.nuspec" />
     <None Include="README.md" />
     <None Include="Nuget\VisualStudioUiBuild.targets" />

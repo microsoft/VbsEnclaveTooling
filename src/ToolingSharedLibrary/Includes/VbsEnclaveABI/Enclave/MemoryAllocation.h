@@ -14,29 +14,38 @@ namespace VbsEnclaveABI::Enclave
 {
     namespace VTL0CallBackHelpers
     {
-        extern LPENCLAVE_ROUTINE s_vtl0_allocation_function;
-        extern LPENCLAVE_ROUTINE s_vtl0_deallocation_function;
-        extern wil::srwlock s_vtl0_function_table_lock;
-        extern bool s_are_functions_registered;
-        extern std::unordered_map<std::uint32_t, std::uint64_t> s_vtl0_function_table;
-        static constexpr size_t minimum_number_of_callbacks = 2;
+        inline LPENCLAVE_ROUTINE s_vtl0_allocation_function;
+        inline LPENCLAVE_ROUTINE s_vtl0_deallocation_function;
+        inline wil::srwlock s_vtl0_function_table_lock{};
+        inline bool s_are_functions_registered{};
+        inline std::unordered_map<std::string, std::uintptr_t> s_vtl0_function_table{};
+        inline constexpr size_t minimum_number_of_callbacks = 2;
+        inline constexpr std::string_view abi_mem_allocation_name = "VbsEnclaveABI::HostApp::AllocateVtl0MemoryCallback";
+        inline constexpr std::string_view abi_mem_deallocation_name = "VbsEnclaveABI::HostApp::DeallocateVtl0MemoryCallback";
 
-        static inline HRESULT AddVtl0FunctionsToTable(_In_ const std::vector<std::uint64_t>& stub_functions)
+        inline HRESULT AddVtl0FunctionsToTable(
+            _In_ const std::vector<std::uintptr_t>& stub_function_addresses,
+            _In_ const std::vector<std::string>& stub_function_names)
         {
             auto lock = s_vtl0_function_table_lock.lock_exclusive();
 
-            size_t callbacks_size = stub_functions.size();
+            size_t callbacks_size = stub_function_addresses.size();
             RETURN_HR_IF(E_INVALIDARG, callbacks_size < minimum_number_of_callbacks);
+            RETURN_HR_IF(E_INVALIDARG, (stub_function_addresses.size() != stub_function_names.size()));
 
             if (s_are_functions_registered)
             {
                 return S_OK;
             }
 
-            // Add in function addresses to map 1 indexed.
             for (auto i = 0U; i < callbacks_size; i++)
             {
-                auto vtl0_func = reinterpret_cast<LPENCLAVE_ROUTINE>(stub_functions[i]);
+                if (s_vtl0_function_table.contains(stub_function_names[i]))
+                {
+                    continue;
+                }
+
+                auto vtl0_func = reinterpret_cast<LPENCLAVE_ROUTINE>(stub_function_addresses[i]);
                 HRESULT hr = CheckForVTL0Function(vtl0_func);
 
                 if (FAILED_LOG(hr))
@@ -45,15 +54,22 @@ namespace VbsEnclaveABI::Enclave
                     return hr;
                 }
 
-                s_vtl0_function_table[i + 1U] = stub_functions[i];
+                s_vtl0_function_table[stub_function_names[i]] = stub_function_addresses[i];
             }
 
             // first value should always be the allocation function and the second will always
             // be the deallocation function.
-            s_vtl0_allocation_function = reinterpret_cast<LPENCLAVE_ROUTINE>(s_vtl0_function_table[1]);
-            s_vtl0_deallocation_function = reinterpret_cast<LPENCLAVE_ROUTINE>(s_vtl0_function_table[2]);
+            if (!s_vtl0_allocation_function)
+            {
+                RETURN_HR_IF(E_INVALIDARG, !s_vtl0_function_table.contains(abi_mem_allocation_name.data()));
+                s_vtl0_allocation_function = reinterpret_cast<LPENCLAVE_ROUTINE>(s_vtl0_function_table[abi_mem_allocation_name.data()]);
+            }
 
-            s_are_functions_registered = true;
+            if (!s_vtl0_deallocation_function)
+            {
+                RETURN_HR_IF(E_INVALIDARG, !s_vtl0_function_table.contains(abi_mem_deallocation_name.data()));
+                s_vtl0_deallocation_function = reinterpret_cast<LPENCLAVE_ROUTINE>(s_vtl0_function_table[abi_mem_deallocation_name.data()]);
+            }
 
             return S_OK;
         }
@@ -64,7 +80,7 @@ namespace VbsEnclaveABI::Enclave
         using namespace VTL0CallBackHelpers;
 
         template <typename T>
-        static inline HRESULT AllocateVtl0Memory(_Out_ T** vtl0_memory, _In_ size_t size)
+        inline HRESULT AllocateVtl0Memory(_Out_ T** vtl0_memory, _In_ size_t size)
         {
             *vtl0_memory = nullptr;
             RETURN_HR_IF_NULL_MSG(E_INVALIDARG, s_vtl0_allocation_function, "VTL0 allocation function not registered.");
@@ -82,7 +98,7 @@ namespace VbsEnclaveABI::Enclave
         }
 
        
-        static inline HRESULT DeallocateVtl0Memory(_Inout_ void* vtl0_memory)
+        inline HRESULT DeallocateVtl0Memory(_Inout_ void* vtl0_memory)
         {
             RETURN_HR_IF_NULL_MSG(E_INVALIDARG, s_vtl0_deallocation_function, "VTL0 deallocation function not registered.");
             void* returned_result;

@@ -161,7 +161,6 @@
     <None Include="Nuget\Microsoft.Windows.VbsEnclave.CodeGenerator.targets" />
     <None Include="Nuget\Microsoft.Windows.VbsEnclaveTooling.nuspec" />
     <None Include="Nuget\VisualStudioUiBuild.targets" />
-    <None Include="packages.config" />
     <None Include="README.md" />
   </ItemGroup>
   <ItemGroup>
@@ -178,5 +177,5 @@
     <PropertyGroup>
       <ErrorText>This project references NuGet package(s) that are missing on this computer. Use NuGet Package Restore to download them.  For more information, see http://go.microsoft.com/fwlink/?LinkID=322105. The missing file is {0}.</ErrorText>
     </PropertyGroup>
- </Target>
+  </Target>
 </Project>

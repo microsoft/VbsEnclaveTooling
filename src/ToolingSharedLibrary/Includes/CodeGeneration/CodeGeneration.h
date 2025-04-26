@@ -116,6 +116,8 @@ namespace CodeGeneration
             std::unordered_map<std::string, Function>& functions);
 
         EnclaveToHostContent BuildEnclaveToHostFunctions(
+            std::string_view generated_namespace,
+            std::string_view generated_class_name,
             std::unordered_map<std::string, Function>& functions);
 
         std::string CombineAndBuildHostAppEnclaveClass(

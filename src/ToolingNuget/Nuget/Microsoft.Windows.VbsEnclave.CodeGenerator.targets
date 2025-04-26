@@ -52,7 +52,13 @@
         <ItemGroup>
             <_WildCardClCompileFor_Cpp Include="$(VbsEnclaveGeneratedFilesDir)\VbsEnclave\**\*.cpp" />
             <_WildCardClCompileFor_Cpp_h Include="$(VbsEnclaveGeneratedFilesDir)\VbsEnclave\**\*.h" />
-            <ClCompile Include="@(_WildCardClCompileFor_Cpp)"  />
+            <!-- 
+                    Don't use precompiled headers for generated cpp files so projects that support precompiled
+                    headers can be built with our generated code.
+            -->
+            <ClCompile Include="@(_WildCardClCompileFor_Cpp)">
+                <PrecompiledHeader>NotUsing</PrecompiledHeader>
+            </ClCompile>
             <ClInclude Include="@(_WildCardClCompileFor_Cpp_h)"  />
         </ItemGroup>
     </Target>    

@@ -54,7 +54,7 @@ namespace VbsEnclaveABI::Enclave
     // Generated ABI export functions in VTL1 call this function as an entry point to calling
     // its associated VTL1 ABI impl function.
     template <typename ParamsT, typename FuncImplT>
-    static inline HRESULT CallVtl1ExportFromVtl1(
+    inline HRESULT CallVtl1ExportFromVtl1(
         _In_ void* context,
         _In_ FuncImplT abi_impl_func)
     {
@@ -105,12 +105,12 @@ namespace VbsEnclaveABI::Enclave
     // Abi functions in VTL1 call this function as an entry point to calling
     // its associated VTL0 callback.
     template <typename ParamsT, typename ReturnParamsT>
-    static inline HRESULT CallVtl0CallbackFromVtl1(
-        _In_ std::uint32_t function_index,
+    inline HRESULT CallVtl0CallbackFromVtl1(
+        _In_ std::string_view function_name,
         _In_ flatbuffers::FlatBufferBuilder& flatbuffer_in_params_builder,
         _Inout_ ReturnParamsT& callback_result)
     {
-        bool func_index_in_table = s_vtl0_function_table.contains(function_index);
+        bool func_index_in_table = s_vtl0_function_table.contains(function_name.data());
         RETURN_HR_IF(E_INVALIDARG, !func_index_in_table);
 
         vtl0_memory_ptr<std::uint8_t> vtl0_in_params;
@@ -137,7 +137,7 @@ namespace VbsEnclaveABI::Enclave
             sizeof(EnclaveFunctionContext)));
 
         void* vtl0_output_buffer;
-        auto vtl0_callback = reinterpret_cast<LPENCLAVE_ROUTINE>(s_vtl0_function_table.at(function_index));
+        auto vtl0_callback = reinterpret_cast<LPENCLAVE_ROUTINE>(s_vtl0_function_table.at(function_name.data()));
 
         RETURN_IF_WIN32_BOOL_FALSE((CallEnclave(
             vtl0_callback,

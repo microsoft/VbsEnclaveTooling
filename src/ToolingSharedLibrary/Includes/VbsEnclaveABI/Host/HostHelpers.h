@@ -11,14 +11,14 @@ using namespace VbsEnclaveABI::Shared;
 namespace VbsEnclaveABI::HostApp
 {
     // VTL0 allocation callback
-    static inline void* AllocateVtl0MemoryCallback(_In_ void* context)
+    inline void* AllocateVtl0MemoryCallback(_In_ void* context)
     {
         auto size = reinterpret_cast<size_t>(context);
         return Shared::AllocateMemory(size);
     }
 
     // VTL0 deallocation callback
-    static inline void* DeallocateVtl0MemoryCallback(_In_ void* memory)
+    inline void* DeallocateVtl0MemoryCallback(_In_ void* memory)
     {
         ABI_RETURN_HR_AS_PVOID(Shared::DeallocateMemory(memory));
     }
@@ -26,7 +26,7 @@ namespace VbsEnclaveABI::HostApp
     // Generated code uses this function to forward input parameters and retrieve
     // return parameters to the developers enclave exported function.
     template <typename ReturnParamsT>
-    static inline HRESULT CallVtl1ExportFromVtl0(
+    inline HRESULT CallVtl1ExportFromVtl0(
         _In_ void* enclave_instance,
         _In_ std::string_view function_name,
         _In_ flatbuffers::FlatBufferBuilder& flatbuffer_in_params_builder,
@@ -63,7 +63,7 @@ namespace VbsEnclaveABI::HostApp
     // Generated code uses this function to forward input parameters and retrieve
     // return parameters from the the developers vtl0 callback implementation function.
     template <typename ParamsT, typename ReturnParamsT, typename FuncImplT>
-    static inline HRESULT CallVtl0CallbackImplFromVtl0(_In_ void* context, _In_ FuncImplT abi_impl_func)
+    inline HRESULT CallVtl0CallbackImplFromVtl0(_In_ void* context, _In_ FuncImplT abi_impl_func)
     {
         auto function_context = reinterpret_cast<EnclaveFunctionContext*>(context);
         RETURN_IF_NULL_ALLOC(function_context);

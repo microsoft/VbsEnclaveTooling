@@ -12,11 +12,11 @@
 
 namespace VbsEnclaveABI::Enclave::MemoryChecks
 {
-    extern LPCVOID s_enclave_memory_begin; // inclusive
-    extern LPCVOID s_enclave_memory_end;   // exclusive
-    extern std::atomic<bool> s_memory_bounds_calculated;
+    inline LPCVOID s_enclave_memory_begin; // inclusive
+    inline LPCVOID s_enclave_memory_end;   // exclusive
+    inline std::atomic<bool> s_memory_bounds_calculated{};
 
-    static inline HRESULT InitializeEnclaveDetails()
+    inline HRESULT InitializeEnclaveDetails()
     {
         if (!s_memory_bounds_calculated.load(std::memory_order::memory_order_acquire))
         {
@@ -44,7 +44,7 @@ namespace VbsEnclaveABI::Enclave::MemoryChecks
         return S_OK;
     }
 
-    static inline HRESULT GetEndOfEnclaveMemoryRange(
+    inline HRESULT GetEndOfEnclaveMemoryRange(
         _In_ const void* start_of_range,
         _Out_ const void** end_of_range,
         _In_ const size_t length)
@@ -63,7 +63,7 @@ namespace VbsEnclaveABI::Enclave::MemoryChecks
         return S_OK;
     }
 
-    static inline HRESULT CheckForVTL0Buffer(_In_ const void* buffer, _In_ const size_t length)
+    inline HRESULT CheckForVTL0Buffer(_In_ const void* buffer, _In_ const size_t length)
     {
         // If there are no bytes in the buffer, then it doesn't matter where the pointer points.
         // The empty set is a subset of every set.
@@ -86,7 +86,7 @@ namespace VbsEnclaveABI::Enclave::MemoryChecks
         return E_FAIL; // TODO: Add our own Hresult
     }
 
-    static inline HRESULT CheckForVTL1Buffer(
+    inline HRESULT CheckForVTL1Buffer(
         _In_ const void* buffer,
         _In_ const size_t length)
     {

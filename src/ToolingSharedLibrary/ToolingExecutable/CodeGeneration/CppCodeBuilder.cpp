@@ -751,6 +751,8 @@ namespace CodeGeneration
     }
 
     CppCodeBuilder::EnclaveToHostContent CppCodeBuilder::BuildEnclaveToHostFunctions(
+        std::string_view generated_namespace,
+        std::string_view generated_class_name,
         std::unordered_map<std::string, Function>& functions)
     {
         size_t number_of_functions = functions.size();
@@ -780,7 +782,9 @@ namespace CodeGeneration
         auto addresses_separator = "";
         vtl0_class_method_addresses << c_allocate_memory_callback_to_address.data();
         vtl0_class_method_addresses << c_deallocate_memory_callback_to_address.data();
-
+        std::ostringstream vtl0_class_method_names;
+        vtl0_class_method_names << c_allocate_memory_callback_to_name.data();
+        vtl0_class_method_names << c_deallocate_memory_callback_to_name.data();
 
         // Start index at 3 (1 indexed) since we already added both our abi allocate and
         // deallocate memory callbacks. A function index will be used as a key and the
@@ -791,9 +795,15 @@ namespace CodeGeneration
         {
             auto param_info = GetInformationAboutParameters(function);
 
+            auto generated_callback_in_namespace = std::format(
+               c_generated_callback_in_namespace,
+               generated_namespace,
+               generated_class_name,
+               function.abi_m_name);
+
             auto vtl1_call_to_vtl0_callback = std::format(
                 c_vtl1_call_to_vtl0_callback,
-                vtl1_map_function_index++);
+                generated_callback_in_namespace);
 
             // This is the vtl1 static function that the developer will call into from vtl1 with the
             // same parameters as their vtl0 callabck function. This initiates the abi call from vtl1 
@@ -835,8 +845,11 @@ namespace CodeGeneration
             // capture the addresses for each developer callback so we can pass them to vtl1 later.
             vtl0_class_method_addresses << std::format(
                 c_callback_to_address, 
-                function.abi_m_name,
-                parameter_separator);
+                function.abi_m_name);
+
+            vtl0_class_method_names << std::format(
+                c_callback_to_name,
+                generated_callback_in_namespace);
 
             current_iteration++;
             parameter_separator = (current_iteration + 1U == number_of_functions) ? "" : ",";
@@ -847,7 +860,9 @@ namespace CodeGeneration
         auto vtl0_class_callbacks_member = std::format(
             c_vtl0_class_add_callback_member,
             number_of_functions_plus_allocators,
-            vtl0_class_method_addresses.str());
+            vtl0_class_method_addresses.str(),
+            number_of_functions_plus_allocators,
+            vtl0_class_method_names.str());
         
         vtl0_class_private_portion 
             << vtl0_abi_boundary_functions.str()

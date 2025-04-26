@@ -21,6 +21,7 @@
 #include <string>
 #include <tuple>
 #include <unordered_map>
+#include <unordered_set>
 #include <vector>
 #include <variant>
 #pragma warning(push)
@@ -74,7 +75,7 @@ namespace VbsEnclaveABI::Shared
     #pragma pack(pop)
 
     // Used by either vtl0 or vtl1 to allocate their own memory
-    static inline void* AllocateMemory(_In_ size_t size)
+    inline void* AllocateMemory(_In_ size_t size)
     {
         void* allocated_memory = ::HeapAlloc(::GetProcessHeap(), HEAP_ZERO_MEMORY, size);
         LOG_IF_NULL_ALLOC(allocated_memory);
@@ -82,7 +83,7 @@ namespace VbsEnclaveABI::Shared
     }
 
     // Used by either vtl0 or vtl1 to deallocate their own memory
-    static inline HRESULT DeallocateMemory(_In_ void* memory)
+    inline HRESULT DeallocateMemory(_In_ void* memory)
     {
         if (memory)
         {

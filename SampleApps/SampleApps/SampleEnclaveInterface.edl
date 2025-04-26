@@ -43,4 +43,9 @@ enclave
             );
     };
 
+    untrusted
+    {
+        void Test();
+    };
+
 };
