@@ -1,26 +1,49 @@
-VbsEnclaveSDK
+Vbs Enclave Implementation Library
 ================
+
+Supported Languages
+------------
+1. C++ (20 and above)
 
 Introduction
 ------------
-This project contains all the source code related to the SDK. The SDK
-produces a static library for the hostApp and one for the enclave. 
-`veil_host_lib` and `veil_enclave_lib` respectively.
+*Note* `veil` stands for "Vbs Enclave Implementation Library"
 
-This is still being fleshed out but you can view the usage patterns in both
-the `sample_enclave` and `sample_hostapp` projects. Note about building
-the sample enclave project locally. You can follow the instructions here: 
-[Signing VBS enclave DLLs](https://learn.microsoft.com/windows/win32/trusted-execution/vbs-enclaves-dev-guide#step-3-signing-vbs-enclave-dlls),
-to create a certificate for your enclave. Then you can edit the `EnclaveCertName`
-property within the `sample_enclave` vcxproj file located here
-in the [sample_enclave.vcxproj](https://github.com/microsoft/VbsEnclaveTooling/blob/8179c372186bd7ab1f1d68ac044fe4a98ccc7eef/src/VbsEnclaveSDK/samples/sample_enclave/sample_enclave.vcxproj#L54)
-with the name of your signing certificate.
+This solution contains all the source code related to the veil SDK. The SDK
+produces a 3 static libraries one for the hostApp, one for the enclave and
+one for C++ support within an enclave. These are called `veil_host_lib` ,
+`veil_enclave_lib` and `veil_enclave_cpp_support_lib` respectively. 
 
-Currently supported features:
-1. "Taskpool" support for the enclave by the HostApp. The enclave can now queue work onto vtl0 threads easily using std::future/std::promise behavior.
-   See TaskPool sample [here](./samples/sample_hostapp/sample_taskpool.cpp)
+The `veil_nuget` project is used to build and create the
+`Microsoft.Windows.VbsEnclave.SDK` nuget package. To build this solution
+you must first build the `VbsEnclaveTooling` solution in the root of the
+repository. This will 
+generate the `Microsoft.Windows.VbsEnclave.CodeGenerator` nuget package that
+the SDK needs to consume. Once that is done you will only need to build this solution.
+when needing to build the SDK nuget package.
 
-Consumption
+You can view the SDK's usage patterns in
+the `SampleApps` solution [here](https://github.com/microsoft/VbsEnclaveTooling/tree/main/SampleApps/SampleApps)
+
+Consuming the SDK nuget package
 ------------
-Your enclave must export VeilEnclaveSdkEntrypoint, which is
-a required entrypoint for the Veil Enclave SDK to function.
+Once the nuget package is built you can consume the `.nupkg` file that is generated
+in the `VbsEnclaveSdk\_build_` folder inside your hostApp or enclave project.
+
+In a `<PropertyGroup />` in your *enclave* projects .vcxproj or .props file use:
+`<VbsEnclaveVirtualTrustLayer>Enclave</VbsEnclaveVirtualTrustLayer>`
+
+- This will add the `veil_enclave_lib` and `veil_enclave_cpp_support_lib` static libs to your 
+enclaves dll at build time.
+
+In a `<PropertyGroup />` your *hostApp* projects .vcxproj or .props file use:
+`<VbsEnclaveVirtualTrustLayer>HostApp</VbsEnclaveVirtualTrustLayer>`
+
+- This will add the `veil_host_lib` static lib to your hostApps dll at build time.
+
+The respective 
+
+Supported features
+------------
+1. "Taskpool" support for the enclave by the HostApp. The enclave can now queue work onto vtl0 threads easily using std::future/std::promise behavior.
+1. Bcrypt wrapper methods to make encryption/decryption code easier to write.
