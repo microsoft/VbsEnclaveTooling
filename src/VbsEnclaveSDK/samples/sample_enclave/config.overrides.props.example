@@ -1,7 +1,0 @@
-<!-- Rename to 'config.overrides.props' -->
-
-<Project>
-  <PropertyGroup>
-    <EnclaveCertName>TheDefaultTestEnclaveCertName</EnclaveCertName>
-  </PropertyGroup>
-</Project>
