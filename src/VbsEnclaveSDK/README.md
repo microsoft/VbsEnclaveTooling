@@ -45,5 +45,5 @@ The respective
 
 Supported features
 ------------
-1. "Taskpool" support for the enclave by the HostApp. The enclave can now queue work onto vtl0 threads easily using std::future/std::promise behavior.
+1. "Taskpool" support for the enclave by the HostApp. The enclave can now queue work onto vtl0 threads easily using veil::future/veil::promise behavior.
 1. Bcrypt wrapper methods to make encryption/decryption code easier to write.
