@@ -265,8 +265,8 @@ std::string VTL1_Declarations::TrustedExample(
 
     *ex_struct.int_ptr = 20;
 
-    // Note needed but just for illustration that the pointer value was copied. 
-    if (*some_ptr != 67678)
+    // Not needed but just for illustration that the pointer value was copied. 
+    if (!some_ptr || *some_ptr != 67678)
     {
         throw std::runtime_error("expected some_ptr == 67678");
     }
@@ -332,16 +332,16 @@ std::string str1 = "The quick brown";
 std::wstring wstr1{};
 HRESULT result = VbsEnclave::VTL0_Callbacks::UntrustedExample_callback(str1, wstr1);
 
-// Not needed but explicitly showing the values we expect our str1 and str2 to contain after
+// Not needed but explicitly showing the values we expect our str1 and wstr1 to contain after
 // calling the callback.
 RETURN_IF_FAILED(result);
 RETURN_HR_IF(INVALIDARG, str1 != "The quick brown fox jumps over the lazy dog");
-RETURN_HR_IF(INVALIDARG, str2 != "HELLO WORLD FROM VTL0");
+RETURN_HR_IF(INVALIDARG, wstr1 != L"HELLO WORLD FROM VTL0");
 
 ```
 
 `Note: 9` As you can see, for inout parameters the caller must allocate memory first before passing the pointer
-to the abi generated function. The returned data will be memcpy'd into this pointer by the abi before control
+to the abi generated function. The returned data will be copied into this pointer by the abi before control
 is given back to the caller function.
 
 `Note: 10` We explicitly add the suffix `_callback` to the end of the function name so as to avoid name conflicts

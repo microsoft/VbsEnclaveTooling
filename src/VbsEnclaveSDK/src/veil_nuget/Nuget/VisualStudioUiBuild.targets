@@ -1,11 +1,11 @@
 <Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
     <PropertyGroup>
         <VbsEnclaveNugetSpecFilePath>$(ProjectDir)Nuget\Microsoft.Windows.VbsEnclave.SDK.nuspec</VbsEnclaveNugetSpecFilePath>
-        <VbsEnclaveNugetPackVersionNumber>0.0.0</VbsEnclaveNugetPackVersionNumber>
+        <VbsEnclaveSDKNugetPackVersionNumber>0.0.0</VbsEnclaveSDKNugetPackVersionNumber>
         <VbsEnclaveNugetPackCppSupportPath>$(OutDir)veil_enclave_cpp_support_lib.lib</VbsEnclaveNugetPackCppSupportPath>
         <VbsEnclaveNugetPackEnclaveLibPath>$(OutDir)veil_enclave_lib.lib</VbsEnclaveNugetPackEnclaveLibPath>
         <VbsEnclaveNugetPackHostLibPath>$(OutDir)veil_host_lib\veil_host_lib.lib</VbsEnclaveNugetPackHostLibPath>
-        <VbsEnclaveNugetPackProperties>target_version=$(VbsEnclaveNugetPackVersionNumber);vbsenclave_sdk_enclave_$(Platform)_lib=$(VbsEnclaveNugetPackEnclaveLibPath);vbsenclave_sdk_host_$(Platform)_lib=$(VbsEnclaveNugetPackHostLibPath);vbsenclavetooling_cpp_support_$(Platform)_lib=$(VbsEnclaveNugetPackCppSupportPath);</VbsEnclaveNugetPackProperties>
+        <VbsEnclaveNugetPackProperties>target_version=$(VbsEnclaveSDKNugetPackVersionNumber);vbsenclave_sdk_enclave_$(Platform)_lib=$(VbsEnclaveNugetPackEnclaveLibPath);vbsenclave_sdk_host_$(Platform)_lib=$(VbsEnclaveNugetPackHostLibPath);vbsenclave_sdk_cpp_support_$(Platform)_lib=$(VbsEnclaveNugetPackCppSupportPath);</VbsEnclaveNugetPackProperties>
         <VbsEnclaveNugetPackOutputDirectory>$(SolutionDir)_build</VbsEnclaveNugetPackOutputDirectory>
         <VbsEnclaveNugetPackScriptFile>$(SolutionDir)..\..\buildScripts\PackageNuget.ps1</VbsEnclaveNugetPackScriptFile>
     </PropertyGroup>

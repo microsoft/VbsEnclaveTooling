@@ -7,13 +7,12 @@ Param(
     [ValidateSet('all', 'debug', 'release', 'Debug', 'Release')]
     [System.String]
     $Configurations = "debug",
-
-    [ValidateSet('all', 'CodeGenOnly')]
-    [System.String]
-    $NugetPackagesToOutput = "all",
     
     [System.Boolean]
     $IsLocalBuild = $true,
+
+    [System.Boolean]
+    $BuildCodeGenNugetDependency = $true,
 
     [switch]
     $Help
@@ -31,7 +30,7 @@ Syntax:
       Build.ps1 [options]
 
 Description:
-      Builds the vbs enclave tooling and the vbs enclave implementation library solutions.
+      Builds the vbs enclave implementation library solution.
 
 Options:
 
@@ -48,6 +47,9 @@ Options:
   -IsLocalBuild
       Changes build behavior to build as if it was not in a pipeline.
 
+  -BuildCodeGenNugetDependency
+      Used to indicate whether or not the Vbs Enclave code generator nuget package should be built.
+
   -Help
       Display this usage message.
 "@
@@ -57,7 +59,7 @@ Options:
 # so the building behavior in VS UI and commandline stay the same.
 $ErrorActionPreference = "Stop"
 $BuildRootDirectory = (Split-Path $MyInvocation.MyCommand.Path)
-$BaseRepositoryDirectory = Split-Path $BuildRootDirectory
+$BaseSolutionDirectory = Split-Path $BuildRootDirectory
 $lowerCasePlatforms = $Platforms.ToLower()
 $lowerCaseConfigurations = $Configurations.ToLower()
 
@@ -79,6 +81,12 @@ else
     $Build_Configuration = @($lowerCaseConfigurations)
 }
 
+if ($BuildCodeGenNugetDependency)
+{
+    $codeGenBuildScriptPath = "$BaseSolutionDirectory\..\..\BuildScripts\build.ps1"
+    & $codeGenBuildScriptPath -Platforms $Platforms -Configurations $Configurations -IsLocalBuild $IsLocalBuild -NugetPackagesToOutput "CodeGenOnly"
+}
+
 # Edit this to change the official version of the nuget package at build time.
 # For local builds make sure "$IsLocalBuild" is true.
 $BuildTargetVersion = [System.Version]::new(0, 0, 1)
@@ -93,15 +101,14 @@ $msbuildPath = & "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vsw
 
 Try 
 {
-    $solutionName = "VbsEnclaveTooling"
-    $nuspecFile = "$BaseRepositoryDirectory\src\ToolingNuget\nuget\Microsoft.Windows.VbsEnclave.CodeGenerator.nuspec"
+    $solutionName = "vbs_enclave_implementation_library"
+    $nuspecFile = "$BaseSolutionDirectory\src\veil_nuget\Nuget\Microsoft.Windows.VbsEnclave.SDK.nuspec"
     $nugetPackProperties = "target_version=$BuildTargetVersion;"
 
     # Run nuget restore
-    $nugetExeDownloaderPath = (Join-Path $BuildRootDirectory "NugetExeDownloader.ps1")
-    $nugetPath = & $nugetExeDownloaderPath
+    $nugetPath = & "$BaseSolutionDirectory\..\..\BuildScripts\NugetExeDownloader.ps1"
     Write-Host "Running nuget restore for $solutionName"
-    & $nugetPath restore "$BaseRepositoryDirectory\$solutionName.sln"
+    & $nugetPath restore "$BaseSolutionDirectory\$solutionName.sln"
 
     # Build
     foreach ($platform in $BuildPlatform)
@@ -111,11 +118,11 @@ Try
         Write-Host "Building $solutionName for EnvPlatform: $BuildPlatform Platform: $platform Configuration: $configuration"
         $msbuildArgs = 
         @(
-            ("$BaseRepositoryDirectory\$solutionName.sln"),
+            ("$BaseSolutionDirectory\$solutionName.sln"),
             ("/p:Platform=$platform"),
             ("/p:Configuration=$configuration"),
             ("/restore"),
-            ("/binaryLogger:$BaseRepositoryDirectory\_build\$platform\$configuration\$solutionName.$platform.$configuration.binlog")
+            ("/binaryLogger:$BaseSolutionDirectory\_build\$platform\$configuration\$solutionName.$platform.$configuration.binlog")
         )
 
         & $msbuildPath $msbuildArgs
@@ -125,18 +132,20 @@ Try
             exit $LASTEXITCODE
         }
 
-        #Now create the nuget package 
-        $vbsExePath = "$BaseRepositoryDirectory\_build\$platform\$configuration\edlcodegen.exe"
-        $nugetPackProperties += "vbsenclave_codegen_$platform"+"_exe=$vbsExePath;"
-        $nugetPackProperties += "vcpkg_sources=$BaseRepositoryDirectory\src\ToolingSharedLibrary\vcpkg_installed\$platform-windows-static\$platform-windows-static;";
-        $nugetPackProperties += "vcpkg_tools=$BaseRepositoryDirectory\src\ToolingSharedLibrary\vcpkg_installed\$platform-windows-static\$platform-windows\tools;";
+        # Now update the nuget pack properties
+        $cppSupportLibPath = "$BaseSolutionDirectory\_build\$platform\$configuration\veil_enclave_cpp_support_lib.lib"
+        $nugetPackProperties += "vbsenclave_sdk_cpp_support_$platform"+"_lib=$cppSupportLibPath;"
+        $veilEnclaveLibPath = "$BaseSolutionDirectory\_build\$platform\$configuration\veil_enclave_lib.lib"
+        $nugetPackProperties += "vbsenclave_sdk_enclave_$platform"+"_lib=$veilEnclaveLibPath;"
+        $veilHostLibPath = "$BaseSolutionDirectory\_build\$platform\$configuration\veil_host_lib\veil_host_lib.lib"
+        $nugetPackProperties += "vbsenclave_sdk_host_$platform"+"_lib=$veilHostLibPath;"
       }
     }
 
     # Pack nuget to account for both arm64 and x64 exes
-    $packageNugetScriptPath  = "$BuildRootDirectory\PackageNuget.ps1"
+    $packageNugetScriptPath  = "$BaseSolutionDirectory\..\..\BuildScripts\PackageNuget.ps1"
 
-    & $packageNugetScriptPath -NugetSpecFilePath $nuspecFile -NugetPackProperties $nugetPackProperties -OutputDirectory "$BaseRepositoryDirectory\_build"
+    & $packageNugetScriptPath -NugetSpecFilePath $nuspecFile -NugetPackProperties $nugetPackProperties -OutputDirectory "$BaseSolutionDirectory\_build"
 } 
 Catch
 {
@@ -146,21 +155,14 @@ Catch
     throw
 }
 
-# Now that we've finished building the codegen project and nuget package, build the sdk project and its nuget package.
-if ($NugetPackagesToOutput -eq "all")
-{
-    $sdkBuildScriptPath = "$BaseRepositoryDirectory\src\VbsEnclaveSDK\BuildScripts\build.ps1"
-    & $sdkBuildScriptPath -Platforms $Platforms -Configurations $Configurations -IsLocalBuild $IsLocalBuild -BuildCodeGenNugetDependency $false
-}
-
 $TotalTime = (Get-Date)-$StartTime
 $TotalMinutes = [math]::Floor($TotalTime.TotalMinutes)
 $TotalSeconds = [math]::Ceiling($TotalTime.TotalSeconds) - ($totalMinutes * 60)
 
-Write-Host "Successfully built the vbs enclave CodeGenerator." -ForegroundColor GREEN
+Write-Host "Successfully built the vbs enclave SDK." -ForegroundColor GREEN
 
 Write-Host @"
 
-Total Running Time to build vbs enclave CodeGenerator:
+Total Running Time to build vbs enclave SDK:
 $TotalMinutes minutes and $TotalSeconds seconds
 "@ -ForegroundColor CYAN

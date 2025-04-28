@@ -3,7 +3,7 @@ Running the sample host app
 
 Steps
 ------------
-
+1. Build both the `Microsoft.Windows.VbsEnclave.CodeGenerator` and the `Microsoft.Windows.VbsEnclave.SDK` nuget packages by running the build script [here](../../buildScripts/build.ps1).
 1. Running in a VM using Visual Studio
 	- Create a VM, turn on Windows Security -> Device Security -> Core Isolation -> Memory integrity. Restart the VM. 
 You would be running your app here.

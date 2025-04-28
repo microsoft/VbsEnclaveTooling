@@ -70,16 +70,10 @@ try
         Exit $LASTEXITCODE 
     }
 
-    Write-Host "Successfully created vbs enclave tooling .nupkg file." -ForegroundColor GREEN
+    Write-Host "Successfully created .nupkg file using nuget spec file: '$NugetSpecFilePath'." -ForegroundColor GREEN
 } 
 catch
 {
-    Write-Host ("Failed to create vbs enclave tooling .nupkg file") -ForegroundColor RED
+    Write-Host ("Failed to create .nupkg file using nuget spec file: '$NugetSpecFilePath'.") -ForegroundColor RED
     throw
 }
-
-$TotalTime = (Get-Date)-$StartTime
-$TotalMinutes = [math]::Floor($TotalTime.TotalMinutes)
-$TotalSeconds = [math]::Ceiling($TotalTime.TotalSeconds) - ($totalMinutes * 60)
-
-Write-Host "Total Running Time: $TotalMinutes minutes and $TotalSeconds seconds" -ForegroundColor CYAN

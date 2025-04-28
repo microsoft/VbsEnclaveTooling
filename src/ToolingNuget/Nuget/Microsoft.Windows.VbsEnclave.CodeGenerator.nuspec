@@ -16,8 +16,8 @@
   </metadata>
   <files>
     <file src="..\..\..\LICENSE"/>
-    <file src="$vbsenclavetooling_x64_exe$" target="bin\x64"/>
-    <file src="$vbsenclavetooling_arm64_exe$" target="bin\arm64"/>
+    <file src="$vbsenclave_codegen_x64_exe$" target="bin\x64"/>
+    <file src="$vbsenclave_codegen_arm64_exe$" target="bin\arm64"/>
     <file src="$vcpkg_sources$\**" target="vcpkg\"/>
     <file src="$vcpkg_tools$\**" target="vcpkg\tools"/>
     <file src="..\..\ToolingNuget\Nuget\Microsoft.Windows.VbsEnclave.CodeGenerator.props" target="build\native"/>

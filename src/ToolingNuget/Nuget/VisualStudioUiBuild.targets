@@ -1,13 +1,13 @@
 <Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
     <PropertyGroup>
         <VbsEnclaveNugetSpecFilePath>$(ProjectDir)Nuget\Microsoft.Windows.VbsEnclave.CodeGenerator.nuspec</VbsEnclaveNugetSpecFilePath>
-        <VbsEnclaveNugetPackVersionNumber>0.0.0</VbsEnclaveNugetPackVersionNumber>
+        <VbsEnclaveCodeGenNugetPackVersionNumber>0.0.0</VbsEnclaveCodeGenNugetPackVersionNumber>
 
         <!-- Property value should match the "ToolingExecutable" projects 'target name' property  -->
-        <VbsEnclaveNugetPackExePath>$(OutDir)edlcodegen.exe</VbsEnclaveNugetPackExePath>
+        <VbsEnclaveCodegenNugetPackExePath>$(OutDir)edlcodegen.exe</VbsEnclaveCodegenNugetPackExePath>
         <VcpkgSupportPath>$(SolutionDir)src\ToolingSharedLibrary\vcpkg_installed\$(Platform)-windows-static\$(Platform)-windows-static</VcpkgSupportPath>
         <VcpkgToolsPath>$(SolutionDir)src\ToolingSharedLibrary\vcpkg_installed\$(Platform)-windows-static\$(Platform)-windows\tools</VcpkgToolsPath>
-        <VbsEnclaveNugetPackProperties>target_version=$(VbsEnclaveNugetPackVersionNumber);vbsenclavetooling_$(Platform)_exe=$(VbsEnclaveNugetPackExePath);vcpkg_sources=$(VcpkgSupportPath);vcpkg_tools=$(VcpkgToolsPath);</VbsEnclaveNugetPackProperties>
+        <VbsEnclaveNugetPackProperties>target_version=$(VbsEnclaveCodeGenNugetPackVersionNumber);vbsenclave_codegen_$(Platform)_exe=$(VbsEnclaveCodegenNugetPackExePath);vcpkg_sources=$(VcpkgSupportPath);vcpkg_tools=$(VcpkgToolsPath);</VbsEnclaveNugetPackProperties>
         <VbsEnclaveNugetPackOutputDirectory>$(SolutionDir)_build</VbsEnclaveNugetPackOutputDirectory>
         <VbsEnclaveNugetPackScriptFile>$(SolutionDir)buildScripts\PackageNuget.ps1</VbsEnclaveNugetPackScriptFile>
     </PropertyGroup>
