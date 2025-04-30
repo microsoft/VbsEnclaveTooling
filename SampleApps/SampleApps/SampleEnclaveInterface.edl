@@ -42,10 +42,4 @@ enclave
             [out] wstring decrypted_input_bytes_2
             );
     };
-
-    untrusted
-    {
-        void Test();
-    };
-
 };

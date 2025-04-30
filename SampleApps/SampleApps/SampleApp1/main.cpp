@@ -20,11 +20,6 @@
 
 namespace fs = std::filesystem;
 
-void VbsEnclave::VTL0_Stubs::SampleEnclave::Test_callback(void)
-{
-    std::cout << "VTL0: callback called from VTL1" << std::endl;
-}
-
 int EncryptFlow(
     void* enclave, 
     const std::wstring& input, 

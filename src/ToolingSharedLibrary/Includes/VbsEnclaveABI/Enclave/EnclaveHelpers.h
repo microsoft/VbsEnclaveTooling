@@ -110,7 +110,7 @@ namespace VbsEnclaveABI::Enclave
         _In_ flatbuffers::FlatBufferBuilder& flatbuffer_in_params_builder,
         _Inout_ ReturnParamsT& callback_result)
     {
-        bool func_index_in_table = s_vtl0_function_table.contains(function_name.data());
+        bool func_index_in_table = IsFunctionInVtl0FunctionTable(function_name);
         RETURN_HR_IF(E_INVALIDARG, !func_index_in_table);
 
         vtl0_memory_ptr<std::uint8_t> vtl0_in_params;
@@ -137,7 +137,7 @@ namespace VbsEnclaveABI::Enclave
             sizeof(EnclaveFunctionContext)));
 
         void* vtl0_output_buffer;
-        auto vtl0_callback = reinterpret_cast<LPENCLAVE_ROUTINE>(s_vtl0_function_table.at(function_name.data()));
+        LPENCLAVE_ROUTINE vtl0_callback = GetFunctionFromVtl0FunctionTable(function_name);
 
         RETURN_IF_WIN32_BOOL_FALSE((CallEnclave(
             vtl0_callback,
