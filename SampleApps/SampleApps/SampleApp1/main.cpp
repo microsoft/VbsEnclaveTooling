@@ -10,6 +10,7 @@
 #include <wil/result_macros.h>
 #include <span>
 #include <sddl.h>
+#include <limits>
 
 #include <veil\host\enclave_api.vtl0.h>
 #include <veil\host\logger.vtl0.h>
@@ -316,7 +317,13 @@ int mainEncryptDecrpyt(uint32_t activityLevel)
         std::cout << "1. Encrypt a string\n";
         std::cout << "2. Decrypt the string\n";
         std::cout << "Enter your choice: ";
-        std::cin >> choice;
+        if (!(std::cin >> choice)) // Check if input is not an integer
+        {
+            std::cout << "Invalid input. Please enter a valid option (1 or 2).\n";
+            std::cin.clear(); // Clear the error flag
+            std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n'); // Discard invalid input
+            continue;
+        }
 
         switch (choice)
         {
@@ -434,7 +441,13 @@ int mainEncryptDecrpytThreadpool(uint32_t activityLevel)
         std::cout << "1. Encrypt two strings\n";
         std::cout << "2. Decrypt the strings\n";
         std::cout << "Enter your choice: ";
-        std::cin >> choice;
+        if (!(std::cin >> choice)) // Check if input is not an integer
+        {
+            std::cout << "Invalid input. Please enter a valid option (1 or 2).\n";
+            std::cin.clear(); // Clear the error flag
+            std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n'); // Discard invalid input
+            continue;
+        }
 
         switch (choice)
         {
@@ -505,7 +518,13 @@ int main(int argc, char* argv[])
         std::cout << "2. Explore executing a threadpool in the enclave\n";
         std::cout << "3. Encrypt, decrypt multiple strings using threadpool and enclave\n";
         std::cout << "Enter your choice: ";
-        std::cin >> choice;
+        if (!(std::cin >> choice)) // Check if input is not an integer
+        {
+            std::cout << "Invalid input. Please enter a valid option (1, 2 or 3).\n";
+            std::cin.clear(); // Clear the error flag
+            std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n'); // Discard invalid input
+            continue;
+        }
 
         switch (choice)
         {
