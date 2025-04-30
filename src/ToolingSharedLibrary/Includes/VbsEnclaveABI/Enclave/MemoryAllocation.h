@@ -17,7 +17,6 @@ namespace VbsEnclaveABI::Enclave
         inline LPENCLAVE_ROUTINE s_vtl0_allocation_function;
         inline LPENCLAVE_ROUTINE s_vtl0_deallocation_function;
         inline wil::srwlock s_vtl0_function_table_lock{};
-        inline bool s_are_functions_registered{};
         inline std::unordered_map<std::string, std::uintptr_t> s_vtl0_function_table{};
         inline constexpr size_t minimum_number_of_callbacks = 2;
         inline constexpr std::string_view abi_mem_allocation_name = "VbsEnclaveABI::HostApp::AllocateVtl0MemoryCallback";
@@ -32,11 +31,6 @@ namespace VbsEnclaveABI::Enclave
             size_t callbacks_size = stub_function_addresses.size();
             RETURN_HR_IF(E_INVALIDARG, callbacks_size < minimum_number_of_callbacks);
             RETURN_HR_IF(E_INVALIDARG, (stub_function_addresses.size() != stub_function_names.size()));
-
-            if (s_are_functions_registered)
-            {
-                return S_OK;
-            }
 
             for (auto i = 0U; i < callbacks_size; i++)
             {
@@ -57,8 +51,6 @@ namespace VbsEnclaveABI::Enclave
                 s_vtl0_function_table[stub_function_names[i]] = stub_function_addresses[i];
             }
 
-            // first value should always be the allocation function and the second will always
-            // be the deallocation function.
             if (!s_vtl0_allocation_function)
             {
                 RETURN_HR_IF(E_INVALIDARG, !s_vtl0_function_table.contains(abi_mem_allocation_name.data()));
