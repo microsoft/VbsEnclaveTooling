@@ -22,16 +22,17 @@ namespace VbsEnclaveABI::Enclave
         inline constexpr std::string_view abi_mem_allocation_name = "VbsEnclaveABI::HostApp::AllocateVtl0MemoryCallback";
         inline constexpr std::string_view abi_mem_deallocation_name = "VbsEnclaveABI::HostApp::DeallocateVtl0MemoryCallback";
 
-        inline bool IsFunctionInVtl0FunctionTable(std::string_view function_name)
+        inline LPENCLAVE_ROUTINE TryGetFunctionFromVtl0FunctionTable(std::string_view function_name)
         {
             auto lock = s_vtl0_function_table_lock.lock_exclusive();
-            return s_vtl0_function_table.contains(function_name.data());
-        }
+            auto iterator = s_vtl0_function_table.find(function_name.data());
 
-        inline LPENCLAVE_ROUTINE GetFunctionFromVtl0FunctionTable(std::string_view function_name)
-        {
-            auto lock = s_vtl0_function_table_lock.lock_exclusive();
-            return reinterpret_cast<LPENCLAVE_ROUTINE>(s_vtl0_function_table.at(function_name.data()));
+            if (iterator == s_vtl0_function_table.end())
+            {
+                return nullptr;
+            }
+
+            return reinterpret_cast<LPENCLAVE_ROUTINE>(iterator->second);
         }
 
         inline HRESULT AddVtl0FunctionsToTable(
@@ -46,7 +47,7 @@ namespace VbsEnclaveABI::Enclave
 
             for (auto i = 0U; i < callbacks_size; i++)
             {
-                auto function_name = stub_function_names[i];
+                auto& function_name = stub_function_names[i];
 
                 if (s_vtl0_function_table.contains(function_name))
                 {
