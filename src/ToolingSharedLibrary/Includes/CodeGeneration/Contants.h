@@ -369,7 +369,7 @@ R"(     {}_Generated_Stub
 
             if (m_callbacks_registered)
             {{
-                return S_OK;;
+                return S_OK;
             }}
 
             FlatbuffersDevTypes::AbiRegisterVtl0Callbacks_argsT input {{}};
