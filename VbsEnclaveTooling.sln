@@ -38,8 +38,11 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "docs", "docs", "{890A5ACE-4
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ToolingNuget", "src\ToolingNuget\ToolingNuget.vcxproj", "{1EC49385-89BB-4439-83DA-8D0374291F40}"
 	ProjectSection(ProjectDependencies) = postProject
+		{26116633-98EC-4EAC-859C-139D020D10C9} = {26116633-98EC-4EAC-859C-139D020D10C9}
 		{27C99E39-8373-4559-83D7-F21B5134EB83} = {27C99E39-8373-4559-83D7-F21B5134EB83}
 	EndProjectSection
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "veil_enclave_cpp_support_lib", "Common\veil_enclave_cpp_support_lib\veil_enclave_cpp_support_lib.vcxproj", "{26116633-98EC-4EAC-859C-139D020D10C9}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -81,6 +84,14 @@ Global
 		{1EC49385-89BB-4439-83DA-8D0374291F40}.Release|ARM64.Build.0 = Release|ARM64
 		{1EC49385-89BB-4439-83DA-8D0374291F40}.Release|x64.ActiveCfg = Release|x64
 		{1EC49385-89BB-4439-83DA-8D0374291F40}.Release|x64.Build.0 = Release|x64
+		{26116633-98EC-4EAC-859C-139D020D10C9}.Debug|ARM64.ActiveCfg = Debug|ARM64
+		{26116633-98EC-4EAC-859C-139D020D10C9}.Debug|ARM64.Build.0 = Debug|ARM64
+		{26116633-98EC-4EAC-859C-139D020D10C9}.Debug|x64.ActiveCfg = Debug|x64
+		{26116633-98EC-4EAC-859C-139D020D10C9}.Debug|x64.Build.0 = Debug|x64
+		{26116633-98EC-4EAC-859C-139D020D10C9}.Release|ARM64.ActiveCfg = Release|ARM64
+		{26116633-98EC-4EAC-859C-139D020D10C9}.Release|ARM64.Build.0 = Release|ARM64
+		{26116633-98EC-4EAC-859C-139D020D10C9}.Release|x64.ActiveCfg = Release|x64
+		{26116633-98EC-4EAC-859C-139D020D10C9}.Release|x64.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

@@ -9,6 +9,7 @@
         <VbsEnclaveExeFilePath>$(VbsEnclaveCodegenPackageDir)bin\$(Platform)\edlcodegen.exe</VbsEnclaveExeFilePath>
         <VbsEnclavePackageEnclaveAbiPath>$(VbsEnclaveCodegenPackageDir)src\VbsEnclaveABI</VbsEnclavePackageEnclaveAbiPath>
         <VbsEnclaveDeveloperEdlFileName>$([System.IO.Path]::GetFileName('$(VbsEnclaveEdlPath)'))</VbsEnclaveDeveloperEdlFileName>
+        <VbsEnclaveCodeGenAbiCppSupportLib>$(VbsEnclaveCodegenPackageDir)lib\native\$(Platform)\veil_enclave_cpp_support_lib.lib</VbsEnclaveCodeGenAbiCppSupportLib>
         <VbsEnclaveGeneratedFilesDir>$(ProjectDir)Generated Files</VbsEnclaveGeneratedFilesDir>
         <VcpkgSupportDir>$(VbsEnclaveCodegenPackageDir)vcpkg</VcpkgSupportDir>
         <FlatbuffersSupportLib>$(VcpkgSupportDir)\lib\flatbuffers.lib</FlatbuffersSupportLib>
@@ -43,7 +44,21 @@
         <!-- Add the enclave ABI headers and also the generated headers to the consuming projects include path-->
         <ClCompile>
             <AdditionalIncludeDirectories>$(VcpkgIncludesDir);$(VbsEnclaveCodegenPackageDir)src\;$(VbsEnclaveGeneratedFilesDir);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-        </ClCompile>        
+        </ClCompile>
+
+        <Link Condition="'$(VbsEnclaveVirtualTrustLayer)' == 'Enclave'">
+            <AdditionalDependencies>$(VbsEnclaveCodeGenAbiCppSupportLib);%(AdditionalDependencies)</AdditionalDependencies>
+        </Link>
+
+        <!-- define the __ENCLAVE_PROJECT__ macro in the enclave project so the enclave related ABI code lights up in the project.-->
+        <ClCompile Condition="'$(VbsEnclaveVirtualTrustLayer)' == 'Enclave'">
+            <PreprocessorDefinitions>__ENCLAVE_PROJECT__;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+        </ClCompile>
+
+        <!-- The onecore.lib static library is required for host app projects. Add it by default to the host app-->
+        <Link Condition="'$(VbsEnclaveVirtualTrustLayer)' == 'HostApp'">
+            <AdditionalDependencies>onecore.lib;%(AdditionalDependencies)</AdditionalDependencies>
+        </Link>
     </ItemDefinitionGroup>
 
     <Target Name="AddGeneratedFilesToBuild"
