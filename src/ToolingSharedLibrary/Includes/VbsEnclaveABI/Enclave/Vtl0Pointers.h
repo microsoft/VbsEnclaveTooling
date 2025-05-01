@@ -1,12 +1,6 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
-// __ENCLAVE_PROJECT__ must be defined inside the enclave project only. If it is defined
-// inside the host, the host won't build as winenclaveapi
-// is not compatible in an non enclave environment.
-// winenclaveapi.h is included in MemoryAllocation.h and MemoryChecks.h
-#ifdef __ENCLAVE_PROJECT__
-
 #pragma once 
 #include <VbsEnclaveABI\Shared\VbsEnclaveAbiBase.h>
 #include <VbsEnclaveABI\Enclave\MemoryAllocation.h>
@@ -170,4 +164,3 @@ namespace VbsEnclaveABI::Enclave::Pointers
             DeleterT m_deleter{};
     };
 }
-#endif // end __ENCLAVE_PROJECT__
