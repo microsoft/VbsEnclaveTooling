@@ -1,13 +1,20 @@
-VBS enclave tooling
+﻿VBS enclave tooling
 ================
 
-Introduction
-------------
-Coming soon.
+The VBS enclave tooling repository provides both a `CodeGenerator` and an `SDK` nuget package to make developing
+features that interact with a VBS enclave easier. To learn more about VBS enclaves you can view the official documentation 
+[here](https://learn.microsoft.com/windows/win32/trusted-execution/vbs-enclaves).
+
+#### Language support for CodeGenerator and SDK
+| Language          | Supported |
+|-------------------|-----------|
+| C++ (20 or later) |    ✅     |
+| Rust              |    ❌     |
+
 
 Official Nuget packages
 ------------
-`There are currently no official nuget packages available in nuget.org for the SDk or the CodeGenerator nuget packages.`
+`There are currently no official nuget packages available in nuget.org for the SDK or the CodeGenerator nuget packages.`
 An official package will be added to our GitHub releases page closer to our release date.
 
 Building locally
@@ -22,8 +29,14 @@ Building locally
 | Windows 11          | 26100.2314 or later |
 | Windows Server 2025 | All                 |
 
+##### Build system
+| IDE                   | Build engine |
+|-----------------------|--------------|
+| Visual Studio 2022 17 | msbuild      |
 
 ##### Repository
+
+We currently only support building the repository with msbuild and this has only been tested with visual
 
 *The code generator uses Google Flatbuffers to facilite marshaling data into and out of the enclave.
 This means we take Flatbuffers as a dependency, specifically in our `ToolingSharedLibrary` project.
@@ -45,8 +58,7 @@ Once this is complete the `CodeGenerator` and `SDK` nuget packages can be found 
 
 CodeGenerator and SDK consumption
 ------------
-
-Once you have built the `CodeGenerator` and `SDK` nuget packages, you can add them directly to your own visual studio
+Once you have built (or downloaded) the `CodeGenerator` and `SDK` nuget packages, you can add them directly to your own visual studio
 project by doing the following:
 
 1. Right click your project > Manage Nuget Packages... > click the gear icon on the top right
@@ -54,35 +66,37 @@ project by doing the following:
 1. Switch the package source in the dropdown on the top right of the page to
    your new package source that points to the location above.
 1. You should now see the `Microsoft.Windows.VbsEnclave.Codegenerator` and the `Microsoft.Windows.VbsEnclave.SDK` nuget packages show up in the browse list.
-1. Install them both your in enclave project and your hostApp project. 
- 
-*Note* : The `CodeGenerator` nuget package can be used without the `SDK` nuget package
-   and the `SDK` nuget package can also be used without the `CodeGenerator` nuget package. They do not rely on each other.
+1. Install them both your into **enclave** project and your **hostApp** project. 
    
-In your *enclave* projects .vcxproj or .props file add the following:
+In your **enclave** projects .vcxproj or .props file add the following:
 ```xml
 <PropertyGroup>
     <VbsEnclaveVirtualTrustLayer>Enclave</VbsEnclaveVirtualTrustLayer>`
-    <VbsEnclaveEdlPath>Path-To-Your-.Edl-File</VbsEnclaveEdlPath>
+    <VbsEnclaveEdlPath>Absolute-Path-To-Your-.Edl-File</VbsEnclaveEdlPath>
 </PropertyGroup>
 ```
 
- This will kick off the code generation and ingest the SDK inside your *enclave* project at build time.
+ This will kick off the code generation and ingest the SDK inside your **enclave** project at build time.
 
-In your *hostApp* projects .vcxproj or .props file add the following:
+In your **hostApp** projects .vcxproj or .props file add the following:
 ```xml
 <PropertyGroup>
     <VbsEnclaveVirtualTrustLayer>HostApp</VbsEnclaveVirtualTrustLayer>`
-    <VbsEnclaveEdlPath>Path-To-Your-.Edl-File</VbsEnclaveEdlPath>
+    <VbsEnclaveEdlPath>Absolute-Path-To-Your-.Edl-File</VbsEnclaveEdlPath>
     <Namespace>Namespace-for-the-generated-code</Namespace>
     <Vtl0ClassName>Encapsulated-classname-for-your-enclave</Vtl0ClassName>
 </PropertyGroup>
 ```
 
-This will kick off the code generation and ingest the SDK inside your *hostApp* project at build time.
+This will kick off the code generation and ingest the SDK inside your **hostApp** project at build time.
 
-Also see the docs on the `.edl` format and `CodeGeneration` [here](./docs/edl.md) and [here](./docs/CodeGeneration.md) for more information on them.
+*Note* : Be sure to update the `<VbsEnclaveEdlPath>`, `<Namespace>` and `<Vtl0ClassName>` properties with valid values.
 
+Also see the docs on the `.edl` format and `CodeGeneration` [here](./docs/Edl.md) and [here](./docs/CodeGeneration.md) for more information on them.
+
+*Note* : The `CodeGenerator` nuget package can be used without the `SDK` nuget package
+   and the `SDK` nuget package can also be used without the `CodeGenerator` nuget package. They do not rely on each other.
+ 
 Vbs enclave implementation library (veil) usage
 ------------
 Currently the SDK is located inside a separate solution file called `vbs_enclave_implementation_library.sln` 
