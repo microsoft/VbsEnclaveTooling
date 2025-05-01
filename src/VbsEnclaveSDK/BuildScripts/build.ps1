@@ -146,6 +146,9 @@ Try
     $packageNugetScriptPath  = "$BaseSolutionDirectory\..\..\BuildScripts\PackageNuget.ps1"
 
     & $packageNugetScriptPath -NugetSpecFilePath $nuspecFile -NugetPackProperties $nugetPackProperties -OutputDirectory "$BaseSolutionDirectory\_build"
+
+    # Copy the built SDK nuget package to the repo's root build folder so it's easy for developers to find.
+    Copy-Item -Path "$BaseSolutionDirectory\_build\Microsoft.Windows.VbsEnclave.SDK.$BuildTargetVersion.nupkg" -Destination "$BaseSolutionDirectory\..\..\_build" -Force
 } 
 Catch
 {

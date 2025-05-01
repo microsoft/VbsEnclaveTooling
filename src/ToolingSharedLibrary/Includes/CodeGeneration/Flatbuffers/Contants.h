@@ -72,7 +72,7 @@ static inline constexpr std::string_view c_flatbuffer_fbs_filename = "vbsenclave
 
 static inline std::string c_failed_to_compile_flatbuffer_msg = std::format("Compiling flatbuffer schema file: {}", c_flatbuffer_fbs_filename);
 
-static inline std::string c_succeeded_compiling_flatbuffer_msg = std::format("Flatbuffer schema {} compiled successfuly", c_flatbuffer_fbs_filename);
+static inline std::string c_succeeded_compiling_flatbuffer_msg = std::format("Flatbuffer schema {} compiled successfully", c_flatbuffer_fbs_filename);
 
 static inline constexpr std::string_view c_dev_type_name = "dev_type";
 

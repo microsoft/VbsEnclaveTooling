@@ -2,8 +2,9 @@
 // Licensed under the MIT License.
 #pragma once 
 
-// __ENCLAVE_PROJECT__ must be defined inside the enclave project only.
-#ifdef __ENCLAVE_PROJECT__
+#if !defined(__ENCLAVE_PROJECT__)
+#error This header can only be included in an Enclave project (never the HostApp).
+#endif
 
 #include <VbsEnclaveABI\Shared\VbsEnclaveAbiBase.h>
 #include <winenclaveapi.h>
@@ -119,5 +120,3 @@ namespace VbsEnclaveABI::Enclave::MemoryChecks
         return CheckForVTL0Buffer(fn, 1);
     }
 }
-
-#endif // end __ENCLAVE_PROJECT__

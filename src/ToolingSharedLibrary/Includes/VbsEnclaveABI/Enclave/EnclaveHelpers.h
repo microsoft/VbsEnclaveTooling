@@ -2,10 +2,9 @@
 // Licensed under the MIT License.
 #pragma once 
 
-// __ENCLAVE_PROJECT__ must be defined inside the enclave project only. If it is defined
-// inside the host, the host won't build as winenclaveapi
-// is not compatible in an non enclave environment.
-#ifdef __ENCLAVE_PROJECT__
+#if !defined(__ENCLAVE_PROJECT__)
+#error This header can only be included in an Enclave project (never the HostApp).
+#endif
 
 #include <VbsEnclaveABI\Shared\VbsEnclaveAbiBase.h>
 #include <VbsEnclaveABI\Enclave\Vtl0Pointers.h>
@@ -178,5 +177,3 @@ namespace VbsEnclaveABI::Enclave
         return S_OK;
     }
 }
-
-#endif // end __ENCLAVE_PROJECT__
