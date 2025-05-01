@@ -2,6 +2,10 @@
 // Licensed under the MIT License.
 #pragma once 
 
+#if !defined(__ENCLAVE_PROJECT__)
+#error This header can only be included in an Enclave project (never the HostApp).
+#endif
+
 #include <VbsEnclaveABI\Shared\VbsEnclaveAbiBase.h>
 #include <VbsEnclaveABI\Enclave\MemoryChecks.h>
 
