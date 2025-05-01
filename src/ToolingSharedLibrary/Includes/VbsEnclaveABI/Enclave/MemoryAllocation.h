@@ -24,7 +24,7 @@ namespace VbsEnclaveABI::Enclave
 
         inline LPENCLAVE_ROUTINE TryGetFunctionFromVtl0FunctionTable(std::string_view function_name)
         {
-            auto lock = s_vtl0_function_table_lock.lock_exclusive();
+            auto lock = s_vtl0_function_table_lock.lock_shared();
             auto iterator = s_vtl0_function_table.find(function_name.data());
 
             if (iterator == s_vtl0_function_table.end())
