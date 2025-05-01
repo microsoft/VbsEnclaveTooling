@@ -85,6 +85,8 @@ This will kick off the code generation and ingest the SDK inside your **hostApp*
 
 *Note* : Be sure to update the `<VbsEnclaveEdlPath>`, `<Namespace>` and `<Vtl0ClassName>` properties with valid values.
 
+*Note* : To disable strict memory access (i.e. allow enclave to reference VTL0 memory), you must define a the preprocessor directive ```ENABLE_ENCLAVE_RESTRICT_CONTAINING_PROCESS_ACCESS=false``` in your project file.
+
 Also see the docs on the `.edl` format and `CodeGeneration` [here](./docs/Edl.md) and [here](./docs/CodeGeneration.md) for more information on them.
 
 *Note* : The `CodeGenerator` nuget package can be used without the `SDK` nuget package
