@@ -92,22 +92,6 @@ using namespace DeveloperTypes;\n\
 ";
 
     static inline constexpr std::string_view c_vtl1_enclave_stub_namespace = R"(
-// START: DO NOT MODIFY: For internal abi usage
-namespace VbsEnclaveABI::Enclave::VTL0CallBackHelpers
-{{
-    __declspec(selectany) LPENCLAVE_ROUTINE s_vtl0_allocation_function = nullptr;
-    __declspec(selectany) LPENCLAVE_ROUTINE s_vtl0_deallocation_function = nullptr;
-    __declspec(selectany) wil::srwlock s_vtl0_function_table_lock {{}};
-    __declspec(selectany) bool s_are_functions_registered {{}};
-    __declspec(selectany) std::unordered_map<std::uint32_t, std::uint64_t> s_vtl0_function_table{{}};
-}}
-namespace VbsEnclaveABI::Enclave::MemoryChecks
-{{
-    __declspec(selectany) LPCVOID s_enclave_memory_begin = nullptr; // inclusive
-    __declspec(selectany) LPCVOID s_enclave_memory_end = nullptr;   // exclusive
-    __declspec(selectany) std::atomic<bool> s_memory_bounds_calculated = {{}};
-}}
-// END: DO NOT MODIFY: For internal abi usage
 namespace {}
 {{
     namespace VTL1_Stubs
@@ -160,7 +144,9 @@ namespace {}
  R"(HRESULT hr = CallVtl0CallbackImplFromVtl0<ParamsT, ReturnParamsT, decltype({}_Abi_Impl)>(function_context, {}_Abi_Impl);)";
 
     static inline constexpr std::string_view c_vtl1_call_to_vtl0_callback =
- R"(THROW_IF_FAILED((CallVtl0CallbackFromVtl1<ParamsT, ReturnParamsT>({}U, flatbuffer_builder, function_result)));)";
+ R"(THROW_IF_FAILED((CallVtl0CallbackFromVtl1<ParamsT, ReturnParamsT>({}, flatbuffer_builder, function_result)));)";
+
+    static inline constexpr std::string_view c_generated_callback_in_namespace = "\"{}::{}::{}_Generated_Stub\"";
 
     // Using a R("...") that contains a " character with std::format ends up adding a \" to the string.
     // instead of the double quote itself. So, as a work around we'll use the old style of declaring a multi line string.
@@ -271,7 +257,8 @@ R"({}(LPVOID enclave) : m_enclave(enclave)
             LPVOID m_enclave{{}};
             bool m_callbacks_registered{{}};
             wil::srwlock m_register_callbacks_lock{{}};
-            std::array<uintptr_t, {}> m_callbacks{{ {} }};
+            std::array<uintptr_t, {}> m_callback_addresses{{ {} }};
+            std::array<std::string, {}> m_callback_names{{ {} }};
 )";
 
     static inline constexpr std::string_view c_vtl1_register_callback_function = "VTL0CallBackHelpers::AddVtl0FunctionsToTable";
@@ -287,7 +274,13 @@ R"({}(LPVOID enclave) : m_enclave(enclave)
 
     static inline constexpr std::string_view c_deallocate_memory_callback_to_address = ",reinterpret_cast<uintptr_t>(&VbsEnclaveABI::HostApp::DeallocateVtl0MemoryCallback)";
 
+    static inline constexpr std::string_view c_allocate_memory_callback_to_name = "\"VbsEnclaveABI::HostApp::AllocateVtl0MemoryCallback\"";
+
+    static inline constexpr std::string_view c_deallocate_memory_callback_to_name = ",\"VbsEnclaveABI::HostApp::DeallocateVtl0MemoryCallback\"";
+
     static inline constexpr std::string_view c_callback_to_address = ", reinterpret_cast<uintptr_t>(&{}_Generated_Stub)";
+
+    static inline constexpr std::string_view c_callback_to_name = ", {}";
 
     static inline constexpr std::string_view c_untrusted_function_name = "{}_callback";
 
@@ -376,12 +369,12 @@ R"(     {}_Generated_Stub
 
             if (m_callbacks_registered)
             {{
-                return S_OK;;
+                return S_OK;
             }}
 
             FlatbuffersDevTypes::AbiRegisterVtl0Callbacks_argsT input {{}};
-            input.callbacks.resize(m_callbacks.size());
-            std::copy(m_callbacks.begin(), m_callbacks.end(), input.callbacks.begin());
+            input.callback_addresses.assign(m_callback_addresses.begin(), m_callback_addresses.end());
+            input.callback_names.assign(m_callback_names.begin(), m_callback_names.end());
             flatbuffers::FlatBufferBuilder builder = PackFlatbuffer(input);
             using ReturnParamsT = FlatbuffersDevTypes::AbiRegisterVtl0Callbacks_argsT;
             ReturnParamsT out_args {{}};
@@ -409,7 +402,7 @@ R"(     {}_Generated_Stub
             _In_ FlatbuffersDevTypes::AbiRegisterVtl0Callbacks_argsT in_params,
             _Inout_ flatbuffers::FlatBufferBuilder& flatbuffer_out_params_builder)
         {{
-            THROW_IF_FAILED(AddVtl0FunctionsToTable(in_params.callbacks));
+            THROW_IF_FAILED(AddVtl0FunctionsToTable(in_params.callback_addresses, in_params.callback_names));
 
             FlatbuffersDevTypes::AbiRegisterVtl0Callbacks_argsT  result{{}};
             result.m__return_value_ = S_OK;

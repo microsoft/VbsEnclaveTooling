@@ -42,5 +42,4 @@ enclave
             [out] wstring decrypted_input_bytes_2
             );
     };
-
 };
