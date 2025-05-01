@@ -12,11 +12,6 @@ features that interact with a VBS enclave easier. To learn more about VBS enclav
 | Rust              |    ❌     |
 
 
-Official Nuget packages
-------------
-`There are currently no official nuget packages available in nuget.org for the SDK or the CodeGenerator nuget packages.`
-An official package will be added to our GitHub releases page closer to our release date.
-
 Building locally
 ------------
 
@@ -35,8 +30,6 @@ Building locally
 | Visual Studio 2022 17 | msbuild      |
 
 ##### Repository
-
-We currently only support building the repository with msbuild and this has only been tested with visual
 
 *The code generator uses Google Flatbuffers to facilite marshaling data into and out of the enclave.
 This means we take Flatbuffers as a dependency, specifically in our `ToolingSharedLibrary` project.
