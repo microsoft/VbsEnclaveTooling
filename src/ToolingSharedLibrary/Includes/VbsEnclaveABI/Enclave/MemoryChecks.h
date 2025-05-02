@@ -172,14 +172,8 @@ namespace VbsEnclaveABI::Enclave::MemoryChecks
 
             inline BOOL RestrictionBoolean()
             {
-                static const BOOL s_restrictionBooleanValue = [] ()
-                {
-                    if (ApiExpectsInvertedBoolean())
-                    {
-                        return FALSE;
-                    }
-                    return TRUE;
-                }();
+                // Check if the API expects to pass false 'FALSE' to enable restricted memory (e.g. downlevel Windows)
+                static const BOOL s_restrictionBooleanValue = ApiExpectsInvertedBoolean() ? FALSE : TRUE;
                 return s_restrictionBooleanValue;
             }
 

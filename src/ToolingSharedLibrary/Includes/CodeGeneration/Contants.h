@@ -424,6 +424,7 @@ R"(     {}_Generated_Stub
         void* {}(void* function_context)
         try
         {{
+            EnforceMemoryRestriction();
             using ParamsT = FlatbuffersDevTypes::AbiRegisterVtl0Callbacks_argsT;
             HRESULT hr = CallVtl1ExportFromVtl1<ParamsT, decltype(RegisterVtl0Callbacks)>(function_context, RegisterVtl0Callbacks);
             LOG_IF_FAILED(hr);
