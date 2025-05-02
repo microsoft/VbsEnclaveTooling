@@ -14,8 +14,7 @@ using namespace VbsEnclaveABI::Enclave::EnclaveMemoryAllocation;
 using namespace VbsEnclaveABI::Enclave::Pointers;
 using namespace VbsEnclaveABI::Shared;
 
-// Default all projects consuming VBS Enclave codegen to having
-// restricted memory access enabled.
+// Default all projects consuming VBS Enclave codegen to having restricted memory access enabled.
 // See: https://learn.microsoft.com/en-us/windows/win32/api/winenclaveapi/nf-winenclaveapi-enclaverestrictcontainingprocessaccess
 #if !defined(ENABLE_ENCLAVE_RESTRICT_CONTAINING_PROCESS_ACCESS)
 #define ENABLE_ENCLAVE_RESTRICT_CONTAINING_PROCESS_ACCESS true
