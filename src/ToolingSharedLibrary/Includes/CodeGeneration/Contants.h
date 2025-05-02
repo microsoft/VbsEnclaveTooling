@@ -96,10 +96,20 @@ namespace {}
 {{
     namespace VTL1_Stubs
     {{
+        static void EnforceMemoryRestriction()
+        {{
+            if (ENABLE_ENCLAVE_RESTRICT_CONTAINING_PROCESS_ACCESS)
+            {{
+                EnableEnclaveRestrictContainingProcessAccessOnce();
+            }}
+        }}
     {}
     }}
 }}
 )";
+
+    static inline constexpr std::string_view c_enforce_memory_restriction_call =
+        R"(EnforceMemoryRestriction();)";
 
     static inline constexpr std::string_view c_outer_abi_function = R"(
         {} {}_Generated_Stub(void* function_context)
@@ -121,6 +131,7 @@ namespace {}
     static inline constexpr std::string_view c_inner_abi_function =
         R"(using ParamsT = FlatbuffersDevTypes::{}T;
             using ReturnParamsT = FlatbuffersDevTypes::{}T;
+            {}
             {})";
 
     // This body is specific to the developer function
@@ -413,6 +424,7 @@ R"(     {}_Generated_Stub
         void* {}(void* function_context)
         try
         {{
+            EnforceMemoryRestriction();
             using ParamsT = FlatbuffersDevTypes::AbiRegisterVtl0Callbacks_argsT;
             HRESULT hr = CallVtl1ExportFromVtl1<ParamsT, decltype(RegisterVtl0Callbacks)>(function_context, RegisterVtl0Callbacks);
             LOG_IF_FAILED(hr);

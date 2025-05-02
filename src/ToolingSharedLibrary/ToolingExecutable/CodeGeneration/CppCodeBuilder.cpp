@@ -456,6 +456,7 @@ namespace CodeGeneration
             c_inner_abi_function,
             function_params_struct_type,
             function_params_struct_type,
+            is_vtl0_callback ? "" : c_enforce_memory_restriction_call,
             abi_function_to_call);
 
         auto return_statement = (is_vtl0_callback) ? c_static_void_ptr : c_void_ptr;

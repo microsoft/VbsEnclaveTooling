@@ -11,6 +11,22 @@
 #include <ntenclv.h>
 #include <safeint.h>
 
+#ifdef _DEBUG
+// DELETE THIS BLOCK:
+// When the SDK is updated to have a the .h/.lib definitions for
+// EnclaveRestrictContainingProcessAccess, this block should be
+// deleted. Then memory restriction will be truly enabled.
+inline HRESULT EnclaveRestrictContainingProcessAccess(
+    _In_ BOOL RestrictAccess,
+    _Out_opt_ PBOOL PreviouslyRestricted
+)
+{
+    (void)RestrictAccess;
+    (void)PreviouslyRestricted;
+    return S_OK;
+}
+#endif
+
 namespace VbsEnclaveABI::Enclave::MemoryChecks
 {
     inline LPCVOID s_enclave_memory_begin; // inclusive
@@ -119,4 +135,74 @@ namespace VbsEnclaveABI::Enclave::MemoryChecks
     {
         return CheckForVTL0Buffer(fn, 1);
     }
+
+    namespace details
+    {
+        namespace RestrictContainingProcessAccess
+        {
+            inline bool ApiExpectsInvertedBoolean()
+            {
+                // Interrogate the API by setting to TRUE twice and seeing..
+                BOOL initialValue;
+                THROW_IF_FAILED(::EnclaveRestrictContainingProcessAccess(TRUE, &initialValue));
+
+                BOOL hopefullyTrueValue;
+                THROW_IF_FAILED(::EnclaveRestrictContainingProcessAccess(TRUE, &hopefullyTrueValue));
+
+                // ..is it still TRUE?
+                if (hopefullyTrueValue == TRUE)
+                {
+                    // The settings are consistent (TRUE in, TRUE out); we're on a new OS
+
+                    // Revert setting to initial value
+                    THROW_IF_FAILED(::EnclaveRestrictContainingProcessAccess(initialValue, nullptr));
+
+                    return false;
+                }
+                else
+                {
+                    // The settings are inconsistent (TRUE in, FALSE out); we're on an old OS
+        
+                    // Revert setting to initial value (by passing in the inverse)
+                    THROW_IF_FAILED(::EnclaveRestrictContainingProcessAccess(!initialValue, nullptr));
+
+                    return true;
+                }
+            }
+
+            inline BOOL RestrictionBoolean()
+            {
+                // Check if the API expects to pass false 'FALSE' to enable restricted memory (e.g. downlevel Windows)
+                static const BOOL s_restrictionBooleanValue = ApiExpectsInvertedBoolean() ? FALSE : TRUE;
+                return s_restrictionBooleanValue;
+            }
+
+            enum class RestrictionSetting
+            {
+                Restrict,
+                Unrestrict
+            };
+
+            inline BOOL RestrictionSettingToBool(RestrictionSetting restrictionIntention)
+            {
+                return restrictionIntention == RestrictionSetting::Restrict ? RestrictionBoolean() : !RestrictionBoolean();
+            }
+
+            inline RestrictionSetting SetRestrictionSetting(RestrictionSetting restrictionIntention)
+            {
+                BOOL previousValue;
+                BOOL value = RestrictionSettingToBool(restrictionIntention);
+                THROW_IF_FAILED(::EnclaveRestrictContainingProcessAccess(value, &previousValue));
+                return previousValue ? RestrictionSetting::Restrict : RestrictionSetting::Unrestrict;
+            }
+        }
+    }
+
+    inline HRESULT EnableEnclaveRestrictContainingProcessAccess() noexcept try
+    {
+        using namespace details::RestrictContainingProcessAccess;
+        SetRestrictionSetting(RestrictionSetting::Restrict);
+        return S_OK;
+    }
+    CATCH_RETURN()
 }
