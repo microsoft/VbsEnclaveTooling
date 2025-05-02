@@ -446,6 +446,19 @@ namespace EdlProcessor
             return m_type_kind == type_kind;
         }
 
+        bool ContainsPointers() const
+        {
+            for (auto& field : m_fields)
+            {
+                if (field.HasPointer())
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
         std::string m_name;
         EdlTypeKind m_type_kind;
         std::vector<Declaration> m_fields;

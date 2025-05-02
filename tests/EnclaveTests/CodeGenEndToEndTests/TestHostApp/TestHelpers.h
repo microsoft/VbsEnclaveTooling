@@ -347,3 +347,81 @@ inline bool CompareTestStruct3(TestStruct3& lhs, TestStruct3& rhs)
 
     return CompareTestStruct2(lhs.field5, rhs.field5);
 }
+
+inline NestedStructWithPointers CreateNestedStructWithPointers()
+{
+    std::unique_ptr<std::int32_t> int32_ptr = std::make_unique<std::int32_t>(100);
+    std::unique_ptr<DecimalEnum> enum_val_ptr = std::make_unique<DecimalEnum>(DecimalEnum::Deci_val3);
+    std::unique_ptr<TestStruct1> test_struct_val_ptr = std::make_unique<TestStruct1>(CreateTestStruct1());
+    return NestedStructWithPointers(std::move(int32_ptr), std::move(enum_val_ptr), std::move(test_struct_val_ptr));
+}
+
+inline bool CompareNestedStructWithPointers(const NestedStructWithPointers& lhs, const NestedStructWithPointers& rhs)
+{
+    // Compare all fields of the struct
+
+    if ((lhs.int32_ptr && !rhs.int32_ptr) || (!lhs.int32_ptr && rhs.int32_ptr))
+    {
+        return false;
+    }
+
+    if (lhs.int32_ptr && rhs.int32_ptr && (*lhs.int32_ptr != *rhs.int32_ptr))
+    {
+        return false;
+    }
+
+    if ((lhs.deci_ptr && !rhs.deci_ptr) || (!lhs.deci_ptr && rhs.deci_ptr))
+    {
+        return false;
+    }
+
+    if (lhs.deci_ptr && rhs.deci_ptr && (*lhs.deci_ptr != *rhs.deci_ptr))
+    {
+        return false;
+    }
+
+    if ((lhs.struct_ptr && !rhs.struct_ptr) || (!lhs.struct_ptr && rhs.struct_ptr))
+    {
+        return false;
+    }
+
+    if (lhs.struct_ptr && rhs.struct_ptr)
+    {
+        return CompareTestStruct1(*lhs.struct_ptr, *rhs.struct_ptr);
+    }
+
+    return true;
+}
+
+inline StructWithPointers CreateStructWithPointers()
+{
+    return
+    {
+        std::make_unique<NestedStructWithPointers>(CreateNestedStructWithPointers())
+    };
+}
+
+inline std::vector<StructWithPointers> c_struct_with_ptrs_vec_empty(c_arbitrary_size_2);
+
+inline std::array<StructWithPointers, c_arbitrary_size_2> c_struct_with_ptrs_arr_initialize {
+    CreateStructWithPointers(),
+    CreateStructWithPointers()
+};
+
+inline bool CompareStructWithPointers(const StructWithPointers& lhs, const StructWithPointers& rhs)
+{
+    // Compare all fields of the struct
+
+    if ((lhs.nested_struct_ptr && !rhs.nested_struct_ptr) || (!lhs.nested_struct_ptr && rhs.nested_struct_ptr))
+    {
+        return false;
+    }
+
+    if (lhs.nested_struct_ptr && rhs.nested_struct_ptr)
+    {
+        return CompareNestedStructWithPointers(*lhs.nested_struct_ptr, *rhs.nested_struct_ptr);
+    }
+
+
+    return true;
+}

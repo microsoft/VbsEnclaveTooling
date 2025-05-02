@@ -314,6 +314,7 @@ namespace CodeGeneration::Flatbuffers::Cpp
         {
             return FormatString(
                 string_to_format,
+                flatbuffer_field,
                 struct_field,
                 obj_type,
                 struct_field,
@@ -324,6 +325,7 @@ namespace CodeGeneration::Flatbuffers::Cpp
         {
             return FormatString(
                 string_to_format,
+                flatbuffer_field,
                 struct_field,
                 obj_type,
                 struct_field,

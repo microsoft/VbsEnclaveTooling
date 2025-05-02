@@ -315,9 +315,29 @@ namespace CodeGeneration
         return "ToDevTypeNoPtr";
     }
 
-    inline bool ShouldReturnTypeBeMoved(const Declaration& declaration)
+    inline bool ShouldFieldInReturnedStructBeMoved(
+        const Declaration& declaration,
+        const std::unordered_map<std::string, DeveloperType>& developer_types)
     {
-        return !declaration.m_array_dimensions.empty() ||
-            s_complex_types.contains(declaration.m_edl_type_info.m_type_kind);
+        std::string dev_type_name{};
+
+        if (declaration.IsEdlType(EdlTypeKind::Struct))
+        {
+            dev_type_name = declaration.m_edl_type_info.m_name;
+        }
+        else if (declaration.IsInnerEdlType(EdlTypeKind::Struct))
+        {
+            dev_type_name = declaration.m_edl_type_info.inner_type->m_name;
+        }
+        else
+        {
+            return false;
+        }
+
+        auto& dev_type = developer_types.at(dev_type_name);
+
+        // Pointers inside structs are generated as unique_ptrs, so the developer type should be moved.
+        // if we find any.
+        return dev_type.ContainsPointers();
     }
 }

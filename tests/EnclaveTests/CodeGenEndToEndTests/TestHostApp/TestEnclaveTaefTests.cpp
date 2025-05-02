@@ -189,12 +189,14 @@ struct EnclaveTestClass
         std::uint8_t uint8_val = 100;
         std::uint16_t uint16_val = 100;
         std::uint32_t uint32_val = 100;
-      
+        std::uint32_t* null_uint32_val {};
+
         // Note: Hresult is return by vtl1, and copied to vtl0 then returned to this function.
         VERIFY_SUCCEEDED(generated_enclave_class.TestPassingPrimitivesAsInPointers_To_Enclave(
             &uint8_val,
             &uint16_val,
-            &uint32_val));
+            &uint32_val,
+            null_uint32_val));
     }
 
     TEST_METHOD(TestPassingPrimitivesAsInOutPointers_To_Enclave_Test)
@@ -240,7 +242,7 @@ struct EnclaveTestClass
         VERIFY_ARE_EQUAL(*uint64_val, std::numeric_limits<std::uint64_t>::max());
     }
 
-    TEST_METHOD(ComplexPassingofTypes_To_Enclave_Test)
+    TEST_METHOD(ComplexPassingOfTypes_To_Enclave_Test)
     {
         auto generated_enclave_class = TestEnclave(m_enclave);
         auto expected_struct_values = CreateStructWithNoPointers();
@@ -249,13 +251,19 @@ struct EnclaveTestClass
         std::unique_ptr<StructWithNoPointers> struct_no_pointers_3;
         StructWithNoPointers struct_no_pointers_4 {};
         std::unique_ptr<std::uint64_t> uint64_val = nullptr;
+        StructWithNoPointers* struct_no_pointers_5 {};
+        StructWithNoPointers struct_no_pointers_6 = expected_struct_values;
+        StructWithNoPointers struct_no_pointers_7 {};
 
-        // Note: Hresult is returned by vtl1, and copied to vtl0 then returned to this function.
-        auto result = generated_enclave_class.ComplexPassingofTypes_To_Enclave(
+        // Note: the StructWithNoPointers object is returned by vtl1, and copied to vtl0 then returned to this function.
+        auto result = generated_enclave_class.ComplexPassingOfTypes_To_Enclave(
             struct_no_pointers_1,
             struct_no_pointers_2,
             struct_no_pointers_3,
             struct_no_pointers_4,
+            struct_no_pointers_5,
+            &struct_no_pointers_6,
+            &struct_no_pointers_7,
             uint64_val);
 
         // The out parameters should have been filled in by the abi in vtl1 based on the result from
@@ -267,6 +275,37 @@ struct EnclaveTestClass
         VERIFY_IS_TRUE(CompareStructWithNoPointers(struct_no_pointers_4, expected_struct_values));
         VERIFY_IS_NOT_NULL(uint64_val.get());
         VERIFY_ARE_EQUAL(*uint64_val, std::numeric_limits<std::uint64_t>::max());
+        THROW_HR_IF(E_INVALIDARG, !CompareStructWithNoPointers(struct_no_pointers_6, expected_struct_values));
+        THROW_HR_IF(E_INVALIDARG, !CompareStructWithNoPointers(struct_no_pointers_7, expected_struct_values));
+    }
+
+    TEST_METHOD(ComplexPassingOfTypesThatContainPointers_To_Enclave_Test)
+    {
+        auto generated_enclave_class = TestEnclave(m_enclave);
+        auto expected_struct_with_ptrs = CreateStructWithPointers();
+        StructWithPointers* struct_with_pointers_1_null {};
+        StructWithPointers struct_with_pointers_2 = CreateStructWithPointers();
+        StructWithPointers struct_with_pointers_3 = {};
+        std::unique_ptr<StructWithPointers> struct_with_pointers_4 {};
+        std::vector<StructWithPointers> struct_with_pointers_5(c_arbitrary_size_2);
+        std::array<StructWithPointers, c_arbitrary_size_2> struct_with_pointers_6;
+
+        // The out parameters should have been filled in by the abi in vtl1 based on the result from
+        // the vtl1 version of the function
+        auto result = generated_enclave_class.ComplexPassingOfTypesThatContainPointers_To_Enclave(
+            struct_with_pointers_1_null,
+            &struct_with_pointers_2,
+            &struct_with_pointers_3,
+            struct_with_pointers_4,
+            struct_with_pointers_5,
+            struct_with_pointers_6);
+
+        VERIFY_IS_TRUE(CompareStructWithPointers(result, expected_struct_with_ptrs));
+        VERIFY_IS_TRUE(CompareStructWithPointers(struct_with_pointers_3, expected_struct_with_ptrs));
+        VERIFY_IS_NOT_NULL(struct_with_pointers_4.get());
+        VERIFY_IS_TRUE(CompareStructWithPointers(*struct_with_pointers_4, expected_struct_with_ptrs));
+        VERIFY_IS_TRUE(std::equal(struct_with_pointers_5.begin(), struct_with_pointers_5.end(), c_struct_with_ptrs_arr_initialize.begin(), CompareStructWithPointers));
+        VERIFY_IS_TRUE(std::equal(struct_with_pointers_6.begin(), struct_with_pointers_6.end(), c_struct_with_ptrs_arr_initialize.begin(), CompareStructWithPointers));
     }
 
     TEST_METHOD(ReturnNoParams_From_Enclave_Test)
@@ -282,7 +321,7 @@ struct EnclaveTestClass
         auto generated_enclave_class = TestEnclave(m_enclave);
         std::vector<TestStruct1> result_expected(5, CreateTestStruct1());
 
-        // Note: Hresult is return by vtl1, and copied to vtl0 then returned to this function.
+        // Note: vector is return by vtl1, and copied to vtl0 then returned to this function.
         auto result = generated_enclave_class.ReturnObjectInVector_From_Enclave();
         VERIFY_IS_TRUE(result.size() == 5);
         VERIFY_IS_TRUE(std::equal(result.begin(), result.end(), result_expected.begin(), CompareTestStruct1));
@@ -326,7 +365,7 @@ struct EnclaveTestClass
         VerifyNumericArray(arg9.data(), c_arbitrary_size_1);// out param updated.
     }
 
-    TEST_METHOD(ComplexPassingofTypesWithVectors_To_Enclave_Test)
+    TEST_METHOD(ComplexPassingOfTypesWithVectors_To_Enclave_Test)
     {
         auto generated_enclave_class = TestEnclave(m_enclave);
         auto expect_val1 = CreateTestStruct1();
@@ -342,8 +381,8 @@ struct EnclaveTestClass
         std::vector<TestStruct3> arg6_expected(5, expect_val3);
         std::vector<TestStruct3> arg6 {};
 
-        // Note: Hresult is returned by vtl1, and copied to vtl0 then returned to this function.
-        auto result = generated_enclave_class.ComplexPassingofTypesWithVectors_To_Enclave(
+        // Note: the TestStruct2 object is returned by vtl1, and copied to vtl0 then returned to this function.
+        auto result = generated_enclave_class.ComplexPassingOfTypesWithVectors_To_Enclave(
             arg1,
             arg2,
             arg3,
@@ -353,6 +392,7 @@ struct EnclaveTestClass
 
         // The out parameters should have been filled in by the abi in vtl1 based on the result from
         // the vtl1 version of the function
+        VERIFY_IS_TRUE(CompareTestStruct2(result, expect_val2));
         VERIFY_IS_TRUE(CompareTestStruct1(arg1, expect_val1));
         VERIFY_IS_TRUE(CompareTestStruct2(arg2, expect_val2));
         VERIFY_IS_TRUE(CompareTestStruct3(arg3, expect_val3));
@@ -375,7 +415,7 @@ struct EnclaveTestClass
 
         std::vector<std::string> arg6 {};
 
-        // Note: Hresult is returned by vtl1, and copied to vtl0 then returned to this function.
+        // Note: the string is returned by vtl1, and copied to vtl0 then returned to this function.
         auto result = generated_enclave_class.PassingStringTypes_To_Enclave(
              arg1,
             arg2,
@@ -409,7 +449,7 @@ struct EnclaveTestClass
 
         std::vector<std::wstring> arg6 {};
 
-        // Note: Hresult is returned by vtl1, and copied to vtl0 then returned to this function.
+        // Note: the wstring is returned by vtl1, and copied to vtl0 then returned to this function.
         auto result = generated_enclave_class.PassingWStringTypes_To_Enclave(
              arg1,
             arg2,
@@ -546,12 +586,12 @@ struct EnclaveTestClass
         VERIFY_SUCCEEDED(generated_enclave_class.Start_ReturnStructWithValues_From_HostApp_Callback_Test());
     }
 
-    TEST_METHOD(Start_ComplexPassingofTypes_To_HostApp_Callback_Test)
+    TEST_METHOD(Start_ComplexPassingOfTypes_To_HostApp_Callback_Test)
     {
         auto generated_enclave_class = TestEnclave(m_enclave);
 
         // Note: Hresult is returned by vtl1, and copied to vtl0 then returned to this function.
-        VERIFY_SUCCEEDED(generated_enclave_class.Start_ComplexPassingofTypes_To_HostApp_Callback_Test());
+        VERIFY_SUCCEEDED(generated_enclave_class.Start_ComplexPassingOfTypes_To_HostApp_Callback_Test());
     }
 
     TEST_METHOD(Start_ReturnNoParams_From_HostApp_Callback_Test)
@@ -578,12 +618,12 @@ struct EnclaveTestClass
         VERIFY_SUCCEEDED(generated_enclave_class.Start_PassingPrimitivesInVector_To_HostApp_Callback_Test());
     }
 
-    TEST_METHOD(Start_ComplexPassingofTypesWithVectors_To_HostApp_Callback_Test)
+    TEST_METHOD(Start_ComplexPassingOfTypesWithVectors_To_HostApp_Callback_Test)
     {
         auto generated_enclave_class = TestEnclave(m_enclave);
 
         // Note: Hresult is returned by vtl1, and copied to vtl0 then returned to this function.
-        VERIFY_SUCCEEDED(generated_enclave_class.Start_ComplexPassingofTypesWithVectors_To_HostApp_Callback_Test());
+        VERIFY_SUCCEEDED(generated_enclave_class.Start_ComplexPassingOfTypesWithVectors_To_HostApp_Callback_Test());
     }
 
     TEST_METHOD(Start_PassingStringTypes_To_HostApp_Callback_Test)
@@ -608,6 +648,14 @@ struct EnclaveTestClass
 
         // Note: Hresult is returned by vtl1, and copied to vtl0 then returned to this function.
         VERIFY_SUCCEEDED(generated_enclave_class.Start_PassingArrayTypes_To_HostApp_Callback_Test());
+    }
+
+    TEST_METHOD(Start_ComplexPassingOfTypesThatContainPointers_To_HostApp_Callback_Test)
+    {
+        auto generated_enclave_class = TestEnclave(m_enclave);
+
+        // Note: Hresult is returned by vtl1, and copied to vtl0 then returned to this function.
+        VERIFY_SUCCEEDED(generated_enclave_class.Start_ComplexPassingOfTypesThatContainPointers_To_HostApp_Callback_Test());
     }
 
     #pragma endregion // Enclave to HostApp tests happen in vtl1
