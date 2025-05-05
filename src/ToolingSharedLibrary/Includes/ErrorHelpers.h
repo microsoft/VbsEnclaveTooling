@@ -104,7 +104,7 @@ namespace ErrorHelpers
         { ErrorId::ErrorHandlingNoMoreArgs,"Unable to find error handling argument. No more commandline arguments available." },
         { ErrorId::ErrorHandlingInvalidType,"Error handling type '{}' invalid." },
         { ErrorId::InvalidArgument,"Unknown argument: {}" },
-        { ErrorId::IncorrectNonHelpArgsProvided,"VbsEnclaveTooling.exe expects at least '{}' arguments. found: '{}'" },
+        { ErrorId::IncorrectNonHelpArgsProvided,"edlcodegen.exe expects at least '{}' arguments. found: '{}'" },
         { ErrorId::MissingArgument,"Missing arguments. Use '-h' for usage." },
         { ErrorId::VirtualTrustLayerNoMoreArgs, "Unable to find virtual trust layer argument. No more commandline arguments available." },
         { ErrorId::VirtualTrustLayerInvalidType, "Virtual trust layer type invalid. Only 'Enclave' and 'HostApp' can be used." },
@@ -160,7 +160,7 @@ namespace ErrorHelpers
         { ErrorId::CodeGenUnableToCreateHeaderFile, "Failed to create '{}'." },
 
         // General
-        { ErrorId::GeneralFailure, "VbsEnclaveTooling.exe returned the following HRESULT: {}." },
+        { ErrorId::GeneralFailure, "edlcodegen.exe returned the following HRESULT: {}." },
 
         // Flatbuffer errors
         { ErrorId::FlatbufferCompilerError, "Flatbuffer schema failed to compile with error code: {}" }, // The compiler outputs the error message to the cmdline so we just print the error code it exits with.
