@@ -126,14 +126,6 @@ namespace CodeGeneration
         NonDeveloperAbiStruct,
     };
 
-    static std::unordered_set<EdlTypeKind, EdlTypeToHash> s_complex_types
-    {
-        EdlTypeKind::String,
-        EdlTypeKind::WString,
-        EdlTypeKind::Struct,
-        EdlTypeKind::Vector,
-    };
-
     inline std::string EdlTypeToCppType(const EdlTypeInfo& info)
     {
         switch (info.m_type_kind)
@@ -314,10 +306,25 @@ namespace CodeGeneration
 
         return "ToDevTypeNoPtr";
     }
-
-    inline bool ShouldReturnTypeBeMoved(const Declaration& declaration)
+    
+    inline bool ShouldFieldInReturnedStructBeMoved(
+        const Declaration& declaration,
+        const std::unordered_map<std::string, DeveloperType>& developer_types)
     {
-        return !declaration.m_array_dimensions.empty() ||
-            s_complex_types.contains(declaration.m_edl_type_info.m_type_kind);
+        if (declaration.IsPrimitiveType())
+        {
+            return false;
+        }
+
+        if (declaration.IsContainerType())
+        {
+            return true;
+        }
+        
+        // Only type left should be a struct. If the struct or any of the types in its fields 
+        // contain a pointer or is a container type, then the struct should be moved.
+        auto& dev_type = developer_types.at(declaration.m_edl_type_info.m_name);
+
+        return dev_type.m_contains_inner_pointer || dev_type.m_contains_container_type;
     }
 }

@@ -28,7 +28,7 @@ enclave
         Deci_val3,
     };
 
-    struct NextedStructNoPointers
+    struct NestedStructNoPointers
     {
         int64_t value_in_nested_struct;
     };
@@ -48,7 +48,7 @@ enclave
         HexEnum hex_val;
         DecimalEnum deci_val;
 
-        NextedStructNoPointers nested_struct_val;
+        NestedStructNoPointers nested_struct_val;
 
         HRESULT result;
     };
@@ -102,6 +102,18 @@ enclave
         TestStruct2 field5;
     };
 
+    struct NestedStructWithPointers
+    {
+        int32_t* int32_ptr;
+        DecimalEnum* deci_ptr;
+        TestStruct1* struct_ptr;
+    };
+
+    struct StructWithPointers
+    {
+        NestedStructWithPointers* nested_struct_ptr;
+    };
+
     // Host to enclave functions
     trusted
     {
@@ -124,7 +136,8 @@ enclave
         HRESULT TestPassingPrimitivesAsInPointers_To_Enclave(
             [in] uint8_t* uint8_val,
             [in] uint16_t* uint16_val,
-            [in] uint32_t* uint32_val);
+            [in] uint32_t* uint32_val,
+            [in] uint32_t* null_uint32_val);
 
         // Pointers should have an in or out direction. Otherwise the codegen layer will see them as [in] parameters.
         HRESULT TestPassingPrimitivesAsInOutPointers_To_Enclave(
@@ -148,12 +161,23 @@ enclave
         // Returning a more complex struct
         StructWithNoPointers ReturnStructWithValues_From_Enclave();
 
-        StructWithNoPointers ComplexPassingofTypes_To_Enclave(
+        StructWithNoPointers ComplexPassingOfTypes_To_Enclave(
             StructWithNoPointers arg1,
             [in, out]StructWithNoPointers arg2,
             [out] StructWithNoPointers* arg3,
             [out] StructWithNoPointers arg4,
+            StructWithNoPointers* arg5_null, // pass null value
+            StructWithNoPointers* arg6,
+            [in, out] StructWithNoPointers* arg7,
             [out] uint64_t* uint64_val);
+        
+        StructWithPointers ComplexPassingOfTypesThatContainPointers_To_Enclave(
+            [in] StructWithPointers* arg1_null, // pass null value
+            [in] StructWithPointers* arg2,
+            [in, out] StructWithPointers* arg3,
+            [out] StructWithPointers* arg4,
+            [in, out] vector<StructWithPointers> arg5,
+            [in, out] StructWithPointers arg6[2]);
 
         void ReturnNoParams_From_Enclave();
 
@@ -170,7 +194,7 @@ enclave
             [out] vector<int16_t> arg8,
             [out] vector<int32_t> arg9);
 
-        TestStruct2 ComplexPassingofTypesWithVectors_To_Enclave(
+        TestStruct2 ComplexPassingOfTypesWithVectors_To_Enclave(
             TestStruct1 arg1,
             [in, out]TestStruct2 arg2,
             [out] TestStruct3 arg3,
@@ -212,11 +236,12 @@ enclave
         HRESULT Start_ReturnInt8ValPtr_From_HostApp_Callback_Test();
         HRESULT Start_ReturnUint64Val_From_HostApp_Callback_Test();
         HRESULT Start_ReturnStructWithValues_From_HostApp_Callback_Test();
-        HRESULT Start_ComplexPassingofTypes_To_HostApp_Callback_Test();
+        HRESULT Start_ComplexPassingOfTypes_To_HostApp_Callback_Test();
+        HRESULT Start_ComplexPassingOfTypesThatContainPointers_To_HostApp_Callback_Test();
         void Start_ReturnNoParams_From_HostApp_Callback_Test();
         HRESULT Start_ReturnObjectInVector_From_HostApp_Callback_Test();
         HRESULT Start_PassingPrimitivesInVector_To_HostApp_Callback_Test();
-        HRESULT Start_ComplexPassingofTypesWithVectors_To_HostApp_Callback_Test();
+        HRESULT Start_ComplexPassingOfTypesWithVectors_To_HostApp_Callback_Test();
         HRESULT Start_PassingStringTypes_To_HostApp_Callback_Test();
         HRESULT Start_PassingWStringTypes_To_HostApp_Callback_Test();
         HRESULT Start_PassingArrayTypes_To_HostApp_Callback_Test();
@@ -245,7 +270,8 @@ enclave
         HRESULT TestPassingPrimitivesAsInPointers_To_HostApp(
             [in] uint8_t* uint8_val,
             [in] uint16_t* uint16_val,
-            [in] uint32_t* uint32_val);
+            [in] uint32_t* uint32_val,
+            [in] uint32_t* null_uint32_val); // pass null value
 
         // Pointers should have an in or out direction. Otherwise the codegen layer will see them as [in] parameters.
         HRESULT TestPassingPrimitivesAsInOutPointers_To_HostApp(
@@ -271,12 +297,23 @@ enclave
 
         void ReturnNoParams_From_HostApp();
 
-        StructWithNoPointers ComplexPassingofTypes_To_HostApp(
+        StructWithNoPointers ComplexPassingOfTypes_To_HostApp(
             StructWithNoPointers arg1,
             [in, out]StructWithNoPointers arg2,
             [out] StructWithNoPointers* arg3,
             [out] StructWithNoPointers arg4,
+            StructWithNoPointers* arg5_null, // pass null value
+            StructWithNoPointers* arg6,
+            [in, out] StructWithNoPointers* arg7,
             [out] uint64_t* uint64_val);
+
+        StructWithPointers ComplexPassingOfTypesThatContainPointers_To_HostApp(
+            [in] StructWithPointers* arg1_null, // pass null value
+            [in] StructWithPointers* arg2,
+            [in, out] StructWithPointers* arg3,
+            [out] StructWithPointers* arg4,
+            [in, out] vector<StructWithPointers> arg5,
+            [in, out] StructWithPointers arg6[2]);
 
         vector<TestStruct1> ReturnObjectInVector_From_HostApp();
 
@@ -291,7 +328,7 @@ enclave
             [out] vector<int16_t> arg8,
             [out] vector<int32_t> arg9);
 
-        TestStruct2 ComplexPassingofTypesWithVectors_To_HostApp(
+        TestStruct2 ComplexPassingOfTypesWithVectors_To_HostApp(
             TestStruct1 arg1,
             [in, out]TestStruct2 arg2,
             [out] TestStruct3 arg3,

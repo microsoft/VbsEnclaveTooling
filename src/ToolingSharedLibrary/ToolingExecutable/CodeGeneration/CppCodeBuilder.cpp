@@ -405,16 +405,27 @@ namespace CodeGeneration
         }
     }
 
-    void AddStatementToReturnParameterBackIntoOriginalParameter(
+    void AddCopyStatementForReturnedParameter(
         const Declaration& declaration,
-        CppCodeBuilder::FunctionParametersInfo& param_info)
+        CppCodeBuilder::FunctionParametersInfo& param_info,
+        bool should_move_returned_data)
     {
-        bool data_should_be_moved = ShouldReturnTypeBeMoved(declaration);
-
+        // Out pointer parameters get generated as unique_ptrs so they are moved by default.
         if (declaration.HasPointer() && declaration.IsOutParameterOnly())
         {
             param_info.m_copy_values_from_out_struct_to_original_args << std::format(
                 c_return_param_for_out_param_ptr,
+                declaration.m_name,
+                declaration.m_name,
+                declaration.m_name);
+        }
+        // Inout parameter is a pointer to a struct that contains inner pointers. Use move assignment operator
+        // to update the data it points to.
+        else if (should_move_returned_data && (declaration.HasPointer() && declaration.IsInOutParameter()))
+        {
+            param_info.m_copy_values_from_out_struct_to_original_args << std::format(
+                c_return_param_for_inout_param_ptr_with_move,
+                declaration.m_name,
                 declaration.m_name,
                 declaration.m_name,
                 declaration.m_name);
@@ -428,10 +439,12 @@ namespace CodeGeneration
                 declaration.m_name,
                 declaration.m_name);
         }
-        else if (data_should_be_moved)
+        // Inout parameter is a struct that contains inner pointers. Use move operator on the returned value.
+        else if (should_move_returned_data)
         {
             param_info.m_copy_values_from_out_struct_to_original_args << std::format(
-                c_return_param_for_param_non_ptr_complex,
+                c_return_param_for_inout_param_with_move,
+                declaration.m_name,
                 declaration.m_name,
                 declaration.m_name);
         }
@@ -469,7 +482,8 @@ namespace CodeGeneration
     }
     
     CppCodeBuilder::FunctionParametersInfo CppCodeBuilder::GetInformationAboutParameters(
-        const Function& function)
+        const Function& function,
+        const std::unordered_map<std::string, DeveloperType>& developer_types)
     {
         FunctionParametersInfo param_info {};
         size_t in_out_index = 0U;
@@ -498,15 +512,12 @@ namespace CodeGeneration
             {
                 in_index++;
             }
-            else if (declaration.IsInOutParameter())
-            {
-                AddStatementToReturnParameterBackIntoOriginalParameter(declaration, param_info);
-                in_out_index++;
-            }
             else
             {
-                AddStatementToReturnParameterBackIntoOriginalParameter(declaration, param_info);
-                out_index++;
+                in_out_index = declaration.IsInOutParameter() ? in_out_index + 1 : in_out_index;
+                out_index = declaration.IsOutParameterOnly() ? out_index + 1 : out_index;
+                bool should_move_param = ShouldFieldInReturnedStructBeMoved(declaration, developer_types);
+                AddCopyStatementForReturnedParameter(declaration, param_info, should_move_param);
             }
         }
 
@@ -523,6 +534,7 @@ namespace CodeGeneration
         const Function& function,
         std::string_view abi_function_to_call,
         bool should_be_inline,
+        const std::unordered_map<std::string, DeveloperType>& developer_types,
         const FunctionParametersInfo& param_info)
     {
         std::string inline_part = should_be_inline ? "inline " : "";
@@ -555,7 +567,7 @@ namespace CodeGeneration
 
         if (!param_info.m_function_return_type_void)
         {
-            return_statement = (ShouldReturnTypeBeMoved(function.m_return_info))
+            return_statement = (ShouldFieldInReturnedStructBeMoved(function.m_return_info, developer_types))
                 ? c_return_value_back_to_initial_caller_with_move
                 : c_return_value_back_to_initial_caller_no_move;
         }
@@ -658,6 +670,7 @@ namespace CodeGeneration
 
     CppCodeBuilder::HostToEnclaveContent CppCodeBuilder::BuildHostToEnclaveFunctions(
         std::string_view generated_namespace,
+        const std::unordered_map<std::string, DeveloperType>& developer_types,
         std::unordered_map<std::string, Function>& functions)
     {
         std::ostringstream vtl0_class_public_portion {};
@@ -679,7 +692,7 @@ namespace CodeGeneration
 
         for (auto&& [name, function] : functions)
         {
-            auto param_info = GetInformationAboutParameters(function);
+            auto param_info = GetInformationAboutParameters(function, developer_types);
             auto vtl1_exported_func_name = std::format(c_generated_stub_name, function.abi_m_name);
             auto vtl0_call_to_vtl1_export = std::format(
                 c_vtl0_call_to_vtl1_export,
@@ -691,6 +704,7 @@ namespace CodeGeneration
                 function,
                 vtl0_call_to_vtl1_export,
                 false,
+                developer_types,
                 param_info);
 
             auto vtl1_call_to_vtl1_export = std::format(
@@ -754,6 +768,7 @@ namespace CodeGeneration
     CppCodeBuilder::EnclaveToHostContent CppCodeBuilder::BuildEnclaveToHostFunctions(
         std::string_view generated_namespace,
         std::string_view generated_class_name,
+        const std::unordered_map<std::string, DeveloperType>& developer_types,
         std::unordered_map<std::string, Function>& functions)
     {
         size_t number_of_functions = functions.size();
@@ -794,7 +809,7 @@ namespace CodeGeneration
         auto current_iteration = 0U;
         for (auto&& [name, function] : functions)
         {
-            auto param_info = GetInformationAboutParameters(function);
+            auto param_info = GetInformationAboutParameters(function, developer_types);
 
             auto generated_callback_in_namespace = std::format(
                c_generated_callback_in_namespace,
@@ -813,6 +828,7 @@ namespace CodeGeneration
                 function,
                 vtl1_call_to_vtl0_callback,
                 true,
+                developer_types,
                 param_info);
 
             auto vtl0_call_to_vtl0_callback = std::format(

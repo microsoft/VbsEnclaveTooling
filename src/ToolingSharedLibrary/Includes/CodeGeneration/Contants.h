@@ -467,11 +467,18 @@ R"(
             }}
 )";
 
-    static inline constexpr std::string_view c_return_param_for_param_non_ptr_complex =
+    static inline constexpr std::string_view c_return_param_for_inout_param_ptr_with_move =
+R"(     
+            if ({} && return_params->m_{})
+            {{
+                *{} = std::move(*return_params->m_{}); 
+            }}
+)";
+
+    static inline constexpr std::string_view c_return_param_for_inout_param_with_move =
 R"(     
             {} = std::move(return_params->m_{});
 )";
-
 
 static inline constexpr std::string_view c_return_param_for_basic_type =
 R"(     

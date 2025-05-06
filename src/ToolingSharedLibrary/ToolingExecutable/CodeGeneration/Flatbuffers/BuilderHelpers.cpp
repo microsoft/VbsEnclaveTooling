@@ -162,18 +162,25 @@ namespace CodeGeneration::Flatbuffers
             }
             else if (declaration.IsEdlType(EdlTypeKind::Enum))
             {
+                // pointers to enums will have their flatbuffer counterpart be generated as an optional value
+                // when given the null value. In C++ for example that is an std::optional.
+                auto default_val = declaration.HasPointer() ? "null" : g_enum_data.at(declaration.m_edl_type_info.m_name);
                 table_body << std::format(
                     "    {} : {} = {};\n",
                     declaration.m_name,
                     declaration.m_edl_type_info.m_name,
-                    g_enum_data.at(declaration.m_edl_type_info.m_name));
+                    default_val);
             }
             else
             {
+                // pointers to primitives will have their flatbuffer counterpart be generated as an optional value
+                // when given the null value. In C++ for example that is an std::optional.
+                auto null_val = declaration.HasPointer() ? " = null" : "";
                 table_body << std::format(
-                    "    {} : {};\n",
+                    "    {} : {}{};\n",
                     declaration.m_name,
-                    GetFlatBufferType(declaration.m_edl_type_info));
+                    GetFlatBufferType(declaration.m_edl_type_info),
+                    null_val);
             }
         }
 

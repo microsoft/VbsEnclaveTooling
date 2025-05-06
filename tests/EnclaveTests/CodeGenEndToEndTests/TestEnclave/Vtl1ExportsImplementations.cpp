@@ -116,7 +116,8 @@ HRESULT VTL1_Declarations::TestPassingPrimitivesAsOutValues_To_Enclave(
 HRESULT VTL1_Declarations::TestPassingPrimitivesAsInPointers_To_Enclave(
     _In_ const std::uint8_t* uint8_val,
     _In_ const std::uint16_t* uint16_val,
-    _In_ const std::uint32_t* uint32_val)
+    _In_ const std::uint32_t* uint32_val,
+    _In_ const uint32_t* null_uint32_val)
 {
     // Confirm vtl0 parameters were correctly copied to vtl1 memory.
     THROW_HR_IF_NULL(E_INVALIDARG, uint8_val);
@@ -125,6 +126,7 @@ HRESULT VTL1_Declarations::TestPassingPrimitivesAsInPointers_To_Enclave(
     THROW_HR_IF(E_INVALIDARG, 100 != *uint8_val);
     THROW_HR_IF(E_INVALIDARG, 100 != *uint16_val);
     THROW_HR_IF(E_INVALIDARG, 100 != *uint32_val);
+    THROW_HR_IF(E_INVALIDARG, null_uint32_val != nullptr);
 
     return S_OK;
 }
@@ -167,11 +169,14 @@ HRESULT VTL1_Declarations::TestPassingPrimitivesAsOutPointers_To_Enclave(
     return S_OK;
 }
 
-StructWithNoPointers VTL1_Declarations::ComplexPassingofTypes_To_Enclave(
+StructWithNoPointers VTL1_Declarations::ComplexPassingOfTypes_To_Enclave(
     _In_ const StructWithNoPointers& arg1,
     _Inout_ StructWithNoPointers& arg2,
     _Out_ std::unique_ptr<StructWithNoPointers>& arg3,
     _Out_ StructWithNoPointers& arg4,
+    _In_ const StructWithNoPointers* arg5_null,
+    _In_ const StructWithNoPointers* arg6,
+    _Inout_ StructWithNoPointers* arg7,
     _Out_ std::unique_ptr<std::uint64_t>& uint64_val)
 {
     arg3 = nullptr;
@@ -180,6 +185,9 @@ StructWithNoPointers VTL1_Declarations::ComplexPassingofTypes_To_Enclave(
 
     // check in parm is expected value
     THROW_HR_IF(E_INVALIDARG, !CompareStructWithNoPointers(arg1, struct_to_return));
+    THROW_HR_IF(E_INVALIDARG, arg5_null != nullptr);
+    THROW_HR_IF(E_INVALIDARG, !CompareStructWithNoPointers(*arg6, struct_to_return));
+    THROW_HR_IF(E_INVALIDARG, !CompareStructWithNoPointers(*arg7, {}));
     arg2 = struct_to_return;
 
     arg3 = std::make_unique<StructWithNoPointers>();
@@ -187,6 +195,7 @@ StructWithNoPointers VTL1_Declarations::ComplexPassingofTypes_To_Enclave(
     arg4 = CreateStructWithNoPointers();
     uint64_val = std::make_unique<std::uint64_t>();
     *uint64_val = std::numeric_limits<std::uint64_t>::max();
+    *arg7 = CreateStructWithNoPointers();
 
     return struct_to_return;
 }
@@ -238,7 +247,7 @@ HRESULT VTL1_Declarations::PassingPrimitivesInVector_To_Enclave(
     return S_OK;
 }
 
-TestStruct2 VTL1_Declarations::ComplexPassingofTypesWithVectors_To_Enclave(
+TestStruct2 VTL1_Declarations::ComplexPassingOfTypesWithVectors_To_Enclave(
     _In_ const TestStruct1& arg1,
     _Inout_  TestStruct2& arg2,
     _Out_  TestStruct3& arg3,
@@ -326,6 +335,37 @@ NestedStructWithArray VTL1_Declarations::PassingArrayTypes_To_Enclave(
     return CreateNestedStructWithArray();
 }
 
+StructWithPointers VTL1_Declarations::ComplexPassingOfTypesThatContainPointers_To_Enclave(
+    _In_ const StructWithPointers* arg1_null,
+    _In_ const StructWithPointers* arg2,
+    _Inout_ StructWithPointers* arg3,
+    _Out_ std::unique_ptr<StructWithPointers>& arg4,
+    _Inout_ std::vector<StructWithPointers>& arg5,
+    _Inout_ std::array<StructWithPointers, 2>& arg6)
+{
+    arg4 = nullptr;
+    auto struct_to_return = CreateStructWithPointers();
+
+    // check in/inout parameters contain expected values
+    THROW_HR_IF(E_INVALIDARG, arg1_null != nullptr);
+    THROW_HR_IF(E_INVALIDARG, !CompareStructWithPointers(*arg2, struct_to_return));
+    THROW_HR_IF(E_INVALIDARG, !CompareStructWithPointers(*arg3, {}));
+    THROW_HR_IF(E_INVALIDARG, !std::equal(arg5.begin(), arg5.end(), c_struct_with_ptrs_vec_empty.begin(), CompareStructWithPointers));
+    THROW_HR_IF(E_INVALIDARG, !std::equal(arg6.begin(), arg6.end(), c_struct_with_ptrs_vec_empty.begin(), CompareStructWithPointers));
+
+    *arg3 = CreateStructWithPointers();
+    arg4 = std::make_unique<StructWithPointers>();
+    *arg4 = CreateStructWithPointers();
+
+    for (size_t i = 0 ; i < c_struct_with_ptrs_arr_initialize.size(); i++)
+    {
+        arg5[i] = CreateStructWithPointers();
+        arg6[i] = CreateStructWithPointers();
+    }
+
+    return struct_to_return;
+}
+
 #pragma endregion
 
 #pragma region Enclave to HostApp Tests
@@ -381,8 +421,8 @@ HRESULT VTL1_Declarations::Start_TestPassingPrimitivesAsInOutValues_To_HostApp_C
     auto in_out_int8 = std::numeric_limits<std::int8_t>::max();
 
     THROW_IF_FAILED(VTL0_Callbacks::TestPassingPrimitivesAsInOutValues_To_HostApp_callback(
-        in_out_bool, 
-        in_out_enum, 
+        in_out_bool,
+        in_out_enum,
         in_out_int8));
 
     THROW_HR_IF(E_INVALIDARG, in_out_bool != false);
@@ -400,7 +440,7 @@ HRESULT VTL1_Declarations::Start_TestPassingPrimitivesAsOutValues_To_HostApp_Cal
     std::int8_t out_int8 {};
 
     THROW_IF_FAILED(VTL0_Callbacks::TestPassingPrimitivesAsOutValues_To_HostApp_callback(
-        out_bool, 
+        out_bool,
         out_enum,
         out_int8));
 
@@ -416,12 +456,14 @@ HRESULT VTL1_Declarations::Start_TestPassingPrimitivesAsInPointers_To_HostApp_Ca
     std::uint8_t uint8_val = 100;
     std::uint16_t uint16_val = 100;
     std::uint32_t uint32_val = 100;
+    std::uint32_t* null_uint32_val{};
 
     // Note: Hresult is returned by vtl0, and copied to vtl1 then returned to this function.
     THROW_IF_FAILED(VTL0_Callbacks::TestPassingPrimitivesAsInPointers_To_HostApp_callback(
         &uint8_val,
         &uint16_val,
-        &uint32_val));
+        &uint32_val,
+        null_uint32_val));
 
     return S_OK;
 }
@@ -470,7 +512,7 @@ HRESULT VTL1_Declarations::Start_TestPassingPrimitivesAsOutPointers_To_HostApp_C
     return S_OK;
 }
 
-HRESULT VTL1_Declarations::Start_ComplexPassingofTypes_To_HostApp_Callback_Test()
+HRESULT VTL1_Declarations::Start_ComplexPassingOfTypes_To_HostApp_Callback_Test()
 {
     auto expected_struct_values = CreateStructWithNoPointers();
     StructWithNoPointers struct_no_pointers_1 = expected_struct_values;
@@ -478,13 +520,19 @@ HRESULT VTL1_Declarations::Start_ComplexPassingofTypes_To_HostApp_Callback_Test(
     std::unique_ptr<StructWithNoPointers> struct_no_pointers_3;
     StructWithNoPointers struct_no_pointers_4 {};
     std::unique_ptr<std::uint64_t> uint64_val = nullptr;
+    StructWithNoPointers* struct_no_pointers_5 {};
+    StructWithNoPointers struct_no_pointers_6 = expected_struct_values;
+    StructWithNoPointers struct_no_pointers_7 {};
 
     // Note: Hresult is returned by vtl0, and copied to vtl1 then returned to this function.
-    auto result = VTL0_Callbacks::ComplexPassingofTypes_To_HostApp_callback(
+    auto result = VTL0_Callbacks::ComplexPassingOfTypes_To_HostApp_callback(
         struct_no_pointers_1,
         struct_no_pointers_2,
         struct_no_pointers_3,
         struct_no_pointers_4,
+        struct_no_pointers_5,
+        &struct_no_pointers_6,
+        &struct_no_pointers_7,
         uint64_val);
 
     // The out parameters should have been filled in by the abi in vtl1 based on the result from
@@ -497,6 +545,38 @@ HRESULT VTL1_Declarations::Start_ComplexPassingofTypes_To_HostApp_Callback_Test(
     THROW_HR_IF(E_INVALIDARG, !CompareStructWithNoPointers(struct_no_pointers_4, expected_struct_values));
     THROW_HR_IF_NULL(E_INVALIDARG, uint64_val);
     THROW_HR_IF(E_INVALIDARG, *uint64_val != std::numeric_limits<std::uint64_t>::max());
+    THROW_HR_IF(E_INVALIDARG, !CompareStructWithNoPointers(struct_no_pointers_6, expected_struct_values));
+    THROW_HR_IF(E_INVALIDARG, !CompareStructWithNoPointers(struct_no_pointers_7, expected_struct_values));
+
+    return S_OK;
+}
+
+HRESULT VTL1_Declarations::Start_ComplexPassingOfTypesThatContainPointers_To_HostApp_Callback_Test()
+{
+    auto expected_struct_with_ptrs = CreateStructWithPointers();
+    StructWithPointers* struct_with_pointers_1_null {};
+    StructWithPointers struct_with_pointers_2 = CreateStructWithPointers();
+    StructWithPointers struct_with_pointers_3 = {};
+    std::unique_ptr<StructWithPointers> struct_with_pointers_4 {};
+    std::vector<StructWithPointers> struct_with_pointers_5(c_arbitrary_size_2);
+    std::array<StructWithPointers, c_arbitrary_size_2> struct_with_pointers_6;
+
+    // The inout and out parameters should have been filled in by the abi in vtl1 based on the result from
+    // the vtl0 version of the function
+    auto result = VTL0_Callbacks::ComplexPassingOfTypesThatContainPointers_To_HostApp_callback(
+        struct_with_pointers_1_null,
+        &struct_with_pointers_2,
+        &struct_with_pointers_3,
+        struct_with_pointers_4,
+        struct_with_pointers_5,
+        struct_with_pointers_6);
+
+    THROW_HR_IF(E_INVALIDARG, !(CompareStructWithPointers(result, expected_struct_with_ptrs)));
+    THROW_HR_IF(E_INVALIDARG, !CompareStructWithPointers(struct_with_pointers_3, expected_struct_with_ptrs));
+    THROW_HR_IF_NULL(E_INVALIDARG, struct_with_pointers_4.get());
+    THROW_HR_IF(E_INVALIDARG, !CompareStructWithPointers(*struct_with_pointers_4, expected_struct_with_ptrs));
+    THROW_HR_IF(E_INVALIDARG, !std::equal(struct_with_pointers_5.begin(), struct_with_pointers_5.end(), c_struct_with_ptrs_arr_initialize.begin(), CompareStructWithPointers));
+    THROW_HR_IF(E_INVALIDARG, !std::equal(struct_with_pointers_6.begin(), struct_with_pointers_6.end(), c_struct_with_ptrs_arr_initialize.begin(), CompareStructWithPointers));
 
     return S_OK;
 }
@@ -555,7 +635,7 @@ HRESULT VTL1_Declarations::Start_PassingPrimitivesInVector_To_HostApp_Callback_T
     return S_OK;
 }
 
-HRESULT VTL1_Declarations::Start_ComplexPassingofTypesWithVectors_To_HostApp_Callback_Test()
+HRESULT VTL1_Declarations::Start_ComplexPassingOfTypesWithVectors_To_HostApp_Callback_Test()
 {
     auto expect_val1 = CreateTestStruct1();
     auto expect_val2 = CreateTestStruct2();
@@ -571,7 +651,7 @@ HRESULT VTL1_Declarations::Start_ComplexPassingofTypesWithVectors_To_HostApp_Cal
     std::vector<TestStruct3> arg6 {};
 
     // Note: TestStruct2 is returned by vtl0, and copied to vtl1 then returned to this function.
-    auto result = VTL0_Callbacks::ComplexPassingofTypesWithVectors_To_HostApp_callback(
+    auto result = VTL0_Callbacks::ComplexPassingOfTypesWithVectors_To_HostApp_callback(
         arg1,
         arg2,
         arg3,
@@ -581,6 +661,7 @@ HRESULT VTL1_Declarations::Start_ComplexPassingofTypesWithVectors_To_HostApp_Cal
 
     // The out parameters should have been filled in by the abi in vtl1 based on the result from
     // the vtl0 version of the function
+    THROW_HR_IF(E_INVALIDARG, !CompareTestStruct2(result, expect_val2));
     THROW_HR_IF(E_INVALIDARG, !CompareTestStruct1(arg1, expect_val1));
     THROW_HR_IF(E_INVALIDARG, !CompareTestStruct2(arg2, expect_val2));
     THROW_HR_IF(E_INVALIDARG, !CompareTestStruct3(arg3, expect_val3));
