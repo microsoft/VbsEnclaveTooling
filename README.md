@@ -64,7 +64,7 @@ project by doing the following:
 In your **enclave** projects .vcxproj or .props file add the following:
 ```xml
 <PropertyGroup>
-    <VbsEnclaveVirtualTrustLayer>Enclave</VbsEnclaveVirtualTrustLayer>`
+    <VbsEnclaveVirtualTrustLayer>Enclave</VbsEnclaveVirtualTrustLayer>
     <VbsEnclaveEdlPath>Absolute-Path-To-Your-.Edl-File</VbsEnclaveEdlPath>
 </PropertyGroup>
 ```
@@ -74,7 +74,7 @@ In your **enclave** projects .vcxproj or .props file add the following:
 In your **hostApp** projects .vcxproj or .props file add the following:
 ```xml
 <PropertyGroup>
-    <VbsEnclaveVirtualTrustLayer>HostApp</VbsEnclaveVirtualTrustLayer>`
+    <VbsEnclaveVirtualTrustLayer>HostApp</VbsEnclaveVirtualTrustLayer>
     <VbsEnclaveEdlPath>Absolute-Path-To-Your-.Edl-File</VbsEnclaveEdlPath>
     <Namespace>Namespace-for-the-generated-code</Namespace>
     <Vtl0ClassName>Encapsulated-classname-for-your-enclave</Vtl0ClassName>
