@@ -37,6 +37,7 @@ namespace EdlProcessor
         void ParseFunctions(const FunctionKind& function_kind);
         void ValidatePointers(const Declaration& declaration);
         void PerformFinalValidations();
+        void UpdateDeveloperTypeMetadata();
 
         void ParseThroughFieldsOrParameterList(
             const DeclarationParentKind& parent_kind, 

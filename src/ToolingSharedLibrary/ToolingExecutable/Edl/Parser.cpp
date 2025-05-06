@@ -177,6 +177,7 @@ namespace EdlProcessor
         }
 
         PerformFinalValidations();
+        UpdateDeveloperTypeMetadata();
 
         return Edl{
             m_file_name.generic_string(),
@@ -184,6 +185,39 @@ namespace EdlProcessor
             m_developer_types_insertion_order_list,
             m_trusted_functions,
             m_untrusted_functions };
+    }
+
+    void EdlParser::UpdateDeveloperTypeMetadata()
+    {
+        for (auto& [name, developer_type] : m_developer_types)
+        {
+            // Update developer type to take into account struct fields where the type may contain
+            // a container type or a pointer.
+            for (auto& field : developer_type.m_fields)
+            {
+                if (developer_type.m_contains_inner_pointer && developer_type.m_contains_container_type)
+                {
+                    break;
+                }
+
+                if (!field.IsEdlType(EdlTypeKind::Struct))
+                {
+                    continue;
+                }
+
+                const auto& struct_field = m_developer_types.at(field.m_edl_type_info.m_name);
+
+                if (struct_field.m_contains_inner_pointer)
+                {
+                    developer_type.m_contains_inner_pointer = true;
+                }
+
+                if (struct_field.m_contains_container_type)
+                {
+                    developer_type.m_contains_container_type = true;
+                }
+            }
+        }
     }
 
     void EdlParser::AddDeveloperType(const DeveloperType& new_type)
@@ -370,6 +404,20 @@ namespace EdlProcessor
             new_struct_type.m_fields,
             RIGHT_CURLY_BRACKET,
             SEMI_COLON);
+
+        // Update initial metadata based on non struct field types.
+        for (auto& field : new_struct_type.m_fields)
+        {
+            if (!new_struct_type.m_contains_inner_pointer && field.HasPointer())
+            {
+                new_struct_type.m_contains_inner_pointer = true;
+            }
+
+            if (!new_struct_type.m_contains_container_type && field.IsContainerType())
+            {
+                new_struct_type.m_contains_container_type = true;
+            }
+        }
 
         ThrowIfExpectedTokenNotNext(RIGHT_CURLY_BRACKET);
         ThrowIfExpectedTokenNotNext(SEMI_COLON);   
@@ -913,7 +961,6 @@ namespace EdlProcessor
         {
             ValidateSizeAndCountAttributeDeclarations(name, developer_type.m_fields);
         }
-
     }
 
     void EdlParser::ValidateSizeAndCountAttributeDeclarations(

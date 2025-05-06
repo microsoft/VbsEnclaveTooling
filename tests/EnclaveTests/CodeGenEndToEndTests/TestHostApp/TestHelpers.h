@@ -356,38 +356,57 @@ inline NestedStructWithPointers CreateNestedStructWithPointers()
     return NestedStructWithPointers(std::move(int32_ptr), std::move(enum_val_ptr), std::move(test_struct_val_ptr));
 }
 
+template <typename T>
+inline bool ComparePtrToPod(T* lhs_ptr, T* rhs_ptr)
+{
+    static_assert(std::is_standard_layout<T>::value && std::is_trivial<T>::value);
+
+    if ((lhs_ptr && !rhs_ptr) || (!lhs_ptr && rhs_ptr))
+    {
+        return false;
+    }
+
+    if (lhs_ptr && rhs_ptr && (*lhs_ptr != *rhs_ptr))
+    {
+        return false;
+    }
+
+    return true;
+}
+
+template <typename T, typename FuncT>
+inline bool ComparePtrToStruct(T* lhs_ptr, T* rhs_ptr, FuncT comparison_function)
+{
+    if ((lhs_ptr && !rhs_ptr) || (!lhs_ptr && rhs_ptr))
+    {
+        return false;
+    }
+
+    if (lhs_ptr && rhs_ptr)
+    {
+        return comparison_function(*lhs_ptr, *rhs_ptr);
+    }
+
+    return true;
+}
+
 inline bool CompareNestedStructWithPointers(const NestedStructWithPointers& lhs, const NestedStructWithPointers& rhs)
 {
     // Compare all fields of the struct
 
-    if ((lhs.int32_ptr && !rhs.int32_ptr) || (!lhs.int32_ptr && rhs.int32_ptr))
+    if (!ComparePtrToPod(lhs.int32_ptr.get(), rhs.int32_ptr.get()))
     {
         return false;
     }
 
-    if (lhs.int32_ptr && rhs.int32_ptr && (*lhs.int32_ptr != *rhs.int32_ptr))
+    if (!ComparePtrToPod(lhs.deci_ptr.get(), rhs.deci_ptr.get()))
     {
         return false;
     }
 
-    if ((lhs.deci_ptr && !rhs.deci_ptr) || (!lhs.deci_ptr && rhs.deci_ptr))
+    if (!ComparePtrToStruct(lhs.struct_ptr.get(), rhs.struct_ptr.get(), CompareTestStruct1))
     {
         return false;
-    }
-
-    if (lhs.deci_ptr && rhs.deci_ptr && (*lhs.deci_ptr != *rhs.deci_ptr))
-    {
-        return false;
-    }
-
-    if ((lhs.struct_ptr && !rhs.struct_ptr) || (!lhs.struct_ptr && rhs.struct_ptr))
-    {
-        return false;
-    }
-
-    if (lhs.struct_ptr && rhs.struct_ptr)
-    {
-        return CompareTestStruct1(*lhs.struct_ptr, *rhs.struct_ptr);
     }
 
     return true;
@@ -410,18 +429,5 @@ inline std::array<StructWithPointers, c_arbitrary_size_2> c_struct_with_ptrs_arr
 
 inline bool CompareStructWithPointers(const StructWithPointers& lhs, const StructWithPointers& rhs)
 {
-    // Compare all fields of the struct
-
-    if ((lhs.nested_struct_ptr && !rhs.nested_struct_ptr) || (!lhs.nested_struct_ptr && rhs.nested_struct_ptr))
-    {
-        return false;
-    }
-
-    if (lhs.nested_struct_ptr && rhs.nested_struct_ptr)
-    {
-        return CompareNestedStructWithPointers(*lhs.nested_struct_ptr, *rhs.nested_struct_ptr);
-    }
-
-
-    return true;
+    return ComparePtrToStruct(lhs.nested_struct_ptr.get(), rhs.nested_struct_ptr.get(), CompareNestedStructWithPointers);
 }

@@ -162,6 +162,13 @@ namespace EdlProcessor
         EdlTypeKind::SizeT,
     };
 
+    static std::unordered_set<EdlTypeKind, EdlTypeToHash> g_container_types
+    {
+        EdlTypeKind::String,
+        EdlTypeKind::WString,
+        EdlTypeKind::Vector,
+    };
+
     struct ParsedAttributeInfo
     {
         bool IsSizeOrCountPresent() const
@@ -380,6 +387,11 @@ namespace EdlProcessor
             return c_edlTypes_primitive_set.contains(m_edl_type_info.m_type_kind);
         }
 
+        bool IsContainerType() const
+        {
+            return !m_array_dimensions.empty() || g_container_types.contains(m_edl_type_info.m_type_kind);
+        }
+
         std::string GenerateTypeInfoString()
         {
             std::string info_string = m_edl_type_info.m_name;
@@ -446,23 +458,12 @@ namespace EdlProcessor
             return m_type_kind == type_kind;
         }
 
-        bool ContainsPointers() const
-        {
-            for (auto& field : m_fields)
-            {
-                if (field.HasPointer())
-                {
-                    return true;
-                }
-            }
-
-            return false;
-        }
-
         std::string m_name;
         EdlTypeKind m_type_kind;
         std::vector<Declaration> m_fields;
         std::unordered_map<std::string, EnumType> m_items;
+        bool m_contains_inner_pointer {};
+        bool m_contains_container_type{};
     };
 
     struct Function
