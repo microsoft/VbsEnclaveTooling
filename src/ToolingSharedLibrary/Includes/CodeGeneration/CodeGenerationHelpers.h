@@ -306,13 +306,6 @@ namespace CodeGeneration
 
         return "ToDevTypeNoPtr";
     }
-
-    inline bool DoesDeveloperTypeContainComplexTypes(const DeveloperType& dev_type)
-    {
-        
-        return false;
-    }
-
     
     inline bool ShouldFieldInReturnedStructBeMoved(
         const Declaration& declaration,
