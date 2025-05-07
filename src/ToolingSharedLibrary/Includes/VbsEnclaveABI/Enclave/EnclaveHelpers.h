@@ -17,62 +17,29 @@ using namespace VbsEnclaveABI::Shared;
 // Default all projects consuming VBS Enclave codegen to having restricted memory access enabled.
 // See: https://learn.microsoft.com/en-us/windows/win32/api/winenclaveapi/nf-winenclaveapi-enclaverestrictcontainingprocessaccess
 #if !defined(ENABLE_ENCLAVE_RESTRICT_CONTAINING_PROCESS_ACCESS)
-#define ENABLE_ENCLAVE_RESTRICT_CONTAINING_PROCESS_ACCESS true
+#define ENABLE_ENCLAVE_RESTRICT_CONTAINING_PROCESS_ACCESS false
 #endif
 
 // Content of this file should only be used within an enclave.
 namespace VbsEnclaveABI::Enclave
 {
-    // This will only be available in debug mode. Accessor Functions have not been ported to GE_Current yet
-    // so these place holders will be used until then. This will mean release mode won't build which
-    // should be fine until its ported in Feburary, at which point this entire ifndef block can be removed.
-    #ifdef _DEBUG
-        // REMOVE WHEN PORTED to GE_Current
-        HRESULT static inline
-            EnclaveCopyIntoEnclave(
-                _Out_writes_bytes_(NumberOfBytes) VOID* EnclaveAddress,
-                _In_reads_bytes_(NumberOfBytes) const VOID* UnsecureAddress,
-                _In_ SIZE_T NumberOfBytes
-            )
+    void static inline
+        EnableEnclaveRestrictContainingProcessAccessOnce()
+    {
+        // Do a one-time enablement of process memory restriction setting if module requests it
+        // Note: We don't have access to std::call_once
+        static std::atomic<bool> s_have_run_once {};
+        if (!s_have_run_once.load(std::memory_order_acquire))
         {
-            RETURN_IF_FAILED(CheckForVTL1Buffer(EnclaveAddress, NumberOfBytes));
-            RETURN_IF_FAILED(CheckForVTL0Buffer(UnsecureAddress, NumberOfBytes));
-            memcpy_s(EnclaveAddress, NumberOfBytes, UnsecureAddress, NumberOfBytes);
-            return S_OK;
-        }
-
-        // REPLACE WITH REAL FUNCTIONS WHEN PORTED to GE_Current
-        HRESULT static inline
-            EnclaveCopyOutOfEnclave(
-                _Out_writes_bytes_(NumberOfBytes) VOID* UnsecureAddress,
-                _In_reads_bytes_(NumberOfBytes) const VOID* EnclaveAddress,
-                _In_ SIZE_T NumberOfBytes
-            )
-        {
-            RETURN_IF_FAILED(CheckForVTL1Buffer(EnclaveAddress, NumberOfBytes));
-            RETURN_IF_FAILED(CheckForVTL0Buffer(UnsecureAddress, NumberOfBytes));
-            memcpy_s(UnsecureAddress, NumberOfBytes, EnclaveAddress, NumberOfBytes);
-            return S_OK;
-        }
-
-        void static inline
-            EnableEnclaveRestrictContainingProcessAccessOnce()
-        {
-            // Do a one-time enablement of process memory restriction setting if module requests it
-            // Note: We don't have access to std::call_once
-            static std::atomic<bool> s_have_run_once {};
-            if (!s_have_run_once.load(std::memory_order_acquire))
+            static wil::srwlock s_lock {};
+            auto lock = s_lock.lock_exclusive();
+            if (!s_have_run_once.load(std::memory_order_relaxed))
             {
-                static wil::srwlock s_lock {};
-                auto lock = s_lock.lock_exclusive();
-                if (!s_have_run_once.load(std::memory_order_relaxed))
-                {
-                    FAIL_FAST_IF_FAILED(EnableEnclaveRestrictContainingProcessAccess());
-                    s_have_run_once.store(true, std::memory_order_release);
-                }
+                FAIL_FAST_IF_FAILED(EnableEnclaveRestrictContainingProcessAccess());
+                s_have_run_once.store(true, std::memory_order_release);
             }
         }
-    #endif
+    }
 
     // Generated ABI export functions in VTL1 call this function as an entry point to calling
     // its associated VTL1 ABI impl function.

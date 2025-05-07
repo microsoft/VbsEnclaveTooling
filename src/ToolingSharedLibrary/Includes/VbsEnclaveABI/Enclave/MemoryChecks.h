@@ -11,22 +11,6 @@
 #include <ntenclv.h>
 #include <safeint.h>
 
-#ifdef _DEBUG
-// DELETE THIS BLOCK:
-// When the SDK is updated to have a the .h/.lib definitions for
-// EnclaveRestrictContainingProcessAccess, this block should be
-// deleted. Then memory restriction will be truly enabled.
-inline HRESULT EnclaveRestrictContainingProcessAccess(
-    _In_ BOOL RestrictAccess,
-    _Out_opt_ PBOOL PreviouslyRestricted
-)
-{
-    (void)RestrictAccess;
-    (void)PreviouslyRestricted;
-    return S_OK;
-}
-#endif
-
 namespace VbsEnclaveABI::Enclave::MemoryChecks
 {
     inline LPCVOID s_enclave_memory_begin; // inclusive
