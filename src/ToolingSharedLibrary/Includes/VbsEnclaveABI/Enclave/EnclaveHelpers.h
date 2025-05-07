@@ -107,9 +107,11 @@ namespace VbsEnclaveABI::Enclave
 
         auto flatbuffer_in_params = UnpackFlatbufferWithSize<ParamsT>(input_buffer.get(), forward_params_size);
         flatbuffers::FlatBufferBuilder flatbuffer_out_params_builder {};
+
+        // Call user implementation
         abi_impl_func(flatbuffer_in_params, flatbuffer_out_params_builder);
 
-        // VTL0 will free this memory.
+        // Copy the return flatbuffer data (VTL0 will free this memory)
         vtl0_memory_ptr<std::uint8_t> vtl0_return_params;
         RETURN_IF_FAILED(AllocateVtl0Memory(&vtl0_return_params, flatbuffer_out_params_builder.GetSize()));
         RETURN_IF_NULL_ALLOC(vtl0_return_params.get());
@@ -118,8 +120,19 @@ namespace VbsEnclaveABI::Enclave
             flatbuffer_out_params_builder.GetBufferPointer(),
             flatbuffer_out_params_builder.GetSize()));
 
-        vtl0_context_ptr->m_returned_parameters.buffer = vtl0_return_params.get();
-        vtl0_context_ptr->m_returned_parameters.buffer_size = flatbuffer_out_params_builder.GetSize();
+        auto buffer = vtl0_return_params.get();
+        auto bufferSize = flatbuffer_out_params_builder.GetSize();
+
+        // Copy the return flatbuffer pointer & size (into the vtl0 function_context)
+        RETURN_IF_FAILED(EnclaveCopyOutOfEnclave(
+            &vtl0_context_ptr->m_returned_parameters.buffer_size,
+            &bufferSize,
+            sizeof(bufferSize)));
+        RETURN_IF_FAILED(EnclaveCopyOutOfEnclave(
+            &vtl0_context_ptr->m_returned_parameters.buffer,
+            &buffer,
+            sizeof(buffer)));
+
         vtl0_return_params.release();
 
         return S_OK;
