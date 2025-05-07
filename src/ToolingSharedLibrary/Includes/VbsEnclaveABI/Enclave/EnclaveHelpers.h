@@ -14,6 +14,9 @@ using namespace VbsEnclaveABI::Enclave::EnclaveMemoryAllocation;
 using namespace VbsEnclaveABI::Enclave::Pointers;
 using namespace VbsEnclaveABI::Shared;
 
+// Version to ensure all translation units are consuming a consistent version of the codegen
+#pragma detect_mismatch("VBS_ENCLAVE_CODEGEN_VERSION", "0.0.1-preview")
+
 // Default all projects consuming VBS Enclave codegen to having restricted memory access enabled.
 // See: https://learn.microsoft.com/en-us/windows/win32/api/winenclaveapi/nf-winenclaveapi-enclaverestrictcontainingprocessaccess
 #if !defined(ENABLE_ENCLAVE_RESTRICT_CONTAINING_PROCESS_ACCESS)
