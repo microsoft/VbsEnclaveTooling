@@ -6,6 +6,10 @@
 #error This header can only be included in an Enclave project (never the HostApp).
 #endif
 
+#if !defined(__VBS_ENCLAVE_CODEGEN_VERSION__)
+#error "VBS enclave code generator consumed without without version specified"
+#endif
+
 #include <VbsEnclaveABI\Shared\VbsEnclaveAbiBase.h>
 #include <VbsEnclaveABI\Enclave\Vtl0Pointers.h>
 #include <VbsEnclaveABI\Enclave\MemoryAllocation.h>
@@ -15,7 +19,7 @@ using namespace VbsEnclaveABI::Enclave::Pointers;
 using namespace VbsEnclaveABI::Shared;
 
 // Version to ensure all translation units are consuming a consistent version of the codegen
-#pragma detect_mismatch("VBS_ENCLAVE_CODEGEN_VERSION", "0.0.1-preview")
+#pragma detect_mismatch("__VBS_ENCLAVE_CODEGEN_VERSION__", __VBS_ENCLAVE_CODEGEN_VERSION__)
 
 // Default all projects consuming VBS Enclave codegen to having restricted memory access enabled.
 // See: https://learn.microsoft.com/en-us/windows/win32/api/winenclaveapi/nf-winenclaveapi-enclaverestrictcontainingprocessaccess
