@@ -85,13 +85,22 @@ This will kick off the code generation and ingest the SDK inside your **hostApp*
 
 *Note* : Be sure to update the `<VbsEnclaveEdlPath>`, `<Namespace>` and `<Vtl0ClassName>` properties with valid values.
 
-*Note* : To disable strict memory access (i.e. allow enclave to reference VTL0 memory), you must define a the preprocessor directive ```ENABLE_ENCLAVE_RESTRICT_CONTAINING_PROCESS_ACCESS=false``` in your project file.
-
 Also see the docs on the `.edl` format and `CodeGeneration` [here](./docs/Edl.md) and [here](./docs/CodeGeneration.md) for more information on them.
 
 *Note* : The `CodeGenerator` nuget package can be used without the `SDK` nuget package
    and the `SDK` nuget package can also be used without the `CodeGenerator` nuget package. They do not rely on each other.
- 
+
+Strict memory access
+------------
+Strict memory access (ENABLE_ENCLAVE_RESTRICT_CONTAINING_PROCESS_ACCESS), when enabled, is a security feature that prevents the enclave from referencing VTL0 memory.
+
+It must be enabled for 'release' builds.
+
+*Note* : Strict memory access is currently disabled for 'debug' builds to work around a vertdll.dll memory access issue.
+
+*Note* : To disable strict memory access for development purposes, you can define a the preprocessor directive ```ENABLE_ENCLAVE_RESTRICT_CONTAINING_PROCESS_ACCESS=false``` in your project file.
+
+
 Vbs enclave implementation library (veil) usage
 ------------
 Currently the SDK is located inside a separate solution file called `vbs_enclave_implementation_library.sln` 
