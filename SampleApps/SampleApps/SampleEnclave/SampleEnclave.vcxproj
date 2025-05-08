@@ -83,12 +83,6 @@
   </PropertyGroup>
   <Import Project="$(SolutionDir)\config.overrides.props" Condition="Exists('$(SolutionDir)\config.overrides.props')" />
   <PropertyGroup>
-    <WindowsSDK_LibraryPath_Platform>$(WindowsSDKLibDir)\um\$(Platform)</WindowsSDK_LibraryPath_Platform>
-    <VC_LibraryPath_Enclave>$(VC_LibraryPath_VC_x64_Desktop)\..\$(Platform)\enclave</VC_LibraryPath_Enclave>
-    <WindowsSDK_LibraryPath_Enclave>$(WindowsSDK_LibraryPath)\..\ucrt_enclave\$(Platform)</WindowsSDK_LibraryPath_Enclave>
-    <VBS_Enclave_Dependencies>$(VC_LibraryPath_Enclave)\libcmt.lib;$(VC_LibraryPath_Enclave)\libvcruntime.lib;$(winsdk_cpp_x64_root)\um\x64\vertdll.lib;$(winsdk_cpp_x64_root)\um\x64\bcrypt.lib;$(winsdk_cpp_x64_root)\ucrt_enclave\x64\ucrt.lib</VBS_Enclave_Dependencies>
-  </PropertyGroup>
-  <PropertyGroup>
     <!-- Unclear why this variable doesn't exist in the .nuget pkg for the SDK -->
     <WindowsSdk_EnclaveIncludes_Path>$(WindowsSdkDir)Include\$(WindowsSDKBuildToolsVersion)</WindowsSdk_EnclaveIncludes_Path>
   </PropertyGroup>
@@ -126,10 +120,16 @@
       <LanguageStandard_C>stdc17</LanguageStandard_C>
     </ClCompile>
     <Link>
-      <SubSystem>Windows</SubSystem>
-      <GenerateDebugInformation>true</GenerateDebugInformation>
-      <EnableUAC>false</EnableUAC>
-      <AdditionalDependencies>$(VBS_Enclave_Dependencies)</AdditionalDependencies>
+        <SubSystem>Windows</SubSystem>
+        <EnableCOMDATFolding>true</EnableCOMDATFolding>
+        <OptimizeReferences>true</OptimizeReferences>
+        <GenerateDebugInformation>true</GenerateDebugInformation>
+        <EnableUAC>false</EnableUAC>
+        <AdditionalDependencies>$(VBS_Enclave_Dependencies)</AdditionalDependencies>
+        <AdditionalOptions>/INTEGRITYCHECK /ENCLAVE /GUARD:MIXED</AdditionalOptions>
+        <ModuleDefinitionFile>sample_enclave.def</ModuleDefinitionFile>
+        <IgnoreAllDefaultLibraries>true</IgnoreAllDefaultLibraries>
+        <IgnoreSpecificDefaultLibraries></IgnoreSpecificDefaultLibraries>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|ARM64'">
@@ -152,7 +152,11 @@
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableUAC>false</EnableUAC>
-      <AdditionalDependencies>$(VBS_Enclave_Dependencies)</AdditionalDependencies>
+        <AdditionalDependencies>$(VBS_Enclave_Dependencies)</AdditionalDependencies>
+        <AdditionalOptions>/INTEGRITYCHECK /ENCLAVE /GUARD:MIXED</AdditionalOptions>
+        <ModuleDefinitionFile>sample_enclave.def</ModuleDefinitionFile>
+        <IgnoreAllDefaultLibraries>true</IgnoreAllDefaultLibraries>
+        <IgnoreSpecificDefaultLibraries></IgnoreSpecificDefaultLibraries>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
@@ -201,7 +205,7 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <EnableUAC>false</EnableUAC>      
+      <EnableUAC>false</EnableUAC>
       <AdditionalDependencies>$(VBS_Enclave_Dependencies)</AdditionalDependencies>
       <AdditionalOptions>/INTEGRITYCHECK /ENCLAVE /GUARD:MIXED</AdditionalOptions>
       <ModuleDefinitionFile>sample_enclave.def</ModuleDefinitionFile>
@@ -220,6 +224,22 @@
       <Message>Sign enclave</Message>
       <Command>signtool sign /ph /fd SHA256 /n "$(EnclaveCertName)" "$(OutDir)$(TargetName)$(TargetExt)"</Command>
     </PostBuildEvent>
+    <Link>
+      <IgnoreAllDefaultLibraries Condition="'$(Configuration)|$(Platform)'=='Debug|ARM64'">true</IgnoreAllDefaultLibraries>
+    </Link>
+    <Link>
+      <ModuleDefinitionFile Condition="'$(Configuration)|$(Platform)'=='Debug|ARM64'">sample_enclave.def</ModuleDefinitionFile>
+    </Link>
+    <Link>
+      <IgnoreAllDefaultLibraries Condition="'$(Configuration)|$(Platform)'=='Release|ARM64'">true</IgnoreAllDefaultLibraries>
+    </Link>
+    <Link>
+      <ModuleDefinitionFile Condition="'$(Configuration)|$(Platform)'=='Release|ARM64'">sample_enclave.def</ModuleDefinitionFile>
+    </Link>
+    <ClCompile>
+      <DebugInformationFormat Condition="'$(Configuration)|$(Platform)'=='Debug|ARM64'">ProgramDatabase</DebugInformationFormat>
+      <BasicRuntimeChecks Condition="'$(Configuration)|$(Platform)'=='Debug|ARM64'">Default</BasicRuntimeChecks>
+    </ClCompile>
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />
@@ -263,4 +283,9 @@
   <PropertyGroup>
     <VbsEnclaveVirtualTrustLayer>Enclave</VbsEnclaveVirtualTrustLayer>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|ARM64'">
+    <LinkIncremental>false</LinkIncremental>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|ARM64'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" />
 </Project>

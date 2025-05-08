@@ -66,6 +66,7 @@ In your **enclave** projects .vcxproj or .props file add the following:
 <PropertyGroup>
     <VbsEnclaveVirtualTrustLayer>Enclave</VbsEnclaveVirtualTrustLayer>
     <VbsEnclaveEdlPath>Absolute-Path-To-Your-.Edl-File</VbsEnclaveEdlPath>
+    <Namespace>Namespace-for-the-generated-code</Namespace>
 </PropertyGroup>
 ```
 

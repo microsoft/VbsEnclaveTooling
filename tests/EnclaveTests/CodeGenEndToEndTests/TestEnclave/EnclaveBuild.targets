@@ -14,9 +14,6 @@
         -->
         <EnclaveSignRootCertName Condition="'$(EnclaveSignRootCertName)' == ''"></EnclaveSignRootCertName>
         <EnclaveSignTargetName>$(OutDir)$(TargetName).dll</EnclaveSignTargetName>
-
-        <!-- Make sure the VirtualTrustLayer is set to Enclave so the enclave generated files get added at compile time -->
-        <VbsEnclaveVirtualTrustLayer>Enclave</VbsEnclaveVirtualTrustLayer>
     </PropertyGroup>
     <Target
       Name="TestSignEnclaves"

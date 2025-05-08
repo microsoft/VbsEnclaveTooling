@@ -87,6 +87,14 @@
     <IncludePath>$(VC_IncludePath);$(WindowsSDK_IncludePath);$(ProjectDir);$(SolutionDir)src\ToolingSharedLibrary\Includes</IncludePath>
     <TargetName>ToolingSharedLibrary</TargetName>
   </PropertyGroup>
+  <PropertyGroup>
+    <!-- 
+        Vcpkg No longer allows the platform name to be in caps. This prevents building arm64 binaries on x64 machines that
+        have arm64EC build tools enabled in VS 17.12+. So explicitly update the name to be lower case to prevent build failures.
+        See: https://developercommunity.visualstudio.com/t/vcpkg-fails-for-ARM64-target-in-Visual-S/10789035?sort=newest&topics=Fixed-in%3A+Visual+Studio+2017+version+15.2
+    -->
+    <VcpkgPlatformTarget Condition="'$(Platform)'=='ARM64'">arm64</VcpkgPlatformTarget>
+  </PropertyGroup>
   <PropertyGroup Label="Vcpkg" Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <VcpkgUseStatic>true</VcpkgUseStatic>
     <VcpkgUseMD>false</VcpkgUseMD>
@@ -97,10 +105,14 @@
   <PropertyGroup Label="Vcpkg" Condition="'$(Configuration)|$(Platform)'=='Debug|ARM64'">
     <VcpkgUseStatic>true</VcpkgUseStatic>
     <VcpkgUseMD>false</VcpkgUseMD>
+    <VcpkgTriplet>arm64-windows</VcpkgTriplet>
+    <VcpkgHostTriplet>arm64-windows</VcpkgHostTriplet>
   </PropertyGroup>
   <PropertyGroup Label="Vcpkg" Condition="'$(Configuration)|$(Platform)'=='Release|ARM64'">
     <VcpkgUseStatic>true</VcpkgUseStatic>
     <VcpkgUseMD>false</VcpkgUseMD>
+    <VcpkgTriplet>arm64-windows</VcpkgTriplet>
+    <VcpkgHostTriplet>arm64-windows</VcpkgHostTriplet>
   </PropertyGroup>
   <PropertyGroup Label="Vcpkg" Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <VcpkgUseStatic>true</VcpkgUseStatic>

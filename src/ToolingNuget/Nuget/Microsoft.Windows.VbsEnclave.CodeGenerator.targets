@@ -28,7 +28,7 @@
         <!-- Ensure that the Edl file exists -->
         <Error Condition="!Exists('$(VbsEnclaveEdlPath)')" Text="The specified .edl file '$(VbsEnclaveEdlPath)' does not exist. Make sure the path to the .edl file is valid and inside the 'VbsEnclaveEdlPath' attribute in the packages .targets file." />
         <Error Condition="!Exists('$(VbsEnclaveExeFilePath)')" Text="Couldn't find tooling executable file '$(VbsEnclaveExeFilePath)'. Make sure the path to the executable file is valid and inside the 'VbsEnclaveExeFilePath' attribute in the packages .targets file." />
-
+        
         <!-- Generate the codegen files using the vbsenclavetooling-->
         <PropertyGroup>
             <VbsEnclaveToolingExecutionCommand>
@@ -61,6 +61,17 @@
         </Link>
     </ItemDefinitionGroup>
 
+    <!-- Add enclave lib properties based on the platform. -->
+    <PropertyGroup Condition="'$(Platform)'=='x64' AND '$(VbsEnclaveVirtualTrustLayer)' == 'Enclave'">
+        <VC_LibraryPath_Enclave>$(VC_LibraryPath_VC_x64_Desktop)\..\$(Platform)\enclave</VC_LibraryPath_Enclave>
+        <VBS_Enclave_Dependencies Condition="'$(VBS_Enclave_Dependencies)' == ''">>$(VC_LibraryPath_Enclave)\libcmt.lib;$(VC_LibraryPath_Enclave)\libvcruntime.lib;$(winsdk_cpp_x64_root)\um\x64\vertdll.lib;$(winsdk_cpp_x64_root)\um\x64\bcrypt.lib;$(winsdk_cpp_x64_root)\ucrt_enclave\x64\ucrt.lib</VBS_Enclave_Dependencies>
+    </PropertyGroup>
+
+    <PropertyGroup Condition="'$(Platform)'=='ARM64' AND '$(VbsEnclaveVirtualTrustLayer)' == 'Enclave'">
+        <VC_LibraryPath_Enclave>$(VC_LibraryPath_VC_arm64_Desktop)\..\$(Platform)\enclave</VC_LibraryPath_Enclave>
+        <VBS_Enclave_Dependencies Condition="'$(VBS_Enclave_Dependencies)' == ''">$(VC_LibraryPath_Enclave)\libcmt.lib;$(VC_LibraryPath_Enclave)\libvcruntime.lib;$(winsdk_cpp_arm64_root)\um\arm64\vertdll.lib;$(winsdk_cpp_arm64_root)\um\arm64\bcrypt.lib;$(winsdk_cpp_arm64_root)\ucrt_enclave\arm64\ucrt.lib</VBS_Enclave_Dependencies>
+    </PropertyGroup>
+    
     <Target Name="AddGeneratedFilesToBuild"
             BeforeTargets="ClCompile;ClInclude">
         <!-- Make sure the generated cpp files are added to build without the developer needing to explicitly add them to their project. -->
