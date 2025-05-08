@@ -91,7 +91,7 @@ Also see the docs on the `.edl` format and `CodeGeneration` [here](./docs/Edl.md
    and the `SDK` nuget package can also be used without the `CodeGenerator` nuget package. They do not rely on each other.
 
 ### Strict memory access
-Strict memory access (ENABLE_ENCLAVE_RESTRICT_CONTAINING_PROCESS_ACCESS), when enabled, is a security feature that prevents the enclave from referencing VTL0 memory.
+Strict memory access (see [EnclaveRestrictContainingProcessAccess](https://learn.microsoft.com/en-us/windows/win32/api/winenclaveapi/nf-winenclaveapi-enclaverestrictcontainingprocessaccess)), when enabled, is a security feature that prevents the enclave from referencing VTL0 memory.
 
 It must be enabled for 'release' builds.
 
