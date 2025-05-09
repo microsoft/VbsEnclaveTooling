@@ -154,7 +154,7 @@ R"({} = *{};)";
 R"({} = static_cast<FlatbuffersDevTypes::{}>(*{});)";
 
     static inline constexpr std::string_view c_dev_type_to_flatbuffer_conversion_ptr_for_struct =
-R"({} = {}::ToFlatBuffer({});)";
+R"({} = {}::ToFlatBuffer(*{});)";
 
     static inline constexpr std::string_view c_dev_type_to_flatbuffer_conversion_basic =
 R"(        
@@ -230,11 +230,11 @@ R"(
 
     static inline constexpr std::string_view c_flatbuffer_to_dev_type_conversion_linear_vector_structs =
 R"(        
-        {}.resize({}.size());
+        {}.reserve({}.size());
         for(size_t i = 0; i < {}.size() ; i ++)
         {{
             if ({}[i] == nullptr) continue;
-            {}[i] = {}::{}({}[i]);
+            {}.emplace_back({}::{}({}[i]));
         }}
 )";
 
@@ -259,17 +259,23 @@ R"(
 )";
 
     static inline constexpr std::string_view c_flatbuffer_to_dev_type_conversion_ptr_for_primitive =
-R"(      
-        {} = std::make_unique<{}>(); 
-        THROW_IF_NULL_ALLOC({}.get());
-        *{} = {};
+R"(    
+        if ({})
+        {{
+            {} = std::make_unique<{}>(); 
+            THROW_IF_NULL_ALLOC({}.get());
+            *{} = {}.value();
+        }} 
 )";
 
     static inline constexpr std::string_view c_flatbuffer_to_dev_type_conversion_ptr_for_enum =
 R"(     
-        {} = std::make_unique<{}>(); 
-        THROW_IF_NULL_ALLOC({}.get());
-        *{} = static_cast<DeveloperTypes::{}>({});
+        if ({})
+        {{
+            {} = std::make_unique<{}>(); 
+            THROW_IF_NULL_ALLOC({}.get());
+            *{} = static_cast<DeveloperTypes::{}>({}.value());
+        }}
 )";
 
     static inline constexpr std::string_view c_flatbuffer_to_dev_type_conversion_ptr_for_struct =

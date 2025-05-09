@@ -7,7 +7,7 @@
          -->
         <VbsEnclaveSdkPackageDir>$([System.IO.Path]::GetFullPath($(MSBuildThisFileDirectory)))..\..\</VbsEnclaveSdkPackageDir>
         <VbsEnclaveSDKSrc>$(VbsEnclaveSdkPackageDir)src</VbsEnclaveSDKSrc>
-        <VbsEnclaveCppSupportLib>$(VbsEnclaveSdkPackageDir)lib\native\$(Platform)\veil_enclave_cpp_support_lib.lib</VbsEnclaveCppSupportLib>
+        <VbsEnclaveSdkCppSupportLib>$(VbsEnclaveSdkPackageDir)lib\native\$(Platform)\veil_enclave_cpp_support_lib.lib</VbsEnclaveSdkCppSupportLib>
         <VbsEnclaveNugetPackEnclaveLibPath>$(VbsEnclaveSdkPackageDir)lib\native\$(Platform)\veil_enclave_lib.lib</VbsEnclaveNugetPackEnclaveLibPath>
         <VbsEnclaveNugetPackHostLibPath>$(VbsEnclaveSdkPackageDir)lib\native\$(Platform)\veil_host_lib.lib</VbsEnclaveNugetPackHostLibPath>
     </PropertyGroup>
@@ -17,23 +17,25 @@
             <AdditionalIncludeDirectories>$(VbsEnclaveSDKSrc);$(VbsEnclaveSdkPackageDir)\src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
         </ClCompile>
 
-        <Link Condition="$(VbsEnclaveVirtualTrustLayer) == 'Enclave'">
-            <AdditionalDependencies>$(VbsEnclaveCppSupportLib);$(VbsEnclaveNugetPackEnclaveLibPath);%(AdditionalDependencies)</AdditionalDependencies>
-
+        <!-- Add the C++ support lib for the SDK -->
+        <Link Condition="'$(VbsEnclaveVirtualTrustLayer)' == 'Enclave'">
+            <AdditionalDependencies>$(VbsEnclaveNugetPackEnclaveLibPath);$(VbsEnclaveSdkCppSupportLib);%(AdditionalDependencies)</AdditionalDependencies>
         </Link>
 
-        <Link Condition="$(VbsEnclaveVirtualTrustLayer) == 'HostApp' ">
-            <AdditionalDependencies>$(VbsEnclaveNugetPackHostLibPath);%(AdditionalDependencies)</AdditionalDependencies>
+        <Link Condition="'$(VbsEnclaveVirtualTrustLayer)' == 'HostApp' ">
+            <!-- The onecore.lib static library is required for host app projects. Add it by default to the host app-->
+            <AdditionalDependencies>onecore.lib;$(VbsEnclaveNugetPackHostLibPath);%(AdditionalDependencies)</AdditionalDependencies>
         </Link>
-
     </ItemDefinitionGroup>
 
     <Target Name="AddVeilExportFilesToBuild"
-        Condition="$(VbsEnclaveVirtualTrustLayer) == 'Enclave' "
+        Condition="'$(VbsEnclaveVirtualTrustLayer)' == 'Enclave' "
         BeforeTargets="ClCompile;ClInclude">
         <!-- Make sure the generated exports cpp files are added to build without the developer needing to explicitly add them to their project. -->
         <ItemGroup>
-            <_VeilWildCardClCompileFor_Cpp Include="$(VbsEnclaveSDKSrc)\Exports\**\*.cpp" />
+            <_VeilWildCardClCompileFor_Cpp Include="$(VbsEnclaveSDKSrc)\Exports\**\*.cpp">
+                <PrecompiledHeader>NotUsing</PrecompiledHeader>
+            </_VeilWildCardClCompileFor_Cpp>
             <_VeilWildCardClCompileFor_Cpp_h Include="$(VbsEnclaveSDKSrc)\Exports\**\*.h" />
             <ClCompile Include="@(_VeilWildCardClCompileFor_Cpp)"  />
             <ClInclude Include="@(_VeilWildCardClCompileFor_Cpp_h)"  />

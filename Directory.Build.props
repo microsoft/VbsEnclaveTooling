@@ -31,9 +31,6 @@
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <AdditionalOptions>/bigobj</AdditionalOptions>
     </ClCompile>
-    <Link>
-      <AdditionalDependencies>onecore.lib</AdditionalDependencies>
-    </Link>
   </ItemDefinitionGroup>
 
   <!-- Each release of Visual Studio produces larger intermediate files.

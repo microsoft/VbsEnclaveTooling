@@ -130,6 +130,9 @@ Try
         $nugetPackProperties += "vbsenclave_codegen_$platform"+"_exe=$vbsExePath;"
         $nugetPackProperties += "vcpkg_sources=$BaseRepositoryDirectory\src\ToolingSharedLibrary\vcpkg_installed\$platform-windows-static\$platform-windows-static;";
         $nugetPackProperties += "vcpkg_tools=$BaseRepositoryDirectory\src\ToolingSharedLibrary\vcpkg_installed\$platform-windows-static\$platform-windows\tools;";
+        $cppSupportLibPath = "$BaseRepositoryDirectory\_build\$platform\$configuration\veil_enclave_cpp_support_lib.lib"
+        $nugetPackProperties += "vbsenclave_codegen_cpp_support_$platform"+"_lib=$cppSupportLibPath;"
+
       }
     }
 

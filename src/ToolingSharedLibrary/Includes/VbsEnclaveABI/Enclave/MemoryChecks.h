@@ -2,8 +2,9 @@
 // Licensed under the MIT License.
 #pragma once 
 
-// __ENCLAVE_PROJECT__ must be defined inside the enclave project only.
-#ifdef __ENCLAVE_PROJECT__
+#if !defined(__ENCLAVE_PROJECT__)
+#error This header can only be included in an Enclave project (never the HostApp).
+#endif
 
 #include <VbsEnclaveABI\Shared\VbsEnclaveAbiBase.h>
 #include <winenclaveapi.h>
@@ -12,11 +13,11 @@
 
 namespace VbsEnclaveABI::Enclave::MemoryChecks
 {
-    extern LPCVOID s_enclave_memory_begin; // inclusive
-    extern LPCVOID s_enclave_memory_end;   // exclusive
-    extern std::atomic<bool> s_memory_bounds_calculated;
+    inline LPCVOID s_enclave_memory_begin; // inclusive
+    inline LPCVOID s_enclave_memory_end;   // exclusive
+    inline std::atomic<bool> s_memory_bounds_calculated{};
 
-    static inline HRESULT InitializeEnclaveDetails()
+    inline HRESULT InitializeEnclaveDetails()
     {
         if (!s_memory_bounds_calculated.load(std::memory_order::memory_order_acquire))
         {
@@ -44,7 +45,7 @@ namespace VbsEnclaveABI::Enclave::MemoryChecks
         return S_OK;
     }
 
-    static inline HRESULT GetEndOfEnclaveMemoryRange(
+    inline HRESULT GetEndOfEnclaveMemoryRange(
         _In_ const void* start_of_range,
         _Out_ const void** end_of_range,
         _In_ const size_t length)
@@ -63,7 +64,7 @@ namespace VbsEnclaveABI::Enclave::MemoryChecks
         return S_OK;
     }
 
-    static inline HRESULT CheckForVTL0Buffer(_In_ const void* buffer, _In_ const size_t length)
+    inline HRESULT CheckForVTL0Buffer(_In_ const void* buffer, _In_ const size_t length)
     {
         // If there are no bytes in the buffer, then it doesn't matter where the pointer points.
         // The empty set is a subset of every set.
@@ -86,7 +87,7 @@ namespace VbsEnclaveABI::Enclave::MemoryChecks
         return E_FAIL; // TODO: Add our own Hresult
     }
 
-    static inline HRESULT CheckForVTL1Buffer(
+    inline HRESULT CheckForVTL1Buffer(
         _In_ const void* buffer,
         _In_ const size_t length)
     {
@@ -118,6 +119,74 @@ namespace VbsEnclaveABI::Enclave::MemoryChecks
     {
         return CheckForVTL0Buffer(fn, 1);
     }
-}
 
-#endif // end __ENCLAVE_PROJECT__
+    namespace details
+    {
+        namespace RestrictContainingProcessAccess
+        {
+            inline bool ApiExpectsInvertedBoolean()
+            {
+                // Interrogate the API by setting to TRUE twice and seeing..
+                BOOL initialValue;
+                THROW_IF_FAILED(::EnclaveRestrictContainingProcessAccess(TRUE, &initialValue));
+
+                BOOL hopefullyTrueValue;
+                THROW_IF_FAILED(::EnclaveRestrictContainingProcessAccess(TRUE, &hopefullyTrueValue));
+
+                // ..is it still TRUE?
+                if (hopefullyTrueValue == TRUE)
+                {
+                    // The settings are consistent (TRUE in, TRUE out); we're on a new OS
+
+                    // Revert setting to initial value
+                    THROW_IF_FAILED(::EnclaveRestrictContainingProcessAccess(initialValue, nullptr));
+
+                    return false;
+                }
+                else
+                {
+                    // The settings are inconsistent (TRUE in, FALSE out); we're on an old OS
+        
+                    // Revert setting to initial value (by passing in the inverse)
+                    THROW_IF_FAILED(::EnclaveRestrictContainingProcessAccess(!initialValue, nullptr));
+
+                    return true;
+                }
+            }
+
+            inline BOOL RestrictionBoolean()
+            {
+                // Check if the API expects to pass false 'FALSE' to enable restricted memory (e.g. downlevel Windows)
+                static const BOOL s_restrictionBooleanValue = ApiExpectsInvertedBoolean() ? FALSE : TRUE;
+                return s_restrictionBooleanValue;
+            }
+
+            enum class RestrictionSetting
+            {
+                Restrict,
+                Unrestrict
+            };
+
+            inline BOOL RestrictionSettingToBool(RestrictionSetting restrictionIntention)
+            {
+                return restrictionIntention == RestrictionSetting::Restrict ? RestrictionBoolean() : !RestrictionBoolean();
+            }
+
+            inline RestrictionSetting SetRestrictionSetting(RestrictionSetting restrictionIntention)
+            {
+                BOOL previousValue;
+                BOOL value = RestrictionSettingToBool(restrictionIntention);
+                THROW_IF_FAILED(::EnclaveRestrictContainingProcessAccess(value, &previousValue));
+                return previousValue ? RestrictionSetting::Restrict : RestrictionSetting::Unrestrict;
+            }
+        }
+    }
+
+    inline HRESULT EnableEnclaveRestrictContainingProcessAccess() noexcept try
+    {
+        using namespace details::RestrictContainingProcessAccess;
+        SetRestrictionSetting(RestrictionSetting::Restrict);
+        return S_OK;
+    }
+    CATCH_RETURN()
+}

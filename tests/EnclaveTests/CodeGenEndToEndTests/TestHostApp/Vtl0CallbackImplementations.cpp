@@ -86,7 +86,8 @@ HRESULT TestEnclave::TestPassingPrimitivesAsOutValues_To_HostApp_callback(
 HRESULT TestEnclave::TestPassingPrimitivesAsInPointers_To_HostApp_callback(
     _In_ const std::uint8_t* uint8_val,
     _In_ const std::uint16_t* uint16_val,
-    _In_ const std::uint32_t* uint32_val)
+    _In_ const std::uint32_t* uint32_val,
+    _In_ const std::uint32_t* null_uint32_val)
 {
     // Confirm vtl1 parameters were correctly copied to vtl0 memory.
     THROW_IF_NULL_ALLOC(uint8_val);
@@ -95,6 +96,7 @@ HRESULT TestEnclave::TestPassingPrimitivesAsInPointers_To_HostApp_callback(
     THROW_HR_IF(E_INVALIDARG, 100 != *uint8_val);
     THROW_HR_IF(E_INVALIDARG, 100 != *uint16_val);
     THROW_HR_IF(E_INVALIDARG, 100 != *uint32_val);
+    THROW_HR_IF(E_INVALIDARG, null_uint32_val != nullptr);
 
     return S_OK;
 }
@@ -137,11 +139,14 @@ HRESULT TestEnclave::TestPassingPrimitivesAsOutPointers_To_HostApp_callback(
     return S_OK;
 }
 
-StructWithNoPointers TestEnclave::ComplexPassingofTypes_To_HostApp_callback(
+StructWithNoPointers TestEnclave::ComplexPassingOfTypes_To_HostApp_callback(
     _In_ const StructWithNoPointers& arg1,
     _Inout_ StructWithNoPointers& arg2,
     _Out_ std::unique_ptr<StructWithNoPointers>& arg3,
     _Out_ StructWithNoPointers& arg4,
+    _In_ const StructWithNoPointers* arg5_null,
+    _In_ const StructWithNoPointers* arg6,
+    _Inout_ StructWithNoPointers* arg7,
     _Out_ std::unique_ptr<std::uint64_t>& uint64_val)
 {
     arg3 = nullptr;
@@ -150,12 +155,47 @@ StructWithNoPointers TestEnclave::ComplexPassingofTypes_To_HostApp_callback(
 
     // check in parm is expected value
     THROW_HR_IF(E_INVALIDARG, !CompareStructWithNoPointers(arg1, struct_to_return));
+    THROW_HR_IF(E_INVALIDARG, arg5_null != nullptr);
+    THROW_HR_IF(E_INVALIDARG, !CompareStructWithNoPointers(*arg6, struct_to_return));
+    THROW_HR_IF(E_INVALIDARG, !CompareStructWithNoPointers(*arg7, {}));
     arg2 = struct_to_return;
 
     arg3 = std::make_unique<StructWithNoPointers>();
     *arg3 = CreateStructWithNoPointers();
     arg4 = CreateStructWithNoPointers();
     uint64_val = std::make_unique<std::uint64_t>(std::numeric_limits<std::uint64_t>::max());
+    *arg7 = CreateStructWithNoPointers();
+
+    return struct_to_return;
+}
+
+StructWithPointers TestEnclave::ComplexPassingOfTypesThatContainPointers_To_HostApp_callback(
+    _In_ const StructWithPointers* arg1_null,
+    _In_ const StructWithPointers* arg2,
+    _Inout_ StructWithPointers* arg3,
+    _Out_ std::unique_ptr<StructWithPointers>& arg4,
+    _Inout_ std::vector<StructWithPointers>& arg5,
+    _Inout_ std::array<StructWithPointers, 2>& arg6)
+{
+    arg4 = nullptr;
+    auto struct_to_return = CreateStructWithPointers();
+
+    // check in parm is expected value
+    THROW_HR_IF(E_INVALIDARG, arg1_null != nullptr);
+    THROW_HR_IF(E_INVALIDARG, !CompareStructWithPointers(*arg2, struct_to_return));
+    THROW_HR_IF(E_INVALIDARG, !CompareStructWithPointers(*arg3, {}));
+    THROW_HR_IF(E_INVALIDARG, !std::equal(arg5.begin(), arg5.end(), c_struct_with_ptrs_vec_empty.begin(), CompareStructWithPointers));
+    THROW_HR_IF(E_INVALIDARG, !std::equal(arg6.begin(), arg6.end(), c_struct_with_ptrs_vec_empty.begin(), CompareStructWithPointers));
+    *arg3 = CreateStructWithPointers();
+
+    arg4 = std::make_unique<StructWithPointers>();
+    *arg4 = CreateStructWithPointers();
+
+    for (size_t i = 0; i < c_struct_with_ptrs_arr_initialize.size(); i++)
+    {
+        arg5[i] = CreateStructWithPointers();
+        arg6[i] = CreateStructWithPointers();
+    }
 
     return struct_to_return;
 }
@@ -206,7 +246,7 @@ HRESULT TestEnclave::PassingPrimitivesInVector_To_HostApp_callback(
     return S_OK;
 }
 
-TestStruct2 TestEnclave::ComplexPassingofTypesWithVectors_To_HostApp_callback(
+TestStruct2 TestEnclave::ComplexPassingOfTypesWithVectors_To_HostApp_callback(
     _In_ const TestStruct1& arg1,
     _Inout_  TestStruct2& arg2,
     _Out_  TestStruct3& arg3,

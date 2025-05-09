@@ -75,7 +75,8 @@ namespace CodeGeneration
             const std::vector<Declaration>& fields);
 
         FunctionParametersInfo GetInformationAboutParameters(
-            const Function& function);
+            const Function& function,
+            const std::unordered_map<std::string, DeveloperType>& developer_types);
 
         // These functions are what the developer will call 
         // to invoke their impl function on the other side of the
@@ -84,6 +85,7 @@ namespace CodeGeneration
             const Function& function,
             std::string_view abi_function_to_call,
             bool should_be_inline,
+            const std::unordered_map<std::string, DeveloperType>& developer_types,
             const FunctionParametersInfo& param_info);
 
         // Intended to forward parameters to the developers callback Impl
@@ -113,9 +115,13 @@ namespace CodeGeneration
         
         HostToEnclaveContent BuildHostToEnclaveFunctions(
             std::string_view generated_namespace,
+            const std::unordered_map<std::string, DeveloperType>& developer_types,
             std::unordered_map<std::string, Function>& functions);
 
         EnclaveToHostContent BuildEnclaveToHostFunctions(
+            std::string_view generated_namespace,
+            std::string_view generated_class_name,
+            const std::unordered_map<std::string, DeveloperType>& developer_types,
             std::unordered_map<std::string, Function>& functions);
 
         std::string CombineAndBuildHostAppEnclaveClass(

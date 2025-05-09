@@ -2,10 +2,13 @@
 // Licensed under the MIT License.
 #pragma once 
 
-// __ENCLAVE_PROJECT__ must be defined inside the enclave project only. If it is defined
-// inside the host, the host won't build as winenclaveapi
-// is not compatible in an non enclave environment.
-#ifdef __ENCLAVE_PROJECT__
+#if !defined(__ENCLAVE_PROJECT__)
+#error This header can only be included in an Enclave project (never the HostApp).
+#endif
+
+#if !defined(__VBS_ENCLAVE_CODEGEN_VERSION__)
+#error "VBS enclave code generator consumed without without version specified"
+#endif
 
 #include <VbsEnclaveABI\Shared\VbsEnclaveAbiBase.h>
 #include <VbsEnclaveABI\Enclave\Vtl0Pointers.h>
@@ -15,46 +18,45 @@ using namespace VbsEnclaveABI::Enclave::EnclaveMemoryAllocation;
 using namespace VbsEnclaveABI::Enclave::Pointers;
 using namespace VbsEnclaveABI::Shared;
 
+// Version to ensure all translation units are consuming a consistent version of the codegen
+#pragma detect_mismatch("__VBS_ENCLAVE_CODEGEN_VERSION__", __VBS_ENCLAVE_CODEGEN_VERSION__)
+
+// Default all projects consuming VBS Enclave codegen to having restricted memory access enabled.
+// See: https://learn.microsoft.com/en-us/windows/win32/api/winenclaveapi/nf-winenclaveapi-enclaverestrictcontainingprocessaccess
+#if !defined(ENABLE_ENCLAVE_RESTRICT_CONTAINING_PROCESS_ACCESS)
+#if defined(_DEBUG)
+// Keep strict memory disabled for _DEBUG builds to workaround memory access issues in vertdll.dll
+#define ENABLE_ENCLAVE_RESTRICT_CONTAINING_PROCESS_ACCESS false
+#else
+#define ENABLE_ENCLAVE_RESTRICT_CONTAINING_PROCESS_ACCESS true
+#endif
+#endif
+
 // Content of this file should only be used within an enclave.
 namespace VbsEnclaveABI::Enclave
 {
-    // This will only be available in debug mode. Accessor Functions have not been ported to GE_Current yet
-    // so these place holders will be used until then. This will mean release mode won't build which
-    // should be fine until its ported in Feburary, at which point this entire ifndef block can be removed.
-    #ifndef NDEBUG
-        // REMOVE WHEN PORTED to GE_Current
-        HRESULT static inline
-            EnclaveCopyIntoEnclave(
-                _Out_writes_bytes_(NumberOfBytes) VOID* EnclaveAddress,
-                _In_reads_bytes_(NumberOfBytes) const VOID* UnsecureAddress,
-                _In_ SIZE_T NumberOfBytes
-            )
+    void static inline
+        EnableEnclaveRestrictContainingProcessAccessOnce()
+    {
+        // Do a one-time enablement of process memory restriction setting if module requests it
+        // Note: We don't have access to std::call_once
+        static std::atomic<bool> s_have_run_once {};
+        if (!s_have_run_once.load(std::memory_order_acquire))
         {
-            RETURN_IF_FAILED(CheckForVTL1Buffer(EnclaveAddress, NumberOfBytes));
-            RETURN_IF_FAILED(CheckForVTL0Buffer(UnsecureAddress, NumberOfBytes));
-            memcpy_s(EnclaveAddress, NumberOfBytes, UnsecureAddress, NumberOfBytes);
-            return S_OK;
+            static wil::srwlock s_lock {};
+            auto lock = s_lock.lock_exclusive();
+            if (!s_have_run_once.load(std::memory_order_relaxed))
+            {
+                FAIL_FAST_IF_FAILED(EnableEnclaveRestrictContainingProcessAccess());
+                s_have_run_once.store(true, std::memory_order_release);
+            }
         }
-
-        // REPLACE WITH REAL FUNCTIONS WHEN PORTED to GE_Current
-        HRESULT static inline
-            EnclaveCopyOutOfEnclave(
-                _Out_writes_bytes_(NumberOfBytes) VOID* UnsecureAddress,
-                _In_reads_bytes_(NumberOfBytes) const VOID* EnclaveAddress,
-                _In_ SIZE_T NumberOfBytes
-            )
-        {
-            RETURN_IF_FAILED(CheckForVTL1Buffer(EnclaveAddress, NumberOfBytes));
-            RETURN_IF_FAILED(CheckForVTL0Buffer(UnsecureAddress, NumberOfBytes));
-            memcpy_s(UnsecureAddress, NumberOfBytes, EnclaveAddress, NumberOfBytes);
-            return S_OK;
-        }
-    #endif
+    }
 
     // Generated ABI export functions in VTL1 call this function as an entry point to calling
     // its associated VTL1 ABI impl function.
     template <typename ParamsT, typename FuncImplT>
-    static inline HRESULT CallVtl1ExportFromVtl1(
+    inline HRESULT CallVtl1ExportFromVtl1(
         _In_ void* context,
         _In_ FuncImplT abi_impl_func)
     {
@@ -84,9 +86,11 @@ namespace VbsEnclaveABI::Enclave
 
         auto flatbuffer_in_params = UnpackFlatbufferWithSize<ParamsT>(input_buffer.get(), forward_params_size);
         flatbuffers::FlatBufferBuilder flatbuffer_out_params_builder {};
+
+        // Call user implementation
         abi_impl_func(flatbuffer_in_params, flatbuffer_out_params_builder);
 
-        // VTL0 will free this memory.
+        // Copy the return flatbuffer data (VTL0 will free this memory)
         vtl0_memory_ptr<std::uint8_t> vtl0_return_params;
         RETURN_IF_FAILED(AllocateVtl0Memory(&vtl0_return_params, flatbuffer_out_params_builder.GetSize()));
         RETURN_IF_NULL_ALLOC(vtl0_return_params.get());
@@ -95,8 +99,19 @@ namespace VbsEnclaveABI::Enclave
             flatbuffer_out_params_builder.GetBufferPointer(),
             flatbuffer_out_params_builder.GetSize()));
 
-        vtl0_context_ptr->m_returned_parameters.buffer = vtl0_return_params.get();
-        vtl0_context_ptr->m_returned_parameters.buffer_size = flatbuffer_out_params_builder.GetSize();
+        auto buffer = vtl0_return_params.get();
+        auto bufferSize = flatbuffer_out_params_builder.GetSize();
+
+        // Copy the return flatbuffer pointer & size (into the vtl0 function_context)
+        RETURN_IF_FAILED(EnclaveCopyOutOfEnclave(
+            &vtl0_context_ptr->m_returned_parameters.buffer_size,
+            &bufferSize,
+            sizeof(bufferSize)));
+        RETURN_IF_FAILED(EnclaveCopyOutOfEnclave(
+            &vtl0_context_ptr->m_returned_parameters.buffer,
+            &buffer,
+            sizeof(buffer)));
+
         vtl0_return_params.release();
 
         return S_OK;
@@ -105,13 +120,13 @@ namespace VbsEnclaveABI::Enclave
     // Abi functions in VTL1 call this function as an entry point to calling
     // its associated VTL0 callback.
     template <typename ParamsT, typename ReturnParamsT>
-    static inline HRESULT CallVtl0CallbackFromVtl1(
-        _In_ std::uint32_t function_index,
+    inline HRESULT CallVtl0CallbackFromVtl1(
+        _In_ std::string_view function_name,
         _In_ flatbuffers::FlatBufferBuilder& flatbuffer_in_params_builder,
         _Inout_ ReturnParamsT& callback_result)
     {
-        bool func_index_in_table = s_vtl0_function_table.contains(function_index);
-        RETURN_HR_IF(E_INVALIDARG, !func_index_in_table);
+        LPENCLAVE_ROUTINE vtl0_callback = TryGetFunctionFromVtl0FunctionTable(function_name);
+        RETURN_HR_IF_NULL(E_INVALIDARG, vtl0_callback);
 
         vtl0_memory_ptr<std::uint8_t> vtl0_in_params;
         RETURN_IF_FAILED(AllocateVtl0Memory(&vtl0_in_params, flatbuffer_in_params_builder.GetSize()));
@@ -137,7 +152,6 @@ namespace VbsEnclaveABI::Enclave
             sizeof(EnclaveFunctionContext)));
 
         void* vtl0_output_buffer;
-        auto vtl0_callback = reinterpret_cast<LPENCLAVE_ROUTINE>(s_vtl0_function_table.at(function_index));
 
         RETURN_IF_WIN32_BOOL_FALSE((CallEnclave(
             vtl0_callback,
@@ -179,5 +193,3 @@ namespace VbsEnclaveABI::Enclave
         return S_OK;
     }
 }
-
-#endif // end __ENCLAVE_PROJECT__
