@@ -11,23 +11,28 @@ features that interact with a VBS enclave easier. To learn more about VBS enclav
 | C++ (20 or later) |    ✅     |
 | Rust              |    ❌     |
 
+#### Operating System Support
+
+| OS                  | Build                 |
+|---------------------|-----------------------|
+| Windows 11 24H2     | `26100.3624 or later` |
+
+Developers will need to make sure they have `Windows SDK version 26100.3624` or later installed on their system or integrated into their Visual Studio projects.
+
+The Windows SDK can be installed in one of the following ways:
+1. via installing the `Windows 11 SDK (10.0.26100.0)` individual component in the `Visual Studio v17.14` installer
+1. via using the `Windows 11 SDK (10.0.26100.0)` installer through the [Windows SDK installer website](https://developer.microsoft.com/windows/downloads/windows-sdk/)
+1. via adding the [Microsoft.Windows.SDK.CPP](https://www.nuget.org/packages/Microsoft.Windows.SDK.CPP/) packages to your Visual Studio project via Nuget.
 
 Building locally
 ------------
 
 ### Prerequistes
 
-##### Operating System
-
-| OS                  | Build               |
-|---------------------|---------------------|
-| Windows 11          | 26100.2314 or later |
-| Windows Server 2025 | All                 |
-
 ##### Build system
-| IDE                   | Build engine |
-|-----------------------|--------------|
-| Visual Studio 2022 17 | msbuild      |
+| IDE                   | Build engine | Compiler |
+|-----------------------|--------------|----------|
+| Visual Studio 2022 17 |   MSBuild    |   MSVC   |
 
 ##### Repository
 
@@ -84,7 +89,7 @@ In your **hostApp** projects .vcxproj or .props file add the following:
 
 This will kick off the code generation and ingest the SDK inside your **hostApp** project at build time.
 
-*Note* : Be sure to update the `<VbsEnclaveEdlPath>`, `<Namespace>` and `<Vtl0ClassName>` properties with valid values.
+*Note* : Be sure to update the `<VbsEnclaveEdlPath>`, `<VbsEnclaveNamespace>` and `<VbsEnclaveVtl0ClassName>` properties with valid values.
 
 Also see the docs on the `.edl` format and `CodeGeneration` [here](./docs/Edl.md) and [here](./docs/CodeGeneration.md) for more information on them.
 
@@ -96,7 +101,7 @@ Strict memory access (see [EnclaveRestrictContainingProcessAccess](https://learn
 
 It must be enabled for 'release' builds.
 
-*Note* : Strict memory access is currently disabled for 'debug' builds to work around a vertdll.dll memory access issue.
+*Note* : Strict memory access is currently disabled for `debug` builds to work around a vertdll.dll memory access issue.
 
 *Note* : To disable strict memory access for development purposes, you can define a the preprocessor directive ```ENABLE_ENCLAVE_RESTRICT_CONTAINING_PROCESS_ACCESS=false``` in your project file.
 
