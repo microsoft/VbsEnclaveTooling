@@ -2,7 +2,7 @@
 
 ## Prerequisites:
  
-* Windows SDK 10.0.26100.2454 or higher is installed. Latest SDK update is published to:
+* Windows SDK 10.0.26100.3916 or higher is installed. Latest SDK update is published to:
   * [https://developer.microsoft.com/en-us/windows/downloads/windows-sdk/](https://developer.microsoft.com/en-us/windows/downloads/windows-sdk/) 
  
 * Follow instructions to build the repo to generate the 2 nuget packages:
@@ -13,7 +13,7 @@ Full instructions can be found at [VBS Enclaves dev guide](https://learn.microso
 
 !IMPORTANT! The following steps turn off security features in Windows and allows unsigned drivers to load. Consider only doing so when needed for testing, or setup a test vm. 
 * The device must have a TPM that is enabled in the BIOS.
-* Ensure you are running on a device with Windows 11, version 10.0.26100.2454 or higher
+* Ensure you are running on a device with Windows 11, version 10.0.26100.3916 or higher
 * Turn off [Secure Boot](https://learn.microsoft.com/en-us/windows-hardware/manufacture/desktop/disabling-secure-boot?view=windows-11)
   * If Bitlocker is enabled, you will need access to your recovery keys
 * Enable [Test Signing](https://learn.microsoft.com/en-us/windows-hardware/drivers/install/the-testsigning-boot-configuration-option). From an elevated command prompt, run the following and reboot: 
@@ -136,7 +136,7 @@ Add a new DLL project and to the solution and configure it. This is the enclave 
     }
     ```
 4.	Unload the project file and edit it. Add new properties for the libraries and EDL code generator, typically placed after the default "User Macros" properties. 
-    * Note the $(VBS_Enclave_Dependencies) path should be updated depending if you installed the Windows SDK 10.0.26100.2454+, or installed Microsoft.Windows.SDK.CPP & Microsoft.Windows.SDK.CPP.X64 & ARM64 nuget packages.
+    * Note the $(VBS_Enclave_Dependencies) path should be updated depending if you installed the Windows SDK 10.0.26100.3916+, or installed Microsoft.Windows.SDK.CPP & Microsoft.Windows.SDK.CPP.X64 & ARM64 nuget packages.
     * Update the name of the test certificate created earlier
     ```html
     <!-- ********* -->
