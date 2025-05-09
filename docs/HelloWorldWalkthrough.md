@@ -48,8 +48,8 @@ This sample will create a Host app, a DLL project and include a solution level f
             trusted
             {
                 uint32_t DoSecretMath(
-                uint32_t val1,
-                uint32_t val2
+                    uint32_t val1,
+                    uint32_t val2
                 );
             };
         };
@@ -57,10 +57,10 @@ This sample will create a Host app, a DLL project and include a solution level f
 ### Add the Enclave DLL project to the solution
 Add a new DLL project and to the solution and configure it. This is the enclave dll.
 1. Right click add project, DLL Project, name it **MySecretVBSEnclave.vcxproj**
-2. Add references to the two nuget packages you created when you built the repro, located under \<repo root\>\\_build folder. Right-Click on the project, choose Manage Nuget packages – add a new package source for the _build folder where these were placed, and install the packages:
+1. Add references to the two nuget packages you created when you built the repro, located under \<repo root\>\\_build folder. Right-Click on the project, choose Manage NuGet packages – add a new package source for the _build folder where these were placed, and install the packages:
     * Microsoft.Windows.VbsEnclave.SDK.0.0.0.nupkg
     * Microsoft.Windows.VbsEnclave.CodeGenerator.0.0.0.nupkg
-3. Update DLLMain.cpp with the enclave configuration information as follows. For more information on these values and how they impact enclave sealing policy, please refer to https://learn.microsoft.com/en-us/windows/win32/api/ntenclv/ne-ntenclv-enclave_sealing_identity_policy
+1. Update DLLMain.cpp with the enclave configuration information as follows. For more information on these values and how they impact enclave sealing policy, please refer to https://learn.microsoft.com/en-us/windows/win32/api/ntenclv/ne-ntenclv-enclave_sealing_identity_policy
     ```c
     #include "pch.h"
     #include <array>
@@ -80,15 +80,15 @@ Add a new DLL project and to the solution and configure it. This is the enclave 
         }
     
     // Example version - 10.0.26100.0 -> A.0.65F4.00
-    #define ENCLAVE_IMAGE_VERSION 0xA065F400 
+    #define SAMPLE_ENCLAVE_IMAGE_VERSION 0xA065F400 
 
-    //Security version number
+    // Security version number
     #define SAMPLE_ENCLAVE_SVN 1000
     
     #define ENCLAVE_ADDRESS_SPACE_SIZE \
         0x20000000          // The expected virtual size of the private address range 
-                            // for the enclave, in bytes, 512MB
-                            // The host call to ::create(,,,<size>) must be <= value
+                            // for the enclave, in bytes, in 2MB increments. (512MB)
+                            // The host call to ::create(,,,<size>) must be the same value
     
     // Enclave image creation policies
     #ifndef ENCLAVE_MAX_THREADS
@@ -112,9 +112,9 @@ Add a new DLL project and to the solution and configure it. This is the enclave 
         0,
         0,
         SAMPLE_ENCLAVE_FAMILY_ID,
-        SAMPLE_ENCLAVE_SNAPSHOT_IMAGE_ID,
-        ENCLAVE_IMAGE_VERSION,
-        SAMPLE_SNAPSHOT_ENCLAVE_SVN,
+        SAMPLE_ENCLAVE_IMAGE_ID,
+        SAMPLE_ENCLAVE_IMAGE_VERSION,
+        SAMPLE_ENCLAVE_SVN,
         ENCLAVE_ADDRESS_SPACE_SIZE,
         ENCLAVE_MAX_THREADS,
         IMAGE_ENCLAVE_FLAG_PRIMARY_IMAGE};
@@ -135,7 +135,7 @@ Add a new DLL project and to the solution and configure it. This is the enclave 
         return TRUE;
     }
     ```
-4.	Unload the project file and edit it. Add new properties for the libraries and EDL code generator, typically placed after the default "User Macros" properties. 
+1.	Unload the project file and edit it. Add new properties for the libraries and EDL code generator, typically placed after the default "User Macros" properties. 
     * Note the $(VBS_Enclave_Dependencies) path should be updated depending if you installed the Windows SDK 10.0.26100.3916+, or installed Microsoft.Windows.SDK.CPP & Microsoft.Windows.SDK.CPP.X64 & ARM64 nuget packages.
     * Update the name of the test certificate created earlier
     ```html
@@ -181,7 +181,7 @@ Add a new DLL project and to the solution and configure it. This is the enclave 
         <SIGNTOOL_Command>signtool sign /ph /fd SHA256 /n "$(EnclaveCertName)" "$(OutDir)$(TargetName)$(TargetExt)"</SIGNTOOL_Command>
     </PropertyGroup>
 
-5. Add a Post-Build step to the build configurations
+1. Add a Post-Build step to the build configurations
     <!-- ********* -->
     <!-- Post-Build steps - Apply VEIID protection and sign the enclave dll -->
     <!-- ********* -->
@@ -195,20 +195,20 @@ Add a new DLL project and to the solution and configure it. This is the enclave 
     </PostBuildEvent>
     ```
 
-6. Save and Reload the project. 
-7. Via Project Properties, set C/C++ compilation settings:
+1. Save and Reload the project. 
+1. Via Project Properties, set C/C++ compilation settings:
    * Precompiled headers -> Not using 
    * Basic runtime checks –> Default
    * C++ Language Standard -> /std:c++ 20 (due to usage of span)
    * Conformance mode -> Yes (permissive-)
    * Library – MultiThreaded Debug /MTd, and /MT for Release builds
 
-7.	Via Project Properties, Set Linker settings:
+1.	Via Project Properties, Set Linker settings:
     * Enable Incremental Linking -> No (/INCREMENTAL:NO)
     * Ignore All Default Libraries -> Yes (/NODEFAULTLIB)
     * Add Additional Dependencies -> $(VBS_Enclave_Dependencies) 
     * For command line, add “additional options” -> /ENCLAVE /INTEGRITYCHECK /GUARD:MIXED
-8.	Go to solution explorer and open PCH.H and update it:
+1.	Go to solution explorer and open PCH.H and update it:
       * Remove #include “framework.h”
       * Add the enclave header, winenclave.h, eg:
         ```cpp
@@ -223,10 +223,10 @@ Add a new DLL project and to the solution and configure it. This is the enclave 
         
         #endif //PCH_H
         ```
-9.	Right click the dll project and choose “Build”. This will generate the projection layer for the enclave dll. You should have a couple initial error messages after code generation due to lack of implementation. We will fix this in the next step.
+1.	Right click the dll project and choose “Build”. This will generate the projection layer for the enclave dll. You should have a couple initial error messages after code generation due to lack of implementation. We will fix this in the next step.
       * For reference on what the code generation built, choose 'Show All Files' in solution explorer and navigate to “Generated Files\VbsEnclave\Enclave\Exports\\". View **Implementations.h** which is of most interest. This file shows the marshalling of parameters and memory safety checks for the enclave.
 
-10.	Add a cpp file to the dll project and name it “MySecretEnclaveExports.cpp”. This is where to put the code for the enclave logic. You need to reference the Implementations.h, and then implement the interface defined in the EDL file:
+1.	Add a cpp file to the dll project and name it “MySecretEnclaveExports.cpp”. This is where to put the code for the enclave logic. You need to reference the Implementations.h, and then implement the interface defined in the EDL file:
     ```cpp
     #include <VbsEnclave\Enclave\Implementations.h>
     
@@ -235,16 +235,16 @@ Add a new DLL project and to the solution and configure it. This is the enclave 
     	return val1*val2;
     }
     ```
-11.	Choose Build again. There should be no errors, indicating the VBS Enclave is ready to be used.
+1.	Choose Build again. There should be no errors, indicating the VBS Enclave is ready to be used.
 
 ### Build the host app
-1. In MyHostApp.vcxproj, add reference to the nuget packages, via Right-Click, Manage Nuget packages and refer to the local nuget feed created earlier:
+1. In MyHostApp.vcxproj, add reference to the nuget packages, via Right-Click, Manage NuGet packages and refer to the local nuget feed created earlier:
    * Microsoft.Windows.VBSEnclave.SDK 
    * Microsoft.Windows.VBSEnclave.CodeGenerator 
-2. In project properties, set compiler and linker flags as follows:
+1. In project properties, set compiler and linker flags as follows:
    * Compiler -> C/C++ Language Standard, choose **ISO C++20 Standard (/std:c++20)**
    * Linker –> Input ->Additional Dependencies, edit the list to add "**onecore.lib**"
-3. Add the projection layer properties to the project file
+1. Add the projection layer properties to the project file
    * Unload the project file and edit it, adding the following properties. The trust layer is optional for the host – host is assumed if missing.
    * TIP - To keep these properties in sync between projects, consider moving the first 3 properties into a separate '.props' file and import that into both projects.
         ```html
@@ -258,9 +258,9 @@ Add a new DLL project and to the solution and configure it. This is the enclave 
           </PropertyGroup>
           <!-- ************ -->
         ```
-4.	Right-Click on the project and choose “Build”, it should succeed. 
-5.	Choose “Show all files” in solution explorer and you should see the ‘Generated Files\VbsEnclave\HostApp” folder. To see the generated code, **Stubs.h** is of most interest to the host app.
-6.	In your “main” method, initialize the enclave and call its methods
+1.	Right-Click on the project and choose “Build”, it should succeed. 
+1.	Choose “Show all files” in solution explorer and you should see the ‘Generated Files\VbsEnclave\HostApp” folder. To see the generated code, **Stubs.h** is of most interest to the host app.
+1.	In your “main” method, initialize the enclave and call its methods
     * Add the host side include file from the SDK nuget package and the new Stubs.h code generated header.
         ```cpp
         #include <conio.h>
@@ -307,6 +307,6 @@ Add a new DLL project and to the solution and configure it. This is the enclave 
         _getch();
         ```
     
-7. Now right click and choose Build. It should report success.
-8. Press F5, and now you should be able to debug the sample app and see the result!
+1. Now right click and choose Build. It should report success.
+1. Press F5, and now you should be able to debug the sample app and see the result!
 ![alt text](image.png)
