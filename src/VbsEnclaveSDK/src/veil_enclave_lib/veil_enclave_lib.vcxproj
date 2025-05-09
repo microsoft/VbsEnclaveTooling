@@ -53,13 +53,6 @@
     <Import Project="$(SolutionDir)packages\Microsoft.Windows.SDK.CPP.10.0.26100.3916\build\native\Microsoft.Windows.SDK.cpp.targets" Condition="Exists('..\..\packages\Microsoft.Windows.SDK.CPP.10.0.26100.3916\build\native\Microsoft.Windows.SDK.cpp.targets')" />
   </ImportGroup>
   <PropertyGroup>
-    <WindowsSDK_LibraryPath_Platform>$(WindowsSDKLibDir)\um\$(Platform)</WindowsSDK_LibraryPath_Platform>
-    <VBS_Enclave_Dependencies>$(WindowsSDK_LibraryPath_Platform)\vertdll.lib;$(WindowsSDK_LibraryPath_Platform)\bcrypt.lib</VBS_Enclave_Dependencies>
-    <VC_LibraryPath_Enclave>$(VC_LibraryPath_VC_x64_Desktop)\..\$(Platform)\enclave</VC_LibraryPath_Enclave>
-    <WindowsSDK_LibraryPath_Enclave>$(WindowsSDK_LibraryPath)\..\ucrt_enclave\$(Platform)</WindowsSDK_LibraryPath_Enclave>
-    <VBS_Enclave_Dependencies>$(VC_LibraryPath_Enclave)\libcmt.lib;$(VC_LibraryPath_Enclave)\libvcruntime.lib;$(winsdk_cpp_x64_root)\um\x64\vertdll.lib;$(winsdk_cpp_x64_root)\um\x64\bcrypt.lib;$(winsdk_cpp_x64_root)\ucrt_enclave\x64\ucrt.lib</VBS_Enclave_Dependencies>
-  </PropertyGroup>
-  <PropertyGroup>
     <!-- Unclear why this variable doesn't exist in the .nuget pkg for the SDK -->
     <WindowsSdk_EnclaveIncludes_Path>$(WindowsSdkDir)Include\$(WindowsSDKBuildToolsVersion)</WindowsSdk_EnclaveIncludes_Path>
   </PropertyGroup>
