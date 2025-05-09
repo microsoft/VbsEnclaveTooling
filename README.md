@@ -17,11 +17,11 @@ features that interact with a VBS enclave easier. To learn more about VBS enclav
 |---------------------|-----------------------|
 | Windows 11 24H2     | `26100.3624 or later` |
 
-Developers will need to make sure they have the `Windows SDK version 26100.3624` or later installed on their system or integrated into their Visual Studio projects.
+Developers will need to make sure they have `Windows SDK version 26100.3624` or later installed on their system or integrated into their Visual Studio projects.
 
 The Windows SDK can be installed in one of the following ways:
 1. via installing the `Windows 11 SDK (10.0.26100.0)` individual component in the `Visual Studio v17.14` installer
-1. via installing the `Windows 11 SDK (10.0.26100.0)` through the [Windows SDK installer website](https://developer.microsoft.com/windows/downloads/windows-sdk/)
+1. via using the `Windows 11 SDK (10.0.26100.0)` installer through the [Windows SDK installer website](https://developer.microsoft.com/windows/downloads/windows-sdk/)
 1. via adding the [Microsoft.Windows.SDK.CPP](https://www.nuget.org/packages/Microsoft.Windows.SDK.CPP/) packages to your Visual Studio project via Nuget.
 
 Building locally
