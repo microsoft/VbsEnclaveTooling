@@ -44,6 +44,11 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ToolingNuget", "src\Tooling
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "veil_enclave_cpp_support_lib", "Common\veil_enclave_cpp_support_lib\veil_enclave_cpp_support_lib.vcxproj", "{26116633-98EC-4EAC-859C-139D020D10C9}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "PipelineTemplates", "PipelineTemplates", "{02EA681E-C7D8-13C7-8484-4AC65E1B71E8}"
+	ProjectSection(SolutionItems) = preProject
+		AzurePipelineTemplates\SyncMirror-Pipeline-Template.yml = AzurePipelineTemplates\SyncMirror-Pipeline-Template.yml
+	EndProjectSection
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|ARM64 = Debug|ARM64
