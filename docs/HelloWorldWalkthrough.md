@@ -281,13 +281,13 @@ This sample will create a Host app, a DLL project and include a solution level f
             ENCLAVE_VBS_FLAG_DEBUG
         #endif
         };
+
+        auto flags = EnclaveCreate_Flags;
     
         #ifndef _DEBUG
-            static_assert(*flags & ENCLAVE_VBS_FLAG_DEBUG) == true, "Do not use DEBUG flag for retail builds");
+            static_assert((flags & ENCLAVE_VBS_FLAG_DEBUG) == true, "Do not use DEBUG flag for retail builds");
         #endif
     
-        auto flags = EnclaveCreate_Flags;
-
         // Memory allocation must match enclave configuration (512MB)
         auto enclave = veil::vtl0::enclave::create(ENCLAVE_TYPE_VBS, ownerId, flags,
                                                  veil::vtl0::enclave::megabytes(512));
