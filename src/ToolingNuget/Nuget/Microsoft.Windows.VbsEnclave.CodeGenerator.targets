@@ -65,7 +65,7 @@
     <!-- Add enclave lib properties based on the platform. -->
     <PropertyGroup Condition="'$(Platform)'=='x64' AND '$(VbsEnclaveVirtualTrustLayer)' == 'Enclave'">
         <VC_LibraryPath_Enclave>$(VC_LibraryPath_VC_x64_Desktop)\..\$(Platform)\enclave</VC_LibraryPath_Enclave>
-        <VBS_Enclave_Dependencies Condition="'$(VBS_Enclave_Dependencies)' == ''">>$(VC_LibraryPath_Enclave)\libcmt.lib;$(VC_LibraryPath_Enclave)\libvcruntime.lib;$(winsdk_cpp_x64_root)\um\x64\vertdll.lib;$(winsdk_cpp_x64_root)\um\x64\bcrypt.lib;$(winsdk_cpp_x64_root)\ucrt_enclave\x64\ucrt.lib</VBS_Enclave_Dependencies>
+        <VBS_Enclave_Dependencies Condition="'$(VBS_Enclave_Dependencies)' == ''">$(VC_LibraryPath_Enclave)\libcmt.lib;$(VC_LibraryPath_Enclave)\libvcruntime.lib;$(winsdk_cpp_x64_root)\um\x64\vertdll.lib;$(winsdk_cpp_x64_root)\um\x64\bcrypt.lib;$(winsdk_cpp_x64_root)\ucrt_enclave\x64\ucrt.lib</VBS_Enclave_Dependencies>
     </PropertyGroup>
 
     <PropertyGroup Condition="'$(Platform)'=='ARM64' AND '$(VbsEnclaveVirtualTrustLayer)' == 'Enclave'">
