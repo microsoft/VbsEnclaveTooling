@@ -5,15 +5,14 @@
             The <VbsEnclaveCodegenPackageDir> should always point to this folder. Our targets file will be placed in
             <ProjectRoot>\packages\<name of nuget package>\build\native. 
          -->
-        <VbsEnclaveCodegenVersion>0.0.0-preview</VbsEnclaveCodegenVersion>
+        <VbsEnclaveCodegenVersion Condition="'$(VbsEnclaveCodegenVersion)' == ''">0.0.0-Dev</VbsEnclaveCodegenVersion>
         <VbsEnclaveCodegenPackageDir>$([System.IO.Path]::GetFullPath($(MSBuildThisFileDirectory)))..\..\</VbsEnclaveCodegenPackageDir>
-        <VbsEnclaveExeFilePath>$(VbsEnclaveCodegenPackageDir)bin\$(Platform)\edlcodegen.exe</VbsEnclaveExeFilePath>
+        <VbsEnclaveExeFilePath>$(VbsEnclaveCodegenPackageDir)bin\edlcodegen.exe</VbsEnclaveExeFilePath>
         <VbsEnclavePackageEnclaveAbiPath>$(VbsEnclaveCodegenPackageDir)src\VbsEnclaveABI</VbsEnclavePackageEnclaveAbiPath>
         <VbsEnclaveDeveloperEdlFileName>$([System.IO.Path]::GetFileName('$(VbsEnclaveEdlPath)'))</VbsEnclaveDeveloperEdlFileName>
         <VbsEnclaveCodeGenAbiCppSupportLib>$(VbsEnclaveCodegenPackageDir)lib\native\$(Platform)\veil_enclave_cpp_support_lib.lib</VbsEnclaveCodeGenAbiCppSupportLib>
         <VbsEnclaveGeneratedFilesDir>$(ProjectDir)Generated Files</VbsEnclaveGeneratedFilesDir>
         <VcpkgSupportDir>$(VbsEnclaveCodegenPackageDir)vcpkg</VcpkgSupportDir>
-        <FlatbuffersSupportLib>$(VcpkgSupportDir)\lib\flatbuffers.lib</FlatbuffersSupportLib>
         <FlatbuffersCompiler>$(VcpkgSupportDir)\tools\flatbuffers\flatc.exe</FlatbuffersCompiler>
         <VcpkgIncludesDir>$(VcpkgSupportDir)\include</VcpkgIncludesDir>
     </PropertyGroup>
@@ -33,7 +32,7 @@
         <!-- Generate the codegen files using the vbsenclavetooling-->
         <PropertyGroup>
             <VbsEnclaveToolingExecutionCommand>
-                "$(VbsEnclaveExeFilePath)" --Language "$(VbsEnclaveCodeGenLanguage)" --EdlPath "$(VbsEnclaveEdlPath)" --ErrorHandling "$(VbsEnclaveErrorHandling)" --OutputDirectory "$(VbsEnclaveGeneratedFilesDir)" --VirtualTrustLayer "$(VbsEnclaveVirtualTrustLayer)" --Vtl0ClassName "$(VbsEnclaveVtl0ClassName)" --Namespace "$(VbsEnclaveNamespace)" --FlatbuffersCompilerPath "$(FlatbuffersCompiler)" $(VbsEnclaveCodeGenAddSdkLinkageArg)
+                "$(VbsEnclaveExeFilePath)" --Language "$(VbsEnclaveCodeGenLanguage)" --EdlPath "$(VbsEnclaveEdlPath)" --ErrorHandling "$(VbsEnclaveErrorHandling)" --OutputDirectory "$(VbsEnclaveGeneratedFilesDir)" --VirtualTrustLayer "$(VbsEnclaveVirtualTrustLayer)" --Vtl0ClassName "$(VbsEnclaveVtl0ClassName)" --Namespace "$(VbsEnclaveNamespace)" --FlatbuffersCompilerPath "$(FlatbuffersCompiler)"
             </VbsEnclaveToolingExecutionCommand>
         </PropertyGroup>
 

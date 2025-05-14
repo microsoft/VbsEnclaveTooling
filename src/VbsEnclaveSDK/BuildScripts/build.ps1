@@ -1,16 +1,13 @@
 [CmdletBinding()]
 Param(
-    [ValidateSet('all', 'x64', 'arm64','X64', 'ARM64')]
+    [ValidateSet('x64', 'arm64')]
     [System.String]
-    $Platforms = "x64",
+    $Platform = "x64",
     
-    [ValidateSet('all', 'debug', 'release', 'Debug', 'Release')]
+    [ValidateSet('debug', 'release')]
     [System.String]
-    $Configurations = "debug",
+    $Configuration = "debug",
     
-    [System.Boolean]
-    $IsLocalBuild = $true,
-
     [System.Boolean]
     $BuildCodeGenNugetDependency = $true,
 
@@ -60,50 +57,21 @@ Options:
 $ErrorActionPreference = "Stop"
 $BuildRootDirectory = (Split-Path $MyInvocation.MyCommand.Path)
 $BaseSolutionDirectory = Split-Path $BuildRootDirectory
-$lowerCasePlatforms = $Platforms.ToLower()
-$lowerCaseConfigurations = $Configurations.ToLower()
-
-if ($lowerCasePlatforms -eq "all")
-{
-    $BuildPlatform = @("x64", "arm64")
-}
-else
-{
-    $BuildPlatform = @($lowerCasePlatforms)
-}
-
-if ($lowerCaseConfigurations -eq "all")
-{
-    $Build_Configuration = @("debug", "release")
-}
-else
-{
-    $Build_Configuration = @($lowerCaseConfigurations)
-}
 
 if ($BuildCodeGenNugetDependency)
 {
     $codeGenBuildScriptPath = "$BaseSolutionDirectory\..\..\BuildScripts\build.ps1"
-    & $codeGenBuildScriptPath -Platforms $Platforms -Configurations $Configurations -IsLocalBuild $IsLocalBuild -NugetPackagesToOutput "CodeGenOnly"
+    & $codeGenBuildScriptPath -Platforms $Platforms -Configurations $Configurations -NugetPackagesToOutput "CodeGenOnly"
 }
 
-# Edit this to change the official version of the nuget package at build time.
-# For local builds make sure "$IsLocalBuild" is true.
-$BuildTargetVersion = [System.Version]::new(0, 0, 1)
-
-if ($IsLocalBuild)
-{
-    # Use the triple zeros as the version number for local builds.
-    $BuildTargetVersion = [System.Version]::new(0, 0, 0)
-}
+# Use the triple zeros as the version number for local builds.
+$BuildTargetVersion = [System.Version]::new(0, 0, 0)
 
 $msbuildPath = & "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe" -latest -prerelease -products * -requires Microsoft.Component.MSBuild -find MSBuild\**\Bin\MSBuild.exe
 
 Try 
 {
     $solutionName = "vbs_enclave_implementation_library"
-    $nuspecFile = "$BaseSolutionDirectory\src\veil_nuget\Nuget\Microsoft.Windows.VbsEnclave.SDK.nuspec"
-    $nugetPackProperties = "target_version=$BuildTargetVersion;"
 
     # Run nuget restore
     $nugetPath = & "$BaseSolutionDirectory\..\..\BuildScripts\NugetExeDownloader.ps1"
@@ -111,38 +79,34 @@ Try
     & $nugetPath restore "$BaseSolutionDirectory\$solutionName.sln"
 
     # Build
-    foreach ($platform in $BuildPlatform)
+    Write-Host "Building $solutionName for EnvPlatform: $BuildPlatform Platform: $platform Configuration: $configuration"
+    $msbuildArgs = 
+    @(
+        ("$BaseSolutionDirectory\$solutionName.sln"),
+        ("/p:Platform=$Platform"),
+        ("/p:Configuration=$Configuration"),
+        ("/restore"),
+        ("/binaryLogger:$BaseSolutionDirectory\_build\$platform\$configuration\$solutionName.$platform.$configuration.binlog")
+    )
+
+    & $msbuildPath $msbuildArgs
+    if ($LASTEXITCODE -ne 0)
     {
-      foreach ($configuration in $Build_Configuration)
-      {
-        Write-Host "Building $solutionName for EnvPlatform: $BuildPlatform Platform: $platform Configuration: $configuration"
-        $msbuildArgs = 
-        @(
-            ("$BaseSolutionDirectory\$solutionName.sln"),
-            ("/p:Platform=$platform"),
-            ("/p:Configuration=$configuration"),
-            ("/restore"),
-            ("/binaryLogger:$BaseSolutionDirectory\_build\$platform\$configuration\$solutionName.$platform.$configuration.binlog")
-        )
-
-        & $msbuildPath $msbuildArgs
-        if ($LASTEXITCODE -ne 0)
-        {
-            Write-Error "MSBuild failed with exit code $LASTEXITCODE"
-            exit $LASTEXITCODE
-        }
-
-        # Now update the nuget pack properties
-        $cppSupportLibPath = "$BaseSolutionDirectory\_build\$platform\$configuration\veil_enclave_cpp_support_lib.lib"
-        $nugetPackProperties += "vbsenclave_sdk_cpp_support_$platform"+"_lib=$cppSupportLibPath;"
-        $veilEnclaveLibPath = "$BaseSolutionDirectory\_build\$platform\$configuration\veil_enclave_lib.lib"
-        $nugetPackProperties += "vbsenclave_sdk_enclave_$platform"+"_lib=$veilEnclaveLibPath;"
-        $veilHostLibPath = "$BaseSolutionDirectory\_build\$platform\$configuration\veil_host_lib\veil_host_lib.lib"
-        $nugetPackProperties += "vbsenclave_sdk_host_$platform"+"_lib=$veilHostLibPath;"
-      }
+        Write-Error "MSBuild failed with exit code $LASTEXITCODE"
+        exit $LASTEXITCODE
     }
 
-    # Pack nuget to account for both arm64 and x64 exes
+    # Now update the nuget pack properties
+    $nuspecFile = "$BaseSolutionDirectory\src\veil_nuget\Nuget\Microsoft.Windows.VbsEnclave.SDK.nuspec"
+    $nugetPackProperties = "target_version=$BuildTargetVersion;"
+    $cppSupportLibPath = "$BaseSolutionDirectory\_build\$platform\$configuration\veil_enclave_cpp_support_lib.lib"
+    $nugetPackProperties += "vbsenclave_sdk_cpp_support_$platform"+"_lib=$cppSupportLibPath;"
+    $veilEnclaveLibPath = "$BaseSolutionDirectory\_build\$platform\$configuration\veil_enclave_lib.lib"
+    $nugetPackProperties += "vbsenclave_sdk_enclave_$platform"+"_lib=$veilEnclaveLibPath;"
+    $veilHostLibPath = "$BaseSolutionDirectory\_build\$platform\$configuration\veil_host_lib\veil_host_lib.lib"
+    $nugetPackProperties += "vbsenclave_sdk_host_$platform"+"_lib=$veilHostLibPath;"
+
+    # Pack nuget
     $packageNugetScriptPath  = "$BaseSolutionDirectory\..\..\BuildScripts\PackageNuget.ps1"
 
     & $packageNugetScriptPath -NugetSpecFilePath $nuspecFile -NugetPackProperties $nugetPackProperties -OutputDirectory "$BaseSolutionDirectory\_build"

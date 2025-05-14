@@ -99,14 +99,14 @@
   <PropertyGroup Label="Vcpkg" Condition="'$(Configuration)|$(Platform)'=='Debug|ARM64'">
     <VcpkgUseStatic>true</VcpkgUseStatic>
     <VcpkgUseMD>false</VcpkgUseMD>
-    <VcpkgTriplet>arm64-windows</VcpkgTriplet>
-    <VcpkgHostTriplet>arm64-windows</VcpkgHostTriplet>
+    <VcpkgTriplet>x64-windows</VcpkgTriplet>
+    <VcpkgHostTriplet>x64-windows</VcpkgHostTriplet>
   </PropertyGroup>
   <PropertyGroup Label="Vcpkg" Condition="'$(Configuration)|$(Platform)'=='Release|ARM64'">
     <VcpkgUseStatic>true</VcpkgUseStatic>
     <VcpkgUseMD>false</VcpkgUseMD>
-    <VcpkgTriplet>arm64-windows</VcpkgTriplet>
-    <VcpkgHostTriplet>arm64-windows</VcpkgHostTriplet>
+    <VcpkgTriplet>x64-windows</VcpkgTriplet>
+    <VcpkgHostTriplet>x64-windows</VcpkgHostTriplet>
   </PropertyGroup>
   <PropertyGroup Label="Vcpkg" Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <VcpkgUseStatic>true</VcpkgUseStatic>
