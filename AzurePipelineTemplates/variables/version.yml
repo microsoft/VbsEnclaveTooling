@@ -1,0 +1,37 @@
+variables:
+- name: VersionDate
+  value: "$[format('{0:yyMMdd}', pipeline.startTime)]"
+- name: VersionCounter
+  value: "$[counter(variables['VersionDate'], 1)]"
+
+# CodeGen versioning info
+- name: CodeGenMajorVersion
+  value: "0"
+- name: CodeGenMinorVersion
+  value: "0"
+- name: CodeGenPatchVersion
+  value: "1"
+
+
+# SDK versioning info
+- name: SdkMajorVersion
+  value: "0"
+- name: SdkMinorVersion
+  value: "0"
+- name: SdkPatchVersion
+  value: "1"
+
+
+# Conditionally set values if branch name starts with 'prerelease'
+- ${{ if startsWith(variables['Build.SourceBranch'], 'refs/heads/prerelease/') }}:
+    - name: CodeGenBuildVersion
+      value: $(CodeGenMajorVersion).$(CodeGenMinorVersion).$(CodeGenPatchVersion)-prerelease.$(VersionDate).$(VersionCounter)
+    - name: SdkBuildVersion
+      value: $(SdkMajorVersion).$(SdkMinorVersion).$(SdkPatchVersion)-prerelease.$(VersionDate).$(VersionCounter)
+
+# Don't add prerelease if branch name doesn't start with 'prerelease'
+- ${{ if not(startsWith(variables['Build.SourceBranch'], 'refs/heads/prerelease/')) }}:
+    - name: CodeGenBuildVersion
+      value: $(CodeGenMajorVersion).$(CodeGenMinorVersion).$(CodeGenPatchVersion)
+    - name: SdkBuildVersion
+      value: $(SdkMajorVersion).$(SdkMinorVersion).$(SdkPatchVersion)

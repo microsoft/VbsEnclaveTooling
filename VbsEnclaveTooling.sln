@@ -46,7 +46,27 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "veil_enclave_cpp_support_li
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "PipelineTemplates", "PipelineTemplates", "{02EA681E-C7D8-13C7-8484-4AC65E1B71E8}"
 	ProjectSection(SolutionItems) = preProject
+		AzurePipelineTemplates\OneBranch.Official.yml = AzurePipelineTemplates\OneBranch.Official.yml
 		AzurePipelineTemplates\SyncMirror-Pipeline-Template.yml = AzurePipelineTemplates\SyncMirror-Pipeline-Template.yml
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "jobs", "jobs", "{D2331F9A-86B9-4308-B8B7-994114A65122}"
+	ProjectSection(SolutionItems) = preProject
+		AzurePipelineTemplates\jobs\CodeGenBuildJob.yml = AzurePipelineTemplates\jobs\CodeGenBuildJob.yml
+		AzurePipelineTemplates\jobs\OneBranchBuild.yml = AzurePipelineTemplates\jobs\OneBranchBuild.yml
+		AzurePipelineTemplates\jobs\SdkBuildJob.yml = AzurePipelineTemplates\jobs\SdkBuildJob.yml
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "variables", "variables", "{B4BB7018-CEC4-41C6-BBBD-925A69D5032A}"
+	ProjectSection(SolutionItems) = preProject
+		AzurePipelineTemplates\variables\OneBranchVariables.yml = AzurePipelineTemplates\variables\OneBranchVariables.yml
+		AzurePipelineTemplates\variables\version.yml = AzurePipelineTemplates\variables\version.yml
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "settings", "settings", "{9D71BE1B-2375-490F-9F24-7EDF81094461}"
+	ProjectSection(SolutionItems) = preProject
+		.gdn\gdnsettings = .gdn\gdnsettings
+		.config\tsaoptions.json = .config\tsaoptions.json
 	EndProjectSection
 EndProject
 Global
@@ -100,6 +120,11 @@ Global
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{D2331F9A-86B9-4308-B8B7-994114A65122} = {02EA681E-C7D8-13C7-8484-4AC65E1B71E8}
+		{B4BB7018-CEC4-41C6-BBBD-925A69D5032A} = {02EA681E-C7D8-13C7-8484-4AC65E1B71E8}
+		{9D71BE1B-2375-490F-9F24-7EDF81094461} = {02EA681E-C7D8-13C7-8484-4AC65E1B71E8}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {166D23FF-1362-43F2-BEE7-58FDCDB133DF}

@@ -1,0 +1,120 @@
+﻿# build file for the CodeGenerator soliution using the x64 and arm64 platforms
+parameters:
+  - name: BuildConfiguration
+    type: string
+  - name: CodeGenBuildVersion
+    type: string
+  - name: OfficialBuild
+    type: boolean
+    default: false
+jobs:
+- job: Build_and_package_CodeGen
+  displayName: 'Build CodeGen solution and nuget package'
+  pool:
+    type: windows
+  variables:
+    CodeGenSolution: $(Build.SourcesDirectory)\VbsEnclaveTooling.sln
+    VcpkgToolsDirectory: $(Build.SourcesDirectory)\src\ToolingSharedLibrary\vcpkg_installed\x64-windows-static\x64-windows\tools
+    VCPKG_ROOT: '$(Pipeline.Workspace)/vcpkg'
+    VCPKG_DEFAULT_TRIPLET: 'x64-windows'
+    NewCodeGenVersion: ${{ parameters.CodeGenBuildVersion }}
+    ob_outputDirectory: '$(Build.SourcesDirectory)\signed_nuget'   
+    ob_artifactBaseName: signed_codegen_nuget_package 
+    BaseBuildDirectory: $(Build.SourcesDirectory)\_build
+    SdkBuildDirectory: $(Build.SourcesDirectory)\src\VbsEnclaveSDK\_build
+    BuildConfiguration: ${{ parameters.BuildConfiguration }}
+
+  steps:
+    - script: |
+        git clone https://github.com/microsoft/vcpkg.git $(VCPKG_ROOT)
+      displayName: "Clone vcpkg"
+    - script: |
+        cd $(VCPKG_ROOT)
+        .\bootstrap-vcpkg.bat
+      displayName: "Bootstrap vcpkg"
+    - script: |
+        cd $(VCPKG_ROOT)
+        .\vcpkg.exe integrate install
+      displayName: "Integrate vcpkg into msbuild"
+
+    - task: UseDotNet@2
+      continueOnError: true
+      inputs: 
+        packageType: 'runtime'
+        version: '6.x'
+        performMultiLevelLookup: true
+
+    - task: NuGetCommand@2
+      displayName: NuGet restore VbsEnclaveTooling.sln
+      inputs:
+        command: 'restore'
+        restoreSolution: '$(CodeGenSolution)'
+        feedsToUse: config
+        nugetConfigPath: NuGet.config
+
+    - task: VSBuild@1
+      displayName: 'Build VbsEnclaveTooling x64'
+      inputs:
+        solution: $(CodeGenSolution)
+        msbuildArgs: /p:VbsEnclaveCodegenVersion=$(NewCodeGenVersion)
+        platform: 'x64'
+        configuration: $(BuildConfiguration)
+    
+    - task: VSBuild@1
+      displayName: Build VbsEnclaveTooling 'arm64'
+      inputs:
+        solution: $(CodeGenSolution)
+        msbuildArgs: /p:VbsEnclaveCodegenVersion=$(NewCodeGenVersion)
+        platform: 'arm64'
+        configuration: $(BuildConfiguration)
+
+    # Sign binaries in build folder
+    - task: onebranch.pipeline.signing@1
+      displayName: '🔒 Onebranch Signing for edlcodegen executable'
+      condition: eq(${{ parameters.OfficialBuild }}, 'true')
+      inputs:
+        command: sign
+        signing_profile: external_distribution
+        files_to_sign: '**/*.dll;**/*.exe'
+        search_root: $(BaseBuildDirectory)
+
+    # Sign vcpkg binaries
+    - task: onebranch.pipeline.signing@1
+      displayName: '🔒 Onebranch Signing for flatc executable'
+      condition: eq(${{ parameters.OfficialBuild }}, 'true')
+      inputs:
+        command: sign 
+        cp_code: 'CP-231522​' # OSS Third party cert
+        files_to_sign: '**/*.dll;**/*.exe' 
+        search_root: $(VcpkgToolsDirectory)
+
+    - task: NuGetToolInstaller@1
+      displayName: Use NuGet 6.0.2
+      continueOnError: True
+      inputs:
+        versionSpec: 6.0.2
+    
+    # Pack CodeGenerator nuget so SDK can access it during its build.
+    - task: NuGetCommand@2
+      displayName: 'Build CodeGenerator NuGet package'
+      inputs:
+        command: 'custom'
+        arguments: 'pack src\ToolingNuget\Nuget\Microsoft.Windows.VbsEnclave.CodeGenerator.nuspec -NonInteractive -OutputDirectory $(BaseBuildDirectory) -Properties target_version=$(NewCodeGenVersion);vbsenclave_codegen_x64_exe=$(BaseBuildDirectory)\x64\$(BuildConfiguration)\edlcodegen.exe;vcpkg_sources=$(Build.SourcesDirectory)\src\ToolingSharedLibrary\vcpkg_installed\x64-windows-static\x64-windows-static;vcpkg_tools=$(VcpkgToolsDirectory);vbsenclave_codegen_cpp_support_x64_lib=$(BaseBuildDirectory)\x64\$(BuildConfiguration)\veil_enclave_cpp_support_lib.lib;vbsenclave_codegen_cpp_support_arm64_lib=$(BaseBuildDirectory)\arm64\$(BuildConfiguration)\veil_enclave_cpp_support_lib.lib; -Version $(NewCodeGenVersion) -Verbosity Detailed'
+    
+    # Sign codegen nuget package
+    - task: onebranch.pipeline.signing@1
+      displayName: '🔒 Onebranch signing for CodeGen NuGet package'
+      condition: eq(${{ parameters.OfficialBuild }}, 'true')
+      inputs:
+        command: sign
+        cp_code: 'CP-401405' # CP-code
+        files_to_sign: 'Microsoft.Windows.VbsEnclave.*.nupkg'
+        search_root: $(BaseBuildDirectory)
+
+    # Copy signed codegen nupkg file to pipeline
+    - task: CopyFiles@2
+      displayName: Publish signed code gen nupkg file
+      inputs:
+        SourceFolder: $(BaseBuildDirectory)
+        Contents: $(BaseBuildDirectory)\Microsoft.Windows.VbsEnclave.CodeGenerator.$(NewCodeGenVersion).nupkg
+        TargetFolder: $(ob_outputDirectory)
