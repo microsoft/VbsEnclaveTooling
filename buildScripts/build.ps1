@@ -72,7 +72,6 @@ Try
     @(
         ("$BaseRepositoryDirectory\$solutionName.sln"),
         ("/p:Platform=$Platform"),
-        ("/p:VbsEnclaveCodegenVersion=0.0.0-Dev"),
         ("/p:Configuration=$Configuration"),
         ("/restore"),
         ("/binaryLogger:$BaseRepositoryDirectory\_build\$platform\$configuration\$solutionName.$platform.$configuration.binlog")
