@@ -18,6 +18,13 @@ resources:
       type: git
       name: OneBranch.Pipelines/GovernedTemplates
       ref: refs/heads/main
+    
+    - repository: Vcpkg
+      type: github
+      name: microsoft/vcpkg
+      endpoint: microsoft
+      ref: refs/heads/master
+      trigger: none
 
 extends:
   template: v2/Microsoft.Official.yml@templates
