@@ -66,8 +66,7 @@ try
     & $nugetPath pack $NugetSpecFilePath -Properties $NugetPackProperties -OutputDirectory $OutputDirectory
     if ($LASTEXITCODE -ne 0)
     {
-        Write-Host "Failed to package nuget file."
-        Exit $LASTEXITCODE 
+        throw "Failed to package nuget file"
     }
 
     Write-Host "Successfully created .nupkg file using nuget spec file: '$NugetSpecFilePath'." -ForegroundColor GREEN

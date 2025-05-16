@@ -4,11 +4,11 @@
         <VbsEnclaveCodeGenNugetPackVersionNumber>0.0.0</VbsEnclaveCodeGenNugetPackVersionNumber>
 
         <!-- Property value should match the "ToolingExecutable" projects 'target name' property  -->
-        <VbsEnclaveCodegenNugetPackExePath>$(OutDir)edlcodegen.exe</VbsEnclaveCodegenNugetPackExePath>
+        <VbsEnclaveCodegenNugetPackExePath>$(SolutionDir)_build\x64\$(Configuration)\edlcodegen.exe</VbsEnclaveCodegenNugetPackExePath>
         <VbsEnclaveCodeGenNugetPackCppSupportPath>$(OutDir)veil_enclave_cpp_support_lib.lib</VbsEnclaveCodeGenNugetPackCppSupportPath>
-        <VcpkgSupportPath>$(SolutionDir)src\ToolingSharedLibrary\vcpkg_installed\$(Platform)-windows-static\$(Platform)-windows-static</VcpkgSupportPath>
-        <VcpkgToolsPath>$(SolutionDir)src\ToolingSharedLibrary\vcpkg_installed\$(Platform)-windows-static\$(Platform)-windows\tools</VcpkgToolsPath>
-        <VbsEnclaveNugetPackProperties>target_version=$(VbsEnclaveCodeGenNugetPackVersionNumber);vbsenclave_codegen_$(Platform)_exe=$(VbsEnclaveCodegenNugetPackExePath);vcpkg_sources=$(VcpkgSupportPath);vcpkg_tools=$(VcpkgToolsPath);vbsenclave_codegen_cpp_support_$(Platform)_lib=$(VbsEnclaveCodeGenNugetPackCppSupportPath);</VbsEnclaveNugetPackProperties>
+        <VcpkgSupportPath>$(SolutionDir)src\ToolingSharedLibrary\vcpkg_installed\x64-windows-static\x64-windows-static</VcpkgSupportPath>
+        <VcpkgToolsPath>$(SolutionDir)src\ToolingSharedLibrary\vcpkg_installed\x64-windows-static\x64-windows\tools</VcpkgToolsPath>
+        <VbsEnclaveNugetPackProperties>target_version=$(VbsEnclaveCodeGenNugetPackVersionNumber);vbsenclave_codegen_x64_exe=$(VbsEnclaveCodegenNugetPackExePath);vcpkg_sources=$(VcpkgSupportPath);vcpkg_tools=$(VcpkgToolsPath);vbsenclave_codegen_cpp_support_$(Platform)_lib=$(VbsEnclaveCodeGenNugetPackCppSupportPath);</VbsEnclaveNugetPackProperties>
         <VbsEnclaveNugetPackOutputDirectory>$(SolutionDir)_build</VbsEnclaveNugetPackOutputDirectory>
         <VbsEnclaveNugetPackScriptFile>$(SolutionDir)buildScripts\PackageNuget.ps1</VbsEnclaveNugetPackScriptFile>
     </PropertyGroup>
