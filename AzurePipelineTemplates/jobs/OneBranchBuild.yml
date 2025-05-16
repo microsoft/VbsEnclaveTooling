@@ -1,0 +1,38 @@
+parameters:
+  - name: BuildConfiguration
+    type: string
+  - name: CodeGenBuildVersion
+    type: string
+  - name: SdkBuildVersion
+    type: string
+  - name: OfficialBuild
+    type: boolean
+    default: false
+
+# Sequentially build x64 then arm64 to prevent corrupted build files when the VbsEnclaveTooling solution
+# is built with arm64. Note: when the platform is arm64 some projects get built as x64.
+stages:
+- stage: Build_codegen
+  displayName: 'Build CodeGenerator'
+  pool:
+   type: windows
+  jobs:
+    - template: CodeGenBuildJob.yml@self
+      parameters:
+        BuildConfiguration: ${{ parameters.BuildConfiguration }}
+        CodeGenBuildVersion: ${{ parameters.CodeGenBuildVersion }}
+        OfficialBuild: ${{ parameters.OfficialBuild }}
+
+- stage: Build_veil_sdk
+  displayName: 'Build SDK'
+  dependsOn: 
+    - Build_codegen
+  pool:
+    type: windows
+  jobs:
+    - template: SdkBuildJob.yml@self
+      parameters:
+        BuildConfiguration: ${{ parameters.BuildConfiguration }}
+        SdkBuildVersion:  ${{ parameters.SdkBuildVersion }}
+        CodeGenBuildVersion: ${{ parameters.CodeGenBuildVersion }}
+        OfficialBuild: ${{ parameters.OfficialBuild }}
