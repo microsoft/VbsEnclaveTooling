@@ -7,7 +7,7 @@
     <authors>Microsoft</authors>
     <owners>Microsoft</owners>
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
-    <description>Virtual based secure enclave code generation tool generates code between your app and your enclave to handle marshaling data into and out of the enclave safely and securely.</description>
+    <description>Virtualization-based security enclave code generation tool generates code between your app and your enclave to handle marshaling data into and out of the enclave safely and securely.</description>
     <tags>vbs enclave virtual secure vbsenclave native nativepackage</tags>
     <license type="file">LICENSE</license>
     <readme>README.md</readme>
