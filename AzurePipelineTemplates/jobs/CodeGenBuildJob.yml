@@ -84,7 +84,7 @@ jobs:
       condition: eq(${{ parameters.OfficialBuild }}, 'true')
       inputs:
         command: sign 
-        cp_code: 'CP-231522​' # OSS Third party cert
+        signing_profile: 135020002 # OSS Third party cert
         files_to_sign: '**/*.dll;**/*.exe' 
         search_root: $(VcpkgToolsDirectory)
 
