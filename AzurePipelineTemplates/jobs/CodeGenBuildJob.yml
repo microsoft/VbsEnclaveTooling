@@ -26,7 +26,7 @@ jobs:
 
   steps:
     - checkout: Vcpkg
-      path: $(VCPKG_ROOT)
+      path: 's\vcpkg'
       displayName: "Checkout Vcpkg"
     - script: |
         cd $(VCPKG_ROOT)
