@@ -15,7 +15,7 @@ jobs:
   variables:
     CodeGenSolution: $(Build.SourcesDirectory)\VbsEnclaveTooling.sln
     VcpkgToolsDirectory: $(Build.SourcesDirectory)\src\ToolingSharedLibrary\vcpkg_installed\x64-windows-static\x64-windows\tools
-    VCPKG_ROOT: '$(Pipeline.Workspace)/vcpkg'
+    VCPKG_ROOT: '$(Pipeline.Workspace)\s\vcpkg'
     VCPKG_DEFAULT_TRIPLET: 'x64-windows'
     NewCodeGenVersion: ${{ parameters.CodeGenBuildVersion }}
     ob_outputDirectory: '$(Build.SourcesDirectory)\signed_nuget'   
@@ -25,9 +25,9 @@ jobs:
     BuildConfiguration: ${{ parameters.BuildConfiguration }}
 
   steps:
-    - script: |
-        git clone https://github.com/microsoft/vcpkg.git $(VCPKG_ROOT)
-      displayName: "Clone vcpkg"
+    - checkout: Vcpkg
+      path: 's\vcpkg'
+      displayName: "Checkout Vcpkg"
     - script: |
         cd $(VCPKG_ROOT)
         .\bootstrap-vcpkg.bat
