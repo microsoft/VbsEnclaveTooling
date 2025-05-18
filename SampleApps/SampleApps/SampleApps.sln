@@ -50,7 +50,4 @@ Global
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {2CC90DE8-BC52-49A9-9902-2F8382149CFC}
 	EndGlobalSection
-	GlobalSection(SharedMSBuildProjectFiles) = preSolution
-		packages\Microsoft.Windows.VbsEnclaveTooling.0.0.0\src\VbsEnclaveSDK\veil_any_inc\veil_any_inc.vcxitems*{d2c762e2-0de1-4f72-98c9-75f7bd69d17e}*SharedItemsImports = 4
-	EndGlobalSection
 EndGlobal

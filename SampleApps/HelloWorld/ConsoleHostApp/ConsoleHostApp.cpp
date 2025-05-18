@@ -11,6 +11,12 @@ int main()
 {
     std::cout << "Hello World!\n";
 
+    //std::wstring input;
+    //const std::wstring encrytedKeyDirPath = std::filesystem::current_path().c_str();;
+    //const std::wstring encryptedDataDirPath = std::filesystem::current_path().c_str();
+    //std::wstring encryptedInputFilePath = encryptedDataDirPath + L"\\encrypted";
+    //std::wstring tagFilePath = encrytedKeyDirPath + L"\\tag";
+
     /******************************* Enclave setup *******************************/
 
     // Create app+user enclave identity
@@ -44,6 +50,7 @@ int main()
 
     //Call into the enclave
     auto secretResults = enclaveInterface.DoSecretMath(10, 20);
+    //std::cout << "Result = %d";
     wprintf(L"Result = %d\n", secretResults);
     wprintf(L"Press any key to exit.");
     _getch();
