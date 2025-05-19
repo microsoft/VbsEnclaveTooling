@@ -36,7 +36,7 @@
     <UES_ComponentName>veil_enclave_cpp_support_lib</UES_ComponentName>
   </PropertyGroup>
   <PropertyGroup>
-    <TargetName>veil_enclave_cpp_support_lib</TargetName>
+    <TargetName>veil_enclave_cpp_support_$(Platform)_$(Configuration)_lib</TargetName>
     <LinkIncremental>false</LinkIncremental>
   </PropertyGroup>
   <PropertyGroup>

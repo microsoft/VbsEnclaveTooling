@@ -1,12 +1,12 @@
 [CmdletBinding()]
 Param(
-    [ValidateSet('x64', 'arm64')]
+    [ValidateSet('all', 'x64', 'ARM64')]
     [System.String]
-    $Platform = "x64",
+    $Platform = "all",
     
-    [ValidateSet('debug', 'release')]
+    [ValidateSet('all', 'Debug', 'Release')]
     [System.String]
-    $Configuration = "debug",
+    $Configuration = "all",
     
     [System.Boolean]
     $BuildCodeGenNugetDependency = $true,
@@ -57,6 +57,18 @@ Options:
 $ErrorActionPreference = "Stop"
 $BuildRootDirectory = (Split-Path $MyInvocation.MyCommand.Path)
 $BaseSolutionDirectory = Split-Path $BuildRootDirectory
+$BuildPlatform = @($Platform)
+$BuildConfiguration = @($Configuration)
+
+if ($Platform -eq "all")
+{
+    $BuildPlatform = @("x64", "ARM64")
+}
+
+if ($Configuration -eq "all")
+{
+    $BuildConfiguration = @("Release", "Debug")
+}
 
 if ($BuildCodeGenNugetDependency)
 {
@@ -79,32 +91,38 @@ Try
     & $nugetPath restore "$BaseSolutionDirectory\$solutionName.sln"
 
     # Build
-    Write-Host "Building $solutionName for EnvPlatform: $BuildPlatform Platform: $platform Configuration: $configuration"
-    $msbuildArgs = 
-    @(
-        ("$BaseSolutionDirectory\$solutionName.sln"),
-        ("/p:Platform=$Platform"),
-        ("/p:Configuration=$Configuration"),
-        ("/restore"),
-        ("/binaryLogger:$BaseSolutionDirectory\_build\$platform\$configuration\$solutionName.$platform.$configuration.binlog")
-    )
-
-    & $msbuildPath $msbuildArgs
-    if ($LASTEXITCODE -ne 0)
+    foreach ($platform in $BuildPlatform)
     {
-        Write-Error "MSBuild failed with exit code $LASTEXITCODE"
-        exit $LASTEXITCODE
-    }
+        foreach ($configuration in $Build_Configuration)
+        {
+            Write-Host "Building $solutionName for EnvPlatform: $BuildPlatform Platform: $platform Configuration: $configuration"
+            $msbuildArgs = 
+            @(
+                ("$BaseSolutionDirectory\$solutionName.sln"),
+                ("/p:Platform=$Platform"),
+                ("/p:Configuration=$Configuration"),
+                ("/restore"),
+                ("/binaryLogger:$BaseSolutionDirectory\_build\$platform\$configuration\$solutionName.$platform.$configuration.binlog")
+            )
 
+            & $msbuildPath $msbuildArgs
+            if ($LASTEXITCODE -ne 0)
+            {
+                Write-Error "MSBuild failed with exit code $LASTEXITCODE"
+                exit $LASTEXITCODE
+            }
+
+            $cppSupportLibPath = "$BaseSolutionDirectory\_build\$platform\$configuration\veil_enclave_cpp_support_${platform}_${configuration}_lib.lib"
+            $nugetPackProperties += "vbsenclave_sdk_cpp_support_${platform}_${configuration}_lib=$cppSupportLibPath;"
+            $veilEnclaveLibPath = "$BaseSolutionDirectory\_build\$platform\$configuration\veil_enclave_${platform}_${configuration}_lib.lib"
+            $nugetPackProperties += "vbsenclave_sdk_enclave_${platform}_${configuration}_lib=$veilEnclaveLibPath;"
+            $veilHostLibPath = "$BaseSolutionDirectory\_build\$platform\$configuration\veil_host_lib\veil_host_${platform}_${configuration}_lib.lib"
+            $nugetPackProperties += "vbsenclave_sdk_host_${platform}_${configuration}_lib=$veilHostLibPath;"
+        }
+    }
     # Now update the nuget pack properties
     $nuspecFile = "$BaseSolutionDirectory\src\veil_nuget\Nuget\Microsoft.Windows.VbsEnclave.SDK.nuspec"
     $nugetPackProperties = "target_version=$BuildTargetVersion;"
-    $cppSupportLibPath = "$BaseSolutionDirectory\_build\$platform\$configuration\veil_enclave_cpp_support_lib.lib"
-    $nugetPackProperties += "vbsenclave_sdk_cpp_support_$platform"+"_lib=$cppSupportLibPath;"
-    $veilEnclaveLibPath = "$BaseSolutionDirectory\_build\$platform\$configuration\veil_enclave_lib.lib"
-    $nugetPackProperties += "vbsenclave_sdk_enclave_$platform"+"_lib=$veilEnclaveLibPath;"
-    $veilHostLibPath = "$BaseSolutionDirectory\_build\$platform\$configuration\veil_host_lib\veil_host_lib.lib"
-    $nugetPackProperties += "vbsenclave_sdk_host_$platform"+"_lib=$veilHostLibPath;"
 
     # Pack nuget
     $packageNugetScriptPath  = "$BaseSolutionDirectory\..\..\BuildScripts\PackageNuget.ps1"

@@ -27,8 +27,12 @@
     <file src="..\..\ToolingNuget\Nuget\Microsoft.Windows.VbsEnclave.CodeGenerator.props" target="build\native"/>
     <file src="..\..\ToolingNuget\Nuget\Microsoft.Windows.VbsEnclave.CodeGenerator.targets" target="build\native"/>
     <file src="..\..\ToolingSharedLibrary\Includes\VbsEnclaveABI\**" target="src\VbsEnclaveABI\" />
-    <file src="$vbsenclave_codegen_cpp_support_x64_lib$" target="lib\native\x64"/>
-    <file src="$vbsenclave_codegen_cpp_support_arm64_lib$" target="lib\native\arm64"/>
+      
+    <file src="$vbsenclave_codegen_cpp_support_x64_Release_lib$" target="lib\native\x64"/>
+    <file src="$vbsenclave_codegen_cpp_support_ARM64_Release_lib$" target="lib\native\arm64"/>
+    <file src="$vbsenclave_codegen_cpp_support_x64_Debug_lib$" target="lib\native\x64"/>
+    <file src="$vbsenclave_codegen_cpp_support_ARM64_Debug_lib$" target="lib\native\arm64"/>
+      
     <file src="..\..\..\Common\veil_enclave_wil_inc\**" target="src\" />
     <file src="..\..\..\README.md"/>
     <file src="NOTICE.md"/>

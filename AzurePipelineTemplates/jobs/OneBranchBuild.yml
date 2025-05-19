@@ -1,6 +1,4 @@
 parameters:
-  - name: BuildConfiguration
-    type: string
   - name: CodeGenBuildVersion
     type: string
   - name: SdkBuildVersion
@@ -19,7 +17,6 @@ stages:
   jobs:
     - template: CodeGenBuildJob.yml@self
       parameters:
-        BuildConfiguration: ${{ parameters.BuildConfiguration }}
         CodeGenBuildVersion: ${{ parameters.CodeGenBuildVersion }}
         OfficialBuild: ${{ parameters.OfficialBuild }}
 
@@ -32,7 +29,6 @@ stages:
   jobs:
     - template: SdkBuildJob.yml@self
       parameters:
-        BuildConfiguration: ${{ parameters.BuildConfiguration }}
         SdkBuildVersion:  ${{ parameters.SdkBuildVersion }}
         CodeGenBuildVersion: ${{ parameters.CodeGenBuildVersion }}
         OfficialBuild: ${{ parameters.OfficialBuild }}
