@@ -43,19 +43,12 @@ Generated `hostApp` project artifacts:
 
 ### Files Generated
 
-| File              | Generated for | Description                                                                 |
+| File              | Generated for | Description                                                 |
 |-------------------|---------------|-------------------------------------------------------------|
-| `DeveloperTypes.h` | Both projects | Defines C++ parameter types developer can pass into `.edl`-specified functions. This is the `parameter currency' of the interfacing layer that the developer's app logic & enclave logic uses to speak to codegen'd functions. |
-| `Implementations.h` | Enclave-only | Contains all of the function declarations that the developer outlined in the `trusted`
-                        scope of the `.edl` file. The developer `must` implement these. 
-                        If a developer adds functions to the `untrusted` scope of the .edl file, corresponding stub
-                        functions with a `_callback` suffix will be generated. These `stubs` allow the enclave to invoke
-                        the respective `untrusted` functions implementation in the `hostApp`. |
-| `Stubs.cpp`        | Enclave-only | Contains all of the generated stub functions that will be exported by the enclave.       |
-| `Stubs.h`          | HostApp-only | This contains a `class` that is constructed with a `void*` to an enclave instance, and includes
-                        stub functions for calling `trusted` enclave functions from the `hostApp`. It also defines 
-                        static functions the developer must implement for any `untrusted` functions declared in the
-                        `.edl` file.       |
+| `DeveloperTypes.h` | Both | Defines C++ parameter types developer can pass into `.edl`-specified functions. This is the `parameter currency' of the interfacing layer that the developer's app logic & enclave logic uses to speak to codegen'd functions. |
+| `Implementations.h` | Enclave | Contains all of the function declarations that the developer outlined in the `trusted` scope of the `.edl` file. The developer `must` implement these. If a developer adds functions to the `untrusted` scope of the .edl file, corresponding stub functions with a  `_callback` suffix will be generated. These `stubs` allow the enclave to invoke the respective `untrusted` functions implementation in the `hostApp`. |
+| `Stubs.cpp`        | Enclave | Contains all of the generated stub functions that will be exported by the enclave. |
+| `Stubs.h`          | HostApp | This contains a `class` that is constructed with a `void*` to an enclave instance, and includes stub functions for calling `trusted` enclave functions from the `hostApp`. It also defines static functions the developer must implement for any `untrusted` functions in the `.edl` file. |
 
 ### ABI layer
 
