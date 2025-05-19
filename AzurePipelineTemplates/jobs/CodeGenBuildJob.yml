@@ -12,8 +12,9 @@ jobs:
     type: windows
   variables:
     CodeGenSolution: $(Build.SourcesDirectory)\VbsEnclaveTooling.sln
-    VcpkgToolsDirectory: $(Build.SourcesDirectory)\src\ToolingSharedLibrary\vcpkg_installed\x64-windows-static\x64-windows\tools
-    VcpkgSourcesDirectory: $(Build.SourcesDirectory)\src\ToolingSharedLibrary\vcpkg_installed\x64-windows-static\x64-windows-static
+    VcpkgDirectory: $(Build.SourcesDirectory)\src\ToolingSharedLibrary\vcpkg_installed\x64-windows-static\x64-windows
+    VcpkgToolsDirectory: $(VcpkgDirectory)\x64-windows\tools
+    VcpkgSourcesDirectory: $(VcpkgDirectory)\x64-windows-static
     VCPKG_ROOT: '$(Pipeline.Workspace)\s\vcpkg'
     VCPKG_DEFAULT_TRIPLET: 'x64-windows'
     NewCodeGenVersion: ${{ parameters.CodeGenBuildVersion }}
@@ -32,7 +33,7 @@ jobs:
     VeilCppSuportLibX64Debug: vbsenclave_codegen_cpp_support_x64_Debug_lib=$(x64DebugBuildLocation)\veil_cpp_support_x64_Debug_lib.lib
     VeilCppSuportPdbX64Debug: vbsenclave_codegen_cpp_support_x64_Debug_pdb=$(x64DebugBuildLocation)\veil_cpp_support_x64_Debug_lib.pdb
     VeilCppSuportLibARM64Release: vbsenclave_codegen_cpp_support_ARM64_Release_lib=$(Arm64ReleaseBuildLocation)\veil_cpp_support_ARM64_Release_lib.lib
-    VeilCppSuportPdbARM64Release: vbsenclave_codegen_cpp_support_ARM64_Release_lib=$(Arm64ReleaseBuildLocation)\veil_cpp_support_ARM64_Release_pdb.pdb
+    VeilCppSuportPdbARM64Release: vbsenclave_codegen_cpp_support_ARM64_Release_pdb=$(Arm64ReleaseBuildLocation)\veil_cpp_support_ARM64_Release_pdb.pdb
     VeilCppSuportLibARM64Debug: vbsenclave_codegen_cpp_support_ARM64_Debug_lib=$(Arm64DebugBuildLocation)\veil_cpp_support_ARM64_Debug_lib.lib
     VeilCppSuportPdbARM64Debug: vbsenclave_codegen_cpp_support_ARM64_Debug_pdb=$(Arm64DebugBuildLocation)\veil_cpp_support_ARM64_Debug_lib.pdb
     

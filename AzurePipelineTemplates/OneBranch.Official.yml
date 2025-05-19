@@ -50,7 +50,7 @@ extends:
         compiled: 
           enabled: true
         tsaEnabled: true
-
+      
     stages:
       - template: jobs/OneBranchBuild.yml@self
         parameters:
