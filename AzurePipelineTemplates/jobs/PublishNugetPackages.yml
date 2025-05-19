@@ -1,0 +1,48 @@
+resources:
+  repositories:
+  - repository: templates
+    type: git
+    name: OneBranch.Pipelines/GovernedTemplates
+    ref: refs/heads/main
+  pipelines:
+  # Reference pipeline that created the signed nupkg artifacts so we can consume them later
+  - pipeline: VbsEnclaveTooling 
+    source: 'Vbs Enclave Tooling OneBranch (Official)'
+    trigger: none
+
+extends:
+  template: v2/OneBranch.Official.CrossPlat.yml@templates
+  parameters:
+    release:
+      category: NonAzure
+
+    stages:
+    - stage: 'Publish'  
+      displayName: 'Publish to NuGet'
+      variables:
+        ob_release_environment: Production
+        
+      jobs:
+      - job: ReleaseToNugetOrg
+        pool:
+          type: release
+        variables:
+          ob_nugetPublishing_enabled: true
+        templateContext:
+          inputs:
+          - input: pipelineArtifact
+            pipeline: VbsEnclaveTooling
+            artifactName: signed_codegen_nuget_package
+
+          - input: pipelineArtifact
+            pipeline: VbsEnclaveTooling
+            artifactName: signed_sdk_nuget_package
+
+        steps:
+        - task: NuGetCommand@2
+          displayName: 'Push CodeGenerator and SDK nuget packages to nuget.org'
+          inputs:
+            command: push
+            packagesToPush: '$(Pipeline.Workspace)\Microsoft.Windows.VbsEnclave.*.nupkg'
+            nuGetFeedType: external
+            publishFeedCredentials: 'VbsEnclaveTooling Nuget' # Service connection
