@@ -2,11 +2,11 @@
 Param(
     [ValidateSet('all', 'x64', 'ARM64')]
     [System.String]
-    $Platform = "all",
+    $Platforms = "all",
     
     [ValidateSet('all', 'Debug', 'Release')]
     [System.String]
-    $Configuration = "all",
+    $Configurations = "all",
 
     [ValidateSet('all', 'CodeGenOnly')]
     [System.String]
@@ -52,15 +52,15 @@ Options:
 $ErrorActionPreference = "Stop"
 $BuildRootDirectory = (Split-Path $MyInvocation.MyCommand.Path)
 $BaseRepositoryDirectory = Split-Path $BuildRootDirectory
-$BuildPlatform = @($Platform)
-$BuildConfiguration = @($Configuration)
+$BuildPlatform = @($Platforms)
+$BuildConfiguration = @($Configurations)
 
-if ($Platform -eq "all")
+if ($Platforms -eq "all")
 {
     $BuildPlatform = @("x64", "ARM64")
 }
 
-if ($Configuration -eq "all")
+if ($Configurations -eq "all")
 {
     $BuildConfiguration = @("Release", "Debug")
 }
@@ -69,7 +69,6 @@ if ($Configuration -eq "all")
 $BuildTargetVersion = [System.Version]::new(0, 0, 0)
 $msbuildPath = & "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe" -latest -prerelease -products * -requires Microsoft.Component.MSBuild -find MSBuild\**\Bin\MSBuild.exe
 
-   
 Try 
 {
     $solutionName = "VbsEnclaveTooling"
@@ -80,12 +79,19 @@ Try
     Write-Host "Running nuget restore for $solutionName"
     & $nugetPath restore "$BaseRepositoryDirectory\$solutionName.sln"
 
+    # Create nuget pack properties that will always exist
+    $nuspecFile = "$BaseRepositoryDirectory\src\ToolingNuget\nuget\Microsoft.Windows.VbsEnclave.CodeGenerator.nuspec"
+    $nugetPackProperties = "target_version=$BuildTargetVersion;"
+    $nugetPackProperties += "vcpkg_sources=$BaseRepositoryDirectory\src\ToolingSharedLibrary\vcpkg_installed\x64-windows-static\x64-windows-static;";
+    $nugetPackProperties += "vcpkg_tools=$BaseRepositoryDirectory\src\ToolingSharedLibrary\vcpkg_installed\x64-windows-static\x64-windows\tools;";
+         
     $edlcodegen_exe_path = ""
+    $cppSupportLibPath = ""
 
     # Build
     foreach ($platform in $BuildPlatform)
     {
-        foreach ($configuration in $Build_Configuration)
+        foreach ($configuration in $BuildConfiguration)
         {
             Write-Host "Building $solutionName for EnvPlatform: $BuildPlatform Platform: $platform Configuration: $configuration"
             $msbuildArgs = 
@@ -105,7 +111,9 @@ Try
             }
 
             $cppSupportLibPath = "$BaseRepositoryDirectory\_build\$platform\$configuration\veil_enclave_cpp_support_${platform}_${configuration}_lib.lib"
+            $cppSupportLibPdbPath = "$BaseRepositoryDirectory\_build\$platform\$configuration\veil_enclave_cpp_support_${platform}_${configuration}_lib.pdb"
             $nugetPackProperties += "vbsenclave_codegen_cpp_support_${platform}_${configuration}_lib=$cppSupportLibPath;"
+            $nugetPackProperties += "vbsenclave_codegen_cpp_support_${platform}_${configuration}_pdb=$cppSupportLibPdbPath;"
 
             # only need the exe path once. If the user uses the -all flag for the configuration, we use the release version. Otherwise
             # we use the specified user provided configuration. e.g debug or release.
@@ -116,13 +124,7 @@ Try
             }
         }
     }
-
-    # Now create the nuget package 
-    $nuspecFile = "$BaseRepositoryDirectory\src\ToolingNuget\nuget\Microsoft.Windows.VbsEnclave.CodeGenerator.nuspec"
-    $nugetPackProperties = "target_version=$BuildTargetVersion;"
-    $nugetPackProperties += "vcpkg_sources=$BaseRepositoryDirectory\src\ToolingSharedLibrary\vcpkg_installed\x64-windows-static\x64-windows-static;";
-    $nugetPackProperties += "vcpkg_tools=$BaseRepositoryDirectory\src\ToolingSharedLibrary\vcpkg_installed\x64-windows-static\x64-windows\tools;";
-          
+ 
     # Pack nuget
     $packageNugetScriptPath  = "$BuildRootDirectory\PackageNuget.ps1"
 
@@ -135,12 +137,12 @@ Catch
     Write-Host ($formatString -f $fields) -ForegroundColor RED
     throw
 }
-}
+
 # Now that we've finished building the codegen project and nuget package, build the sdk project and its nuget package.
 if ($NugetPackagesToOutput -eq "all")
 {
     $sdkBuildScriptPath = "$BaseRepositoryDirectory\src\VbsEnclaveSDK\BuildScripts\build.ps1"
-    & $sdkBuildScriptPath -Platform $Platform -Configuration $Configuration -BuildCodeGenNugetDependency $false
+    & $sdkBuildScriptPath -Platforms $Platforms -Configurations $Configurations -BuildCodeGenNugetDependency $false
 }
 
 $TotalTime = (Get-Date)-$StartTime

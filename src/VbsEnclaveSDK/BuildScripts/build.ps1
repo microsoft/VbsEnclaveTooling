@@ -2,11 +2,11 @@
 Param(
     [ValidateSet('all', 'x64', 'ARM64')]
     [System.String]
-    $Platform = "all",
+    $Platforms = "all",
     
     [ValidateSet('all', 'Debug', 'Release')]
     [System.String]
-    $Configuration = "all",
+    $Configurations = "all",
     
     [System.Boolean]
     $BuildCodeGenNugetDependency = $true,
@@ -57,15 +57,15 @@ Options:
 $ErrorActionPreference = "Stop"
 $BuildRootDirectory = (Split-Path $MyInvocation.MyCommand.Path)
 $BaseSolutionDirectory = Split-Path $BuildRootDirectory
-$BuildPlatform = @($Platform)
-$BuildConfiguration = @($Configuration)
+$BuildPlatform = @($Platforms)
+$BuildConfiguration = @($Configurations)
 
-if ($Platform -eq "all")
+if ($Platforms -eq "all")
 {
     $BuildPlatform = @("x64", "ARM64")
 }
 
-if ($Configuration -eq "all")
+if ($Configurations -eq "all")
 {
     $BuildConfiguration = @("Release", "Debug")
 }
@@ -90,10 +90,14 @@ Try
     Write-Host "Running nuget restore for $solutionName"
     & $nugetPath restore "$BaseSolutionDirectory\$solutionName.sln"
 
+    # Create nuget pack properties that will always exist
+    $nuspecFile = "$BaseSolutionDirectory\src\veil_nuget\Nuget\Microsoft.Windows.VbsEnclave.SDK.nuspec"
+    $nugetPackProperties = "target_version=$BuildTargetVersion;"
+
     # Build
     foreach ($platform in $BuildPlatform)
     {
-        foreach ($configuration in $Build_Configuration)
+        foreach ($configuration in $BuildConfiguration)
         {
             Write-Host "Building $solutionName for EnvPlatform: $BuildPlatform Platform: $platform Configuration: $configuration"
             $msbuildArgs = 
@@ -113,16 +117,21 @@ Try
             }
 
             $cppSupportLibPath = "$BaseSolutionDirectory\_build\$platform\$configuration\veil_enclave_cpp_support_${platform}_${configuration}_lib.lib"
+            $cppSupportLibPdbPath = "$BaseSolutionDirectory\_build\$platform\$configuration\veil_enclave_cpp_support_${platform}_${configuration}_lib.pdb"
             $nugetPackProperties += "vbsenclave_sdk_cpp_support_${platform}_${configuration}_lib=$cppSupportLibPath;"
+            $nugetPackProperties += "vbsenclave_sdk_cpp_support_${platform}_${configuration}_pdb=$cppSupportLibPdbPath;"
+
             $veilEnclaveLibPath = "$BaseSolutionDirectory\_build\$platform\$configuration\veil_enclave_${platform}_${configuration}_lib.lib"
+            $veilEnclaveLibPdbPath = "$BaseSolutionDirectory\_build\$platform\$configuration\veil_enclave_${platform}_${configuration}_lib.pdb"
             $nugetPackProperties += "vbsenclave_sdk_enclave_${platform}_${configuration}_lib=$veilEnclaveLibPath;"
+            $nugetPackProperties += "vbsenclave_sdk_enclave_${platform}_${configuration}_pdb=$veilEnclaveLibPdbPath;"
+
             $veilHostLibPath = "$BaseSolutionDirectory\_build\$platform\$configuration\veil_host_lib\veil_host_${platform}_${configuration}_lib.lib"
+            $veilHostLibPdbPath = "$BaseSolutionDirectory\_build\$platform\$configuration\veil_host_lib\veil_host_${platform}_${configuration}_lib.pdb"
             $nugetPackProperties += "vbsenclave_sdk_host_${platform}_${configuration}_lib=$veilHostLibPath;"
+            $nugetPackProperties += "vbsenclave_sdk_host_${platform}_${configuration}_pdb=$veilHostLibPdbPath;"
         }
     }
-    # Now update the nuget pack properties
-    $nuspecFile = "$BaseSolutionDirectory\src\veil_nuget\Nuget\Microsoft.Windows.VbsEnclave.SDK.nuspec"
-    $nugetPackProperties = "target_version=$BuildTargetVersion;"
 
     # Pack nuget
     $packageNugetScriptPath  = "$BaseSolutionDirectory\..\..\BuildScripts\PackageNuget.ps1"
