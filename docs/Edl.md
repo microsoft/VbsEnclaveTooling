@@ -1,60 +1,77 @@
-## What are edl files
+## What are .edl files
 
-Edl stands for enclave definition language. It's a file format created by Intel, originally for their SGX hardware enclaves. However
-the format is open source and can be used as a way to declare functions that can be called between both the HostApp and the enclave.
-At its core it is a normal text file that can be used as an intermediary definition language, and its contents look similar to a C
-header file.
+EDL (enclave definition language) is an open file format created by Intel, originally for their SGX hardware enclaves.
+It's a text format (loosely resembling C), with a simple grammar, that can be used as an `intermediary definition language (idl)` to declare functions that can be called
+between both the hostApp and the enclave. You define your own types (such as `enums` and `structs`), declare `host-to-enclave` function calls in the `trusted` scope,
+and `enclave-to-host` function calls in the `untrusted` scope.
 
-## What the `VbsEnclaveTooling` project uses edl files for
+## What the `VbsEnclaveTooling` project uses .edl files for
 
-.edl files are used as the artifact developers provide to the tool, so that it may generate code that will marshal data into and
-out of the enclave. The generated code generates stub functions based on the functions provided within the .edl and these stub
-functions use the [CallEnclave](https://learn.microsoft.com/windows/win32/api/enclaveapi/nf-enclaveapi-callenclave) api to
-pass data between the hostApp and the enclave. The marshaling is handled within these stub functions.
+An `.edl` file is what our code generation tool uses to generate functions that interact with our ABI layer to marshal data between the 
+hostApp and the enclave.
+
+The tool generates stub functions and function declarations based on the content of the .edl file. The developer is
+expected to implement the generated function declarations.
 
 ## Some basics
 
-Note: Both open enclave and intels parsers were made specifically for working in a C environment, however we're using it for higher level languages
-like C++. Because of this, we have updated our parser to allow for a more C++ centric edl. See the supported types below.
+> [!NOTE]
+>  Both Open Enclave's and Intel's parsers were made specifically for working in a C environment, however we're using
+it for higher level languages like C++. Because of this, we have updated our parser to be C++ centric, to allow for more types. 
+See the supported types below for more information.
 
-Note: This section was adapted from Open Enclaves [Edger8rGettingStarted.md](https://github.com/openenclave/openenclave/blob/master/docs/GettingStartedDocs/Edger8rGettingStarted.md?plain=1).
-Which provides a great intro to the .edl file format. Here are the most notable aspects of the format that a developer
-needs to know for our uses of the format.
+Here is the general structure and grammar of our .edl format.
 
 ```edl
-enclave {
-    trusted {
-        public return_type EnclaveMethod1(
-            [parameter_constraints] parameter_type parameter_name
-            );
-        public return_type EnclaveMethod2(
-            [parameter_constraints] parameter_type parameter_name
+\\ Single line comment
+\* Multi line comment *\
+
+enclave 
+{
+
+    enum // Anonymous enum
+    {
+        <enum_name>,
+    };   
+    
+    enum <Enum> // Regular enum
+    {
+        // enum_value can only be a decimal, Hexidecimal or value from an anonymous enum
+        <enum_field> = <enum_value>, 
+    };
+
+    struct <Struct>
+    {
+        // field_type can be any supported edl type.
+        <field_type> <field_name>;
+    };
+
+    trusted 
+    {
+        <return_type> <EnclaveMethod>(
+            [attr] <parameter_type> <parameter_name>
             );
     };
 
-    untrusted {
-        return_type hostAppMethod1(
-            [parameter_constraints] parameter_type parameter_name
-            );
-        return_type hostAppMethod2(
-            [parameter_constraints] parameter_type parameter_name
+    untrusted 
+    {
+        <return_type> <HostappMethod>(
+            [attr] <parameter_type> <parameter_name>
             );
     };
 };
 ```
 
-*return_type* is a data type defining the type of the return value.
+| Term                            | Description                                                                                       |
+|---------------------------------|-------------------------------------------------------------------------------------------------- |
+| `return_type`                   | Defines the return value type, which must be one of the supported types.                          |
+| `parameter_type`                | Defines a parameter's `type`. Must be one of the supported types. |
+| `parameter_name`                | Defines a parameter's `name`. |
+| `attr`                          | Directives describing the parameter's direction (e.g., `[in]`, `[in, out]`, `[out]`).             |
+| `EnclaveMethod`                 | Methods exposed from the secure `enclave` to the unsecure `hostApp`.<br> The `hostApp` calls stub functions, while the implementation is inside the enclave`.|                                                                      |
+| `HostappMethod`                 | Methods exposed from the unsecure `hostApp` to the secure `enclave`.<br> The `enclave` calls stub functions, while the implementation is inside the `hostApp`. |
 
-*EnclaveMethod_** are the methods that are exposed from the secure enclave to the unsecure hostApp. The unsecure hostApp will call these methods and the enclave will implement them.
-
-*parameter_constraints* are a set of directives that describe such things as if a parameter is a pointer.
-
-*parameter_type/parameter_name* are a set of statements defining a parameter name and the associated parameter type.
-
-*hostAppMethod_** are methods that are exposed from the unsecure hostApp to the secure enclave. The enclave will call these methods and the hostApp will implement them.
-
-A simple example of an enclave method and hostApp method are as follows, lets call this file `Example.edl`:
-
+A simple example of a `.edl` file.
 
 ```edl
 enclave {
@@ -88,55 +105,26 @@ enclave {
 
 ## What the `VbsEnclaveTooling` project supports within .edl files.
 
-While our .edl parser is based on Open Enclaves implementation of intels .edl parser. There are a couple things we do not support
+### Built-in Data Types
 
-- `private` and `public` key words for function names of both trusted and untrusted functions.
-- Vbs enclaves do not support the concept of "switchless calls" calls so therefore this keyword is unsupported.
-- Calling conventions (like cdecl, stdcall, fastcall) are not supported.
-- Ability to import C headers into a .edl file to allow for types defined outside the .edl file is not supported. Only types defined in the .edl are supported.
-- The words `string`  and `wstring` are supported type keywords within an .edl file. Using the word `string` or `wstring` as an attribute is not supported.
-- Only the following attributes are supported [in], [out], [size], [count] are supported.
-- Pointers in function declarations are expected to have [in], [in, out] or [out] direction attribute. [in] means the parameter is expected to only be used in 
-  the function as input, while out means the function is expected to update the parameter before it exits for use 
-  by the calling function. Note: if no attributes are added the code generator will make these parameters [in] parameters.
-- The const keyword is not supported. The codegen layer will generate all non struct `[in]` parameters as `const <type>` and all struct `[in]` parameters
-  `const <type>&`. All other attributes (`inout` and `out`) are generated without the const modifier. If the `[out]` attribute is used with a non pointer type
-  then it will be generated as `<type>&`.
-- Functions are not permitted to return pointers as function return values directly. Alternatively the developer could also use an out parameter.
+| Category          | Types                                                                 |
+|-------------------|------------------------------------------------------------------------|
+| Basic Types       | `char`, `wchar_t`, `float`, `double`, `size_t`, `HRESULT`              |
+| Integer Types     | `int8_t`, `int16_t`, `int32_t`, `int64_t`<br>`uint8_t`, `uint16_t`,`uint32_t`, `uint64_t`, `uintptr_t` |
+| String Types      | `string`, `wstring`                                                    |
+| Complex Types     | `enum`, `struct`                                                       |
+| Pointer Types     | Pointers in the form of `*` (e.g, `uint32_t *`)                        |
+| Array Types       | Arrays in the form of `type name[value]` (e.g., `uint8_t numbers[10]`) |
+| Vector Types      | Vectors in the form of `vector<type>` (e.g., `vector<string>`)         |
 
+> [!NOTE]
+> - `vectors`, `arrays` and `structs` only support the types outlined above. `vectors` and `arrays`
+can be used as internal struct fields or function parameters.
+ - `arrays` can contain a non-numeric value within the edl file. The only value it supports other than
+numeric values is a value from an anonymous enum. `arrays` are considered fixed-sized, and in `C++`
+are generated as a `std::array` during code generation.
 
-### .edl built in Data types supported in both structs and functions
-- string
-- wstring
-- char
-- wchar_t
-- float
-- double
-- size_t
-- int8_t
-- int16_t
-- int32_t
-- int64_t
-- uint8_t
-- uint16_t
-- uint32_t
-- uint64_t
-- uintptr_t
-- enum
-- struct
-- pointers in the form of `*`
-- HRESULT
-- Arrays in the form of `type[value]` e.g `uint8_t[10]`
-- Vectors in the form of vector<type> e.g vector<string>
-
-Note: Vectors only support the types outlined above. For structs, only structs that appear in the .edl
-file can be used as a type within a vector declaration. Vectors can be used as internal struct fields
-or function parameters.
-
-Note: Arrays can contain a non numeric value within the edl file. The only value it supports other than
-numeric values is a value from an anonymous enum. Arrays are considered fixed sized and are generated as
-an `std::array` during code generation.
-
+Example showing how using an `anonymous enum` value can be used with an `array` in a `.edl` file. 
 ```C++
 enum
 {
@@ -146,5 +134,28 @@ enum
 struct
 {
     uint32_t[my_number] my_array; // This also works in a function declaration.
-}
+};
 ```
+
+### Unsupported functionality
+
+While our `.edl` parser is based on Open Enclave's implementation of Intel's .edl parser, there are some things we do not support:
+
+- `private` and `public` keywords for the function names of both trusted and untrusted functions.
+- `COM\WinRT` is not supported inside a `vbs enclave`. e.g `Events`, `RuntimeClasses` etc.
+- The concept of switchless calls is not encouraged, so the `switchless` keyword is unsupported.
+- Calling conventions (like `cdecl`, `stdcall`, `fastcall`) are not supported.
+- Ability to import `C headers` into an `.edl` file to allow for types defined outside the `.edl` file is not supported. Only types defined in the `.edl` are supported.
+- The words `string`  and `wstring` are supported type keywords within an `.edl` file. Using the word `string` or `wstring` as an attribute is not supported.
+- Only the following attributes are supported `[in]`, `[in, out]`, `[out]`.
+- Pointers in function declarations are expected to have an `[in]`, `[in, out]` or `[out]` direction attribute. `[in]` means the parameter is expected to only be used in 
+  the function as input, `[out]` means the parameter is expected to be used as output and lastly `[in, out]` means the parameter can be used for both.
+
+> [!NOTE]
+> If no attributes are specified, parameters default to `[in]`.
+
+- The `const` keyword is not supported. In code generation, all non-struct/non-container `[in]` parameters won't have the `const` qualifier; all struct/container
+  `[in]` parameters will have the `const` qualifier. All other attributes (`[in, out]` and `[out]`) are generated without the const qualifier, regardless of type.
+- Functions are not permitted to return raw pointers; use `[out]` with `*` to return a smart pointer.
+- The ability to compose `.edl` files with the `import` or `include` keywords is not supported.
+

@@ -3,7 +3,7 @@
     <PropertyGroup>
         <!-- Start -->
         <!-- 
-            Defaults for vbsenclavetooling.exe. The developer must at least provide an absolute path to their .edl file
+            Defaults for edlcodegen.exe. The developer must at least provide an absolute path to their .edl file
             via the <VbsEnclaveEdlPath /> attribute or there will be a build error advising that the path doesn't exist.
         -->
         <VbsEnclaveEdlPath></VbsEnclaveEdlPath>

@@ -20,7 +20,7 @@ namespace CmdlineParsingHelpers
     static inline void PrintUsage() {
         std::cout
             << "\n"
-            << "Usage: vbsenclavetooling.exe --Language <cpp> --EdlPath <filePath.edl> --ErrorHandling [ErrorCode | Exception]\n"
+            << "Usage: edlcodegen.exe --Language <cpp> --EdlPath <filePath.edl> --ErrorHandling [ErrorCode | Exception]\n"
             << "--OutputDirectory <DirectoryPath> --VirtualTrustLayer [HostApp | Enclave] --Vtl0ClassName <name_of_class> \n"
             << "--Namespace <name_of_class> --FlatbuffersCompilerPath <absolute_path_to_file>\n"
             << "\n"
