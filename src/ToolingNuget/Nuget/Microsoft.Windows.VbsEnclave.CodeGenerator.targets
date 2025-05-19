@@ -10,7 +10,7 @@
         <VbsEnclaveExeFilePath>$(VbsEnclaveCodegenPackageDir)bin\edlcodegen.exe</VbsEnclaveExeFilePath>
         <VbsEnclavePackageEnclaveAbiPath>$(VbsEnclaveCodegenPackageDir)src\VbsEnclaveABI</VbsEnclavePackageEnclaveAbiPath>
         <VbsEnclaveDeveloperEdlFileName>$([System.IO.Path]::GetFileName('$(VbsEnclaveEdlPath)'))</VbsEnclaveDeveloperEdlFileName>
-        <VbsEnclaveCodeGenAbiCppSupportLib>$(VbsEnclaveCodegenPackageDir)lib\native\$(Platform)\veil_enclave_cpp_support_lib.lib</VbsEnclaveCodeGenAbiCppSupportLib>
+        <VbsEnclaveCodeGenAbiCppSupportLib>$(VbsEnclaveCodegenPackageDir)lib\native\$(Platform)\veil_enclave_cpp_support_$(Platform)_$(Configuration)_lib.lib</VbsEnclaveCodeGenAbiCppSupportLib>
         <VbsEnclaveGeneratedFilesDir>$(ProjectDir)Generated Files</VbsEnclaveGeneratedFilesDir>
         <VcpkgSupportDir>$(VbsEnclaveCodegenPackageDir)vcpkg</VcpkgSupportDir>
         <FlatbuffersCompiler>$(VcpkgSupportDir)\tools\flatbuffers\flatc.exe</FlatbuffersCompiler>

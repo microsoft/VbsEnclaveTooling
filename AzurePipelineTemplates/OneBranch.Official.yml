@@ -50,11 +50,10 @@ extends:
         compiled: 
           enabled: true
         tsaEnabled: true
-
+      
     stages:
       - template: jobs/OneBranchBuild.yml@self
         parameters:
-          BuildConfiguration: 'release'
           CodeGenBuildVersion: $(CodeGenBuildVersion)
           SdkBuildVersion: $(SdkBuildVersion)
           OfficialBuild: true

@@ -1,7 +1,5 @@
 ﻿# build file for the veil soliution using the x64 and arm64 platforms
 parameters:
-  - name: BuildConfiguration
-    type: string
   - name: CodeGenBuildVersion
     type: string
   - name: SdkBuildVersion
@@ -24,11 +22,44 @@ jobs:
     NewCodeGenVersion: ${{ parameters.CodeGenBuildVersion }}
     ob_outputDirectory: '$(Build.SourcesDirectory)\signed_nuget'   
     ob_artifactBaseName: signed_sdk_nuget_package
-    BuildConfiguration: ${{ parameters.BuildConfiguration }}
     SdkNugetPackageVersion: ${{ parameters.SdkBuildVersion }}
     BaseBuildDirectory: $(Build.SourcesDirectory)\_build
     SdkBuildDirectory: $(Build.SourcesDirectory)\src\VbsEnclaveSDK\_build
+    x64ReleaseBuildLocation: $(SdkBuildDirectory)\x64\Release
+    x64DebugBuildLocation: $(SdkBuildDirectory)\x64\Debug
+    Arm64ReleaseBuildLocation: $(SdkBuildDirectory)\ARM64\Release
+    Arm64DebugBuildLocation: $(SdkBuildDirectory)\ARM64\Debug
 
+    # veil_enclave_lib pack args
+    VeilEnclaveLibX64Release: vbsenclave_sdk_enclave_x64_Release_lib=$(x64ReleaseBuildLocation)\veil_enclave_x64_Release_lib.lib  
+    VeilEnclaveLibX64Debug: vbsenclave_sdk_enclave_x64_Debug_lib=$(x64DebugBuildLocation)\veil_enclave_x64_Debug_lib.lib
+    VeilEnclaveLibARM64Release: vbsenclave_sdk_enclave_ARM64_Release_lib=$(Arm64ReleaseBuildLocation)\veil_enclave_ARM64_Release_lib
+    VeilEnclaveLibARM64Debug: vbsenclave_sdk_enclave_ARM64_Debug_lib=$(Arm64DebugBuildLocation)\veil_enclave_ARM64_Debug_lib
+    VeilEnclavePdbX64Release: vbsenclave_sdk_enclave_x64_Release_pdb=$(x64ReleaseBuildLocation)\veil_enclave_x64_Release_lib.pdb  
+    VeilEnclavePdbX64Debug: vbsenclave_sdk_enclave_x64_Debug_pdb=$(x64DebugBuildLocation)\veil_enclave_x64_Debug_lib.pdb
+    VeilEnclavePdbARM64Release: vbsenclave_sdk_enclave_ARM64_Release_pdb=$(Arm64ReleaseBuildLocation)\veil_enclave_ARM64_Release_lib.pdb
+    VeilEnclavePdbARM64Debug: vbsenclave_sdk_enclave_ARM64_Debug_pdb=$(Arm64DebugBuildLocation)\veil_enclave_ARM64_Debug_lib.pdb
+    
+    # veil_host_lib pack args
+    VeilHostLibX64Release: vbsenclave_sdk_host_x64_Release_lib=$(x64ReleaseBuildLocation)\veil_host_lib\veil_host_x64_Release_lib.lib  
+    VeilHostLibX64Debug: vbsenclave_sdk_host_x64_Debug_lib=$(x64DebugBuildLocation)\veil_host_lib\veil_host_x64_Debug_lib.lib
+    VeilHostLibARM64Release: vbsenclave_sdk_host_ARM64_Release_lib=$(Arm64ReleaseBuildLocation)\veil_host_lib\veil_host_ARM64_Release_lib.lib
+    VeilHostLibARM64Debug: vbsenclave_sdk_host_ARM64_Debug_lib=$(Arm64DebugBuildLocation)\veil_host_lib\veil_host_ARM64_Debug_lib.lib
+    VeilHostPdbX64Release: vbsenclave_sdk_host_x64_Release_pdb=$(x64ReleaseBuildLocation)\veil_host_lib\veil_host_x64_Release_lib.pdb  
+    VeilHostPdbX64Debug: vbsenclave_sdk_host_x64_Debug_pdb=$(x64DebugBuildLocation)\veil_host_lib\veil_host_x64_Debug_lib.pdb
+    VeilHostPdbARM64Release: vbsenclave_sdk_host_ARM64_Release_pdb=$(Arm64ReleaseBuildLocation)\veil_host_lib\veil_host_ARM64_Release_lib.pdb
+    VeilHostPdbARM64Debug: vbsenclave_sdk_host_ARM64_Debug_pdb=$(Arm64DebugBuildLocation)\veil_host_lib\veil_host_ARM64_Debug_lib.pdb
+    
+    # veil_cpp_support_lib pack args
+    VeilCppSupportLibX64Release: vbsenclave_sdk_cpp_support_x64_Release_lib=$(x64ReleaseBuildLocation)\veil_cpp_support_x64_Release_lib.lib  
+    VeilCppSupportLibX64Debug: vbsenclave_sdk_cpp_support_x64_Debug_lib=$(x64DebugBuildLocation)\veil_cpp_support_x64_Debug_lib.lib
+    VeilCppSupportLibARM64Release: vbsenclave_sdk_cpp_support_ARM64_Release_lib=$(Arm64ReleaseBuildLocation)\veil_cpp_support_ARM64_Release_lib.lib
+    VeilCppSupportLibARM64Debug: vbsenclave_sdk_cpp_support_ARM64_Debug_lib=$(Arm64DebugBuildLocation)\veil_cpp_support_ARM64_Debug_lib.lib
+    VeilCppSupportPdbX64Release: vbsenclave_sdk_cpp_support_x64_Release_pdb=$(x64ReleaseBuildLocation)\veil_cpp_support_x64_Release_lib.pdb  
+    VeilCppSupportPdbX64Debug: vbsenclave_sdk_cpp_support_x64_Debug_pdb=$(x64DebugBuildLocation)\veil_cpp_support_x64_Debug_lib.pdb
+    VeilCppSupportPdbARM64Release: vbsenclave_sdk_cpp_support_ARM64_Release_pdb=$(Arm64ReleaseBuildLocation)\veil_cpp_support_ARM64_Release_lib.pdb
+    VeilCppSupportPdbARM64Debug: vbsenclave_sdk_cpp_support_ARM64_Debug_pdb=$(Arm64DebugBuildLocation)\veil_cpp_support_ARM64_Debug_lib.pdb
+    
   steps:
    # Download the nupkg file from the codegen job
     - task: DownloadPipelineArtifact@2
@@ -106,18 +137,32 @@ jobs:
         nugetConfigPath: NuGet.config
 
     - task: VSBuild@1
-      displayName: 'Build Veil Solution x64'
+      displayName: 'Build Veil Solution x64 release'
       inputs:
         solution: $(SdkSolution)
         platform:  'x64'
-        configuration: $(BuildConfiguration)
+        configuration: 'Release'
 
     - task: VSBuild@1
-      displayName: 'Build Veil Solution  arm64'
+      displayName: 'Build Veil Solution  arm64 release'
       inputs:
         solution: $(SdkSolution)
         platform:  'arm64'
-        configuration: $(BuildConfiguration)
+        configuration: 'Release'
+
+    - task: VSBuild@1
+      displayName: 'Build Veil Solution x64 debug'
+      inputs:
+        solution: $(SdkSolution)
+        platform:  'x64'
+        configuration: 'Debug'
+
+    - task: VSBuild@1
+      displayName: 'Build Veil Solution  arm64 debug'
+      inputs:
+        solution: $(SdkSolution)
+        platform:  'arm64'
+        configuration: 'Debug'
 
     - task: NuGetToolInstaller@1
       displayName: Use NuGet 6.0.2
@@ -130,7 +175,7 @@ jobs:
       displayName: 'Build SDK NuGet package'
       inputs:
         command: 'custom'
-        arguments: 'pack src\VbsEnclaveSDK\src\veil_nuget\Nuget\Microsoft.Windows.VbsEnclave.SDK.nuspec -NonInteractive -OutputDirectory $(BaseBuildDirectory) -Properties target_version=$(SdkNugetPackageVersion);vbsenclave_sdk_enclave_x64_lib=$(SdkBuildDirectory)\x64\$(BuildConfiguration)\veil_enclave_lib.lib;vbsenclave_sdk_enclave_arm64_lib=$(SdkBuildDirectory)\arm64\$(BuildConfiguration)\veil_enclave_lib.lib;vbsenclave_sdk_host_x64_lib=$(SdkBuildDirectory)\x64\$(BuildConfiguration)\veil_host_lib\veil_host_lib.lib;vbsenclave_sdk_host_arm64_lib=$(SdkBuildDirectory)\arm64\$(BuildConfiguration)\veil_host_lib\veil_host_lib.lib;vbsenclave_sdk_cpp_support_x64_lib=$(SdkBuildDirectory)\x64\$(BuildConfiguration)\veil_enclave_cpp_support_lib.lib;vbsenclave_sdk_cpp_support_arm64_lib=$(SdkBuildDirectory)\arm64\$(BuildConfiguration)\veil_enclave_cpp_support_lib.lib; -Version $(SdkNugetPackageVersion) -Verbosity Detailed'
+        arguments: 'pack src\VbsEnclaveSDK\src\veil_nuget\Nuget\Microsoft.Windows.VbsEnclave.SDK.nuspec -NonInteractive -OutputDirectory $(BaseBuildDirectory) -Properties target_version=$(SdkNugetPackageVersion);$(VeilEnclaveLibX64Release);$(VeilEnclaveLibX64Debug);$(VeilEnclaveLibARM64Release);$(VeilEnclaveLibARM64Debug);$(VeilHostLibX64Release);$(VeilHostLibX64Debug);$(VeilHostLibARM64Release);$(VeilHostLibARM64Debug);$(VeilCppSupportLibX64Release);$(VeilCppSupportLibX64Debug);$(VeilCppSupportLibARM64Release);$(VeilCppSupportLibARM64Debug);$(VeilEnclavePdbX64Release);$(VeilEnclavePdbX64Debug);$(VeilEnclavePdbARM64Release);$(VeilEnclavePdbARM64Debug);$(VeilHostPdbX64Release);$(VeilHostPdbX64Debug);$(VeilHostPdbARM64Release);$(VeilHostPdbARM64Debug);$(VeilCppSupportPdbX64Release);$(VeilCppSupportPdbX64Debug);$(VeilCppSupportPdbARM64Release);$(VeilCppSupportPdbARM64Debug); -Version $(SdkNugetPackageVersion) -Verbosity Detailed'
 
     # Sign sdk nuget package
     - task: onebranch.pipeline.signing@1

@@ -1,12 +1,12 @@
 [CmdletBinding()]
 Param(
-    [ValidateSet('x64', 'arm64')]
+    [ValidateSet('all', 'x64', 'ARM64')]
     [System.String]
-    $Platform = "x64",
+    $Platforms = "all",
     
-    [ValidateSet('debug', 'release')]
+    [ValidateSet('all', 'Debug', 'Release')]
     [System.String]
-    $Configuration = "debug",
+    $Configurations = "all",
 
     [ValidateSet('all', 'CodeGenOnly')]
     [System.String]
@@ -35,10 +35,12 @@ Options:
   -Platform <platform>
       Only build the selected platform(s)
       Example: -Platform x64
+      Example: -Platform all
 
   -Configuration <configuration>
       Only build the selected configuration(s)
       Example: -Configuration release
+      Example: -Configuration all
 
   -Help
       Display this usage message.
@@ -50,6 +52,18 @@ Options:
 $ErrorActionPreference = "Stop"
 $BuildRootDirectory = (Split-Path $MyInvocation.MyCommand.Path)
 $BaseRepositoryDirectory = Split-Path $BuildRootDirectory
+$BuildPlatform = @($Platforms)
+$BuildConfiguration = @($Configurations)
+
+if ($Platforms -eq "all")
+{
+    $BuildPlatform = @("x64", "ARM64")
+}
+
+if ($Configurations -eq "all")
+{
+    $BuildConfiguration = @("Release", "Debug")
+}
 
 # Use the triple zeros as the version number for local builds.
 $BuildTargetVersion = [System.Version]::new(0, 0, 0)
@@ -65,34 +79,52 @@ Try
     Write-Host "Running nuget restore for $solutionName"
     & $nugetPath restore "$BaseRepositoryDirectory\$solutionName.sln"
 
-    # Build
-    
-    Write-Host "Building $solutionName for EnvPlatform: $BuildPlatform Platform: $platform Configuration: $configuration"
-    $msbuildArgs = 
-    @(
-        ("$BaseRepositoryDirectory\$solutionName.sln"),
-        ("/p:Platform=$Platform"),
-        ("/p:Configuration=$Configuration"),
-        ("/restore"),
-        ("/binaryLogger:$BaseRepositoryDirectory\_build\$platform\$configuration\$solutionName.$platform.$configuration.binlog")
-    )
-
-    & $msbuildPath $msbuildArgs
-    if ($LASTEXITCODE -ne 0)
-    {
-        Write-Error "MSBuild failed with exit code $LASTEXITCODE"
-        exit $LASTEXITCODE
-    }
-
-    # Now create the nuget package 
+    # Create nuget pack properties that will always exist
     $nuspecFile = "$BaseRepositoryDirectory\src\ToolingNuget\nuget\Microsoft.Windows.VbsEnclave.CodeGenerator.nuspec"
     $nugetPackProperties = "target_version=$BuildTargetVersion;"
     $nugetPackProperties += "vcpkg_sources=$BaseRepositoryDirectory\src\ToolingSharedLibrary\vcpkg_installed\x64-windows-static\x64-windows-static;";
     $nugetPackProperties += "vcpkg_tools=$BaseRepositoryDirectory\src\ToolingSharedLibrary\vcpkg_installed\x64-windows-static\x64-windows\tools;";
-    $nugetPackProperties += "vbsenclave_codegen_x64_exe=$BaseRepositoryDirectory\_build\x64\$configuration\edlcodegen.exe;"
-    $cppSupportLibPath = "$BaseRepositoryDirectory\_build\$platform\$configuration\veil_enclave_cpp_support_lib.lib"
-    $nugetPackProperties += "vbsenclave_codegen_cpp_support_$platform"+"_lib=$cppSupportLibPath;"
-          
+         
+    $edlcodegen_exe_path = ""
+    $cppSupportLibPath = ""
+
+    # Build
+    foreach ($platform in $BuildPlatform)
+    {
+        foreach ($configuration in $BuildConfiguration)
+        {
+            Write-Host "Building $solutionName for EnvPlatform: $BuildPlatform Platform: $platform Configuration: $configuration"
+            $msbuildArgs = 
+            @(
+                ("$BaseRepositoryDirectory\$solutionName.sln"),
+                ("/p:Platform=$Platform"),
+                ("/p:Configuration=$Configuration"),
+                ("/restore"),
+                ("/binaryLogger:$BaseRepositoryDirectory\_build\$platform\$configuration\$solutionName.$platform.$configuration.binlog")
+            )
+
+            & $msbuildPath $msbuildArgs
+            if ($LASTEXITCODE -ne 0)
+            {
+                Write-Error "MSBuild failed with exit code $LASTEXITCODE"
+                exit $LASTEXITCODE
+            }
+
+            $cppSupportLibPath = "$BaseRepositoryDirectory\_build\$platform\$configuration\veil_enclave_cpp_support_${platform}_${configuration}_lib.lib"
+            $cppSupportLibPdbPath = "$BaseRepositoryDirectory\_build\$platform\$configuration\veil_enclave_cpp_support_${platform}_${configuration}_lib.pdb"
+            $nugetPackProperties += "vbsenclave_codegen_cpp_support_${platform}_${configuration}_lib=$cppSupportLibPath;"
+            $nugetPackProperties += "vbsenclave_codegen_cpp_support_${platform}_${configuration}_pdb=$cppSupportLibPdbPath;"
+
+            # only need the exe path once. If the user uses the -all flag for the configuration, we use the release version. Otherwise
+            # we use the specified user provided configuration. e.g debug or release.
+            if ($edlcodegen_exe_path -eq "")
+            {
+                $edlcodegen_exe_path = "vbsenclave_codegen_x64_exe=$BaseRepositoryDirectory\_build\x64\$configuration\edlcodegen.exe;"
+                $nugetPackProperties += $edlcodegen_exe_path
+            }
+        }
+    }
+ 
     # Pack nuget
     $packageNugetScriptPath  = "$BuildRootDirectory\PackageNuget.ps1"
 
@@ -110,7 +142,7 @@ Catch
 if ($NugetPackagesToOutput -eq "all")
 {
     $sdkBuildScriptPath = "$BaseRepositoryDirectory\src\VbsEnclaveSDK\BuildScripts\build.ps1"
-    & $sdkBuildScriptPath -Platform $Platform -Configuration $Configuration -BuildCodeGenNugetDependency $false
+    & $sdkBuildScriptPath -Platforms $Platforms -Configurations $Configurations -BuildCodeGenNugetDependency $false
 }
 
 $TotalTime = (Get-Date)-$StartTime

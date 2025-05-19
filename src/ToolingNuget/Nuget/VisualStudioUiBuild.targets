@@ -5,10 +5,16 @@
 
         <!-- Property value should match the "ToolingExecutable" projects 'target name' property  -->
         <VbsEnclaveCodegenNugetPackExePath>$(SolutionDir)_build\x64\$(Configuration)\edlcodegen.exe</VbsEnclaveCodegenNugetPackExePath>
-        <VbsEnclaveCodeGenNugetPackCppSupportPath>$(OutDir)veil_enclave_cpp_support_lib.lib</VbsEnclaveCodeGenNugetPackCppSupportPath>
+        
+        <!-- 
+            Note: Currently we only support building one platform and one configuration at a time when using the Visual Studio UI. If you need the CodeGenerator
+            nuget package to contain both arm64 and x64 and debug and release libraries use the build.ps1 script in <repo-root>\buildScripts
+        -->
+        <VbsEnclaveCodeGenNugetPackCppSupportPath>$(OutDir)veil_enclave_cpp_support_$(Platform)_$(Configuration)_lib.lib</VbsEnclaveCodeGenNugetPackCppSupportPath>
+        <VbsEnclaveCodeGenNugetPackCppSupportPdbPath>$(OutDir)veil_enclave_cpp_support_$(Platform)_$(Configuration)_lib.pdb</VbsEnclaveCodeGenNugetPackCppSupportPdbPath>
         <VcpkgSupportPath>$(SolutionDir)src\ToolingSharedLibrary\vcpkg_installed\x64-windows-static\x64-windows-static</VcpkgSupportPath>
         <VcpkgToolsPath>$(SolutionDir)src\ToolingSharedLibrary\vcpkg_installed\x64-windows-static\x64-windows\tools</VcpkgToolsPath>
-        <VbsEnclaveNugetPackProperties>target_version=$(VbsEnclaveCodeGenNugetPackVersionNumber);vbsenclave_codegen_x64_exe=$(VbsEnclaveCodegenNugetPackExePath);vcpkg_sources=$(VcpkgSupportPath);vcpkg_tools=$(VcpkgToolsPath);vbsenclave_codegen_cpp_support_$(Platform)_lib=$(VbsEnclaveCodeGenNugetPackCppSupportPath);</VbsEnclaveNugetPackProperties>
+        <VbsEnclaveNugetPackProperties>target_version=$(VbsEnclaveCodeGenNugetPackVersionNumber);vbsenclave_codegen_x64_exe=$(VbsEnclaveCodegenNugetPackExePath);vcpkg_sources=$(VcpkgSupportPath);vcpkg_tools=$(VcpkgToolsPath);vbsenclave_codegen_cpp_support_$(Platform)_$(configuration)_lib=$(VbsEnclaveCodeGenNugetPackCppSupportPath);vbsenclave_codegen_cpp_support_$(Platform)_$(configuration)_pdb=$(VbsEnclaveCodeGenNugetPackCppSupportPdbPath);</VbsEnclaveNugetPackProperties>
         <VbsEnclaveNugetPackOutputDirectory>$(SolutionDir)_build</VbsEnclaveNugetPackOutputDirectory>
         <VbsEnclaveNugetPackScriptFile>$(SolutionDir)buildScripts\PackageNuget.ps1</VbsEnclaveNugetPackScriptFile>
     </PropertyGroup>
