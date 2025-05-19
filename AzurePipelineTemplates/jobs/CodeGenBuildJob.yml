@@ -21,7 +21,6 @@ jobs:
     ob_outputDirectory: '$(Build.SourcesDirectory)\signed_nuget'   
     ob_artifactBaseName: signed_codegen_nuget_package 
     BaseBuildDirectory: $(Build.SourcesDirectory)\_build
-    BuildConfiguration: ${{ parameters.BuildConfiguration }}
     x64ReleaseBuildLocation: $(BaseBuildDirectory)\x64\Release
     x64DebugBuildLocation: $(BaseBuildDirectory)\x64\Debug
     Arm64ReleaseBuildLocation: $(BaseBuildDirectory)\ARM64\Release
