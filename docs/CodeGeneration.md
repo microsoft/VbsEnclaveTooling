@@ -270,9 +270,7 @@ namespace VbsEnclave
     {
         struct MyEnclave
         {
-
         public:
-
             static HRESULT UntrustedExample_callback(
                 _Inout_ std::string& some_string,
                 _Out_ std::wstring& some_wstring);

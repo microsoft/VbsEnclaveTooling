@@ -22,9 +22,6 @@ See the supported types below for more information.
 
 Here is the general structure and grammar of our .edl format.
 
-> [!NOTE]
->  We do not currently support the `import` statement.
-
 ```edl
 \\ Single line comment
 \* Multi line comment *\
@@ -71,7 +68,7 @@ enclave
 | `parameter_type`                | Defines a parameter's `type`. Must be one of the supported types. |
 | `parameter_name`                | Defines a parameter's `name`. |
 | `attr`                          | Directives describing the parameter's direction (e.g., `[in]`, `[in, out]`, `[out]`).             |
-| `EnclaveMethod`                 | Methods exposed from the secure `enclave` to the unsecure `hostApp`.<br> The `hostApp` calls stub functions, while the implementation is inside the `enclave`.|                                                                      |
+| `EnclaveMethod`                 | Methods exposed from the secure `enclave` to the unsecure `hostApp`.<br> The `hostApp` calls stub functions, while the implementation is inside the enclave`.|                                                                      |
 | `HostappMethod`                 | Methods exposed from the unsecure `hostApp` to the secure `enclave`.<br> The `enclave` calls stub functions, while the implementation is inside the `hostApp`. |
 
 A simple example of a `.edl` file.
