@@ -12,7 +12,7 @@ jobs:
     type: windows
   variables:
     CodeGenSolution: $(Build.SourcesDirectory)\VbsEnclaveTooling.sln
-    VcpkgDirectory: $(Build.SourcesDirectory)\src\ToolingSharedLibrary\vcpkg_installed\x64-windows-static\x64-windows
+    VcpkgDirectory: $(Build.SourcesDirectory)\src\ToolingSharedLibrary\vcpkg_installed\x64-windows-static
     VcpkgToolsDirectory: $(VcpkgDirectory)\x64-windows\tools
     VcpkgSourcesDirectory: $(VcpkgDirectory)\x64-windows-static
     VCPKG_ROOT: '$(Pipeline.Workspace)\s\vcpkg'

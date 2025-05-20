@@ -33,8 +33,8 @@ jobs:
     # veil_enclave_lib pack args
     VeilEnclaveLibX64Release: vbsenclave_sdk_enclave_x64_Release_lib=$(x64ReleaseBuildLocation)\veil_enclave_x64_Release_lib.lib  
     VeilEnclaveLibX64Debug: vbsenclave_sdk_enclave_x64_Debug_lib=$(x64DebugBuildLocation)\veil_enclave_x64_Debug_lib.lib
-    VeilEnclaveLibARM64Release: vbsenclave_sdk_enclave_ARM64_Release_lib=$(Arm64ReleaseBuildLocation)\veil_enclave_ARM64_Release_lib
-    VeilEnclaveLibARM64Debug: vbsenclave_sdk_enclave_ARM64_Debug_lib=$(Arm64DebugBuildLocation)\veil_enclave_ARM64_Debug_lib
+    VeilEnclaveLibARM64Release: vbsenclave_sdk_enclave_ARM64_Release_lib=$(Arm64ReleaseBuildLocation)\veil_enclave_ARM64_Release_lib.lib
+    VeilEnclaveLibARM64Debug: vbsenclave_sdk_enclave_ARM64_Debug_lib=$(Arm64DebugBuildLocation)\veil_enclave_ARM64_Debug_lib.lib
     VeilEnclavePdbX64Release: vbsenclave_sdk_enclave_x64_Release_pdb=$(x64ReleaseBuildLocation)\veil_enclave_x64_Release_lib.pdb  
     VeilEnclavePdbX64Debug: vbsenclave_sdk_enclave_x64_Debug_pdb=$(x64DebugBuildLocation)\veil_enclave_x64_Debug_lib.pdb
     VeilEnclavePdbARM64Release: vbsenclave_sdk_enclave_ARM64_Release_pdb=$(Arm64ReleaseBuildLocation)\veil_enclave_ARM64_Release_lib.pdb
