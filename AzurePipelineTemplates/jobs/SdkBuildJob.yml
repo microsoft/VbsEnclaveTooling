@@ -50,15 +50,15 @@ jobs:
     VeilHostPdbARM64Release: vbsenclave_sdk_host_ARM64_Release_pdb=$(Arm64ReleaseBuildLocation)\veil_host_lib\veil_host_ARM64_Release_lib.pdb
     VeilHostPdbARM64Debug: vbsenclave_sdk_host_ARM64_Debug_pdb=$(Arm64DebugBuildLocation)\veil_host_lib\veil_host_ARM64_Debug_lib.pdb
     
-    # veil_cpp_support_lib pack args
-    VeilCppSupportLibX64Release: vbsenclave_sdk_cpp_support_x64_Release_lib=$(x64ReleaseBuildLocation)\veil_cpp_support_x64_Release_lib.lib  
-    VeilCppSupportLibX64Debug: vbsenclave_sdk_cpp_support_x64_Debug_lib=$(x64DebugBuildLocation)\veil_cpp_support_x64_Debug_lib.lib
-    VeilCppSupportLibARM64Release: vbsenclave_sdk_cpp_support_ARM64_Release_lib=$(Arm64ReleaseBuildLocation)\veil_cpp_support_ARM64_Release_lib.lib
-    VeilCppSupportLibARM64Debug: vbsenclave_sdk_cpp_support_ARM64_Debug_lib=$(Arm64DebugBuildLocation)\veil_cpp_support_ARM64_Debug_lib.lib
-    VeilCppSupportPdbX64Release: vbsenclave_sdk_cpp_support_x64_Release_pdb=$(x64ReleaseBuildLocation)\veil_cpp_support_x64_Release_lib.pdb  
-    VeilCppSupportPdbX64Debug: vbsenclave_sdk_cpp_support_x64_Debug_pdb=$(x64DebugBuildLocation)\veil_cpp_support_x64_Debug_lib.pdb
-    VeilCppSupportPdbARM64Release: vbsenclave_sdk_cpp_support_ARM64_Release_pdb=$(Arm64ReleaseBuildLocation)\veil_cpp_support_ARM64_Release_lib.pdb
-    VeilCppSupportPdbARM64Debug: vbsenclave_sdk_cpp_support_ARM64_Debug_pdb=$(Arm64DebugBuildLocation)\veil_cpp_support_ARM64_Debug_lib.pdb
+    # veil_enclave_cpp_support_lib pack args
+    VeilCppSupportLibX64Release: vbsenclave_sdk_cpp_support_x64_Release_lib=$(x64ReleaseBuildLocation)\veil_enclave_cpp_support_x64_Release_lib.lib  
+    VeilCppSupportLibX64Debug: vbsenclave_sdk_cpp_support_x64_Debug_lib=$(x64DebugBuildLocation)\veil_enclave_cpp_support_x64_Debug_lib.lib
+    VeilCppSupportLibARM64Release: vbsenclave_sdk_cpp_support_ARM64_Release_lib=$(Arm64ReleaseBuildLocation)\veil_enclave_cpp_support_ARM64_Release_lib.lib
+    VeilCppSupportLibARM64Debug: vbsenclave_sdk_cpp_support_ARM64_Debug_lib=$(Arm64DebugBuildLocation)\veil_enclave_cpp_support_ARM64_Debug_lib.lib
+    VeilCppSupportPdbX64Release: vbsenclave_sdk_cpp_support_x64_Release_pdb=$(x64ReleaseBuildLocation)\veil_enclave_cpp_support_x64_Release_lib.pdb  
+    VeilCppSupportPdbX64Debug: vbsenclave_sdk_cpp_support_x64_Debug_pdb=$(x64DebugBuildLocation)\veil_enclave_cpp_support_x64_Debug_lib.pdb
+    VeilCppSupportPdbARM64Release: vbsenclave_sdk_cpp_support_ARM64_Release_pdb=$(Arm64ReleaseBuildLocation)\veil_enclave_cpp_support_ARM64_Release_lib.pdb
+    VeilCppSupportPdbARM64Debug: vbsenclave_sdk_cpp_support_ARM64_Debug_pdb=$(Arm64DebugBuildLocation)\veil_enclave_cpp_support_ARM64_Debug_lib.pdb
     
   steps:
    # Download the nupkg file from the codegen job
