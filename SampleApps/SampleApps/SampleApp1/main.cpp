@@ -279,7 +279,7 @@ int mainEncryptDecrpyt(uint32_t activityLevel)
 {
     int choice;
     std::wstring input;
-    const std::wstring encrytedKeyDirPath = std::filesystem::current_path().c_str();;
+    const std::wstring encrytedKeyDirPath = std::filesystem::current_path().c_str();
     const std::wstring encryptedDataDirPath = std::filesystem::current_path().c_str();
     std::wstring encryptedInputFilePath = encryptedDataDirPath + L"\\encrypted";
     std::wstring tagFilePath = encrytedKeyDirPath + L"\\tag";

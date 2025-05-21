@@ -49,9 +49,9 @@ namespace veil::vtl0
                 return modified;
             }
 
-            void SetLogFilePath()
-            {
-                logFilePath = L"c:\\VeilLogs\\" + ReplaceForbiddenFilenameChars(CreateTimestamp()) + L".txt";
+            void SetLogFilePath()  
+            {  
+               logFilePath = std::filesystem::current_path().wstring() + L"\\" + ReplaceForbiddenFilenameChars(CreateTimestamp()) + L".txt";  
             }
 
             static std::wstring CreateTimestamp()
