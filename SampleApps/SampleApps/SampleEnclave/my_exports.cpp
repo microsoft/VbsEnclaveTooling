@@ -292,7 +292,7 @@ HRESULT VbsEnclave::VTL1_Declarations::RunEncryptionKeyExample_CreateEncryptionK
     
     auto activityLevel = (veil::any::logger::eventLevel)activity_level;
 
-    veil::vtl1::logger::implementation::add_log_from_enclave(
+    veil::vtl1::logger::add_log_from_enclave(
         L"[Enclave] In RunEncryptionKeyExample_CreateEncryptionKeyImpl", 
         veil::any::logger::eventLevel::EVENT_LEVEL_CRITICAL,
         activityLevel,
@@ -301,7 +301,7 @@ HRESULT VbsEnclave::VTL1_Declarations::RunEncryptionKeyExample_CreateEncryptionK
     debug_print("");
     debug_print(L"[Create flow]");
     debug_print("");
-    veil::vtl1::logger::implementation::add_log_from_enclave(
+    veil::vtl1::logger::add_log_from_enclave(
         L"[Enclave] Create flow", 
         veil::any::logger::eventLevel::EVENT_LEVEL_VERBOSE,
         activityLevel,
@@ -311,7 +311,7 @@ HRESULT VbsEnclave::VTL1_Declarations::RunEncryptionKeyExample_CreateEncryptionK
 
     // Generate our encryption key
     debug_print(L"1. Generating our encryption key");
-    veil::vtl1::logger::implementation::add_log_from_enclave(
+    veil::vtl1::logger::add_log_from_enclave(
         L"[Enclave] Generating our encryption key",
         veil::any::logger::eventLevel::EVENT_LEVEL_INFO,
         activityLevel,
@@ -319,7 +319,7 @@ HRESULT VbsEnclave::VTL1_Declarations::RunEncryptionKeyExample_CreateEncryptionK
     auto encryptionKeyBytes = veil::vtl1::crypto::generate_symmetric_key_bytes();
     debug_print(L" ...CHECKPOINT: encryption key byte count: %d", encryptionKeyBytes.size());
     std::wstring logSizeStr = std::to_wstring(encryptionKeyBytes.size());
-    veil::vtl1::logger::implementation::add_log_from_enclave(
+    veil::vtl1::logger::add_log_from_enclave(
         L"[Enclave] Encryption key byte count: " + logSizeStr,
         veil::any::logger::eventLevel::EVENT_LEVEL_CRITICAL,
         activityLevel,
@@ -328,7 +328,7 @@ HRESULT VbsEnclave::VTL1_Declarations::RunEncryptionKeyExample_CreateEncryptionK
     
     // Seal it so only our enclave may open it
     debug_print(L"4. Sealing the serialized key material for our enclave only");
-    veil::vtl1::logger::implementation::add_log_from_enclave(
+    veil::vtl1::logger::add_log_from_enclave(
         L"[Enclave] Sealing the serialized key material for our enclave only",
         veil::any::logger::eventLevel::EVENT_LEVEL_INFO,
         activityLevel,
@@ -336,7 +336,7 @@ HRESULT VbsEnclave::VTL1_Declarations::RunEncryptionKeyExample_CreateEncryptionK
     auto sealedKeyMaterial = veil::vtl1::crypto::seal_data(encryptionKeyBytes, ENCLAVE_IDENTITY_POLICY_SEAL_SAME_IMAGE, ENCLAVE_RUNTIME_POLICY_ALLOW_FULL_DEBUG);
     debug_print(L" ...CHECKPOINT: sealed key material byte count: %d", sealedKeyMaterial.size());
     logSizeStr = std::to_wstring(sealedKeyMaterial.size());
-    veil::vtl1::logger::implementation::add_log_from_enclave(
+    veil::vtl1::logger::add_log_from_enclave(
         L"[Enclave] Sealed key material byte count: " + logSizeStr,
         veil::any::logger::eventLevel::EVENT_LEVEL_CRITICAL,
         activityLevel,
@@ -372,7 +372,7 @@ HRESULT RunEncryptionKeyExample_LoadEncryptionKeyImpl(
 
     auto activityLevel = (veil::any::logger::eventLevel)activity_level;
 
-    veil::vtl1::logger::implementation::add_log_from_enclave(
+    veil::vtl1::logger::add_log_from_enclave(
         L"[Enclave] In RunEncryptionKeyExample_LoadEncryptionKeyImpl",
         veil::any::logger::eventLevel::EVENT_LEVEL_CRITICAL,
         activityLevel,
