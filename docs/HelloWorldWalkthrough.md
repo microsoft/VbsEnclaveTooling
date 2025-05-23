@@ -200,7 +200,7 @@ enclave
         * `Command line` -> `additional options` -> **/ENCLAVE /INTEGRITYCHECK /GUARD:MIXED**
           
     * `Post-Build Event` under `Build Events`:
-        * `Command Line` -> **$(VEIID_Command)$(SIGNTOOL_Command)**
+        * `Command Line` -> **`$(VEIID_Command)$(SIGNTOOL_Command)`**
         * `Description` -> **Apply VEIID Protection and sign the enclave**
         * `Use In Build` -> **Yes**
 
