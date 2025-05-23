@@ -279,10 +279,10 @@ int mainEncryptDecrpyt(uint32_t activityLevel)
 {
     int choice;
     std::wstring input;
-    const std::wstring encrytedKeyDirPath = std::filesystem::current_path().c_str();;
-    const std::wstring encryptedDataDirPath = std::filesystem::current_path().c_str();
+    const std::wstring encryptedKeyDirPath = std::filesystem::current_path().wstring();
+    const std::wstring encryptedDataDirPath = std::filesystem::current_path().wstring();
     std::wstring encryptedInputFilePath = encryptedDataDirPath + L"\\encrypted";
-    std::wstring tagFilePath = encrytedKeyDirPath + L"\\tag";
+    std::wstring tagFilePath = encryptedKeyDirPath + L"\\tag";
     bool programExecuted = false;
 
     veil::vtl0::logger::logger veilLog(
@@ -309,7 +309,7 @@ int mainEncryptDecrpyt(uint32_t activityLevel)
     constexpr PCWSTR keyMoniker = L"MyEncryptionKey-001";
 
     // File with secured encryption key bytes
-    auto keyFilePath = std::filesystem::path(encrytedKeyDirPath) / keyMoniker;
+    auto keyFilePath = std::filesystem::path(encryptedKeyDirPath) / keyMoniker;
 
     do
     {
@@ -418,10 +418,10 @@ int mainEncryptDecrpytThreadpool(uint32_t activityLevel)
 
     int choice;
     std::wstring input1, input2;
-    const std::wstring encrytedKeyDirPath = std::filesystem::current_path().c_str();
-    const std::wstring encryptedDataDirPath = std::filesystem::current_path().c_str();
+    const std::wstring encryptedKeyDirPath = std::filesystem::current_path().wstring();
+    const std::wstring encryptedDataDirPath = std::filesystem::current_path().wstring();
     std::wstring encryptedInputFilePath = encryptedDataDirPath + L"\\encrypted";
-    std::wstring tagFilePath = encrytedKeyDirPath + L"\\tag";
+    std::wstring tagFilePath = encryptedKeyDirPath + L"\\tag";
     bool programExecuted = false;
 
     veil::vtl0::logger::logger veilLog(
@@ -433,7 +433,7 @@ int mainEncryptDecrpytThreadpool(uint32_t activityLevel)
     constexpr PCWSTR keyMoniker = L"MyEncryptionKey-001";
 
     // File with secured encryption key bytes
-    auto keyFilePath = std::filesystem::path(encrytedKeyDirPath) / keyMoniker;
+    auto keyFilePath = std::filesystem::path(encryptedKeyDirPath) / keyMoniker;
 
     do
     {

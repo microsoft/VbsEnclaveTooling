@@ -70,4 +70,4 @@ https://learn.microsoft.com/windows/win32/trusted-execution/vbs-enclaves-dev-gui
 
 	- We support telemetry strings from the Enclave that are 2048 chars or shorter. Refer to telemetry usage in the 
 sample app.
-	- Telemetry files are stored in c:\VeilLogs.	
+	- Telemetry files are stored in user specified dir or the current working directory (by default).	

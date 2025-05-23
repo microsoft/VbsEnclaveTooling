@@ -12,11 +12,6 @@
 
 #include "..\veil_any_inc\logger.any.h"
 
-namespace veil::vtl0::implementation::callbacks
-{
-    void* add_log(void* args) noexcept;
-}
-
 namespace veil::vtl0
 {
     namespace logger
@@ -47,11 +42,6 @@ namespace veil::vtl0
                 }
 
                 return modified;
-            }
-
-            void SetLogFilePath()
-            {
-                logFilePath = L"c:\\VeilLogs\\" + ReplaceForbiddenFilenameChars(CreateTimestamp()) + L".txt";
             }
 
             static std::wstring CreateTimestamp()
@@ -96,10 +86,19 @@ namespace veil::vtl0
 
             public:
             logger(const std::wstring& providerName,
-                const std::wstring& guidStr,
-                const veil::any::logger::eventLevel level) : provider(providerName), guid(guidStr), logLevel(level)
+               const std::wstring& guidStr,
+               const veil::any::logger::eventLevel level,
+               const std::filesystem::path& logDirectory = std::filesystem::path()) : provider(providerName), guid(guidStr), logLevel(level)
             {
-                SetLogFilePath();
+               if (!logDirectory.empty())
+               {
+                   logFilePath = logDirectory.wstring() + L"\\" + ReplaceForbiddenFilenameChars(CreateTimestamp()) + L".txt";
+               }
+               else
+               {
+                   // Default to the current working directory if no directory is provided
+                   logFilePath = std::filesystem::current_path().wstring() + L"\\" + ReplaceForbiddenFilenameChars(CreateTimestamp()) + L".txt";
+               }
             }
 
             void AddTimestampedLog(const std::wstring& log, const veil::any::logger::eventLevel level) // Called from Host
