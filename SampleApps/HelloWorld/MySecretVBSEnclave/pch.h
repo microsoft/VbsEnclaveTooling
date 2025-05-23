@@ -7,10 +7,9 @@
 #ifndef PCH_H
 #define PCH_H
 
-// add headers that you want to pre-compile here
-// #include "framework.h"
-
-// DEMO - Step 1: Include the enclave header
-#include <winenclave.h>
+// Include the wil_for_enclave header file. This is needed so you can use the 
+// Windows Implementation Library and other Windows #defines that appear in dllmain.cpp
+// You can also access Windows Macros via the windows.h header.
+#include <wil\enclave\wil_for_enclaves.h>
 
 #endif //PCH_H

@@ -24,14 +24,12 @@ int main()
     #endif
     };
 
-    auto flags = EnclaveCreate_Flags;
-
     #ifndef _DEBUG
-        static_assert(flags & ENCLAVE_VBS_FLAG_DEBUG == 0, "ERROR: Do not use DEBUG flag for retail builds");
+    static_assert((EnclaveCreate_Flags & ENCLAVE_VBS_FLAG_DEBUG) == 0, "ERROR: Do not use _DEBUG flag for retail builds");
     #endif
 
     // Memory allocation must match enclave configuration (512mb)
-    auto enclave = veil::vtl0::enclave::create(ENCLAVE_TYPE_VBS, ownerId, flags, veil::vtl0::enclave::megabytes(512));
+    auto enclave = veil::vtl0::enclave::create(ENCLAVE_TYPE_VBS, ownerId, EnclaveCreate_Flags, veil::vtl0::enclave::megabytes(512));
     veil::vtl0::enclave::load_image(enclave.get(), L"MySecretVBSEnclave.dll");
     veil::vtl0::enclave::initialize(enclave.get(), 1);
 
