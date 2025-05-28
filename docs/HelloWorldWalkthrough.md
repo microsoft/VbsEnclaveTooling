@@ -21,9 +21,9 @@ Full instructions can be found at [VBS Enclaves dev guide](https://learn.microso
 * Enable [Memory Integrity](https://learn.microsoft.com/en-us/windows/security/hardware-security/enable-virtualization-based-protection-of-code-integrity?tabs=security). In the Windows Security app, go to Device Security -&gt; Core Integrity -&gt; and toggle Memory Integrity ON, then Reboot.
 
  
-* Create a test certificate to use for signing the VBS Enclave. Replace "TheDefaultTestEnclaveCert" with the name you wish to create. eg:
+* Create a test certificate to use for signing the VBS Enclave. Replace "TheDefaultTestEnclaveCertName" with the name you wish to create. eg:
     ``` 
-    New-SelfSignedCertificate -CertStoreLocation Cert:\\CurrentUser\\My -DnsName "TheDefaultTestEnclaveCert" -KeyUsage DigitalSignature -KeySpec Signature -KeyLength 2048 -KeyAlgorithm RSA -HashAlgorithm SHA256 -TextExtension "2.5.29.37={text}1.3.6.1.5.5.7.3.3,1.3.6.1.4.1.311.76.57.1.15,1.3.6.1.4.1.311.97.814040577.346743379.4783502.105532346
+    New-SelfSignedCertificate -CertStoreLocation Cert:\\CurrentUser\\My -DnsName "TheDefaultTestEnclaveCertName" -KeyUsage DigitalSignature -KeySpec Signature -KeyLength 2048 -KeyAlgorithm RSA -HashAlgorithm SHA256 -TextExtension "2.5.29.37={text}1.3.6.1.5.5.7.3.3,1.3.6.1.4.1.311.76.57.1.15,1.3.6.1.4.1.311.97.814040577.346743379.4783502.105532346
     ```
 
 ## Solution structure
