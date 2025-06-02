@@ -22,19 +22,19 @@ namespace VbsEnclaveToolingTests
     {
         // ArrayTest.edl expected function signatures where key is function name and value is its signature
 
-        {"ArrayChar", "ArrayChar(char[2],char[2][2],char[3][3])"},
-        {"ArrayWchar_t", "ArrayWchar_t(wchar_t[2],wchar_t[2][2],wchar_t[3][3])"},
-        { "ArrayFloat", "ArrayFloat(float[2],float[2][2],float[3][3])" },
-        { "ArrayDouble", "ArrayDouble(double[2],double[2][2],double[3][3])" },
-        { "ArraySize_t", "ArraySize_t(size_t[2],size_t[2][2],size_t[3][3])" },
-        { "ArrayInt8_t", "ArrayInt8_t(int8_t[2],int8_t[2][2],int8_t[3][3])" },
-        { "ArrayInt16_t", "ArrayInt16_t(int16_t[2],int16_t[2][2],int16_t[3][3])" },
-        { "ArrayInt32_t", "ArrayInt32_t(int32_t[2],int32_t[2][2],int32_t[3][3])" },
-        { "ArrayInt64_t", "ArrayInt64_t(int64_t[2],int64_t[2][2],int64_t[3][3])" },
-        { "ArrayUint8_t", "ArrayUint8_t(uint8_t[2],uint8_t[2][2],uint8_t[3][3])" },
-        { "ArrayUint16_t", "ArrayUint16_t(uint16_t[2],uint16_t[2][2],uint16_t[3][3])" },
-        { "ArrayUint32_t", "ArrayUint32_t(uint32_t[2],uint32_t[2][2],uint32_t[3][3])" },
-        { "ArrayUint64_t", "ArrayUint64_t(uint64_t[2],uint64_t[2][2],uint64_t[3][3])" },
+        {"ArrayChar", "ArrayChar(char[2],char[2],char[3])"},
+        {"ArrayWchar_t", "ArrayWchar_t(wchar_t[2],wchar_t[2],wchar_t[3])"},
+        { "ArrayFloat", "ArrayFloat(float[2],float[2],float[3])" },
+        { "ArrayDouble", "ArrayDouble(double[2],double[2],double[3])" },
+        { "ArraySize_t", "ArraySize_t(size_t[2],size_t[2],size_t[3])" },
+        { "ArrayInt8_t", "ArrayInt8_t(int8_t[2],int8_t[2],int8_t[3])" },
+        { "ArrayInt16_t", "ArrayInt16_t(int16_t[2],int16_t[2],int16_t[3])" },
+        { "ArrayInt32_t", "ArrayInt32_t(int32_t[2],int32_t[2],int32_t[3])" },
+        { "ArrayInt64_t", "ArrayInt64_t(int64_t[2],int64_t[2],int64_t[3])" },
+        { "ArrayUint8_t", "ArrayUint8_t(uint8_t[2],uint8_t[2],uint8_t[3])" },
+        { "ArrayUint16_t", "ArrayUint16_t(uint16_t[2],uint16_t[2],uint16_t[3])" },
+        { "ArrayUint32_t", "ArrayUint32_t(uint32_t[2],uint32_t[2],uint32_t[3])" },
+        { "ArrayUint64_t", "ArrayUint64_t(uint64_t[2],uint64_t[2],uint64_t[3])" },
 
         // BasicTypesTest.edl function signatures where key is function name and value is its signature
   
@@ -57,13 +57,13 @@ namespace VbsEnclaveToolingTests
 
         // EnumTest.edl function signatures where key is function name and value is its signature
 
-        {"TrustedGetColor", "TrustedGetColor(Color,Color[Nine],Color[5][5],Color[1][1][1],Color*,Color*,Color*,Color*,Color*,Color*,Color*,Color*,Color*,Color*,Color*,Color*,Color*,Color*,Color*,size_t,size_t)"},
-        {"UntrustedGetColor", "UntrustedGetColor(Color,Color[5],Color[5][5],Color[1][1][1],Color*,Color*,Color*,Color*,Color*,Color*,Color*,Color*,Color*,Color*,Color*,Color*,Color*,Color*,Color*,size_t,size_t)"},
+        {"TrustedGetColor", "TrustedGetColor(Color,Color[Nine],Color[5],Color[1],Color*,Color*,Color*,Color*,Color*,Color*,Color*,Color*,Color*,Color*,Color*,Color*,Color*,Color*,Color*,size_t,size_t)"},
+        {"UntrustedGetColor", "UntrustedGetColor(Color,Color[5],Color[5],Color[1],Color*,Color*,Color*,Color*,Color*,Color*,Color*,Color*,Color*,Color*,Color*,Color*,Color*,Color*,Color*,size_t,size_t)"},
 
         // StructTest.edl function signatures where key is function name and value is its signature
 
-        {"TrustedGetStruct1", "TrustedGetStruct1(MyStruct1,MyStruct1[5],MyStruct1[5][5],MyStruct1[1][1][1],MyStruct1*,MyStruct1*,MyStruct1*,MyStruct1*,MyStruct1*,MyStruct1*,MyStruct1*,MyStruct1*,MyStruct1*,MyStruct1*,MyStruct1*,MyStruct1*,MyStruct1*,MyStruct1*,MyStruct1*,size_t,size_t)"},
-        {"UntrustedGetStruct1", "UntrustedGetStruct1(MyStruct1,MyStruct1[5],MyStruct1[5][5],MyStruct1[1][1][1],MyStruct1*,MyStruct1*,MyStruct1*,MyStruct1*,MyStruct1*,MyStruct1*,MyStruct1*,MyStruct1*,MyStruct1*,MyStruct1*,MyStruct1*,MyStruct1*,MyStruct1*,MyStruct1*,MyStruct1*,size_t,size_t)"},
+        {"TrustedGetStruct1", "TrustedGetStruct1(MyStruct1,MyStruct1[5],MyStruct1[5],MyStruct1[1],MyStruct1*,MyStruct1*,MyStruct1*,MyStruct1*,MyStruct1*,MyStruct1*,MyStruct1*,MyStruct1*,MyStruct1*,MyStruct1*,MyStruct1*,MyStruct1*,MyStruct1*,MyStruct1*,MyStruct1*,size_t,size_t)"},
+        {"UntrustedGetStruct1", "UntrustedGetStruct1(MyStruct1,MyStruct1[5],MyStruct1[5],MyStruct1[1],MyStruct1*,MyStruct1*,MyStruct1*,MyStruct1*,MyStruct1*,MyStruct1*,MyStruct1*,MyStruct1*,MyStruct1*,MyStruct1*,MyStruct1*,MyStruct1*,MyStruct1*,MyStruct1*,MyStruct1*,size_t,size_t)"},
     };
 
     static inline std::wstring ConvertExceptionMessageToWstring(const std::exception& exception)

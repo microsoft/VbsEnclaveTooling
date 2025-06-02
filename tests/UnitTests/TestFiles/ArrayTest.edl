@@ -13,80 +13,80 @@ enclave
     {        
         void ArrayChar(
             [in] char arg1[2],
-            [in, out] char arg2[2][2],
-            [out] char arg3[3][3],
+            [in, out] char arg2[2],
+            [out] char arg3[3]
         );
 
         void ArrayWchar_t(
             [in] wchar_t arg1[2],
-            [in, out] wchar_t arg2[2][2],
-            [out] wchar_t arg3[3][3],
+            [in, out] wchar_t arg2[2],
+            [out] wchar_t arg3[3]
         );
 
         void ArrayFloat(
             [in] float arg1[2],
-            [in,out] float arg2[2][2],
-            [out] float arg3[3][3],
+            [in,out] float arg2[2],
+            [out] float arg3[3]
         );
 
         void ArrayDouble(
             [in] double arg1[2],
-            [in,out] double arg2[2][2],
-            [out] double arg3[3][3],
+            [in,out] double arg2[2],
+            [out] double arg3[3]
         );
 
         void ArraySize_t(
             [in] size_t arg1[2],
-            [in,out] size_t arg2[2][2],
-            [out] size_t arg3[3][3],
+            [in,out] size_t arg2[2],
+            [out] size_t arg3[3]
         );
         
         void ArrayInt8_t(
             [in] int8_t arg1[2],
-            [in,out] int8_t arg2[2][2],
-            [out] int8_t arg3[3][3],
+            [in,out] int8_t arg2[2],
+            [out] int8_t arg3[3]
         );
         
         void ArrayInt16_t(
             [in] int16_t arg1[2],
-            [in,out] int16_t arg2[2][2],
-            [out] int16_t arg3[3][3],
+            [in,out] int16_t arg2[2],
+            [out] int16_t arg3[3]
         );
 
         void ArrayInt32_t(
             [in] int32_t arg1[2],
-            [in,out] int32_t arg2[2][2],
-            [out] int32_t arg3[3][3],
+            [in,out] int32_t arg2[2],
+            [out] int32_t arg3[3]
         );
 
         void ArrayInt64_t(
             [in] int64_t arg1[2],
-            [in,out] int64_t arg2[2][2],
-            [out] int64_t arg3[3][3],
+            [in,out] int64_t arg2[2],
+            [out] int64_t arg3[3]
         );
 
         void ArrayUint8_t(
             [in] uint8_t arg1[2],
-            [in,out] uint8_t arg2[2][2],
-            [out] uint8_t arg3[3][3],
+            [in,out] uint8_t arg2[2],
+            [out] uint8_t arg3[3]
         );
         
         void ArrayUint16_t(
             [in] uint16_t arg1[2],
-            [in,out] uint16_t arg2[2][2],
-            [out] uint16_t arg3[3][3],
+            [in,out] uint16_t arg2[2],
+            [out] uint16_t arg3[3]
         );
 
         void ArrayUint32_t(
             [in] uint32_t arg1[2],
-            [in,out] uint32_t arg2[2][2],
-            [out] uint32_t arg3[3][3],
+            [in,out] uint32_t arg2[2],
+            [out] uint32_t arg3[3]
         );
 
         void ArrayUint64_t(
             [in] uint64_t arg1[2],
-            [in,out] uint64_t arg2[2][2],
-            [out] uint64_t arg3[3][3]
+            [in,out] uint64_t arg2[2],
+            [out] uint64_t arg3[3]
         );
     };
 
@@ -94,80 +94,80 @@ enclave
     {
         void ArrayChar(
             [in] char arg1[2],
-            [in, out] char arg2[2][2],
-            [out] char arg3[3][3],
+            [in, out] char arg2[2],
+            [out] char arg3[3]
         );
 
         void ArrayQchar_t(
             [in] wchar_t arg1[2],
-            [in, out] wchar_t arg2[2][2],
-            [out] wchar_t arg3[3][3],
+            [in, out] wchar_t arg2[2],
+            [out] wchar_t arg3[3]
         );
 
         void ArrayFloat(
             [in] float arg1[2],
-            [in,out] float arg2[2][2],
-            [out] float arg3[3][3],
+            [in,out] float arg2[2],
+            [out] float arg3[3]
         );
 
         void ArrayDouble(
             [in] double arg1[2],
-            [in,out] double arg2[2][2],
-            [out] double arg3[3][3],
+            [in,out] double arg2[2],
+            [out] double arg3[3]
         );
 
         void ArraySize_t(
             [in] size_t arg1[2],
-            [in,out] size_t arg2[2][2],
-            [out] size_t arg3[3][3],
+            [in,out] size_t arg2[2],
+            [out] size_t arg3[3]
        );
         
         void ArrayInt8_t(
             [in] int8_t arg1[2],
-            [in,out] int8_t arg2[2][2],
-            [out] int8_t arg3[3][3],
+            [in,out] int8_t arg2[2],
+            [out] int8_t arg3[3]
         );
         
         void ArrayInt16_t(
             [in] int16_t arg1[2],
-            [in,out] int16_t arg2[2][2],
-            [out] int16_t arg3[3][3],
+            [in,out] int16_t arg2[2],
+            [out] int16_t arg3[3]
         );
 
         void ArrayInt32_t(
             [in] int32_t arg1[2],
-            [in,out] int32_t arg2[2][2],
-            [out] int32_t arg3[3][3],
+            [in,out] int32_t arg2[2],
+            [out] int32_t arg3[3]
         );
 
         void ArrayInt64_t(
             [in] int64_t arg1[2],
-            [in,out] int64_t arg2[2][2],
-            [out] int64_t arg3[3][3],
+            [in,out] int64_t arg2[2],
+            [out] int64_t arg3[3]
         );
 
         void ArrayUint8_t(
             [in] uint8_t arg1[2],
-            [in,out] uint8_t arg2[2][2],
-            [out] uint8_t arg3[3][3],
+            [in,out] uint8_t arg2[2],
+            [out] uint8_t arg3[3]
         );
         
         void ArrayUint16_t(
             [in] uint16_t arg1[2],
-            [in,out] uint16_t arg2[2][2],
-            [out] uint16_t arg3[3][3],
+            [in,out] uint16_t arg2[2],
+            [out] uint16_t arg3[3]
         );
 
         void ArrayUint32_t(
             [in] uint32_t arg1[2],
-            [in,out] uint32_t arg2[2][2],
-            [out] uint32_t arg3[3][3],
+            [in,out] uint32_t arg2[2],
+            [out] uint32_t arg3[3]
         );
 
         void ArrayUint64_t(
             [in] uint64_t arg1[2],
-            [in,out] uint64_t arg2[2][2],
-            [out] uint64_t arg3[3][3]
+            [in,out] uint64_t arg2[2],
+            [out] uint64_t arg3[3]
         );
     };     
 };
