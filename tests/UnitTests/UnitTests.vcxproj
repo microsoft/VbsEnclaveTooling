@@ -107,14 +107,15 @@
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
       <LanguageStandard>stdcpp20</LanguageStandard>
       <LanguageStandard_C>stdc17</LanguageStandard_C>
-	  <ControlFlowGuard>Guard</ControlFlowGuard>
+      <ControlFlowGuard>Guard</ControlFlowGuard>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
       <AdditionalLibraryDirectories>$(VCInstallDir)UnitTest\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalDependencies>$(CoreLibraryDependencies);%(AdditionalDependencies);$(OutDir)ToolingSharedLibrary.lib
  </AdditionalDependencies>
-	  <ControlFlowGuard>Guard</ControlFlowGuard>
+      <ControlFlowGuard>Guard</ControlFlowGuard>
       <AdditionalOptions>/DYNAMICBASE %(AdditionalOptions)</AdditionalOptions>
     </Link>
   </ItemDefinitionGroup>
@@ -129,14 +130,15 @@
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
       <LanguageStandard>stdcpp20</LanguageStandard>
       <LanguageStandard_C>stdc17</LanguageStandard_C>
-	  <ControlFlowGuard>Guard</ControlFlowGuard>
+      <ControlFlowGuard>Guard</ControlFlowGuard>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
       <AdditionalLibraryDirectories>$(VCInstallDir)UnitTest\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalDependencies>$(CoreLibraryDependencies);%(AdditionalDependencies);$(OutDir)ToolingSharedLibrary.lib
  </AdditionalDependencies>
-	  <ControlFlowGuard>Guard</ControlFlowGuard>
+      <ControlFlowGuard>Guard</ControlFlowGuard>
       <AdditionalOptions>/DYNAMICBASE %(AdditionalOptions)</AdditionalOptions>
     </Link>
   </ItemDefinitionGroup>
@@ -153,7 +155,7 @@
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
       <LanguageStandard>stdcpp20</LanguageStandard>
       <LanguageStandard_C>stdc17</LanguageStandard_C>
-	  <ControlFlowGuard>Guard</ControlFlowGuard>
+      <ControlFlowGuard>Guard</ControlFlowGuard>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -162,7 +164,7 @@
       <AdditionalLibraryDirectories>$(VCInstallDir)UnitTest\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalDependencies>$(CoreLibraryDependencies);%(AdditionalDependencies);$(OutDir)ToolingSharedLibrary.lib
  </AdditionalDependencies>
-	  <ControlFlowGuard>Guard</ControlFlowGuard>
+      <ControlFlowGuard>Guard</ControlFlowGuard>
       <AdditionalOptions>/DYNAMICBASE %(AdditionalOptions)</AdditionalOptions>
     </Link>
   </ItemDefinitionGroup>
@@ -179,7 +181,7 @@
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
       <LanguageStandard>stdcpp20</LanguageStandard>
       <LanguageStandard_C>stdc17</LanguageStandard_C>
-	  <ControlFlowGuard>Guard</ControlFlowGuard>
+      <ControlFlowGuard>Guard</ControlFlowGuard>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -188,7 +190,7 @@
       <AdditionalLibraryDirectories>$(VCInstallDir)UnitTest\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalDependencies>$(CoreLibraryDependencies);%(AdditionalDependencies);$(OutDir)ToolingSharedLibrary.lib
  </AdditionalDependencies>
-	  <ControlFlowGuard>Guard</ControlFlowGuard>
+      <ControlFlowGuard>Guard</ControlFlowGuard>
       <AdditionalOptions>/DYNAMICBASE %(AdditionalOptions)</AdditionalOptions>
     </Link>
   </ItemDefinitionGroup>
