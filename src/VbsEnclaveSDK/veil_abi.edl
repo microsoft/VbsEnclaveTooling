@@ -9,6 +9,13 @@ enclave
             uint64_t taskpool_instance_vtl1,
             uint64_t task_id
         );
+
+        // hello
+        HRESULT enclave_load_user_bound_key(
+            wstring keyName,
+            wstring flags,
+            wstring cache
+        );
     };
 
     untrusted

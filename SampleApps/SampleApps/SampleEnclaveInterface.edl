@@ -11,6 +11,7 @@ enclave
         HRESULT RunEncryptionKeyExample_CreateEncryptionKey(
             uint32_t activity_level,
             wstring log_file_path,
+            wstring helloKeyName,
             [out] vector<uint8_t> secured_encryption_key_bytes
             );
 

@@ -119,6 +119,7 @@
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ItemGroup>
     <ClInclude Include="enclave_api.vtl0.h" />
+    <ClInclude Include="hello.vtl0.h" />
     <ClInclude Include="pch.h" />
     <ClInclude Include="taskpool.vtl0.h" />
     <ClInclude Include="logger.vtl0.h" />
@@ -129,6 +130,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="enclave_api.vtl0.cpp" />
+    <ClCompile Include="hello.vtl0.cpp" />
     <ClCompile Include="taskpool.vtl0.cpp" />
     <ClCompile Include="logger.vtl0.cpp" />
     <ClCompile Include="utils.vtl0.cpp" />

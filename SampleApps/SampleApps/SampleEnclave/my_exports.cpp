@@ -286,7 +286,8 @@ HRESULT VbsEnclave::VTL1_Declarations::RunTaskpoolExample(_In_ const std::uint32
 //
 // Secured encryption key
 //
-HRESULT VbsEnclave::VTL1_Declarations::RunEncryptionKeyExample_CreateEncryptionKey(_In_ const std::uint32_t activity_level, _In_ const std::wstring& logFilePath, _Out_  std::vector<std::uint8_t>& securedEncryptionKeyBytes)
+HRESULT VbsEnclave::VTL1_Declarations::RunEncryptionKeyExample_CreateEncryptionKey(
+    _In_ const std::uint32_t activity_level, _In_ const std::wstring& logFilePath, _In_ const std::wstring& helloKeyName, _Out_  std::vector<std::uint8_t>& securedEncryptionKeyBytes)
 {
     using namespace veil::vtl1::vtl0_functions;
     
@@ -307,6 +308,12 @@ HRESULT VbsEnclave::VTL1_Declarations::RunEncryptionKeyExample_CreateEncryptionK
         activityLevel,
         logFilePath);
     
+    debug_print("");
+
+    // Create a hello key for the root of our Hello-secured encryption key
+
+    debug_print(L"1. Creating a 'Hello' key: %ws", helloKeyName);
+    // auto [helloKey, createdKey] = veil::vtl1::hello::create_or_open_hello_key(helloKeyName, L"Let's secure the encryption key with this Hello key!");
     debug_print("");
 
     // Generate our encryption key

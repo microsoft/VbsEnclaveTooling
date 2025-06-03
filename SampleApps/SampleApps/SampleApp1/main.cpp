@@ -21,6 +21,15 @@
 
 namespace fs = std::filesystem;
 
+std::wstring FormatUserHelloKeyName(PCWSTR name)
+{
+    static constexpr wchar_t c_formatString[] = L"//{}//{}";
+    wil::unique_hlocal_string userSidString;
+    THROW_IF_WIN32_BOOL_FALSE(ConvertSidToStringSid(wil::get_token_information<TOKEN_USER>()->User.Sid, &userSidString));
+
+    return std::format(c_formatString, userSidString.get(), name);
+}
+
 int EncryptFlow(
     void* enclave, 
     const std::wstring& input, 
@@ -40,10 +49,13 @@ int EncryptFlow(
     THROW_IF_FAILED(enclaveInterface.RegisterVtl0Callbacks());
 
     // Call into enclave
+    constexpr PCWSTR keyMoniker = L"MyHelloKey-001";
+    auto helloKeyName = FormatUserHelloKeyName(keyMoniker);
     auto securedEncryptionKeyBytes = std::vector<uint8_t>{};
     THROW_IF_FAILED(enclaveInterface.RunEncryptionKeyExample_CreateEncryptionKey(
         (const uint32_t)veilLog.GetLogLevel(),
         veilLog.GetLogFilePath(),
+        helloKeyName,
         securedEncryptionKeyBytes
     ));
 
@@ -162,6 +174,7 @@ int EncryptFlowThreadpool(
     THROW_IF_FAILED(enclaveInterface.RunEncryptionKeyExample_CreateEncryptionKey(
         (const uint32_t)veilLog.GetLogLevel(),
         veilLog.GetLogFilePath(),
+        L"",
         securedEncryptionKeyBytes
     ));
 

@@ -116,6 +116,7 @@
   <ItemGroup>
     <ClInclude Include="crypto.vtl1.h" />
     <ClInclude Include="future.vtl1.h" />
+    <ClInclude Include="hello.vtl1.h" />
     <ClInclude Include="object_table.vtl1.h" />
     <ClInclude Include="logger.vtl1.h" />
     <ClInclude Include="vtl0_functions.vtl1.h" />
@@ -124,6 +125,7 @@
     <ClInclude Include="utils.vtl1.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="hello.vtl1.cpp" />
     <ClCompile Include="logger.vtl1.cpp" />
     <ClCompile Include="pch.cpp">
       <PrecompiledHeader>Create</PrecompiledHeader>
