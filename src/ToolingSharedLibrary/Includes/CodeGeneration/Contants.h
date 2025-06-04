@@ -239,7 +239,9 @@ namespace {}
 #include <VbsEnclaveABI\\Shared\\VbsEnclaveAbiBase.h>\n\
 #undef max // prevent windows max macro from conflicting with flatbuffers macro\n\
 #include \"vbsenclave_flatbuffer_support_generated.h\"\n\
+#include <VbsEnclaveABI\\Shared\\ConversionHelpers.h>\n\
 \n\
+using namespace VbsEnclaveABI::Shared::Converters;\n\
 ";
 
     static inline constexpr std::string_view c_developer_types_namespace = R"(
@@ -247,6 +249,9 @@ namespace DeveloperTypes
 {{
 {}
 }}
+
+// Struct metadata
+{}
 )";
 
     static inline constexpr std::string_view c_enclave_def_file_content = R"(
@@ -453,83 +458,108 @@ R"(     {}_Generated_Stub
 
     static inline constexpr std::string_view c_return_param_for_out_param_ptr = 
 R"(     
-            if (return_params->m_{})
+            if (return_params.m_{})
             {{
-                {} = std::move(return_params->m_{});
+                {} = std::move(return_params.m_{});
             }}
 )";
 
     static inline constexpr std::string_view c_return_param_for_inout_param_ptr =
 R"(     
-            if ({} && return_params->m_{})
+            if ({} && return_params.m_{})
             {{
-                *{} = *return_params->m_{};
+                *{} = *return_params.m_{};
             }}
 )";
 
     static inline constexpr std::string_view c_return_param_for_inout_param_ptr_with_move =
 R"(     
-            if ({} && return_params->m_{})
+            if ({} && return_params.m_{})
             {{
-                *{} = std::move(*return_params->m_{}); 
+                *{} = std::move(*return_params.m_{}); 
             }}
 )";
 
     static inline constexpr std::string_view c_return_param_for_inout_param_with_move =
 R"(     
-            {} = std::move(return_params->m_{});
+            {} = std::move(return_params.m_{});
 )";
 
 static inline constexpr std::string_view c_return_param_for_basic_type =
 R"(     
-            {} = return_params->m_{};
+            {} = return_params.m_{};
 )";
     
     static inline constexpr std::string_view c_parameter_struct_using_statement =
 R"(             using ReturnParamsT = FlatbuffersDevTypes::{}T;)";
 
+    static inline constexpr std::string_view c_in_and_inout_parameter_conversion_statement =
+"            in_flatbufferT.m_{} = ConvertToFlatbuffer<decltype({}), decltype(in_flatbufferT.m_{})>({});\n";
+
     static inline constexpr std::string_view c_pack_params_to_flatbuffer_call =
 R"(// Package in and in/out parameters into struct and convert it to a flatbuffer type.
-            auto in_flatbufferT = {}::ToFlatBuffer({});
+            FlatbuffersDevTypes::{}T in_flatbufferT {{}};
+{}
             using ParamsT = decltype(in_flatbufferT);
-            auto flatbuffer_builder = PackFlatbuffer(*in_flatbufferT);
+            auto flatbuffer_builder = PackFlatbuffer(in_flatbufferT);
     )";
 
     static inline constexpr std::string_view c_abi_impl_function_parameters = "(_In_ FlatbuffersDevTypes::{}_argsT& in_flatbuffer_params, _In_ flatbuffers::FlatBufferBuilder& flatbuffer_out_params_builder)";
 
+    static inline constexpr std::string_view c_instantiate_dev_type =
+R"({} dev_type_params{{}};
+)";
+
+    static inline constexpr std::string_view c_conversion_to_dev_type_statement =
+R"(            ConvertStruct<ConversionType::ToDevType, decltype(in_flatbuffer_params), decltype(dev_type_params)>(in_flatbuffer_params, dev_type_params);
+)";
+
     static inline constexpr std::string_view c_abi_func_return_value =
-R"(auto dev_type_params = {}::ToDevType(in_flatbuffer_params);
-            dev_type_params->m__return_value_ = {}({});
+R"(            dev_type_params.m__return_value_ = {}({});
 {})";
 
     static inline constexpr std::string_view c_abi_func_return_when_void =
-R"(auto dev_type_params = {}::ToDevType(in_flatbuffer_params);
-            {}({});
+R"({}({});
 {})";
 
     static inline constexpr std::string_view c_setup_return_params_struct = R"(
-            auto flatbuffer_out_param = {}::ToFlatBuffer(*dev_type_params);
-            flatbuffer_out_params_builder = PackFlatbuffer(*flatbuffer_out_param);)";
+            FlatbuffersDevTypes::{}T flatbuffer_out_param{{}};
+            ConvertStruct<ConversionType::ToFlatbuffer, decltype(dev_type_params), decltype(flatbuffer_out_param)>(dev_type_params, flatbuffer_out_param);
+            flatbuffer_out_params_builder = PackFlatbuffer(flatbuffer_out_param);)";
 
     static inline constexpr std::string_view c_setup_no_return_params_struct = R"(
             flatbuffer_out_params_builder = PackFlatbuffer<FlatbuffersDevTypes::{}T>({{}});)";
 
     static inline constexpr std::string_view c_setup_return_params_back_to_developer = R"(
-            auto return_params = {}::ToDevType(function_result);
+            {} return_params{{}};
+            ConvertStruct<ConversionType::ToDevType, decltype(function_result), decltype(return_params)>(function_result, return_params);
             {}
 )";
 
     static inline constexpr std::string_view c_return_value_back_to_initial_caller_with_move =
 R"(             
-            return std::move(return_params->m__return_value_);)";
+            return std::move(return_params.m__return_value_);)";
 
     static inline constexpr std::string_view c_return_value_back_to_initial_caller_no_move =
 R"(             
-            return return_params->m__return_value_;)";
+            return return_params.m__return_value_;)";
 
     static inline constexpr std::string_view c_parameter_return_struct_using_statement =
 R"(        using ReturnParamsT = FlatbuffersDevTypes::{}T;)";
 
     static inline constexpr std::string_view c_function_args_struct = "{}_args";
+
+    static inline constexpr std::string_view c_struct_metadata_field_ptr = "&DeveloperTypes::{}::{}{}";
+
+    static inline constexpr std::string_view c_flatbuffer_field_ptr = "&FlatbuffersDevTypes::{}T::{}{}";
+
+    static inline constexpr std::string_view c_struct_meta_data_outline = 
+R"(
+template <>
+struct StructMetaData<{}>
+{{
+    static constexpr auto members = std::make_tuple({});
+}};
+)";
 }
 

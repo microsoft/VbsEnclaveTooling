@@ -148,13 +148,31 @@ namespace CodeGeneration::Flatbuffers
             else if (declaration.IsEdlType(EdlTypeKind::Vector))
             {
                 auto& inner_type = declaration.m_edl_type_info.inner_type;
+
+                // By default for vectors of tables/structs the Flatbuffer object-api will generate the
+                // vector as a vector<unique_ptr<T>>. However when '(native_inline)' is used the api will generate the 
+                // vector as a vector<T>. We want this behavior so we can limit the amount of memory the abi allocates. 
+                // Flatbuffer generates all other types within vectors as vector<T> by default. WString is special 
+                // because we generate it as a Flatbuffer table that contains a vector of uint16's.
+                std::string inline_type_string = "";
+                if (inner_type->m_type_kind == EdlTypeKind::Struct || 
+                    inner_type->m_type_kind == EdlTypeKind::WString)
+                {
+                    inline_type_string = "(native_inline)";
+                }
+
                 table_body << std::format(
-                    "    {} : [{}];\n",
+                    "    {} : [{}] {};\n",
                     declaration.m_name,
-                    GetFlatBufferType(*inner_type));
+                    GetFlatBufferType(*inner_type),
+                    inline_type_string);
             }
             else if (declaration.IsEdlType(EdlTypeKind::Struct))
             {
+                // We generate structs as tables using the Flatbuffer object api. Unfortunately for C++ it generates nested
+                // tables as unique_ptr<T> where T is the Flatbuffer representation of the struct. There is currently
+                // no way to generate nested tables as type T instead of unique_ptr<T> like in the case of vectors.
+                // See: https://github.com/google/flatbuffers/issues/4969
                 table_body << std::format(
                     "    {} : {};\n",
                     declaration.m_name,

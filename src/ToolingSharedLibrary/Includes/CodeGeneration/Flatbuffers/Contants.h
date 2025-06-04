@@ -44,30 +44,6 @@ table {} {{
 }}
 )";
 
-    static inline constexpr std::string_view c_flatbuffers_helper_functions =
-R"(
-inline std::wstring ConvertToStdWString(const FlatbuffersDevTypes::WStringT& wstr)
-{
-    return std::wstring(wstr.wchars.begin(), wstr.wchars.end());
-}
-inline std::wstring ConvertToStdWString(const std::unique_ptr<FlatbuffersDevTypes::WStringT>& wstr)
-{
-    return ConvertToStdWString(*wstr);
-}
-inline std::unique_ptr<FlatbuffersDevTypes::WStringT> CreateWStringT(const std::wstring& wchars)
-{
-    auto wchart_ptr = std::make_unique<FlatbuffersDevTypes::WStringT>();
-    THROW_IF_NULL_ALLOC(wchart_ptr);
-    wchart_ptr->wchars.assign(wchars.begin(), wchars.end());
-    return wchart_ptr;
-}
-template<typename T, typename U>
-inline U ConvertEnum(T enum_1)
-{
-    return static_cast<U>(enum_1);
-}
-    )";
-
 static inline constexpr std::string_view c_flatbuffer_fbs_filename = "vbsenclave_flatbuffer_support.fbs";
 
 static inline std::string c_failed_to_compile_flatbuffer_msg = std::format("Compiling flatbuffer schema file: {}", c_flatbuffer_fbs_filename);

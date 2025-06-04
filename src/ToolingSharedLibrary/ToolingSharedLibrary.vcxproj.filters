@@ -78,6 +78,9 @@
     <ClInclude Include="Includes\CodeGeneration\Flatbuffers\Cpp\CppContants.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="Includes\VbsEnclaveABI\Shared\ConversionHelpers.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp">
