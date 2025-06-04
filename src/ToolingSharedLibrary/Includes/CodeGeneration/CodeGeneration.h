@@ -74,6 +74,10 @@ namespace CodeGeneration
             std::string_view struct_name,
             const std::vector<Declaration>& fields);
 
+        std::string BuildStructMetaData(
+            std::string_view struct_name,
+            const std::vector<Declaration>& fields);
+
         FunctionParametersInfo GetInformationAboutParameters(
             const Function& function,
             const std::unordered_map<std::string, DeveloperType>& developer_types);

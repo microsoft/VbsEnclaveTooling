@@ -239,7 +239,9 @@ namespace {}
 #include <VbsEnclaveABI\\Shared\\VbsEnclaveAbiBase.h>\n\
 #undef max // prevent windows max macro from conflicting with flatbuffers macro\n\
 #include \"vbsenclave_flatbuffer_support_generated.h\"\n\
+#include \"<VbsEnclaveABI\Shared\ConversionHelpers.h>\"\n\
 \n\
+using namespace VbsEnclaveABI::Shared;\n\
 ";
 
     static inline constexpr std::string_view c_developer_types_namespace = R"(
@@ -531,5 +533,27 @@ R"(
 R"(        using ReturnParamsT = FlatbuffersDevTypes::{}T;)";
 
     static inline constexpr std::string_view c_function_args_struct = "{}_args";
+
+    static inline constexpr std::string_view  c_struct_metadata_field_name = "\"{}\"{}";
+
+    static inline constexpr std::string_view c_struct_metadata_field_ptr = "&{}::{}{}";
+
+    static inline constexpr std::string_view c_flatbuffer_field_ptr = "&FlatbuffersDevTypes::{}T::{}{}";
+
+    static inline constexpr std::string_view c_base_struct_metadata_trait = 
+R"(template <typename T>
+struct StructMetaData;
+)";
+
+    static inline constexpr std::string_view c_struct_meta_data_outline = 
+R"(
+template <>
+struct Convertors::StructMetaData<{}>
+{{
+    static constexpr const char* names[] = {{ {} }};
+    static constexpr auto members = std::make_tuple({});
+    static constexpr size_t count = {};
+}};
+)";
 }
 
