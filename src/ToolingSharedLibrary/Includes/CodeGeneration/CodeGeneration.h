@@ -64,13 +64,7 @@ namespace CodeGeneration
 
         std::string BuildStructField(const Declaration& declaration);
 
-        std::string BuildStructDefinition(const DeveloperType& developer_types);
-
-        std::string BuildStructDefinitionForABIDeveloperType(
-            std::string_view struct_name,
-            const std::vector<Declaration>& fields);
-
-        std::string BuildStructDefinitionForNonABIDeveloperType(
+        std::string BuildStructDefinition(
             std::string_view struct_name,
             const std::vector<Declaration>& fields);
 

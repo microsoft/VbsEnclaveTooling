@@ -39,24 +39,25 @@ namespace CodeGeneration
 
         types_header << struct_declarations.str();
         types_header << enums_definitions.str();
+        std::ostringstream struct_metadata {};
 
         for (auto& type : developer_types_insertion_list)
         {
             if (type.IsEdlType(EdlTypeKind::Struct))
             {
-                types_header << BuildStructDefinitionForNonABIDeveloperType(type.m_name, type.m_fields);
-                types_header << BuildStructMetaData(type.m_name, type.m_fields);
+                types_header << BuildStructDefinition(type.m_name, type.m_fields);
+                struct_metadata << BuildStructMetaData(type.m_name, type.m_fields);
             }
         }
 
         for (auto& type : abi_function_developer_types)
         {
-            types_header << BuildStructDefinitionForABIDeveloperType(type.m_name, type.m_fields);
-            types_header << BuildStructMetaData(type.m_name, type.m_fields);
+            types_header << BuildStructDefinition(type.m_name, type.m_fields);
+            struct_metadata << BuildStructMetaData(type.m_name, type.m_fields);
         }
 
         auto start_of_file = std::format(c_developer_types_start_of_file, c_autogen_header_string);
-        auto body = std::format(c_developer_types_namespace, types_header.str());
+        auto body = std::format(c_developer_types_namespace, types_header.str(), struct_metadata.str());
 
         return std::format("{}{}\n", start_of_file, body);
     }
@@ -130,71 +131,71 @@ namespace CodeGeneration
         std::ostringstream struct_body {};
         auto flatbuffer_type = std::format(c_flatbuffer_native_table_type_suffix, struct_name);
 
-        //// Get function body for this structs flatbuffer to developer type static function
-        //std::string flatbuffer_to_dev_type_func_body = Flatbuffers::Cpp::BuildConversionFunctionBody(
-        //    fields,
-        //    FlatbufferConversionKind::ToDevType);
-        //
-        //// Encapsulate body in a function that takes in a flatbuffer struct reference
-        //// and returns dev type in a shared ptr
-        //struct_body << std::format(
-        //    Flatbuffers::Cpp::c_convert_to_dev_type_function_definition_reference,
-        //    struct_name,
-        //    flatbuffer_type,
-        //    struct_name,
-        //    flatbuffer_to_dev_type_func_body);
-        //
-        //// Encapsulate body in a function that takes in a flatbuffer struct unique ptr
-        //// and returns dev type in a shared ptr
-        //struct_body << std::format(
-        //    Flatbuffers::Cpp::c_convert_to_dev_type_function_definition_shared_ptr,
-        //    struct_name,
-        //    flatbuffer_type,
-        //    struct_name);
+        // Get function body for this structs flatbuffer to developer type static function
+        std::string flatbuffer_to_dev_type_func_body = Flatbuffers::Cpp::BuildConversionFunctionBody(
+            fields,
+            FlatbufferConversionKind::ToDevType);
+        
+        // Encapsulate body in a function that takes in a flatbuffer struct reference
+        // and returns dev type in a shared ptr
+        struct_body << std::format(
+            Flatbuffers::Cpp::c_convert_to_dev_type_function_definition_reference,
+            struct_name,
+            flatbuffer_type,
+            struct_name,
+            flatbuffer_to_dev_type_func_body);
+        
+        // Encapsulate body in a function that takes in a flatbuffer struct unique ptr
+        // and returns dev type in a shared ptr
+        struct_body << std::format(
+            Flatbuffers::Cpp::c_convert_to_dev_type_function_definition_shared_ptr,
+            struct_name,
+            flatbuffer_type,
+            struct_name);
 
-        //// Encapsulate body in a function that takes in a flatbuffer struct reference
-        //// and returns dev type object
-        //struct_body << std::format(
-        //    Flatbuffers::Cpp::c_convert_to_dev_type_function_definition_no_ptr,
-        //    struct_name,
-        //    flatbuffer_type,
-        //    struct_name,
-        //    flatbuffer_to_dev_type_func_body);
+        // Encapsulate body in a function that takes in a flatbuffer struct reference
+        // and returns dev type object
+        struct_body << std::format(
+            Flatbuffers::Cpp::c_convert_to_dev_type_function_definition_no_ptr,
+            struct_name,
+            flatbuffer_type,
+            struct_name,
+            flatbuffer_to_dev_type_func_body);
 
-        //// Encapsulate body in a function that takes in a flatbuffer struct unique ptr
-        //// and returns dev type object
-        //struct_body << std::format(
-        //    Flatbuffers::Cpp::c_convert_to_dev_type_function_definition_no_ptr2,
-        //    struct_name,
-        //    flatbuffer_type,
-        //    struct_name);
+        // Encapsulate body in a function that takes in a flatbuffer struct unique ptr
+        // and returns dev type object
+        struct_body << std::format(
+            Flatbuffers::Cpp::c_convert_to_dev_type_function_definition_no_ptr2,
+            struct_name,
+            flatbuffer_type,
+            struct_name);
 
-        //// Get function body for this structs developer to flatbuffer static function
-        //std::string dev_type_to_flatbuffer_func_body = Flatbuffers::Cpp::BuildConversionFunctionBody(
-        //    fields,
-        //    FlatbufferConversionKind::ToFlatbuffer);
-        //
-        //// Encapsulate body in a function that takes in a reference to this struct type
-        //// and returns a unique ptr to a flatbuffer struct
-        //struct_body << std::format(
-        //    Flatbuffers::Cpp::c_convert_to_flatbuffer_function_definition_reference,
-        //    flatbuffer_type,
-        //    struct_name,
-        //    flatbuffer_type,
-        //    dev_type_to_flatbuffer_func_body);
+        // Get function body for this structs developer to flatbuffer static function
+        std::string dev_type_to_flatbuffer_func_body = Flatbuffers::Cpp::BuildConversionFunctionBody(
+            fields,
+            FlatbufferConversionKind::ToFlatbuffer);
+        
+        // Encapsulate body in a function that takes in a reference to this struct type
+        // and returns a unique ptr to a flatbuffer struct
+        struct_body << std::format(
+            Flatbuffers::Cpp::c_convert_to_flatbuffer_function_definition_reference,
+            flatbuffer_type,
+            struct_name,
+            flatbuffer_type,
+            dev_type_to_flatbuffer_func_body);
 
-        //// Encapsulate body in a function that takes in a shared ptr to this struct type
-        //// and returns a unique ptr to a flatbuffer struct
-        //struct_body << std::format(
-        //    Flatbuffers::Cpp::c_convert_to_flatbuffer_function_definition_unique_ptr,
-        //    flatbuffer_type,
-        //    struct_name,
-        //    struct_name);
+        // Encapsulate body in a function that takes in a shared ptr to this struct type
+        // and returns a unique ptr to a flatbuffer struct
+        struct_body << std::format(
+            Flatbuffers::Cpp::c_convert_to_flatbuffer_function_definition_unique_ptr,
+            flatbuffer_type,
+            struct_name,
+            struct_name);
 
         return struct_body.str();
     }
 
-    std::string CppCodeBuilder::BuildStructDefinitionForNonABIDeveloperType(
+    std::string CppCodeBuilder::BuildStructDefinition(
         std::string_view struct_name,
         const std::vector<Declaration>& fields)
     {
@@ -202,9 +203,6 @@ namespace CodeGeneration
             EDL_STRUCT_KEYWORD,
             struct_name);
 
-        std::ostringstream to_flatbuffer_inout_function_args {};
-        std::ostringstream to_flatbuffer_all_function_args {};
-        size_t inout_index = 0U;
         for (auto& field : fields)
         {
             struct_body << std::format(
@@ -213,8 +211,6 @@ namespace CodeGeneration
                 BuildStructField(field),
                 SEMI_COLON);
         }
-
-        struct_body << GetConverterFunctionForDeveloperStruct(struct_name, fields);
 
         return std::format("\n{}{}{}",
             struct_header.str(),
@@ -238,17 +234,18 @@ namespace CodeGeneration
         for (size_t i = 0; i < fields.size(); i++)
         {
             auto separator = ( i + 1 != fields.size()) ? "," : "";
-            auto field = fields[i];
+            auto& field = fields[i];
 
             field_names << std::format(c_struct_metadata_field_name, field.m_name, separator);
             devtype_field_ptrs << std::format(c_struct_metadata_field_ptr, struct_name, field.m_name, separator);
             flatbuffer_field_ptrs << std::format(c_flatbuffer_field_ptr, struct_name, field.m_name, separator);
         }
 
+        std::string struct_in_dev_type_namespace = std::format("DeveloperTypes::{}", struct_name);
         std::ostringstream struct_metadata {};
         struct_metadata << std::format(
             c_struct_meta_data_outline,
-            struct_name,
+            struct_in_dev_type_namespace,
             field_names.str(),
             devtype_field_ptrs.str(),
             fields.size());
@@ -265,80 +262,6 @@ namespace CodeGeneration
         struct_metadata << flatbuffer_metadata.str();
 
         return struct_metadata.str();
-    }
-
-    std::string GetConverterFunctionForNonDeveloperAbiStruct(
-        std::string_view struct_name,
-        const std::vector<Declaration>& fields,
-        std::vector<Declaration> to_flatbuffer_in_and_inout_args_list,
-        std::string to_flatbuffer_in_and_inout_params)
-    {
-        std::ostringstream struct_body {};
-        auto flatbuffer_type = std::format(c_flatbuffer_native_table_type_suffix, struct_name);
-
-        //std::string flatbuffer_to_dev_type_func_body = Flatbuffers::Cpp::BuildConversionFunctionBody(
-        //    fields,
-        //    FlatbufferConversionKind::ToDevType,
-        //    FlatbufferStructFieldsModifier::AbiToDevTypeSingleStruct);
-
-        //// Encapsulate body in a function that takes in a flatbuffer struct reference
-        //// and returns dev type in a shared ptr
-        //struct_body << std::format(
-        //    Flatbuffers::Cpp::c_convert_to_dev_type_function_definition_reference,
-        //    struct_name,
-        //    flatbuffer_type,
-        //    struct_name,
-        //    flatbuffer_to_dev_type_func_body);
-
-        //// Encapsulate body in a function that takes in a flatbuffer struct unique ptr
-        //// and returns dev type in a shared ptr
-        //struct_body << std::format(
-        //    Flatbuffers::Cpp::c_convert_to_dev_type_function_definition_shared_ptr,
-        //    struct_name,
-        //    flatbuffer_type,
-        //    struct_name);
-
-        //// Get function body for this structs developer to flatbuffer static function
-        //std::string dev_type_to_flatbuffer_func_body = Flatbuffers::Cpp::BuildConversionFunctionBody(
-        //    fields,
-        //    FlatbufferConversionKind::ToFlatbuffer,
-        //    FlatbufferStructFieldsModifier::AbiToFlatbufferSingleStruct);
-
-        //// Encapsulate body in a function that takes in a struct that contains the parameters as fields,
-        //// and returns a unique ptr to a flatbuffer struct
-        //struct_body << std::format(
-        //    Flatbuffers::Cpp::c_convert_to_flatbuffer_function_definition_reference,
-        //    flatbuffer_type,
-        //    struct_name,
-        //    flatbuffer_type,
-        //    dev_type_to_flatbuffer_func_body);
-
-        //// Encapsulate body in a function that takes in a shared ptr to the struct that contains the parameters
-        //// as fields, and returns a unique ptr to a flatbuffer struct
-        //struct_body << std::format(
-        //    Flatbuffers::Cpp::c_convert_to_flatbuffer_function_definition_unique_ptr,
-        //    flatbuffer_type,
-        //    struct_name,
-        //    struct_name);
-
-        //// Get function body for this structs developer to flatbuffer static function to add in/inout values to
-        //// the struct.
-        //std::string dev_type_to_flatbuffer_func_body_multi_params = Flatbuffers::Cpp::BuildConversionFunctionBody(
-        //    to_flatbuffer_in_and_inout_args_list,
-        //    FlatbufferConversionKind::ToFlatbuffer,
-        //    FlatbufferStructFieldsModifier::AbiToFlatbufferMultipleParameters);
-
-        //// Encapsulate body in a function that takes in the in/inout parameters for the function and puts them 
-        //// in a struct. It returns a unique ptr to a flatbuffer struct.
-        //struct_body << std::format(
-        //    Flatbuffers::Cpp::c_convert_to_flatbuffer_function_definition_multi_params,
-        //    flatbuffer_type,
-        //    to_flatbuffer_in_and_inout_params,
-        //    flatbuffer_type,
-        //    flatbuffer_type,
-        //    dev_type_to_flatbuffer_func_body_multi_params);
-
-        return struct_body.str();
     }
 
     std::string GetToFlatbufferParameterForFunction(const Declaration& declaration)
@@ -378,53 +301,6 @@ namespace CodeGeneration
         return function_parameters.str();
     }
 
-    std::string CppCodeBuilder::BuildStructDefinitionForABIDeveloperType(
-        std::string_view struct_name,
-        const std::vector<Declaration>& fields)
-    {
-        auto [struct_header, struct_body, struct_footer] = BuildStartOfDefinition(
-            EDL_STRUCT_KEYWORD,
-            struct_name);
-
-        std::ostringstream to_flatbuffer_in_and_inout_function_args {};
-        std::vector<Declaration> to_flatbuffer_in_and_inout_args_list {};
-        size_t inout_index = 0U;
-        for (auto field : fields)
-        {
-            struct_body << std::format(
-                "{}{} {{}}{}\n",
-                c_four_spaces,
-                BuildStructField(field),
-                SEMI_COLON);
-
-            // Get info for a ToFlatbuffer static function that takes in multiple parameters.
-            if (field.IsInParameterOnly() || field.IsInOutParameter())
-            {
-                // Now that we've created a field for the parameter we need to create a function parameter string that
-                // we will use to pass to the ToFlatbuffer function. When the developer passes an in or
-                // inout parameter we use it directly in the ToFlatbuffer function. 
-                field.m_parent_kind = DeclarationParentKind::Function;
-                auto param_str = GetParameterForFunction(field);
-                auto inout_params_separator = inout_index > 0 ? "," : "";
-                to_flatbuffer_in_and_inout_function_args << std::format("{} {}", inout_params_separator, param_str);
-                to_flatbuffer_in_and_inout_args_list.push_back(field);
-                inout_index++;
-            }
-        }
-
-        struct_body << GetConverterFunctionForNonDeveloperAbiStruct(
-            struct_name,
-            fields,
-            to_flatbuffer_in_and_inout_args_list,
-            to_flatbuffer_in_and_inout_function_args.str());
-
-
-        return std::format("\n{}{}{}",
-            struct_header.str(),
-            struct_body.str(),
-            struct_footer.str());
-    }
-
     void AddParameterToTheForwardToDevImplList(
         std::string_view struct_field_name_to_forward,
         const Declaration& declaration,
@@ -436,7 +312,7 @@ namespace CodeGeneration
         if (declaration.HasPointer() && !declaration.IsOutParameterOnly())
         {
             param_info.m_params_to_forward_to_dev_impl << FormatString(
-                    "{} {}->m_{}.get()",
+                    "{} {}.m_{}.get()",
                     all_params_separator,
                     struct_field_name_to_forward,
                     declaration.m_name);
@@ -444,7 +320,7 @@ namespace CodeGeneration
         else
         {
             param_info.m_params_to_forward_to_dev_impl << FormatString(
-                "{} {}->m_{}",
+                "{} {}.m_{}",
                 all_params_separator,
                 struct_field_name_to_forward,
                 declaration.m_name);
@@ -535,12 +411,10 @@ namespace CodeGeneration
         size_t in_out_index = 0U;
         size_t in_index = 0U;
         size_t out_index = 0U;
-        std::string in_and_inout_params_separator {};
 
         for (size_t params_index = 0U; params_index < function.m_parameters.size(); params_index++)
         {
             auto all_params_separator = (in_out_index == 0 && in_index == 0 && out_index == 0) ? "" : ",";
-            in_and_inout_params_separator = (in_out_index == 0 && in_index == 0) ? "" : ",";
             const Declaration& declaration = function.m_parameters[params_index];
 
             AddParameterToTheForwardToDevImplList(Flatbuffers::Cpp::c_params_struct, declaration, all_params_separator, param_info);
@@ -549,8 +423,10 @@ namespace CodeGeneration
             if (!declaration.IsOutParameterOnly())
             {
                 param_info.m_in_and_inout_param_names << std::format(
-                    "{} {}",
-                    in_and_inout_params_separator,
+                    c_in_and_inout_parameter_conversion_statement,
+                    declaration.m_name,
+                    declaration.m_name,
+                    declaration.m_name,
                     declaration.m_name);
             }
 
@@ -660,12 +536,25 @@ namespace CodeGeneration
         std::ostringstream function_body {};
 
         std::ostringstream updated_parameters_received_from_dev_impl{};;
-        
+        std::string conversion_to_dev_type_statement{};
+        bool should_create_dev_type_on_stack = false;
+
+        if (!params_to_forward.empty())
+        {
+            conversion_to_dev_type_statement = std::format(
+                c_conversion_to_dev_type_statement,
+                function_params_struct_type);
+
+            should_create_dev_type_on_stack = true;
+        }
+
         if (param_info.m_are_return_params_needed)
         {
             updated_parameters_received_from_dev_impl << std::format(
                 c_setup_return_params_struct,
                 function_params_struct_type);
+
+            should_create_dev_type_on_stack = true;
         }
         else
         {
@@ -683,9 +572,15 @@ namespace CodeGeneration
             abi_func_return_statement = c_abi_func_return_value;
         }
 
+        if (should_create_dev_type_on_stack)
+        {
+            auto dev_type_on_stack = std::format(c_create_dev_type_on_stack, function_params_struct_type);
+            conversion_to_dev_type_statement = dev_type_on_stack + conversion_to_dev_type_statement;
+        }
+
         function_body << FormatString(
             abi_func_return_statement,
-            function_params_struct_type,
+            conversion_to_dev_type_statement,
             call_impl_str,
             params_to_forward,
             updated_parameters_received_from_dev_impl.str());
