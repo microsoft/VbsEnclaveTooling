@@ -148,10 +148,12 @@ namespace CodeGeneration::Flatbuffers
             else if (declaration.IsEdlType(EdlTypeKind::Vector))
             {
                 auto& inner_type = declaration.m_edl_type_info.inner_type;
+                auto use_inline_type = (inner_type->m_type_kind == EdlTypeKind::Struct || inner_type->m_type_kind == EdlTypeKind::WString) ? "(native_inline)" : "";
                 table_body << std::format(
-                    "    {} : [{}];\n",
+                    "    {} : [{}] {};\n",
                     declaration.m_name,
-                    GetFlatBufferType(*inner_type));
+                    GetFlatBufferType(*inner_type),
+                    use_inline_type);
             }
             else if (declaration.IsEdlType(EdlTypeKind::Struct))
             {

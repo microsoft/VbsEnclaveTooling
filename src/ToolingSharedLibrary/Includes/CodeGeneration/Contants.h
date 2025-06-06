@@ -494,7 +494,7 @@ R"(
 R"(             using ReturnParamsT = FlatbuffersDevTypes::{}T;)";
 
     static inline constexpr std::string_view c_in_and_inout_parameter_conversion_statement =
-"           in_flatbufferT.m_{} = Convertors::ConvertToFlatbuffer<decltype({}), decltype(in_flatbufferT.m_{})>({});\n";
+"           in_flatbufferT.m_{} = Convertors::ConvertToFlatbuffer<std::decay_t<decltype({})>, std::decay_t<decltype(in_flatbufferT.m_{})>>({});\n";
 
     static inline constexpr std::string_view c_pack_params_to_flatbuffer_call =
 R"(// Package in and in/out parameters into struct and convert it to a flatbuffer type.

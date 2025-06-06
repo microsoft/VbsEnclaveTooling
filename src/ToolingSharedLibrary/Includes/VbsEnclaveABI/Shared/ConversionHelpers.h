@@ -6,6 +6,9 @@
 #include <memory>
 #include <type_traits>
 #include <stdexcept>
+#undef min
+#undef max
+#include <algorithm>
 
 // All types and functions within this file should be usable within both the hostApp and the enclave.
 namespace VbsEnclaveABI::Shared::Convertors
@@ -14,20 +17,23 @@ namespace VbsEnclaveABI::Shared::Convertors
     struct StructMetaData;
 
     // Helpers
-    template <typename T>
+    template<typename T>
     struct is_unique_ptr : std::false_type {};
 
-    template <typename T>
-    struct is_unique_ptr<std::unique_ptr<T>> : std::true_type {};
+    template<typename T, typename D>
+    struct is_unique_ptr<std::unique_ptr<T, D>> : std::true_type {};
 
     template<typename T>
     struct unique_ptr_inner_type { using type = void; };
 
+    template<typename T, typename D>
+    struct unique_ptr_inner_type<std::unique_ptr<T, D>> { using type = std::decay_t<T>; };
+
     template<typename T>
-    struct unique_ptr_inner_type<std::unique_ptr<T>> { using type = std::decay_t<T>; };
+    using unique_ptr_inner_type_t = typename unique_ptr_inner_type<std::decay_t<T>>::type;
 
     template <typename T>
-    constexpr bool is_unique_ptr_v = is_unique_ptr<T>::value;
+    constexpr bool is_unique_ptr_v = is_unique_ptr<std::decay_t<T>>::value;
 
     template <typename T>
     struct is_std_optional : std::false_type {};
@@ -56,6 +62,9 @@ namespace VbsEnclaveABI::Shared::Convertors
     template <typename U, typename Alloc>
     struct std_vector_inner_type<std::vector<U, Alloc>> { using type = std::decay_t<U>; };
 
+    template<typename T>
+    using std_vector_inner_type_t = typename std_vector_inner_type<std::decay_t<T>>::type;
+
     template <typename T>
     constexpr bool is_std_vector_v = is_std_vector<T>::value;
 
@@ -70,6 +79,9 @@ namespace VbsEnclaveABI::Shared::Convertors
 
     template <typename U, std::size_t N>
     struct std_array_inner_type<std::array<U, N>> { using type = std::decay_t<U>; };
+
+    template<typename T>
+    using std_array_inner_type_t = typename std_array_inner_type<std::decay_t<T>>::type;
 
     template <typename T>
     struct is_container_type : std::false_type {};
@@ -90,7 +102,7 @@ namespace VbsEnclaveABI::Shared::Convertors
     constexpr bool is_std_array_v = is_std_array<T>::value;
 
     template <typename T>
-    constexpr bool is_scalar_numeric_v = std::is_integral_v<T> || std::is_floating_point_v<T>;
+    constexpr bool is_scalar_numeric_v = std::is_integral_v<std::decay_t<T>> || std::is_floating_point_v<std::decay_t<T>>;
 
     template <typename T>
     constexpr bool is_plain_struct_v =
@@ -116,17 +128,32 @@ namespace VbsEnclaveABI::Shared::Convertors
         return ConvertToFlatbuffer<FromType, ToType>(arg);
     }
 
+    //template <typename FromType, typename ToType>
+    //inline std::enable_if_t<is_unique_ptr_v<FromType> && is_plain_struct_v<ToType>, std::decay_t<ToType>>
+    //ConvertFromUniquePtrToStruct(const FromType& from_type, ConversionType conversion_type)
+    //{
+    //    if (!from_type)
+    //    {
+    //        return {};
+    //    }
+
+    //    using FromInnerType = unique_ptr_inner_type_t<FromType>;
+    //    ToType to_type{};
+    //    ConvertStruct<FromInnerType, ToType>(*return_ptr, to_type, conversion_type);
+    //    return to_type;
+    //}
+
     template <typename FromType, typename ToType>
-    inline std::enable_if_t<is_unique_ptr_v<FromType>, ToType>
-        ConvertToUniquePtr(const FromType& from_type, ConversionType conversion_type)
+    inline std::enable_if_t<is_unique_ptr_v<FromType>, std::decay_t<ToType>>
+    ConvertToUniquePtr(const FromType& from_type, ConversionType conversion_type)
     {
         if (!from_type)
         {
             return nullptr;
         }
 
-        using FromInnerType = unique_ptr_inner_type<FromType>::type;
-        using ToInnerType = unique_ptr_inner_type<ToType>::type;
+        using FromInnerType = unique_ptr_inner_type_t<FromType>;
+        using ToInnerType = unique_ptr_inner_type_t<ToType>;
 
         auto return_ptr = std::make_unique<ToInnerType>();
         THROW_HR_IF_NULL(E_INVALIDARG, return_ptr.get());
@@ -135,8 +162,8 @@ namespace VbsEnclaveABI::Shared::Convertors
     }
 
     template <typename FromType, typename ToType>
-    inline std::enable_if_t<std::is_pointer_v<FromType>, ToType>
-        ConvertToUniquePtr(const FromType& from_type, ConversionType conversion_type)
+    inline std::enable_if_t<std::is_pointer_v<FromType>, std::decay_t<ToType>>
+    ConvertToUniquePtr(const FromType& from_type, ConversionType conversion_type)
     {
         if (!from_type)
         {
@@ -144,7 +171,7 @@ namespace VbsEnclaveABI::Shared::Convertors
         }
 
         using FromInnerType = std::remove_pointer_t<std::decay_t<FromType>>;
-        using ToInnerType = unique_ptr_inner_type<ToType>::type;
+        using ToInnerType = unique_ptr_inner_type_t<ToType>;
         auto return_ptr = std::make_unique<ToInnerType>();
         THROW_HR_IF_NULL(E_INVALIDARG, return_ptr.get());
         *return_ptr = ConvertToObj<FromInnerType, ToInnerType>(*from_type, conversion_type);
@@ -152,7 +179,7 @@ namespace VbsEnclaveABI::Shared::Convertors
     }
 
     template <typename FromType, typename ToType>
-    inline std::enable_if_t<is_std_optional_v<FromType>, ToType>
+    inline std::enable_if_t<is_std_optional_v<FromType>, std::decay_t<ToType>>
         ConvertToUniquePtr(const FromType& from_type, ConversionType conversion_type)
     {
         if (!from_type)
@@ -161,7 +188,7 @@ namespace VbsEnclaveABI::Shared::Convertors
         }
 
         using FromInnerType = optional_inner_type<FromType>::type;
-        using ToInnerType = unique_ptr_inner_type<ToType>::type;
+        using ToInnerType = unique_ptr_inner_type_t<ToType>;
         auto return_ptr = std::make_unique<ToInnerType>();
         THROW_HR_IF_NULL(E_INVALIDARG, return_ptr.get());
         *return_ptr = ConvertToObj<FromInnerType, ToInnerType>(from_type.value(), conversion_type);
@@ -169,19 +196,19 @@ namespace VbsEnclaveABI::Shared::Convertors
     }
 
     template <typename FromType, typename ToType>
-    inline std::enable_if_t<is_plain_struct_v<FromType>, ToType>
+    inline std::enable_if_t<is_plain_struct_v<FromType>, std::decay_t<ToType>>
     ConvertToUniquePtr(const FromType& from_type, ConversionType conversion_type)
     {
         using FromInnerType = std::decay_t<FromType>;
-        using ToInnerType = unique_ptr_inner_type<ToType>::type;
+        using ToInnerType = unique_ptr_inner_type_t<ToType>;
         auto return_ptr = std::make_unique<ToInnerType>();
         THROW_HR_IF_NULL(E_INVALIDARG, return_ptr.get());
-        *return_ptr = ConvertToObj<FromInnerType, ToInnerType>(from_type, conversion_type);
+        ConvertStruct(from_type, *return_ptr, conversion_type);
         return return_ptr;
     }
 
     template <typename FromType, typename ToType>
-    inline std::enable_if_t<is_std_optional_v<ToType>&& is_unique_ptr_v<FromType>, ToType>
+    inline std::enable_if_t<is_std_optional_v<ToType>&& is_unique_ptr_v<FromType>, std::decay_t<ToType>>
         ConvertToOptional(const FromType& from_type, ConversionType conversion_type)
     {
         if (!from_type)
@@ -189,14 +216,14 @@ namespace VbsEnclaveABI::Shared::Convertors
             return {};
         }
 
-        using FromInnerType = unique_ptr_inner_type<FromType>::type;
+        using FromInnerType = unique_ptr_inner_type_t<FromType>;
         using ToInnerType = optional_inner_type<ToType>::type;
 
         return ConvertToObj<FromInnerType, ToInnerType>(*from_type, conversion_type);
     }
 
     template <typename FromType, typename ToType>
-    inline std::enable_if_t<is_std_optional_v<ToType>&& std::is_pointer_v<FromType>, ToType>
+    inline std::enable_if_t<is_std_optional_v<ToType>&& std::is_pointer_v<FromType>, std::decay_t<ToType>>
         ConvertToOptional(const FromType& from_type, ConversionType conversion_type)
     {
         if (!from_type)
@@ -212,10 +239,10 @@ namespace VbsEnclaveABI::Shared::Convertors
 
     template <typename FromType, typename ToType>
     inline std::enable_if_t<is_unique_ptr_v<FromType>, ToType>
-        FlatbufferUniquePtrToDevTypeStruct(const FromType& from_type, ConversionType conversion_type)
+        FlatbufferUniquePtrToDevTypeStruct(const FromType& from_type)
     {
         THROW_HR_IF_NULL(E_INVALIDARG, from_type.get());
-        using FromInnerType = unique_ptr_inner_type<FromType>::type;
+        using FromInnerType = unique_ptr_inner_type_t<FromType>;
         ToType ret_type {};
         ConvertStruct<FromInnerType, ToType>(*from_type, ret_type, ConversionType::ToDevType);
         return ret_type;
@@ -224,16 +251,41 @@ namespace VbsEnclaveABI::Shared::Convertors
     template<typename T>
     inline std::wstring ConvertToStdWString(const T& wstr)
     {
-        return std::wstring(wstr.wchars.begin(), wstr.wchars.end());
+        if constexpr (is_unique_ptr_v<T>)
+        {
+            if (!wstr)
+            {
+                return {};
+            }
+
+            return std::wstring(wstr->wchars.begin(), wstr->wchars.end());
+        }
+        else 
+        {
+
+            return std::wstring(wstr.wchars.begin(), wstr.wchars.end());
+        }
     }
 
-    template<typename T>
-    inline std::unique_ptr<T> CreateWStringT(const std::wstring& wchars)
+    template<typename FlatbufferType>
+    inline std::enable_if_t<is_unique_ptr_v<FlatbufferType>, FlatbufferType>
+    CreateWStringT(const std::wstring& wchars)
     {
-        auto wchar_ptr = std::make_unique<T>();
+        using FromInnerType = unique_ptr_inner_type_t<FlatbufferType>;
+        auto wchar_ptr = std::make_unique<FromInnerType>();
         THROW_IF_NULL_ALLOC(wchar_ptr);
         wchar_ptr->wchars.assign(wchars.begin(), wchars.end());
         return wchar_ptr;
+    }
+
+    template<typename FlatbufferType>
+    inline std::enable_if_t<is_plain_struct_v<FlatbufferType>, FlatbufferType>
+    CreateWStringT(const std::wstring& wchars)
+    {
+        FlatbufferType wcharT {};
+        wcharT.wchars.assign(wchars.begin(), wchars.end());
+        return wcharT;
+        
     }
 
     template <typename FlatbufferType, typename DevType>
@@ -253,7 +305,7 @@ namespace VbsEnclaveABI::Shared::Convertors
         }
         else if constexpr (std::is_same_v<DevType, std::wstring>)
         {
-            return flatbuffer_type ? ConvertToStdWString(*flatbuffer_type) : std::wstring();
+            return ConvertToStdWString(flatbuffer_type);
         }
         else if constexpr (is_unique_ptr_v<FlatbufferType> && is_unique_ptr_v<DevType>)
         {
@@ -271,30 +323,51 @@ namespace VbsEnclaveABI::Shared::Convertors
         }
         else if constexpr (is_std_vector_v<FlatbufferType> && is_std_vector_v<DevType>)
         {
+            using InnerDevType = std_vector_inner_type_t<DevType>;
+            using InnerFlatbufferType = std_vector_inner_type_t<FlatbufferType>;
             DevType dev_type{};
             dev_type.reserve(flatbuffer_type.size());
 
             for (auto& value : flatbuffer_type)
             {
-                dev_type.emplace_back(ConvertToDevType(value));
+                if (is_plain_struct_v<InnerDevType>)
+                {
+                    InnerDevType inner_type{};
+                    ConvertStruct<InnerFlatbufferType, InnerDevType>(value, inner_type, ConversionType::ToDevType);
+                    dev_type.emplace_back(std::move(inner_type));
+                }
+                else
+                {
+                    dev_type.emplace_back(ConvertToDevType<InnerFlatbufferType, InnerDevType>(value));
+                }
             }
 
             return dev_type;
         }
         else if constexpr (is_std_vector_v<FlatbufferType> && is_std_array_v<DevType>)
         {
+            using InnerDevType = std_array_inner_type_t<DevType>;
+            using InnerFlatbufferType = std_vector_inner_type_t<FlatbufferType>;
             DevType dev_type {};
-            dev_type.reserve(flatbuffer_type.size());
 
-            for (size_t i = 0; i < std::tuple_size<DevType>::value; i++)
+            for (size_t i = 0; i < std::min(dev_type.size(), flatbuffer_type.size()); i++)
             {
-                dev_type.emplace_back(ConvertToDevType(flatbuffer_type[i]));
+                if (is_plain_struct_v<InnerDevType>)
+                {
+                    InnerDevType inner_type {};
+                    ConvertStruct<InnerFlatbufferType, InnerDevType>(flatbuffer_type[i], inner_type, ConversionType::ToDevType);
+                    dev_type[i] = std::move(inner_type);
+                }
+                else
+                {
+                    dev_type[i] = std::move(ConvertToDevType<InnerFlatbufferType, InnerDevType>(flatbuffer_type[i]));
+                }
             }
 
             return dev_type;
         }
 
-        throw std::runtime_error("No conversion function available for flatbuffer to dev type");
+        static_assert(false, "No conversion function available for flatbuffer to dev type"  __FUNCSIG__);
     }
 
     template <typename DevType, typename FlatbufferType>
@@ -314,7 +387,7 @@ namespace VbsEnclaveABI::Shared::Convertors
         }
         else if constexpr (std::is_same_v<DevType, std::wstring>)
         {
-            return CreateWStringT(dev_type);
+            return CreateWStringT<FlatbufferType>(dev_type);
         }
         else if constexpr (is_unique_ptr_v<DevType> && is_unique_ptr_v<FlatbufferType>)
         {
@@ -335,7 +408,7 @@ namespace VbsEnclaveABI::Shared::Convertors
         // Handle case where struct field in flatbuffer is std::optional but dev type is unique_ptr struct value
         else if constexpr (is_std_optional_v<FlatbufferType> && is_unique_ptr_v<DevType>)
         {
-            return ConvertToUniquePtr<std::decay_t<DevType>, FlatbufferType>(dev_type, ConversionType::ToFlatbuffer);
+            return ConvertToOptional<std::decay_t<DevType>, FlatbufferType>(dev_type, ConversionType::ToFlatbuffer);
         }
         // Handle case where struct field in flatbuffer is unique_ptr but dev type is normal struct value
         else if constexpr (is_unique_ptr_v<FlatbufferType> && is_plain_struct_v<DevType>)
@@ -344,30 +417,52 @@ namespace VbsEnclaveABI::Shared::Convertors
         }
         else if constexpr (is_std_vector_v<DevType> && is_std_vector_v<FlatbufferType>)
         {
+            using InnerDevType = std_vector_inner_type_t<DevType>;
+            using InnerFlatbufferType = std_vector_inner_type_t<FlatbufferType>;
             FlatbufferType flatbuffer {};
             flatbuffer.reserve(dev_type.size());
 
             for (auto& value : dev_type)
             {
-                flatbuffer.emplace_back(ConvertToFlatbuffer(value));
+                if (is_plain_struct_v<InnerFlatbufferType>)
+                {
+                    InnerFlatbufferType inner_type {};
+                    ConvertStruct<InnerDevType, InnerFlatbufferType>(value, inner_type, ConversionType::ToFlatbuffer);
+                    flatbuffer.emplace_back(std::move(inner_type));
+                }
+                else
+                {
+                    flatbuffer.emplace_back(ConvertToFlatbuffer<InnerDevType, InnerFlatbufferType>(value));
+                }
             }
 
             return flatbuffer;
         }
         else if constexpr (is_std_array_v<DevType> && is_std_vector_v<FlatbufferType>)
         {
+            using InnerDevType = std_array_inner_type_t<DevType>;
+            using InnerFlatbufferType = std_vector_inner_type_t<FlatbufferType>;
             FlatbufferType flatbuffer {};
             flatbuffer.reserve(dev_type.size());
 
-            for (size_t i = 0; i < std::tuple_size<DevType>::value; i++)
+            for (size_t i = 0; i < dev_type.size(); i++)
             {
-                flatbuffer.emplace_back(ConvertToFlatbuffer(dev_type[i]));
+                if (is_plain_struct_v<InnerFlatbufferType>)
+                {
+                    InnerFlatbufferType inner_type {};
+                    ConvertStruct<InnerDevType, InnerFlatbufferType>(dev_type[i], inner_type, ConversionType::ToFlatbuffer);
+                    flatbuffer.emplace_back(std::move(inner_type));
+                }
+                else
+                {
+                    flatbuffer.emplace_back(ConvertToFlatbuffer<InnerDevType, InnerFlatbufferType>(dev_type[i]));
+                }
             }
 
             return flatbuffer;
         }
 
-        throw std::runtime_error("No conversion function available for dev type to flatbuffer");
+        static_assert(false, "No conversion function available for dev type to flatbuffer"  __FUNCSIG__);
     }
 
     template <typename From, typename To, size_t... I>
@@ -388,13 +483,13 @@ namespace VbsEnclaveABI::Shared::Convertors
                     }
                     else if (conversion_type == ConversionType::ToDevType)
                     {
-                        dst_field = std::move(ConvertToDevType<decltype(src_field), decltype(dst_field)>(src_field));
+                        dst_field = std::move(ConvertToDevType<SrcT, DstT>(src_field));
                     }
                     else
                     {
-                        dst_field = std::move(ConvertToFlatbuffer<decltype(src_field), decltype(dst_field)>(src_field));
+                        dst_field = std::move(ConvertToFlatbuffer<SrcT, DstT>(src_field));
                     }
-                }
+                }()
             ), ...
         );
     }
