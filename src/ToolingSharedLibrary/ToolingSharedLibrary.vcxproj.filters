@@ -69,16 +69,10 @@
     <ClInclude Include="Includes\CodeGeneration\Flatbuffers\Contants.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Includes\CodeGeneration\Flatbuffers\BuilderHelpers.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Includes\CodeGeneration\Flatbuffers\Cpp\ConversionFunctionHelpers.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Includes\CodeGeneration\Flatbuffers\Cpp\CppContants.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="Includes\VbsEnclaveABI\Shared\ConversionHelpers.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Includes\CodeGeneration\Flatbuffers\BuilderHelpers.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
@@ -102,9 +96,6 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="ToolingExecutable\CodeGeneration\Flatbuffers\BuilderHelpers.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="ToolingExecutable\CodeGeneration\Flatbuffers\Cpp\ConversionFunctionHelpers.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

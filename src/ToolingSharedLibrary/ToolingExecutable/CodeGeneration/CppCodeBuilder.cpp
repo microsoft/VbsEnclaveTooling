@@ -8,8 +8,6 @@
 #include <CodeGeneration\Contants.h>
 #include <CodeGeneration\CodeGeneration.h>
 #include <CodeGeneration\Flatbuffers\BuilderHelpers.h>
-#include <CodeGeneration\Flatbuffers\cpp\CppContants.h>
-#include <CodeGeneration\Flatbuffers\cpp\ConversionFunctionHelpers.h>
 #include <CodeGeneration\Flatbuffers\Contants.h>
 #include <sstream>
 using namespace EdlProcessor;
@@ -124,77 +122,6 @@ namespace CodeGeneration
         return std::format("{} {}", GetFullDeclarationType(declaration), declaration.m_name);
     }
 
-    std::string GetConverterFunctionForDeveloperStruct(
-       std::string_view struct_name,
-       const std::vector<Declaration>& fields)
-    {
-        std::ostringstream struct_body {};
-        auto flatbuffer_type = std::format(c_flatbuffer_native_table_type_suffix, struct_name);
-
-        // Get function body for this structs flatbuffer to developer type static function
-        std::string flatbuffer_to_dev_type_func_body = Flatbuffers::Cpp::BuildConversionFunctionBody(
-            fields,
-            FlatbufferConversionKind::ToDevType);
-        
-        // Encapsulate body in a function that takes in a flatbuffer struct reference
-        // and returns dev type in a shared ptr
-        struct_body << std::format(
-            Flatbuffers::Cpp::c_convert_to_dev_type_function_definition_reference,
-            struct_name,
-            flatbuffer_type,
-            struct_name,
-            flatbuffer_to_dev_type_func_body);
-        
-        // Encapsulate body in a function that takes in a flatbuffer struct unique ptr
-        // and returns dev type in a shared ptr
-        struct_body << std::format(
-            Flatbuffers::Cpp::c_convert_to_dev_type_function_definition_shared_ptr,
-            struct_name,
-            flatbuffer_type,
-            struct_name);
-
-        // Encapsulate body in a function that takes in a flatbuffer struct reference
-        // and returns dev type object
-        struct_body << std::format(
-            Flatbuffers::Cpp::c_convert_to_dev_type_function_definition_no_ptr,
-            struct_name,
-            flatbuffer_type,
-            struct_name,
-            flatbuffer_to_dev_type_func_body);
-
-        // Encapsulate body in a function that takes in a flatbuffer struct unique ptr
-        // and returns dev type object
-        struct_body << std::format(
-            Flatbuffers::Cpp::c_convert_to_dev_type_function_definition_no_ptr2,
-            struct_name,
-            flatbuffer_type,
-            struct_name);
-
-        // Get function body for this structs developer to flatbuffer static function
-        std::string dev_type_to_flatbuffer_func_body = Flatbuffers::Cpp::BuildConversionFunctionBody(
-            fields,
-            FlatbufferConversionKind::ToFlatbuffer);
-        
-        // Encapsulate body in a function that takes in a reference to this struct type
-        // and returns a unique ptr to a flatbuffer struct
-        struct_body << std::format(
-            Flatbuffers::Cpp::c_convert_to_flatbuffer_function_definition_reference,
-            flatbuffer_type,
-            struct_name,
-            flatbuffer_type,
-            dev_type_to_flatbuffer_func_body);
-
-        // Encapsulate body in a function that takes in a shared ptr to this struct type
-        // and returns a unique ptr to a flatbuffer struct
-        struct_body << std::format(
-            Flatbuffers::Cpp::c_convert_to_flatbuffer_function_definition_unique_ptr,
-            flatbuffer_type,
-            struct_name,
-            struct_name);
-
-        return struct_body.str();
-    }
-
     std::string CppCodeBuilder::BuildStructDefinition(
         std::string_view struct_name,
         const std::vector<Declaration>& fields)
@@ -258,15 +185,6 @@ namespace CodeGeneration
         return struct_metadata.str();
     }
 
-    std::string GetToFlatbufferParameterForFunction(const Declaration& declaration)
-    {
-        std::string full_type = GetFullDeclarationType(declaration);
-        std::string qualifier = GetParameterQualifier(declaration);
-        std::string param_declarator = GetParameterDeclarator(declaration);
-
-        return std::format("{} {}{} {}", qualifier, full_type, param_declarator, declaration.m_name);
-    }
-
     std::string CppCodeBuilder::BuildFunctionParameters(
        const Function& function,
        const FunctionParametersInfo& param_info)
@@ -296,7 +214,6 @@ namespace CodeGeneration
     }
 
     void AddParameterToTheForwardToDevImplList(
-        std::string_view struct_field_name_to_forward,
         const Declaration& declaration,
         std::string_view all_params_separator,
         CppCodeBuilder::FunctionParametersInfo& param_info)
@@ -306,17 +223,15 @@ namespace CodeGeneration
         if (declaration.HasPointer() && !declaration.IsOutParameterOnly())
         {
             param_info.m_params_to_forward_to_dev_impl << FormatString(
-                    "{} {}.m_{}.get()",
+                    "{} dev_type_params.m_{}.get()",
                     all_params_separator,
-                    struct_field_name_to_forward,
                     declaration.m_name);
         }
         else
         {
             param_info.m_params_to_forward_to_dev_impl << FormatString(
-                "{} {}.m_{}",
+                "{} dev_type_params.m_{}",
                 all_params_separator,
-                struct_field_name_to_forward,
                 declaration.m_name);
         }
     }
@@ -411,7 +326,7 @@ namespace CodeGeneration
             auto all_params_separator = (in_out_index == 0 && in_index == 0 && out_index == 0) ? "" : ",";
             const Declaration& declaration = function.m_parameters[params_index];
 
-            AddParameterToTheForwardToDevImplList(Flatbuffers::Cpp::c_params_struct, declaration, all_params_separator, param_info);
+            AddParameterToTheForwardToDevImplList(declaration, all_params_separator, param_info);
 
             // These will be copied into the flatbuffer. For Out param std::arrays we need to make sure the flatbuffer vector 
             // that is created is of size std::array<T, N>::size() and not 0/empty so we keep the invariant that the vector.size() will always
