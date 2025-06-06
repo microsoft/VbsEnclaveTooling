@@ -494,7 +494,7 @@ R"(
 R"(             using ReturnParamsT = FlatbuffersDevTypes::{}T;)";
 
     static inline constexpr std::string_view c_in_and_inout_parameter_conversion_statement =
-"           in_flatbufferT.m_{} = Convertors::ConvertToFlatbuffer<std::decay_t<decltype({})>, std::decay_t<decltype(in_flatbufferT.m_{})>>({});\n";
+"           in_flatbufferT.m_{} = Convertors::ConvertToFlatbuffer<decltype({}), decltype(in_flatbufferT.m_{})>({});\n";
 
     static inline constexpr std::string_view c_pack_params_to_flatbuffer_call =
 R"(// Package in and in/out parameters into struct and convert it to a flatbuffer type.
@@ -511,20 +511,20 @@ R"({} dev_type_params{{}};
 )";
 
     static inline constexpr std::string_view c_conversion_to_dev_type_statement =
-R"(ConvertStruct<std::decay_t<decltype(in_flatbuffer_params)>, std::decay_t<decltype(dev_type_params)>>(in_flatbuffer_params, dev_type_params, Convertors::ConversionType::ToDevType);
+R"(Convertors::ConvertStruct<Convertors::ConversionType::ToDevType, decltype(in_flatbuffer_params), decltype(dev_type_params)>(in_flatbuffer_params, dev_type_params);
             )";
 
     static inline constexpr std::string_view c_abi_func_return_value =
-R"({}dev_type_params.m__return_value_ = {}({});
+        R"({}dev_type_params.m__return_value_ = {}({});
 {})";
 
     static inline constexpr std::string_view c_abi_func_return_when_void =
-R"({}{}({});
+        R"({}{}({});
 {})";
 
     static inline constexpr std::string_view c_setup_return_params_struct = R"(
             FlatbuffersDevTypes::{}T flatbuffer_out_param{{}};
-            ConvertStruct<std::decay_t<decltype(dev_type_params)>, std::decay_t<decltype(flatbuffer_out_param)>>(dev_type_params, flatbuffer_out_param, Convertors::ConversionType::ToFlatbuffer);
+            Convertors::ConvertStruct<Convertors::ConversionType::ToFlatbuffer, decltype(dev_type_params), decltype(flatbuffer_out_param)>(dev_type_params, flatbuffer_out_param);
             flatbuffer_out_params_builder = PackFlatbuffer(flatbuffer_out_param);)";
 
     static inline constexpr std::string_view c_setup_no_return_params_struct = R"(
@@ -532,7 +532,7 @@ R"({}{}({});
 
     static inline constexpr std::string_view c_setup_return_params_back_to_developer = R"(
             {} return_params{{}};
-            ConvertStruct<std::decay_t<decltype(function_result)>, std::decay_t<decltype(return_params)>>(function_result, return_params, Convertors::ConversionType::ToDevType);
+            Convertors::ConvertStruct<Convertors::ConversionType::ToDevType, decltype(function_result), decltype(return_params)>(function_result, return_params);
             {}
 )";
 
