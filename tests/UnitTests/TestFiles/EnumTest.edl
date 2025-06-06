@@ -32,8 +32,8 @@ enclave
             // Use anonymous enum value for array size for this
             // parameter.
             [in] Color arg2[Nine],
-            [in,out] Color arg3[5][5],
-            [out] Color arg4[1][1][1],
+            [in, out] Color arg3[5],
+            [out] Color arg4[1],
 
             // count = 1
             [in] Color* arg5,
@@ -41,24 +41,24 @@ enclave
             [out] Color* arg7,
 
             // count attribute           
-            [in, count=Ten] Color* arg8,
-            [in,out, count=Ten] Color* arg9,
-            [out, count=Ten] Color* arg10,
+            [in] Color* arg8,
+            [in, out] Color* arg9,
+            [out] Color* arg10,
 
             // size attribute
-            [in, size=8] Color* arg11,
-            [in,out, size=8] Color* arg12,
-            [out, size=8] Color* arg13,
+            [in] Color* arg11,
+            [in, out] Color* arg12,
+            [out] Color* arg13,
 
             // count parameter
-            [in, count=arg20] Color* arg14,
-            [in,out, count=arg20] Color* arg15,
-            [out, count=arg20] Color* arg16,
+            [in] Color* arg14,
+            [in, out] Color* arg15,
+            [out] Color* arg16,
 
             // size parameter
-            [in, size=arg21] Color* arg17,
-            [in,out, size=arg21] Color* arg18,
-            [out, size=arg21] Color* arg19,
+            [in] Color* arg17,
+            [in, out] Color* arg18,
+            [out] Color* arg19,
 
             size_t arg20,
             size_t arg21
@@ -71,33 +71,33 @@ enclave
             Color arg1,
 
             [in] Color arg2[5],
-            [in,out] Color arg3[5][5],
-            [out] Color arg4[1][1][1],
+            [in,out] Color arg3[5],
+            [out] Color arg4[1],
 
             // count = 1
             [in] Color* arg5,
-            [in,out] Color* arg6,
+            [in, out] Color* arg6,
             [out] Color* arg7,
 
             // count attribute           
-            [in, count=5] Color* arg8,
-            [in,out, count=5] Color* arg9,
-            [out, count=5] Color* arg10,
+            [in] Color* arg8,
+            [in, out] Color* arg9,
+            [out] Color* arg10,
 
             // size attribute
-            [in, size=8] Color* arg11,
-            [in,out, size=8] Color* arg12,
-            [out, size=8] Color* arg13,
+            [in] Color* arg11,
+            [in, out] Color* arg12,
+            [out] Color* arg13,
 
             // count parameter
-            [in, count=arg20] Color* arg14,
-            [in,out, count=arg20] Color* arg15,
-            [out, count=arg20] Color* arg16,
+            [in] Color* arg14,
+            [in, out] Color* arg15,
+            [out] Color* arg16,
 
             // size parameter
-            [in, size=arg21] Color* arg17,
-            [in,out, size=arg21] Color* arg18,
-            [out, size=arg21] Color* arg19,
+            [in] Color* arg17,
+            [in, out] Color* arg18,
+            [out] Color* arg19,
 
             size_t arg20,
             size_t arg21
