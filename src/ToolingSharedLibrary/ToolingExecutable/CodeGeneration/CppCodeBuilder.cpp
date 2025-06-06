@@ -9,7 +9,6 @@
 #include <CodeGeneration\CodeGeneration.h>
 #include <CodeGeneration\Flatbuffers\BuilderHelpers.h>
 #include <CodeGeneration\Flatbuffers\cpp\CppContants.h>
-#include <CodeGeneration\Flatbuffers\cpp\ConversionFunctionHelpers.h>
 #include <CodeGeneration\Flatbuffers\Contants.h>
 #include <sstream>
 using namespace EdlProcessor;
@@ -122,77 +121,6 @@ namespace CodeGeneration
         const Declaration& declaration)
     {
         return std::format("{} {}", GetFullDeclarationType(declaration), declaration.m_name);
-    }
-
-    std::string GetConverterFunctionForDeveloperStruct(
-       std::string_view struct_name,
-       const std::vector<Declaration>& fields)
-    {
-        std::ostringstream struct_body {};
-        auto flatbuffer_type = std::format(c_flatbuffer_native_table_type_suffix, struct_name);
-
-        // Get function body for this structs flatbuffer to developer type static function
-        std::string flatbuffer_to_dev_type_func_body = Flatbuffers::Cpp::BuildConversionFunctionBody(
-            fields,
-            FlatbufferConversionKind::ToDevType);
-        
-        // Encapsulate body in a function that takes in a flatbuffer struct reference
-        // and returns dev type in a shared ptr
-        struct_body << std::format(
-            Flatbuffers::Cpp::c_convert_to_dev_type_function_definition_reference,
-            struct_name,
-            flatbuffer_type,
-            struct_name,
-            flatbuffer_to_dev_type_func_body);
-        
-        // Encapsulate body in a function that takes in a flatbuffer struct unique ptr
-        // and returns dev type in a shared ptr
-        struct_body << std::format(
-            Flatbuffers::Cpp::c_convert_to_dev_type_function_definition_shared_ptr,
-            struct_name,
-            flatbuffer_type,
-            struct_name);
-
-        // Encapsulate body in a function that takes in a flatbuffer struct reference
-        // and returns dev type object
-        struct_body << std::format(
-            Flatbuffers::Cpp::c_convert_to_dev_type_function_definition_no_ptr,
-            struct_name,
-            flatbuffer_type,
-            struct_name,
-            flatbuffer_to_dev_type_func_body);
-
-        // Encapsulate body in a function that takes in a flatbuffer struct unique ptr
-        // and returns dev type object
-        struct_body << std::format(
-            Flatbuffers::Cpp::c_convert_to_dev_type_function_definition_no_ptr2,
-            struct_name,
-            flatbuffer_type,
-            struct_name);
-
-        // Get function body for this structs developer to flatbuffer static function
-        std::string dev_type_to_flatbuffer_func_body = Flatbuffers::Cpp::BuildConversionFunctionBody(
-            fields,
-            FlatbufferConversionKind::ToFlatbuffer);
-        
-        // Encapsulate body in a function that takes in a reference to this struct type
-        // and returns a unique ptr to a flatbuffer struct
-        struct_body << std::format(
-            Flatbuffers::Cpp::c_convert_to_flatbuffer_function_definition_reference,
-            flatbuffer_type,
-            struct_name,
-            flatbuffer_type,
-            dev_type_to_flatbuffer_func_body);
-
-        // Encapsulate body in a function that takes in a shared ptr to this struct type
-        // and returns a unique ptr to a flatbuffer struct
-        struct_body << std::format(
-            Flatbuffers::Cpp::c_convert_to_flatbuffer_function_definition_unique_ptr,
-            flatbuffer_type,
-            struct_name,
-            struct_name);
-
-        return struct_body.str();
     }
 
     std::string CppCodeBuilder::BuildStructDefinition(

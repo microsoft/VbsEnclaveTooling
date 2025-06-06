@@ -1,7 +1,6 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
-#pragma once 
 #include <pch.h>
 #include <Edl\Structures.h>
 #include <Edl\Utils.h>
@@ -148,15 +147,29 @@ namespace CodeGeneration::Flatbuffers
             else if (declaration.IsEdlType(EdlTypeKind::Vector))
             {
                 auto& inner_type = declaration.m_edl_type_info.inner_type;
-                auto use_inline_type = (inner_type->m_type_kind == EdlTypeKind::Struct || inner_type->m_type_kind == EdlTypeKind::WString) ? "(native_inline)" : "";
+
+                // By default for vectors of tables/structs the flabuffer object-api will generate the
+                // vector as vector<unique_ptr<T>>. However when '(native_inline)' is used the api will generate the 
+                // vector as vector<T>. We want this behavior so we can limit the amount of memory the abi allocates. 
+                // All non tables/structs get generated as vector<T> by default. WString is special because we generate
+                // it as a flatbuffer table that contains a vector of uint16's.
+                std::string inline_type_string = "";
+                if (inner_type->m_type_kind == EdlTypeKind::Struct || inner_type->m_type_kind == EdlTypeKind::WString) 
+                {
+                    inline_type_string = "(native_inline)";
+                }
+
                 table_body << std::format(
                     "    {} : [{}] {};\n",
                     declaration.m_name,
                     GetFlatBufferType(*inner_type),
-                    use_inline_type);
+                    inline_type_string);
             }
             else if (declaration.IsEdlType(EdlTypeKind::Struct))
             {
+                // We generate structs as tables using the flatbuffer object api. Unfortunately it generates nested
+                // tables as unique_ptr<T> where T is the flatbuffer representation of the struct. There is currently
+                // no way to generate tables as type T instead of unique_ptr<T> like in the case of vectors.
                 table_body << std::format(
                     "    {} : {};\n",
                     declaration.m_name,

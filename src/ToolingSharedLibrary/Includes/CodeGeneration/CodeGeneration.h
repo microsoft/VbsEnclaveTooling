@@ -13,8 +13,6 @@ using namespace EdlProcessor;
 
 namespace CodeGeneration
 {
-    inline constexpr std::string_view g_sdk_namespace_name = "veil_abi";
-
     namespace CppCodeBuilder
     {
         struct HostToEnclaveContent

@@ -296,16 +296,6 @@ namespace CodeGeneration
 
         return std::format("{} {}{} {}", qualifier, full_type, param_declarator, declaration.m_name);
     }
-
-    inline std::string GetToDevTypeFunctionName(const Declaration& declaration)
-    {
-        if (declaration.HasPointer())
-        {
-            return "ToDevType";
-        }
-
-        return "ToDevTypeNoPtr";
-    }
     
     inline bool ShouldFieldInReturnedStructBeMoved(
         const Declaration& declaration,
