@@ -464,40 +464,8 @@ R"(     {}_Generated_Stub
 
     static inline constexpr std::string_view c_dev_type_for_function_params_struct = "dev_type_params";
 
-    static inline constexpr std::string_view c_return_param_for_out_param_ptr = 
-R"(     
-            if (return_params.m_{})
-            {{
-                {} = std::move(return_params.m_{});
-            }}
-)";
+    static inline constexpr std::string_view c_update_inout_and_out_param_statement = "            UpdateParameterValue(return_params.m_{}, {});\n";
 
-    static inline constexpr std::string_view c_return_param_for_inout_param_ptr =
-R"(     
-            if ({} && return_params.m_{})
-            {{
-                *{} = *return_params.m_{};
-            }}
-)";
-
-    static inline constexpr std::string_view c_return_param_for_inout_param_ptr_with_move =
-R"(     
-            if ({} && return_params.m_{})
-            {{
-                *{} = std::move(*return_params.m_{}); 
-            }}
-)";
-
-    static inline constexpr std::string_view c_return_param_for_inout_param_with_move =
-R"(     
-            {} = std::move(return_params.m_{});
-)";
-
-static inline constexpr std::string_view c_return_param_for_basic_type =
-R"(     
-            {} = return_params.m_{};
-)";
-    
     static inline constexpr std::string_view c_parameter_struct_using_statement =
 R"(             using ReturnParamsT = FlatbuffersDevTypes::{}T;)";
 
@@ -539,16 +507,11 @@ R"({}({});
 
     static inline constexpr std::string_view c_setup_return_params_back_to_developer = R"(
             auto return_params = ConvertStruct<{}>(function_result);
-            {}
+{}
 )";
 
     static inline constexpr std::string_view c_return_value_back_to_initial_caller_with_move =
-R"(             
-            return std::move(return_params.m__return_value_);)";
-
-    static inline constexpr std::string_view c_return_value_back_to_initial_caller_no_move =
-R"(             
-            return return_params.m__return_value_;)";
+R"(            return std::move(return_params.m__return_value_);)";
 
     static inline constexpr std::string_view c_parameter_return_struct_using_statement =
 R"(        using ReturnParamsT = FlatbuffersDevTypes::{}T;)";
