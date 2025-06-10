@@ -9,7 +9,7 @@
 using namespace CmdlineParsingHelpers;
 using namespace Microsoft::VisualStudio::CppUnitTestFramework;
 
-const std::string c_edl_path_valid_input = "test.edl";
+const std::string c_edl_path_valid_input = "BasicTypesTest.edl";
 
 namespace VbsEnclaveToolingTests
 {
@@ -27,20 +27,6 @@ namespace VbsEnclaveToolingTests
         std::string m_error_handling_arg = "--ErrorHandling";
         std::string m_error_handling_valid_input[2] = { "ErrorCode", "Exception" };
     public:
-        
-
-        TEST_CLASS_INITIALIZE(Setup)
-        {
-            // create test file.
-            std::ofstream file(c_edl_path_valid_input);
-            file.close();
-        }
-
-        TEST_CLASS_CLEANUP(TearDown)
-        {
-            // delete test file.
-            std::filesystem::remove(c_edl_path_valid_input);
-        }
 
         // Test valid parsing for known arguments
         TEST_METHOD(TestValidArguments)
