@@ -13,15 +13,9 @@
 // All types and functions within this file should be usable within both the hostApp and the enclave.
 namespace VbsEnclaveABI::Shared::Converters
 {
-    enum class ConversionType : std::uint32_t
-    {
-        ToDevType,
-        ToFlatbuffer
-    };
-
     // Base for all generated struct metadata.
     template <typename T>
-    struct StructMetaData;
+    struct StructMetadata;
 
     // Type traits
     template<typename T>
@@ -117,6 +111,24 @@ namespace VbsEnclaveABI::Shared::Converters
     template <typename T>
     using remove_pointer_t = typename std::remove_pointer<T>::type;
 
+    template <typename T>
+    struct vector_or_array_inner_type
+    {
+        static_assert(
+            std::is_same_v<T, void>,
+            "vector_or_array_inner_type<T>: T must be std::vector or std::array"
+        );
+    };
+
+    template <typename T, typename Alloc>
+    struct vector_or_array_inner_type<std::vector<T, Alloc>> { using type = std::decay_t<T>; };
+
+    template <typename T, std::size_t N>
+    struct vector_or_array_inner_type<std::array<T, N>> { using type = std::decay_t<T>; };
+
+    template <typename T>
+    using vector_or_array_inner_type_t = vector_or_array_inner_type<std::decay_t<T>>::type;
+
     template<typename T>
     concept UniquePtr = is_unique_ptr_v<T>;
 
@@ -141,21 +153,6 @@ namespace VbsEnclaveABI::Shared::Converters
         !UniquePtr<std::decay_t<T>> &&   // Must not be unique ptr
         !Optional<std::decay_t<T>> && // Must not be optional
         !Container<std::decay_t<T>>; // Must not be wstring, string, vector or array
-
-    template <typename T, typename U>
-    concept IsOptionalAndUniquePtr =
-        (Optional<T> && UniquePtr<U>) ||
-        (Optional<U> && UniquePtr<T>);
-
-    template <typename T, typename U>
-    concept IsUniquePtrAndNonWrappedStruct =
-        (UniquePtr<T> && NonWrappedStruct<U>) ||
-        (UniquePtr<U> && NonWrappedStruct<T>);
-
-    template <typename T, typename U>
-    concept IsRawPtrAndUniquePtr =
-        (RawPtr<T> && UniquePtr<U>) ||
-        (RawPtr<U> && UniquePtr<T>);
 
     template <typename T>
     concept IsRawPtrAndNonWrappedStruct = RawPtr<T> && NonWrappedStruct<remove_pointer_t<T>>;
@@ -187,63 +184,28 @@ namespace VbsEnclaveABI::Shared::Converters
     // Used only for static_asserts
     template<typename...> struct always_false : std::false_type {};
 
-    template<ConversionType ConversionT, typename Src, typename Target>
-    decltype(auto) ConvertType(const Src& src)
-    {
-        using DecayedSrc = std::decay_t<Src>;
-        using DecayedTarget = std::decay_t<Target>;
-
-        if constexpr (ConversionT == ConversionType::ToDevType)
-        {
-            return ConvertToDevType<DecayedSrc, DecayedTarget>(src);
-        }
-        else
-        {
-            return ConvertToFlatbuffer<DecayedSrc, DecayedTarget>(src);
-        }
-    }
-
     template <
         template<typename...> class Wrapper,
-        typename Src,
         typename TargetInnerType,
-        typename AllocFunc, 
+        typename Src,
         typename ConvertFunc
     >
-    auto ConvertToWrapper(const Src& src, AllocFunc&& allocator_func, ConvertFunc&& converter_func)
+    auto ConvertToWrapper(const Src& src, ConvertFunc&& conversion_func)
     {
         using DecayedSrc = std::decay_t<Src>;
 
-        if constexpr (UniquePtr<DecayedSrc>)
+        if constexpr (UniquePtr<DecayedSrc> || RawPtr<DecayedSrc> || Optional<DecayedSrc>)
         {
             if (!src)
             {
                 return Wrapper<TargetInnerType>{};
             }
 
-            return allocator_func(converter_func(*src));
-        }
-        else if constexpr (Optional<DecayedSrc>)
-        {
-            if (!src.has_value())
-            {
-                return Wrapper<TargetInnerType>{};
-            }
-
-            return allocator_func(converter_func(src.value()));
-        }
-        else if constexpr (RawPtr<DecayedSrc>)
-        {
-            if (!src)
-            {
-                return Wrapper<TargetInnerType>{};
-            }
-
-            return allocator_func(converter_func(*src));
+            return conversion_func(*src);
         }
         else if constexpr (NonWrappedStruct<DecayedSrc>)
         {
-            return allocator_func(converter_func(src));
+            return conversion_func(src);
         }
         else
         {
@@ -251,43 +213,34 @@ namespace VbsEnclaveABI::Shared::Converters
         }
     }
 
-    template <ConversionType ConversionT, typename Src, UniquePtr Target>
+    template <UniquePtr Target, typename Src>
     inline std::decay_t<Target> ConvertToUniquePtr(const Src& src)
     {
         using TargetInnerType = unique_ptr_inner_type_t<Target>;
-        auto allocator_func = [] (auto&& value)
+
+        auto conversion_func = [] (auto&& value)
         {
+            using SrcInnerType = std::decay_t<decltype(value)>;
             auto ptr = std::make_unique<TargetInnerType>();
-            THROW_IF_NULL_ALLOC(ptr.get());
-            *ptr = std::forward<decltype(value)>(value);
+            *ptr = ConvertType<TargetInnerType>(value);
             return ptr;
         };
 
-        auto converter_func = [] (auto&& value)
-        {
-            using SrcInnerType = std::decay_t<decltype(value)>;
-            return ConvertType<ConversionT, SrcInnerType, TargetInnerType>(value);
-        };
-
-        return ConvertToWrapper<std::unique_ptr, Src, TargetInnerType>(src, allocator_func, converter_func);
+        return ConvertToWrapper<std::unique_ptr, TargetInnerType>(src, conversion_func);
     }
 
-    template <ConversionType ConversionT, typename Src, Optional Target>
+    template <Optional Target, typename Src>
     inline std::decay_t<Target> ConvertToOptional(const Src& src)
     {
         using TargetInnerType = optional_inner_type_t<Target>;
-        auto allocator_func = [] (auto&& value)
-        {
-            return std::make_optional<TargetInnerType>(std::forward<decltype(value)>(value));
-        };
 
-        auto converter_func = [] (auto&& value)
+        auto conversion_func = [] (auto&& value)
         {
             using SrcInnerType = std::decay_t<decltype(value)>;
-            return ConvertType<ConversionT, SrcInnerType, TargetInnerType>(value);
+            return std::make_optional<TargetInnerType>(ConvertType<TargetInnerType>(value));
         };
 
-        return ConvertToWrapper<std::optional, Src, TargetInnerType>(src, allocator_func, converter_func);
+        return ConvertToWrapper<std::optional, TargetInnerType>(src, conversion_func);
     }
 
     template<typename T>
@@ -308,217 +261,165 @@ namespace VbsEnclaveABI::Shared::Converters
         }
     }
 
-    template<typename FlatbufferType>
-    inline FlatbufferType CreateWStringT(const std::wstring& wchars)
+    template<typename Target>
+    inline Target CreateWStringT(const std::wstring& wchars)
     {
-        using Decayed = std::decay_t<FlatbufferType>;
-        if constexpr (UniquePtr<Decayed>)
+        using DecayedType = std::decay_t<Target>;
+        if constexpr (UniquePtr<DecayedType>)
         {
-            using InnerType = unique_ptr_inner_type_t<Decayed>;
+            using InnerType = unique_ptr_inner_type_t<DecayedType>;
             auto ptr = std::make_unique<InnerType>();
-            THROW_IF_NULL_ALLOC(ptr);
             ptr->wchars.assign(wchars.begin(), wchars.end());
             return ptr;
         }
-        else if constexpr (NonWrappedStruct<Decayed>)
+        else if constexpr (NonWrappedStruct<DecayedType>)
         {
-            Decayed wcharT {};
+            DecayedType wcharT {};
             wcharT.wchars.assign(wchars.begin(), wchars.end());
             return wcharT;
         }
         else
         {
-            static_assert(always_false<FlatbufferType>::value, "CreateWStringT: Unsupported FlatbufferType (must be unique_ptr or struct)");
+            static_assert(always_false<Target>::value, "CreateWStringT: Unsupported Target (must be unique_ptr or struct)");
         }
     }
 
-    template <typename SrcContainer, typename TargetContainer, typename ConvertFunc>
-    TargetContainer TransformContainer(const SrcContainer& src_container, ConvertFunc&& conversion_func)
+    template <typename TargetVector, typename SrcContainer, typename ConvertFunc>
+    TargetVector TransformVector(const SrcContainer& src, ConvertFunc&& conversion_func)
     {
-        TargetContainer target_container;
-        target_container.reserve(src_container.size());
-        for (const auto& value : src_container)
+        TargetVector target_vector;
+        target_vector.reserve(src.size());
+        for (const auto& value : src)
         {
-            target_container.emplace_back(conversion_func(value));
+            target_vector.emplace_back(conversion_func(value));
         }
 
-        return target_container;
+        return target_vector;
     }
 
-    template <typename SrcContainer, typename ArrayContainer, typename ConvertFunc>
-    ArrayContainer TransformToStdArray(const SrcContainer& src_container, ConvertFunc&& conversion_func)
+    template <typename StdArray, typename SrcVector, typename ConvertFunc>
+    StdArray TransformVectorToStdArray(const SrcVector& src, ConvertFunc&& conversion_func)
     {
-        ArrayContainer array_container {};
-        size_t N = std::min(array_container.size(), src_container.size());
+        StdArray array {};
+        size_t N = std::min(array.size(), src.size());
         for (size_t i = 0; i < N; ++i)
         {
-            array_container[i] = conversion_func(src_container[i]);
+            array[i] = conversion_func(src[i]);
         }
 
-        return array_container;
+        return array;
     }
 
-    template <typename FlatbufferType, typename DevType>
-    inline std::decay_t<DevType> ConvertToDevType(const FlatbufferType& flatbuffer_type)
+    template <typename Target, typename Src>
+    inline std::decay_t<Target> ConvertType(const Src& src)
     {
-        using DecayedDev = std::decay_t<DevType>;
-        using DecayedFlatBuffer = std::decay_t<FlatbufferType>;
+        using DecayedSrc = std::decay_t<Src>;
+        using DecayedTarget = std::decay_t<Target>;
 
-        if constexpr (AreBothTheSame<DecayedFlatBuffer, DecayedDev>)
+        if constexpr (AreBothTheSame<DecayedSrc, DecayedTarget>)
         {
-            return flatbuffer_type;
+            return src;
         }
-        else if constexpr (AreBothArithmeticTypes<DecayedFlatBuffer, DecayedDev>)
+        else if constexpr (AreBothArithmeticTypes<DecayedSrc, DecayedTarget>)
         {
-            return static_cast<DecayedDev>(flatbuffer_type);
+            return src;
         }
-        else if constexpr (AreBothNonWrappedStructs<DecayedFlatBuffer, DecayedDev>)
+        else if constexpr (AreBothNonWrappedStructs<DecayedSrc, DecayedTarget>)
         {
-            DecayedDev dev_type {};
-            ConvertStruct<ConversionType::ToDevType, DecayedFlatBuffer, DecayedDev>(flatbuffer_type, dev_type);
-            return dev_type;
+            return ConvertStruct<DecayedTarget>(src);
         }
-        else if constexpr (AreBothEnums<DecayedFlatBuffer, DecayedDev>)
+        else if constexpr (AreBothEnums<DecayedSrc, DecayedTarget>)
         {
-            return static_cast<DecayedDev>(flatbuffer_type);
+            return static_cast<DecayedTarget>(src);
         }
-        else if constexpr (AreBothTheSame<DecayedDev, std::wstring>)
+        // Convert WStringT flatbuffer src to std::wstring target. 
+        else if constexpr (AreBothTheSame<DecayedTarget, std::wstring>)
         {
-            return ConvertToStdWString(flatbuffer_type);
+            // The Codegen will only pass std::wstring as a target when the source is related to WStringT.
+            return ConvertToStdWString(src);
         }
-        else if constexpr (AreBothUniquePtrs<DecayedFlatBuffer, DecayedDev>)
+        // Convert std::wstring source to WStringT flatbuffer target.
+        else if constexpr (AreBothTheSame<DecayedSrc, std::wstring>) 
         {
-            return ConvertToUniquePtr<ConversionType::ToDevType, DecayedFlatBuffer, DecayedDev>(flatbuffer_type);
+            // The Codegen will only pass std::wstring as a source when the target is related to WStringT.
+            return CreateWStringT<DecayedTarget>(src);
         }
-        else if constexpr (IsOptionalAndUniquePtr<DecayedFlatBuffer, DecayedDev>)
+        else if constexpr (AreBothUniquePtrs<DecayedSrc, DecayedTarget>)
         {
-            return ConvertToUniquePtr<ConversionType::ToDevType, DecayedFlatBuffer, DecayedDev>(flatbuffer_type);
+            return ConvertToUniquePtr<DecayedTarget>(src);
         }
-        else if constexpr (IsUniquePtrAndNonWrappedStruct<DecayedFlatBuffer, DecayedDev>)
+        else if constexpr (UniquePtr<DecayedTarget> && Optional<DecayedSrc>)
         {
-            if (!flatbuffer_type)
+            return ConvertToUniquePtr<DecayedTarget>(src);
+        }
+        else if constexpr (UniquePtr<DecayedSrc> && NonWrappedStruct<DecayedTarget>)
+        {
+            if (!src)
             {
                 return {};
             }
 
-            using InnerFlatbufferType = unique_ptr_inner_type_t<DecayedFlatBuffer>;
-            return ConvertToDevType<InnerFlatbufferType, DecayedDev>(*flatbuffer_type);
+            using InnerSrcType = unique_ptr_inner_type_t<DecayedSrc>;
+            return ConvertType<DecayedTarget>(*src);
         }
-        else if constexpr (AreBothVectors<DecayedFlatBuffer, DecayedDev>)
+        else if constexpr (NonWrappedStruct<DecayedSrc> && UniquePtr<DecayedTarget>)
         {
-            using InnerDevType = vector_inner_type_t<DecayedDev>;
-            using InnerFlatbufferType = vector_inner_type_t<DecayedFlatBuffer>;
-
-            return TransformContainer<DecayedFlatBuffer, DecayedDev>(flatbuffer_type, [] (const InnerFlatbufferType& value)
+            return ConvertToUniquePtr<DecayedTarget>(src);
+        }
+        else if constexpr (RawPtr<DecayedSrc> && UniquePtr<DecayedTarget>)
+        {
+            return ConvertToUniquePtr<DecayedTarget>(src);
+        }
+        else if constexpr (IsRawPtrAndNonWrappedStruct<DecayedSrc>)
+        {
+            return ConvertToUniquePtr<DecayedTarget>(src);
+        }
+        // pointers to primitive/enum dev types get converted to std::optional primitive/enum flatbuffers.
+        else if constexpr (IsRawPtrAndNotNonWrappedStruct<DecayedSrc>)
+        {
+            return ConvertToOptional<DecayedTarget>(src);
+        }
+        else if constexpr (UniquePtr<DecayedSrc> && Optional<DecayedTarget>)
+        {
+            return ConvertToOptional<DecayedTarget>(src);
+        }
+        else if constexpr (AreBothVectors<DecayedSrc, DecayedTarget> || (StdArray<DecayedSrc> && Vector<DecayedTarget>))
+        {
+            using InnerSrcType = vector_or_array_inner_type_t<DecayedSrc>;
+            using InnerTargetType = vector_or_array_inner_type_t<DecayedTarget>;
+            return TransformVector<DecayedTarget>(src, [] (const InnerSrcType& value)
             {
-                return ConvertToDevType<InnerFlatbufferType, InnerDevType>(value);
+                return ConvertType<InnerTargetType>(value);
             });
         }
-        else if constexpr (IsVectorAndStdArray<DecayedFlatBuffer, DecayedDev>)
+        else if constexpr (Vector<DecayedSrc> && StdArray<DecayedTarget>)
         {
-            using InnerDevType = std_array_inner_type_t<DecayedDev>;
-            using InnerFlatbufferType = vector_inner_type_t<DecayedFlatBuffer>;
+            using InnerSrcType = vector_inner_type_t<DecayedSrc>;
+            using InnerTargetType = std_array_inner_type_t<DecayedTarget>;
 
-            return TransformToStdArray<DecayedFlatBuffer, DecayedDev>(flatbuffer_type, [] (const InnerFlatbufferType& value)
+            return TransformVectorToStdArray<DecayedTarget>(src, [] (const InnerSrcType& value)
             {
-                return ConvertToDevType<InnerFlatbufferType, InnerDevType>(value);
-            });
-        }
-        else
-        {
-            static_assert(always_false<FlatbufferType, DevType>::value,
-                "Flatbuffer type to Dev type conversion not found in function: " __FUNCSIG__);
-        }
-    }
-
-    template <typename DevType, typename FlatbufferType>
-    inline std::decay_t<FlatbufferType> ConvertToFlatbuffer(const DevType& dev_type)
-    {
-        using DecayedDev = std::decay_t<DevType>;
-        using DecayedFlatBuffer = std::decay_t<FlatbufferType>;
-
-        if constexpr (AreBothTheSame<DecayedDev, DecayedFlatBuffer>)
-        {
-            return dev_type;
-        }
-        else if constexpr (AreBothArithmeticTypes<DecayedDev, DecayedFlatBuffer>)
-        {
-            return static_cast<DecayedFlatBuffer>(dev_type);
-        }
-        else if constexpr (AreBothNonWrappedStructs<DecayedDev, DecayedFlatBuffer>)
-        {
-            DecayedFlatBuffer ret {};
-            ConvertStruct<ConversionType::ToFlatbuffer, DecayedDev, DecayedFlatBuffer>(dev_type, ret);
-            return ret;
-        }
-        else if constexpr (AreBothEnums<DecayedDev, DecayedFlatBuffer>)
-        {
-            return static_cast<DecayedFlatBuffer>(dev_type);
-        }
-        else if constexpr (AreBothTheSame<DecayedDev, std::wstring>)
-        {
-            return CreateWStringT<DecayedFlatBuffer>(dev_type);
-        }
-        else if constexpr (AreBothUniquePtrs<DecayedDev, DecayedFlatBuffer>)
-        {
-            return ConvertToUniquePtr<ConversionType::ToFlatbuffer, DecayedDev, DecayedFlatBuffer>(dev_type);
-        }
-        else if constexpr (IsRawPtrAndUniquePtr<DecayedDev, DecayedFlatBuffer>)
-        {
-            return ConvertToUniquePtr<ConversionType::ToFlatbuffer, DecayedDev, DecayedFlatBuffer>(dev_type);
-        }
-        else if constexpr (IsRawPtrAndNonWrappedStruct<DecayedDev>)
-        {
-            return ConvertToUniquePtr<ConversionType::ToFlatbuffer, DecayedDev, DecayedFlatBuffer>(dev_type);
-        }
-        else if constexpr (IsRawPtrAndNotNonWrappedStruct<DecayedDev>)
-        {
-            return ConvertToOptional<ConversionType::ToFlatbuffer, DecayedDev, DecayedFlatBuffer>(dev_type);
-        }
-        else if constexpr (IsOptionalAndUniquePtr<DecayedDev, DecayedFlatBuffer>)
-        {
-            return ConvertToOptional<ConversionType::ToFlatbuffer, DecayedDev, DecayedFlatBuffer>(dev_type);
-        }
-        else if constexpr (IsUniquePtrAndNonWrappedStruct<DecayedDev, DecayedFlatBuffer>)
-        {
-            return ConvertToUniquePtr<ConversionType::ToFlatbuffer, DecayedDev, DecayedFlatBuffer>(dev_type);
-        }
-        else if constexpr (AreBothVectors<DecayedDev, DecayedFlatBuffer>)
-        {
-            using InnerDevType = vector_inner_type_t<DecayedDev>;
-            using InnerFlatbufferType = vector_inner_type_t<DecayedFlatBuffer>;
-            
-            return TransformContainer<DecayedDev, DecayedFlatBuffer>(dev_type, [] (const InnerDevType& value)
-            {
-                return ConvertToFlatbuffer<InnerDevType, InnerFlatbufferType>(value);
-            });
-        }
-        else if constexpr (IsVectorAndStdArray<DecayedDev, DecayedFlatBuffer>)
-        {
-            using InnerDevType = std_array_inner_type_t<DecayedDev>;
-            using InnerFlatbufferType = vector_inner_type_t<DecayedFlatBuffer>;
-
-            return TransformContainer<DecayedDev, DecayedFlatBuffer>(dev_type, [] (const InnerDevType& value)
-            {
-                return ConvertToFlatbuffer<InnerDevType, InnerFlatbufferType>(value);
+                return ConvertType<InnerTargetType>(value);
             });
         }
         else
         {
-            static_assert(always_false<DevType, FlatbufferType>::value,
-               "Dev type to Flatbuffer type conversion not found in function: " __FUNCSIG__);
+            static_assert(always_false<DecayedSrc, DecayedTarget>::value,
+                "Conversion not found in function: " __FUNCSIG__);
         }
     }
 
-    template <ConversionType ConversionT, NonWrappedStruct Src, NonWrappedStruct Target>
-    inline void ConvertStruct(const Src& src, Target& target)
+    template <NonWrappedStruct Target, NonWrappedStruct Src>
+    inline std::decay_t<Target> ConvertStruct(const Src& src)
     {
         using DecayedSrc = std::decay_t<decltype(src)>;
-        using DecayedTarget = std::decay_t<decltype(target)>;
+        using DecayedTarget = std::decay_t<Target>;
 
-        constexpr size_t N = std::tuple_size_v<decltype(StructMetaData<DecayedSrc>::members)>;
-        static_assert(N == std::tuple_size_v<decltype(StructMetaData<DecayedTarget>::members)>,
+        constexpr size_t N = std::tuple_size_v<decltype(StructMetadata<DecayedSrc>::members)>;
+        static_assert(N == std::tuple_size_v<decltype(StructMetadata<DecayedTarget>::members)>,
             "Source and Target structs must have the same number of fields!");
+        
+        DecayedTarget target_struct{};
 
         auto for_each_field = [&]<std::size_t... I>(std::index_sequence<I...>)
         {
@@ -526,18 +427,20 @@ namespace VbsEnclaveABI::Shared::Converters
                 (
                     [&]
                     {
-                        auto& src_field = src.*(std::get<I>(StructMetaData<DecayedSrc>::members));
-                        auto& dst_field = target.*(std::get<I>(StructMetaData<DecayedTarget>::members));
+                        auto& src_field = src.*(std::get<I>(StructMetadata<DecayedSrc>::members));
+                        auto& dst_field = target_struct.*(std::get<I>(StructMetadata<DecayedTarget>::members));
                         using DecayedSrcFieldT = std::decay_t<decltype(src_field)>;
                         using DecayedTargetFieldT = std::decay_t<decltype(dst_field)>;
 
-                        dst_field = ConvertType<ConversionT, DecayedSrcFieldT, DecayedTargetFieldT>(src_field);
+                        dst_field = ConvertType<DecayedTargetFieldT>(src_field);
                     }()
                 ), ...
             );
         };
 
         for_each_field(std::make_index_sequence<N>{});
+
+        return target_struct;
     }
 }
 

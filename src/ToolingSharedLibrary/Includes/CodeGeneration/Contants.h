@@ -494,7 +494,7 @@ R"(
 R"(             using ReturnParamsT = FlatbuffersDevTypes::{}T;)";
 
     static inline constexpr std::string_view c_in_and_inout_parameter_conversion_statement =
-"            in_flatbufferT.m_{} = ConvertToFlatbuffer<decltype({}), decltype(in_flatbufferT.m_{})>({});\n";
+"            in_flatbufferT.m_{} = ConvertType<decltype(in_flatbufferT.m_{})>({});\n";
 
     static inline constexpr std::string_view c_pack_params_to_flatbuffer_call =
 R"(// Package in and in/out parameters into struct and convert it to a flatbuffer type.
@@ -511,7 +511,7 @@ R"({} dev_type_params{{}};
 )";
 
     static inline constexpr std::string_view c_conversion_to_dev_type_statement =
-R"(            ConvertStruct<ConversionType::ToDevType, decltype(in_flatbuffer_params), decltype(dev_type_params)>(in_flatbuffer_params, dev_type_params);
+R"(auto dev_type_params = ConvertStruct<{}>(in_flatbuffer_params);
 )";
 
     static inline constexpr std::string_view c_abi_func_return_value =
@@ -523,16 +523,14 @@ R"({}({});
 {})";
 
     static inline constexpr std::string_view c_setup_return_params_struct = R"(
-            FlatbuffersDevTypes::{}T flatbuffer_out_param{{}};
-            ConvertStruct<ConversionType::ToFlatbuffer, decltype(dev_type_params), decltype(flatbuffer_out_param)>(dev_type_params, flatbuffer_out_param);
+            auto flatbuffer_out_param = ConvertStruct<decltype(in_flatbuffer_params)>(dev_type_params);
             flatbuffer_out_params_builder = PackFlatbuffer(flatbuffer_out_param);)";
 
     static inline constexpr std::string_view c_setup_no_return_params_struct = R"(
             flatbuffer_out_params_builder = PackFlatbuffer<FlatbuffersDevTypes::{}T>({{}});)";
 
     static inline constexpr std::string_view c_setup_return_params_back_to_developer = R"(
-            {} return_params{{}};
-            ConvertStruct<ConversionType::ToDevType, decltype(function_result), decltype(return_params)>(function_result, return_params);
+            auto return_params = ConvertStruct<{}>(function_result);
             {}
 )";
 
@@ -556,7 +554,7 @@ R"(        using ReturnParamsT = FlatbuffersDevTypes::{}T;)";
     static inline constexpr std::string_view c_struct_meta_data_outline = 
 R"(
 template <>
-struct StructMetaData<{}>
+struct StructMetadata<{}>
 {{
     static constexpr auto members = std::make_tuple({});
 }};

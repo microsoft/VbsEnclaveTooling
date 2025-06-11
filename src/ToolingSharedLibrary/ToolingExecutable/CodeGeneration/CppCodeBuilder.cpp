@@ -420,7 +420,6 @@ namespace CodeGeneration
                     c_in_and_inout_parameter_conversion_statement,
                     declaration.m_name,
                     declaration.m_name,
-                    declaration.m_name,
                     declaration.m_name);
             }
 
@@ -533,9 +532,7 @@ namespace CodeGeneration
         
         if (param_info.m_are_return_params_needed)
         {
-            updated_parameters_received_from_dev_impl << std::format(
-                c_setup_return_params_struct,
-                function_params_struct_type);
+            updated_parameters_received_from_dev_impl << c_setup_return_params_struct;
         }
         else
         {
@@ -555,13 +552,15 @@ namespace CodeGeneration
 
         // If we need to forward parameters to the developer impl or if we need to receive the return value
         // from the developer impl, we must instantiate the dev type struct associated with the function. If 
-        // neither of those things are true (e.g function that takes no args and returns no values) then we do not generate 
-        // the dev type struct variable as there is no need.
-        if (!params_to_forward.empty() || param_info.m_are_return_params_needed)
+        // neither of those things are true (e.g function that takes no in/inout args and returns no values) then 
+        // we do not generate the dev type struct variable as there is no need.
+        if (!params_to_forward.empty())
+        {
+            function_body << std::format(c_conversion_to_dev_type_statement, function_params_struct_type);
+        }
+        else if (param_info.m_are_return_params_needed)
         {
             function_body << std::format(c_instantiate_dev_type, function_params_struct_type);
-            std::string conversion_str = !params_to_forward.empty() ? c_conversion_to_dev_type_statement.data() : "";
-            function_body << conversion_str;
         }
 
         function_body << FormatString(
