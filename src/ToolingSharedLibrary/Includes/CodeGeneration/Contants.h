@@ -71,6 +71,8 @@ namespace {}
 {{
     namespace VTL0_Stubs
     {{
+        using namespace VbsEnclaveABI::Shared::Converters;
+
         {}
     }}
 }}
@@ -220,11 +222,15 @@ namespace {}
 
     namespace VTL0_Callbacks
     {{
+        using namespace VbsEnclaveABI::Shared::Converters;
+
         {}
     }}
 
     namespace AbiDefinitions
     {{
+        using namespace VbsEnclaveABI::Shared::Converters;
+
         {}
     }}
 }}
@@ -241,7 +247,6 @@ namespace {}
 #include \"vbsenclave_flatbuffer_support_generated.h\"\n\
 #include <VbsEnclaveABI\\Shared\\ConversionHelpers.h>\n\
 \n\
-using namespace VbsEnclaveABI::Shared::Converters;\n\
 ";
 
     static inline constexpr std::string_view c_developer_types_namespace = R"(
@@ -251,7 +256,10 @@ namespace DeveloperTypes
 }}
 
 // Struct metadata
+namespace VbsEnclaveABI::Shared::Converters
+{{
 {}
+}}
 )";
 
     static inline constexpr std::string_view c_enclave_def_file_content = R"(
@@ -493,7 +501,7 @@ R"(
     static inline constexpr std::string_view c_parameter_struct_using_statement =
 R"(             using ReturnParamsT = FlatbuffersDevTypes::{}T;)";
 
-    static inline constexpr std::string_view c_in_and_inout_parameter_conversion_statement =
+    static inline constexpr std::string_view c_parameter_conversion_statement =
 "            in_flatbufferT.m_{} = ConvertType<decltype(in_flatbufferT.m_{})>({});\n";
 
     static inline constexpr std::string_view c_pack_params_to_flatbuffer_call =

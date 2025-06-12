@@ -413,11 +413,14 @@ namespace CodeGeneration
 
             AddParameterToTheForwardToDevImplList(Flatbuffers::Cpp::c_params_struct, declaration, all_params_separator, param_info);
 
-            // these will be copied into the flatbuffer
-            if (!declaration.IsOutParameterOnly())
+            // These will be copied into the flatbuffer. For Out param std::arrays we need to make sure the flatbuffer vector 
+            // that is created is of size std::array<T, N>::size() and not 0/empty so we keep the invariant that the vector.size() will always
+            // be equal to array.size() before passing the flatbuffer through the abi.
+            if (!declaration.IsOutParameterOnly() || 
+                (declaration.IsOutParameterOnly() && !declaration.m_array_dimensions.empty()))
             {
-                param_info.m_in_and_inout_param_names << std::format(
-                    c_in_and_inout_parameter_conversion_statement,
+                param_info.m_param_to_convert_names << std::format(
+                    c_parameter_conversion_statement,
                     declaration.m_name,
                     declaration.m_name,
                     declaration.m_name);
@@ -472,7 +475,7 @@ namespace CodeGeneration
         std::string parameters_using_statement = std::format(
             c_pack_params_to_flatbuffer_call,
             function_params_struct_type,
-            param_info.m_in_and_inout_param_names.str());
+            param_info.m_param_to_convert_names.str());
 
         std::ostringstream copy_and_using_statements;
 

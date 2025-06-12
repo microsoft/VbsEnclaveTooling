@@ -1,14 +1,17 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 #pragma once 
-#include <VbsEnclaveABI\Shared\VbsEnclaveAbiBase.h>
-#include <string>
-#include <memory>
-#include <type_traits>
-#include <stdexcept>
 #undef min
 #undef max
 #include <algorithm>
+#include <array>
+#include <memory>
+#include <optional>
+#include <stdexcept>
+#include <string>
+#include <type_traits>
+#include <vector>
+#include <wil/result_macros.h>
 
 // All types and functions within this file should be usable within both the hostApp and the enclave.
 namespace VbsEnclaveABI::Shared::Converters
@@ -148,17 +151,17 @@ namespace VbsEnclaveABI::Shared::Converters
     concept RawPtr = std::is_pointer_v<T>;
 
     template<typename T>
-    concept NonWrappedStruct =
+    concept Structure =
         std::is_class_v<std::decay_t<T>> &&    // Must be a class or struct
         !UniquePtr<std::decay_t<T>> &&   // Must not be unique ptr
         !Optional<std::decay_t<T>> && // Must not be optional
         !Container<std::decay_t<T>>; // Must not be wstring, string, vector or array
 
     template <typename T>
-    concept IsRawPtrAndNonWrappedStruct = RawPtr<T> && NonWrappedStruct<remove_pointer_t<T>>;
+    concept IsRawPtrToStructure = RawPtr<T> && Structure<remove_pointer_t<T>>;
 
-    template <typename T>
-    concept IsRawPtrAndNotNonWrappedStruct = RawPtr<T> && !NonWrappedStruct<remove_pointer_t<T>>;
+    template<typename T>
+    concept IsPtrToEnumOrArithmeticType = RawPtr<T> && (std::is_arithmetic_v<std::remove_pointer_t<T>> || std::is_enum_v<std::remove_pointer_t<T>>);
 
     template <typename T, typename U>
     concept IsVectorAndStdArray = (Vector<T> && StdArray<U>) || (Vector<U> && StdArray<T>);
@@ -176,7 +179,7 @@ namespace VbsEnclaveABI::Shared::Converters
     concept AreBothTheSame = std::is_same_v<T, U>;
 
     template <typename T, typename U>
-    concept AreBothNonWrappedStructs = NonWrappedStruct<T> && NonWrappedStruct<U>;
+    concept AreBothStructures = Structure<T> && Structure<U>;
 
     template <typename T, typename U>
     concept AreBothVectors = Vector<T> && Vector<U>;
@@ -192,9 +195,7 @@ namespace VbsEnclaveABI::Shared::Converters
     >
     auto ConvertToWrapper(const Src& src, ConvertFunc&& conversion_func)
     {
-        using DecayedSrc = std::decay_t<Src>;
-
-        if constexpr (UniquePtr<DecayedSrc> || RawPtr<DecayedSrc> || Optional<DecayedSrc>)
+        if constexpr (UniquePtr<Src> || RawPtr<Src> || Optional<Src>)
         {
             if (!src)
             {
@@ -203,7 +204,7 @@ namespace VbsEnclaveABI::Shared::Converters
 
             return conversion_func(*src);
         }
-        else if constexpr (NonWrappedStruct<DecayedSrc>)
+        else if constexpr (Structure<Src>)
         {
             return conversion_func(src);
         }
@@ -214,33 +215,29 @@ namespace VbsEnclaveABI::Shared::Converters
     }
 
     template <UniquePtr Target, typename Src>
-    inline std::decay_t<Target> ConvertToUniquePtr(const Src& src)
+    inline Target ConvertToUniquePtr(const Src& src)
     {
         using TargetInnerType = unique_ptr_inner_type_t<Target>;
 
         auto conversion_func = [] (auto&& value)
         {
-            using SrcInnerType = std::decay_t<decltype(value)>;
-            auto ptr = std::make_unique<TargetInnerType>();
-            *ptr = ConvertType<TargetInnerType>(value);
-            return ptr;
+            return std::make_unique<TargetInnerType>(ConvertType<TargetInnerType>(value));
         };
 
-        return ConvertToWrapper<std::unique_ptr, TargetInnerType>(src, conversion_func);
+        return ConvertToWrapper<std::unique_ptr, TargetInnerType>(src, std::move(conversion_func));
     }
 
     template <Optional Target, typename Src>
-    inline std::decay_t<Target> ConvertToOptional(const Src& src)
+    inline Target ConvertToOptional(const Src& src)
     {
         using TargetInnerType = optional_inner_type_t<Target>;
 
         auto conversion_func = [] (auto&& value)
         {
-            using SrcInnerType = std::decay_t<decltype(value)>;
             return std::make_optional<TargetInnerType>(ConvertType<TargetInnerType>(value));
         };
 
-        return ConvertToWrapper<std::optional, TargetInnerType>(src, conversion_func);
+        return ConvertToWrapper<std::optional, TargetInnerType>(src, std::move(conversion_func));
     }
 
     template<typename T>
@@ -272,7 +269,7 @@ namespace VbsEnclaveABI::Shared::Converters
             ptr->wchars.assign(wchars.begin(), wchars.end());
             return ptr;
         }
-        else if constexpr (NonWrappedStruct<DecayedType>)
+        else if constexpr (Structure<DecayedType>)
         {
             DecayedType wcharT {};
             wcharT.wchars.assign(wchars.begin(), wchars.end());
@@ -284,10 +281,10 @@ namespace VbsEnclaveABI::Shared::Converters
         }
     }
 
-    template <typename TargetVector, typename SrcContainer, typename ConvertFunc>
-    TargetVector TransformVector(const SrcContainer& src, ConvertFunc&& conversion_func)
+    template <Vector TargetContainer, typename SrcContainer, typename ConvertFunc>
+    TargetContainer TransformRangeToContainer(const SrcContainer& src, ConvertFunc&& conversion_func)
     {
-        TargetVector target_vector;
+        TargetContainer target_vector;
         target_vector.reserve(src.size());
         for (const auto& value : src)
         {
@@ -297,21 +294,25 @@ namespace VbsEnclaveABI::Shared::Converters
         return target_vector;
     }
 
-    template <typename StdArray, typename SrcVector, typename ConvertFunc>
-    StdArray TransformVectorToStdArray(const SrcVector& src, ConvertFunc&& conversion_func)
+    template <StdArray TargetContainer, typename SrcContainer, typename ConvertFunc>
+    TargetContainer TransformRangeToContainer(const SrcContainer& src, ConvertFunc&& conversion_func)
     {
-        StdArray array {};
-        size_t N = std::min(array.size(), src.size());
-        for (size_t i = 0; i < N; ++i)
+        TargetContainer arr {};
+
+        // We can't static_assert because the SrcContainer size is only known at runtime. However, we know that in this conversion
+        // layer that the SrcContainer should always be the same size as the array. If it's not then something is wrong.
+        FAIL_FAST_HR_IF_MSG(E_INVALIDARG, arr.size() != src.size(), "Array size: %zu, SrcContainer size: %zu", arr.size(), src.size());
+
+        for (size_t i = 0; i < arr.size(); ++i)
         {
-            array[i] = conversion_func(src[i]);
+            arr[i] = conversion_func(src[i]);
         }
 
-        return array;
+        return arr;
     }
 
     template <typename Target, typename Src>
-    inline std::decay_t<Target> ConvertType(const Src& src)
+    inline Target ConvertType(const Src& src)
     {
         using DecayedSrc = std::decay_t<Src>;
         using DecayedTarget = std::decay_t<Target>;
@@ -324,7 +325,7 @@ namespace VbsEnclaveABI::Shared::Converters
         {
             return src;
         }
-        else if constexpr (AreBothNonWrappedStructs<DecayedSrc, DecayedTarget>)
+        else if constexpr (AreBothStructures<DecayedSrc, DecayedTarget>)
         {
             return ConvertStruct<DecayedTarget>(src);
         }
@@ -339,65 +340,33 @@ namespace VbsEnclaveABI::Shared::Converters
             return ConvertToStdWString(src);
         }
         // Convert std::wstring source to WStringT flatbuffer target.
-        else if constexpr (AreBothTheSame<DecayedSrc, std::wstring>) 
+        else if constexpr (AreBothTheSame<DecayedSrc, std::wstring>)
         {
             // The Codegen will only pass std::wstring as a source when the target is related to WStringT.
             return CreateWStringT<DecayedTarget>(src);
         }
-        else if constexpr (AreBothUniquePtrs<DecayedSrc, DecayedTarget>)
-        {
-            return ConvertToUniquePtr<DecayedTarget>(src);
-        }
-        else if constexpr (UniquePtr<DecayedTarget> && Optional<DecayedSrc>)
-        {
-            return ConvertToUniquePtr<DecayedTarget>(src);
-        }
-        else if constexpr (UniquePtr<DecayedSrc> && NonWrappedStruct<DecayedTarget>)
+        else if constexpr (UniquePtr<DecayedSrc> && Structure<DecayedTarget>)
         {
             if (!src)
             {
                 return {};
             }
 
-            using InnerSrcType = unique_ptr_inner_type_t<DecayedSrc>;
             return ConvertType<DecayedTarget>(*src);
         }
-        else if constexpr (NonWrappedStruct<DecayedSrc> && UniquePtr<DecayedTarget>)
+        else if constexpr (UniquePtr<DecayedTarget>)
         {
             return ConvertToUniquePtr<DecayedTarget>(src);
         }
-        else if constexpr (RawPtr<DecayedSrc> && UniquePtr<DecayedTarget>)
-        {
-            return ConvertToUniquePtr<DecayedTarget>(src);
-        }
-        else if constexpr (IsRawPtrAndNonWrappedStruct<DecayedSrc>)
-        {
-            return ConvertToUniquePtr<DecayedTarget>(src);
-        }
-        // pointers to primitive/enum dev types get converted to std::optional primitive/enum flatbuffers.
-        else if constexpr (IsRawPtrAndNotNonWrappedStruct<DecayedSrc>)
+        else if constexpr (Optional<DecayedTarget>)
         {
             return ConvertToOptional<DecayedTarget>(src);
         }
-        else if constexpr (UniquePtr<DecayedSrc> && Optional<DecayedTarget>)
-        {
-            return ConvertToOptional<DecayedTarget>(src);
-        }
-        else if constexpr (AreBothVectors<DecayedSrc, DecayedTarget> || (StdArray<DecayedSrc> && Vector<DecayedTarget>))
+        else if constexpr (Vector<DecayedTarget> || (StdArray<DecayedTarget>))
         {
             using InnerSrcType = vector_or_array_inner_type_t<DecayedSrc>;
             using InnerTargetType = vector_or_array_inner_type_t<DecayedTarget>;
-            return TransformVector<DecayedTarget>(src, [] (const InnerSrcType& value)
-            {
-                return ConvertType<InnerTargetType>(value);
-            });
-        }
-        else if constexpr (Vector<DecayedSrc> && StdArray<DecayedTarget>)
-        {
-            using InnerSrcType = vector_inner_type_t<DecayedSrc>;
-            using InnerTargetType = std_array_inner_type_t<DecayedTarget>;
-
-            return TransformVectorToStdArray<DecayedTarget>(src, [] (const InnerSrcType& value)
+            return TransformRangeToContainer<DecayedTarget>(src, [] (const InnerSrcType& value)
             {
                 return ConvertType<InnerTargetType>(value);
             });
@@ -409,7 +378,7 @@ namespace VbsEnclaveABI::Shared::Converters
         }
     }
 
-    template <NonWrappedStruct Target, NonWrappedStruct Src>
+    template <Structure Target, Structure Src>
     inline std::decay_t<Target> ConvertStruct(const Src& src)
     {
         using DecayedSrc = std::decay_t<decltype(src)>;
