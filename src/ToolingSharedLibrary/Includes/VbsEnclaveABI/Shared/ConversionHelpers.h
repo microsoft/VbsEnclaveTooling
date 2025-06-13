@@ -1,8 +1,6 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 #pragma once 
-#undef min
-#undef max
 #include <algorithm>
 #include <array>
 #include <memory>
