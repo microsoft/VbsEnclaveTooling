@@ -193,10 +193,8 @@
   <ItemGroup>
     <ClInclude Include="Includes\CmdlineArgumentsParser.h" />
     <ClInclude Include="Includes\CmdlineParsingHelpers.h" />
-    <ClInclude Include="Includes\CodeGeneration\Flatbuffers\Contants.h" />
     <ClInclude Include="Includes\CodeGeneration\Flatbuffers\BuilderHelpers.h" />
-    <ClInclude Include="Includes\CodeGeneration\Flatbuffers\Cpp\ConversionFunctionHelpers.h" />
-    <ClInclude Include="Includes\CodeGeneration\Flatbuffers\Cpp\CppContants.h" />
+    <ClInclude Include="Includes\CodeGeneration\Flatbuffers\Contants.h" />
     <ClInclude Include="Includes\VbsEnclaveABI\Enclave\EnclaveHelpers.h" />
     <ClInclude Include="Includes\VbsEnclaveABI\Enclave\MemoryAllocation.h" />
     <ClInclude Include="Includes\VbsEnclaveABI\Enclave\MemoryChecks.h" />
@@ -217,7 +215,6 @@
     <ClInclude Include="pch.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="ToolingExecutable\CodeGeneration\Flatbuffers\Cpp\ConversionFunctionHelpers.cpp" />
     <ClCompile Include="ToolingExecutable\CmdlineArgumentsParser.cpp" />
     <ClCompile Include="pch.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>

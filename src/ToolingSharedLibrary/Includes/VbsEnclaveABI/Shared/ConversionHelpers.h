@@ -155,15 +155,6 @@ namespace VbsEnclaveABI::Shared::Converters
         !Optional<std::decay_t<T>> && // Must not be optional
         !Container<std::decay_t<T>>; // Must not be wstring, string, vector or array
 
-    template <typename T>
-    concept IsRawPtrToStructure = RawPtr<T> && Structure<remove_pointer_t<T>>;
-
-    template<typename T>
-    concept IsPtrToEnumOrArithmeticType = RawPtr<T> && (std::is_arithmetic_v<std::remove_pointer_t<T>> || std::is_enum_v<std::remove_pointer_t<T>>);
-
-    template <typename T, typename U>
-    concept AreBothUniquePtrs = UniquePtr<T> && UniquePtr<U>;
-
     template <typename T, typename U>
     concept AreBothArithmeticTypes = std::is_arithmetic_v<T> && std::is_arithmetic_v<U>;
 
@@ -175,9 +166,6 @@ namespace VbsEnclaveABI::Shared::Converters
 
     template <typename T, typename U>
     concept AreBothStructures = Structure<T> && Structure<U>;
-
-    template <typename T, typename U>
-    concept AreBothVectors = Vector<T> && Vector<U>;
 
     // Used only for static_asserts
     template<typename...> struct always_false : std::false_type {};
