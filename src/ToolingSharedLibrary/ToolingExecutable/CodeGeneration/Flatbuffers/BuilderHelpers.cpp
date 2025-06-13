@@ -131,6 +131,23 @@ namespace CodeGeneration::Flatbuffers
         }
     }
 
+    std::string GetNativeInlineStringForVector(const EdlTypeInfo& info)
+    {
+        // By default for vectors of tables/structs the Flatbuffer object-api will generate the
+        // vector as a vector<unique_ptr<T>>. However when '(native_inline)' is used the api will generate the 
+        // vector as a vector<T>. We want this behavior so we can limit the amount of memory the abi allocates. 
+        // Flatbuffer generates all other types within vectors as vector<T> by default. WString is special 
+        // because we generate it as a Flatbuffer table that contains a vector of uint16's.
+        std::string inline_type_string = "";
+        if (info.m_type_kind == EdlTypeKind::Struct ||
+            info.m_type_kind == EdlTypeKind::WString)
+        {
+            inline_type_string = "(native_inline)";
+        }
+
+        return inline_type_string;
+    }
+
     std::string BuildTable(const std::vector<Declaration>& values, std::string_view struct_name)
     {
         std::ostringstream table_body {};
@@ -141,20 +158,27 @@ namespace CodeGeneration::Flatbuffers
             if (!declaration.m_array_dimensions.empty())
             {
                 table_body << std::format(
-                    "    {} : [{}];\n",
+                    "    {} : [{}] {};\n",
                     declaration.m_name,
-                    GetFlatBufferType(declaration.m_edl_type_info));
+                    GetFlatBufferType(declaration.m_edl_type_info),
+                    GetNativeInlineStringForVector(declaration.m_edl_type_info));
             }
             else if (declaration.IsEdlType(EdlTypeKind::Vector))
             {
                 auto& inner_type = declaration.m_edl_type_info.inner_type;
+
                 table_body << std::format(
-                    "    {} : [{}];\n",
+                    "    {} : [{}] {};\n",
                     declaration.m_name,
-                    GetFlatBufferType(*inner_type));
+                    GetFlatBufferType(*inner_type),
+                    GetNativeInlineStringForVector(*inner_type));
             }
             else if (declaration.IsEdlType(EdlTypeKind::Struct))
             {
+                // We generate structs as tables using the Flatbuffer object api. Unfortunately for C++ it generates nested
+                // tables as unique_ptr<T> where T is the Flatbuffer representation of the struct. There is currently
+                // no way to generate nested tables as type T instead of unique_ptr<T> like in the case of vectors.
+                // See: https://github.com/google/flatbuffers/issues/4969
                 table_body << std::format(
                     "    {} : {};\n",
                     declaration.m_name,

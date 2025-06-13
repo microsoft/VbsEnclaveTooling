@@ -207,6 +207,7 @@
     </Text>
     <ClInclude Include="Includes\CodeGeneration\CodeGeneration.h" />
     <ClInclude Include="Includes\CodeGeneration\Contants.h" />
+    <ClInclude Include="Includes\VbsEnclaveABI\Shared\ConversionHelpers.h" />
     <ClInclude Include="Includes\VbsEnclaveABI\Shared\VbsEnclaveAbiBase.h" />
     <ClInclude Include="Includes\Edl\Parser.h" />
     <ClInclude Include="Includes\Edl\Structures.h" />

@@ -44,7 +44,7 @@ namespace CodeGeneration
         struct FunctionParametersInfo
         {
             // Used to moving parameters through trust boundary
-            std::ostringstream m_in_and_inout_param_names {};
+            std::ostringstream m_param_to_convert_names {};
             std::ostringstream m_copy_values_from_out_struct_to_original_args {};
             std::ostringstream m_params_to_forward_to_dev_impl {};
 
@@ -64,13 +64,11 @@ namespace CodeGeneration
 
         std::string BuildStructField(const Declaration& declaration);
 
-        std::string BuildStructDefinition(const DeveloperType& developer_types);
-
-        std::string BuildStructDefinitionForABIDeveloperType(
+        std::string BuildStructDefinition(
             std::string_view struct_name,
             const std::vector<Declaration>& fields);
 
-        std::string BuildStructDefinitionForNonABIDeveloperType(
+        std::string BuildStructMetaData(
             std::string_view struct_name,
             const std::vector<Declaration>& fields);
 
