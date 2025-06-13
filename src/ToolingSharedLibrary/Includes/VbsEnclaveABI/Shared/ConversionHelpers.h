@@ -164,9 +164,6 @@ namespace VbsEnclaveABI::Shared::Converters
     concept IsPtrToEnumOrArithmeticType = RawPtr<T> && (std::is_arithmetic_v<std::remove_pointer_t<T>> || std::is_enum_v<std::remove_pointer_t<T>>);
 
     template <typename T, typename U>
-    concept IsVectorAndStdArray = (Vector<T> && StdArray<U>) || (Vector<U> && StdArray<T>);
-
-    template <typename T, typename U>
     concept AreBothUniquePtrs = UniquePtr<T> && UniquePtr<U>;
 
     template <typename T, typename U>
@@ -362,7 +359,7 @@ namespace VbsEnclaveABI::Shared::Converters
         {
             return ConvertToOptional<DecayedTarget>(src);
         }
-        else if constexpr (Vector<DecayedTarget> || (StdArray<DecayedTarget>))
+        else if constexpr (Vector<DecayedTarget> || StdArray<DecayedTarget>)
         {
             using InnerSrcType = vector_or_array_inner_type_t<DecayedSrc>;
             using InnerTargetType = vector_or_array_inner_type_t<DecayedTarget>;
