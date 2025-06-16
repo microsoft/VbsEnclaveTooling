@@ -70,6 +70,7 @@ namespace CodeGeneration
         // Create developer types. This is shared between
         // the HostApp and the enclave.
         std::string enclave_types_header = BuildTypesHeader(
+            m_generated_namespace_name,
             m_edl.m_developer_types_insertion_order_list,
             abi_function_developer_types);
 
@@ -97,20 +98,42 @@ namespace CodeGeneration
             save_location = enclave_headers_location;
 
             SaveFileToOutputFolder(
-                c_trust_vtl1_stubs_header,
+                c_trust_vtl1_exported_stubs_header,
                 enclave_headers_location,
                 host_to_enclave_content.m_vtl1_stub_functions_header_content);
 
-            auto vtl1_impl_header = CombineAndBuildVtl1ImplementationsHeader(
-               m_generated_namespace_name,
-               host_to_enclave_content.m_vtl1_developer_declaration_functions,
-               enclave_to_host_content.m_vtl1_side_of_vtl0_callback_functions,
-               host_to_enclave_content.m_vtl1_abi_impl_functions);
+            auto vtl1_trusted_definitions_header = std::format(
+                c_vtl1_trusted_namespace,
+                c_autogen_header_string, 
+                m_generated_namespace_name,
+                host_to_enclave_content.m_vtl1_developer_declaration_functions.str());
 
             SaveFileToOutputFolder(
-                c_trusted_vtl1_impl_header,
+                c_trusted_vtl1_definitions_header,
                 enclave_headers_location,
-                vtl1_impl_header);
+                vtl1_trusted_definitions_header);
+
+            auto vtl1_abi_stub_header = std::format(
+                c_vtl1_abi_definitions_namespace,
+                c_autogen_header_string, 
+                m_generated_namespace_name,
+                host_to_enclave_content.m_vtl1_abi_impl_functions.str());
+
+            SaveFileToOutputFolder(
+                c_trusted_abi_stubs_header,
+                enclave_headers_location,
+                vtl1_abi_stub_header);
+
+            auto vtl1_untrusted_stub_header = std::format(
+                c_vtl1_untrusted_namespace,
+                c_autogen_header_string,
+                m_generated_namespace_name,
+                enclave_to_host_content.m_vtl1_side_of_vtl0_callback_functions.str());
+
+            SaveFileToOutputFolder(
+                c_untrusted_vtl1_stubs_header,
+                enclave_headers_location,
+                vtl1_untrusted_stub_header);
 
             SaveFileToOutputFolder(
                 c_developer_types_header,
@@ -141,37 +164,40 @@ namespace CodeGeneration
         }
         else if (m_virtual_trust_layer_kind == VirtualTrustLayerKind::HostApp)
         {
+                    /*return EnclaveToHostContent {
+            std::move(vtl0_class),
+            std::move(vtl1_side_of_vtl0_callback_functions),
+            std::move(vtl0_abi_boundary_functions),
+            std::move(vtl0_abi_impl_callback_functions)*/
+
             save_location = hostapp_headers_location;
 
-            // Add the register callbacks abi function and combine the two streams
-            // that contain the vtl0 public class methods.
-            std::string callbacks_name = std::format(
-                c_vtl1_register_callbacks_abi_export_name,
-                m_generated_namespace_name);
+            //std::string host_abi_definitions = 
+            enclave_to_host_content.m_vtl0_class;
+            //<< vtl0_register_callbacks_abi_function;
+            //<< host_to_enclave_content.m_vtl0_class_public_content.str();
 
-            std::string callbacks_name_with_quotes = std::format("{}{}{}",
-                "\"",
-                callbacks_name,
-                "\"");
-
-            std::string vtl0_register_callbacks_abi_function = std::format(
-                c_vtl0_register_callbacks_abi_function,
-                callbacks_name_with_quotes);
-
-            enclave_to_host_content.m_vtl0_class_public_content 
-                << vtl0_register_callbacks_abi_function
-                << host_to_enclave_content.m_vtl0_class_public_content.str();
-
-            auto vtl0_class_header = CombineAndBuildHostAppEnclaveClass(
+            auto vtl0_class_header = BuildHostAppEnclaveClass(
                 m_generated_vtl0_class_name,
                 m_generated_namespace_name,
-                enclave_to_host_content.m_vtl0_class_public_content,
-                enclave_to_host_content.m_vtl0_class_private_content);
+                enclave_to_host_content.m_vtl0_class);
 
             SaveFileToOutputFolder(
                 c_untrusted_vtl0_stubs_header,
                 hostapp_headers_location,
                 vtl0_class_header);
+
+            auto vtl0_abi_definitions = std::format(
+                c_vtl0_abi_definitions,
+                c_autogen_header_string,
+                m_generated_namespace_name,
+                enclave_to_host_content.vtl0_abi_impl_callback_functions,
+                enclave_to_host_content.vtl0_abi_boundary_functions);
+
+            SaveFileToOutputFolder(
+                c_abi_stubs_header,
+                hostapp_headers_location,
+                vtl0_abi_definitions);
 
             SaveFileToOutputFolder(
                 c_developer_types_header,

@@ -47,7 +47,7 @@ HRESULT inline VerifyContainsSameValuesArray(const T* data, size_t size, T value
 
 #pragma region VTL1 Enclave developer implementation functions
 
-Int8PtrAndSize VTL1_Declarations::ReturnInt8ValPtr_From_Enclave()
+Int8PtrAndSize Trusted::Definitions::ReturnInt8ValPtr_From_Enclave()
 {
     Int8PtrAndSize ret {};
     ret.int8_val = std::make_unique<std::int8_t>();
@@ -56,17 +56,17 @@ Int8PtrAndSize VTL1_Declarations::ReturnInt8ValPtr_From_Enclave()
     return ret;
 }
 
-std::uint64_t VTL1_Declarations::ReturnUint64Val_From_Enclave()
+std::uint64_t Trusted::Definitions::ReturnUint64Val_From_Enclave()
 {
     return std::numeric_limits<std::uint64_t>::max();
 }
 
-StructWithNoPointers VTL1_Declarations::ReturnStructWithValues_From_Enclave()
+StructWithNoPointers Trusted::Definitions::ReturnStructWithValues_From_Enclave()
 {
     return CreateStructWithNoPointers();
 }
 
-HRESULT VTL1_Declarations::TestPassingPrimitivesAsValues_To_Enclave(
+HRESULT Trusted::Definitions::TestPassingPrimitivesAsValues_To_Enclave(
     _In_ bool bool_val, 
     _In_ DecimalEnum enum_val, 
     _In_ std::int8_t int8_val)
@@ -79,7 +79,7 @@ HRESULT VTL1_Declarations::TestPassingPrimitivesAsValues_To_Enclave(
     return S_OK;
 }
 
-HRESULT VTL1_Declarations::TestPassingPrimitivesAsInOutValues_To_Enclave(
+HRESULT Trusted::Definitions::TestPassingPrimitivesAsInOutValues_To_Enclave(
     _Inout_ bool& bool_val,
     _Inout_ HexEnum& enum_val,
     _Inout_ std::int8_t& int8_val)
@@ -96,7 +96,7 @@ HRESULT VTL1_Declarations::TestPassingPrimitivesAsInOutValues_To_Enclave(
     return S_OK;
 }
 
-HRESULT VTL1_Declarations::TestPassingPrimitivesAsOutValues_To_Enclave(
+HRESULT Trusted::Definitions::TestPassingPrimitivesAsOutValues_To_Enclave(
     _Out_ bool& bool_val,
     _Out_ HexEnum& enum_val,
     _Out_ std::int8_t& int8_val)
@@ -113,7 +113,7 @@ HRESULT VTL1_Declarations::TestPassingPrimitivesAsOutValues_To_Enclave(
     return S_OK;
 }
 
-HRESULT VTL1_Declarations::TestPassingPrimitivesAsInPointers_To_Enclave(
+HRESULT Trusted::Definitions::TestPassingPrimitivesAsInPointers_To_Enclave(
     _In_ const std::uint8_t* uint8_val,
     _In_ const std::uint16_t* uint16_val,
     _In_ const std::uint32_t* uint32_val,
@@ -131,7 +131,7 @@ HRESULT VTL1_Declarations::TestPassingPrimitivesAsInPointers_To_Enclave(
     return S_OK;
 }
 
-HRESULT VTL1_Declarations::TestPassingPrimitivesAsInOutPointers_To_Enclave(
+HRESULT Trusted::Definitions::TestPassingPrimitivesAsInOutPointers_To_Enclave(
     _Inout_ std::int8_t* int8_val,
     _Inout_ std::int16_t* int16_val,
     _Inout_ std::int32_t* int32_val)
@@ -153,7 +153,7 @@ HRESULT VTL1_Declarations::TestPassingPrimitivesAsInOutPointers_To_Enclave(
     return S_OK;
 }
 
-HRESULT VTL1_Declarations::TestPassingPrimitivesAsOutPointers_To_Enclave(
+HRESULT Trusted::Definitions::TestPassingPrimitivesAsOutPointers_To_Enclave(
     _Out_ std::unique_ptr<bool>& bool_val,
     _Out_ std::unique_ptr<DecimalEnum>& enum_val,
     _Out_ std::unique_ptr<std::uint64_t>& uint64_val)
@@ -169,7 +169,7 @@ HRESULT VTL1_Declarations::TestPassingPrimitivesAsOutPointers_To_Enclave(
     return S_OK;
 }
 
-StructWithNoPointers VTL1_Declarations::ComplexPassingOfTypes_To_Enclave(
+StructWithNoPointers Trusted::Definitions::ComplexPassingOfTypes_To_Enclave(
     _In_ const StructWithNoPointers& arg1,
     _Inout_ StructWithNoPointers& arg2,
     _Out_ std::unique_ptr<StructWithNoPointers>& arg3,
@@ -200,18 +200,18 @@ StructWithNoPointers VTL1_Declarations::ComplexPassingOfTypes_To_Enclave(
     return struct_to_return;
 }
 
-void VTL1_Declarations::ReturnNoParams_From_Enclave()
+void Trusted::Definitions::ReturnNoParams_From_Enclave()
 {
     // No body, test just here to make sure we have coverage for void returns
 }
 
 
-std::vector<TestStruct1> VTL1_Declarations::ReturnObjectInVector_From_Enclave()
+std::vector<TestStruct1> Trusted::Definitions::ReturnObjectInVector_From_Enclave()
 {
     return {5 , CreateTestStruct1()};
 }
 
-HRESULT VTL1_Declarations::PassingPrimitivesInVector_To_Enclave(
+HRESULT Trusted::Definitions::PassingPrimitivesInVector_To_Enclave(
     _In_ const std::vector<std::int8_t>& arg1,
     _In_ const std::vector<std::int16_t>& arg2,
     _In_ const std::vector<std::int32_t>& arg3,
@@ -247,7 +247,7 @@ HRESULT VTL1_Declarations::PassingPrimitivesInVector_To_Enclave(
     return S_OK;
 }
 
-TestStruct2 VTL1_Declarations::ComplexPassingOfTypesWithVectors_To_Enclave(
+TestStruct2 Trusted::Definitions::ComplexPassingOfTypesWithVectors_To_Enclave(
     _In_ const TestStruct1& arg1,
     _Inout_  TestStruct2& arg2,
     _Out_  TestStruct3& arg3,
@@ -268,7 +268,7 @@ TestStruct2 VTL1_Declarations::ComplexPassingOfTypesWithVectors_To_Enclave(
     return CreateTestStruct2();
 }
 
-std::string VTL1_Declarations::PassingStringTypes_To_Enclave(
+std::string Trusted::Definitions::PassingStringTypes_To_Enclave(
     _In_ const std::string& arg1,
     _Inout_  std::string& arg2,
     _Out_  std::string& arg3,
@@ -290,7 +290,7 @@ std::string VTL1_Declarations::PassingStringTypes_To_Enclave(
     return "return result";
 }
 
-std::wstring VTL1_Declarations::PassingWStringTypes_To_Enclave(
+std::wstring Trusted::Definitions::PassingWStringTypes_To_Enclave(
     _In_ const std::wstring& arg1,
     _Inout_  std::wstring& arg2,
     _Out_  std::wstring& arg3,
@@ -312,7 +312,7 @@ std::wstring VTL1_Declarations::PassingWStringTypes_To_Enclave(
     return L"return result";
 }
 
-NestedStructWithArray VTL1_Declarations::PassingArrayTypes_To_Enclave(
+NestedStructWithArray Trusted::Definitions::PassingArrayTypes_To_Enclave(
     _In_ const std::array<TestStruct1, 2>& arg1,
     _Inout_  std::array<std::string, 2>& arg2,
     _Out_  std::array<std::wstring, 2>& arg3,
@@ -335,7 +335,7 @@ NestedStructWithArray VTL1_Declarations::PassingArrayTypes_To_Enclave(
     return CreateNestedStructWithArray();
 }
 
-StructWithPointers VTL1_Declarations::ComplexPassingOfTypesThatContainPointers_To_Enclave(
+StructWithPointers Trusted::Definitions::ComplexPassingOfTypesThatContainPointers_To_Enclave(
     _In_ const StructWithPointers* arg1_null,
     _In_ const StructWithPointers* arg2,
     _Inout_ StructWithPointers* arg3,
@@ -373,7 +373,7 @@ StructWithPointers VTL1_Declarations::ComplexPassingOfTypesThatContainPointers_T
 // For testing vtl0 callbacks we use HRESULTS as our success/failure metrics since we can't use TAEF in the
 // enclave.
 
-HRESULT VTL1_Declarations::Start_ReturnInt8ValPtr_From_HostApp_Callback_Test()
+HRESULT Trusted::Definitions::Start_ReturnInt8ValPtr_From_HostApp_Callback_Test()
 {
     // Note: struct is returned by vtl1, and copied to vtl0 then returned to this function.
     Int8PtrAndSize result = VTL0_Callbacks::ReturnInt8ValPtr_From_HostApp_callback();
@@ -383,7 +383,7 @@ HRESULT VTL1_Declarations::Start_ReturnInt8ValPtr_From_HostApp_Callback_Test()
     return S_OK;
 }
 
-HRESULT VTL1_Declarations::Start_ReturnUint64Val_From_HostApp_Callback_Test()
+HRESULT Trusted::Definitions::Start_ReturnUint64Val_From_HostApp_Callback_Test()
 {
     // Note: std::uint64_t is returned by vtl0, and copied to vtl1 then returned to this function.
     std::uint64_t result = VTL0_Callbacks::ReturnUint64Val_From_HostApp_callback();
@@ -392,7 +392,7 @@ HRESULT VTL1_Declarations::Start_ReturnUint64Val_From_HostApp_Callback_Test()
     return S_OK;
 }
 
-HRESULT VTL1_Declarations::Start_ReturnStructWithValues_From_HostApp_Callback_Test()
+HRESULT Trusted::Definitions::Start_ReturnStructWithValues_From_HostApp_Callback_Test()
 {
     // Note: struct is returned by vtl0, and copied to vtl1 then returned to this function.
     StructWithNoPointers result = VTL0_Callbacks::ReturnStructWithValues_From_HostApp_callback();
@@ -401,7 +401,7 @@ HRESULT VTL1_Declarations::Start_ReturnStructWithValues_From_HostApp_Callback_Te
     return S_OK;
 }
 
-HRESULT VTL1_Declarations::Start_TestPassingPrimitivesAsValues_To_HostApp_Callback_Test()
+HRESULT Trusted::Definitions::Start_TestPassingPrimitivesAsValues_To_HostApp_Callback_Test()
 {
     // Note: Hresult is returned by vtl0, and copied to vtl1 then returned to this function.
     auto in_bool = true;
@@ -413,7 +413,7 @@ HRESULT VTL1_Declarations::Start_TestPassingPrimitivesAsValues_To_HostApp_Callba
     return S_OK;
 }
 
-HRESULT VTL1_Declarations::Start_TestPassingPrimitivesAsInOutValues_To_HostApp_Callback_Test()
+HRESULT Trusted::Definitions::Start_TestPassingPrimitivesAsInOutValues_To_HostApp_Callback_Test()
 {
     // Note: Hresult is returned by vtl0, and copied to vtl1 then returned to this function.
     auto in_out_bool = true;
@@ -432,7 +432,7 @@ HRESULT VTL1_Declarations::Start_TestPassingPrimitivesAsInOutValues_To_HostApp_C
     return S_OK;
 }
 
-HRESULT VTL1_Declarations::Start_TestPassingPrimitivesAsOutValues_To_HostApp_Callback_Test()
+HRESULT Trusted::Definitions::Start_TestPassingPrimitivesAsOutValues_To_HostApp_Callback_Test()
 {
     // Note: Hresult is returned by vtl0, and copied to vtl1 then returned to this function.
     bool out_bool {};
@@ -451,7 +451,7 @@ HRESULT VTL1_Declarations::Start_TestPassingPrimitivesAsOutValues_To_HostApp_Cal
     return S_OK;
 }
 
-HRESULT VTL1_Declarations::Start_TestPassingPrimitivesAsInPointers_To_HostApp_Callback_Test()
+HRESULT Trusted::Definitions::Start_TestPassingPrimitivesAsInPointers_To_HostApp_Callback_Test()
 {
     std::uint8_t uint8_val = 100;
     std::uint16_t uint16_val = 100;
@@ -468,7 +468,7 @@ HRESULT VTL1_Declarations::Start_TestPassingPrimitivesAsInPointers_To_HostApp_Ca
     return S_OK;
 }
 
-HRESULT VTL1_Declarations::Start_TestPassingPrimitivesAsInOutPointers_To_HostApp_Callback_Test()
+HRESULT Trusted::Definitions::Start_TestPassingPrimitivesAsInOutPointers_To_HostApp_Callback_Test()
 {
     std::int8_t int8_val = 100;
     std::int16_t int16_val = 100;
@@ -488,7 +488,7 @@ HRESULT VTL1_Declarations::Start_TestPassingPrimitivesAsInOutPointers_To_HostApp
 
     return S_OK;
 }
-HRESULT VTL1_Declarations::Start_TestPassingPrimitivesAsOutPointers_To_HostApp_Callback_Test()
+HRESULT Trusted::Definitions::Start_TestPassingPrimitivesAsOutPointers_To_HostApp_Callback_Test()
 {
     std::unique_ptr<bool> bool_val = nullptr;
     std::unique_ptr<DecimalEnum> enum_val = nullptr;
@@ -512,7 +512,7 @@ HRESULT VTL1_Declarations::Start_TestPassingPrimitivesAsOutPointers_To_HostApp_C
     return S_OK;
 }
 
-HRESULT VTL1_Declarations::Start_ComplexPassingOfTypes_To_HostApp_Callback_Test()
+HRESULT Trusted::Definitions::Start_ComplexPassingOfTypes_To_HostApp_Callback_Test()
 {
     auto expected_struct_values = CreateStructWithNoPointers();
     StructWithNoPointers struct_no_pointers_1 = expected_struct_values;
@@ -551,7 +551,7 @@ HRESULT VTL1_Declarations::Start_ComplexPassingOfTypes_To_HostApp_Callback_Test(
     return S_OK;
 }
 
-HRESULT VTL1_Declarations::Start_ComplexPassingOfTypesThatContainPointers_To_HostApp_Callback_Test()
+HRESULT Trusted::Definitions::Start_ComplexPassingOfTypesThatContainPointers_To_HostApp_Callback_Test()
 {
     auto expected_struct_with_ptrs = CreateStructWithPointers();
     StructWithPointers* struct_with_pointers_1_null {};
@@ -581,12 +581,12 @@ HRESULT VTL1_Declarations::Start_ComplexPassingOfTypesThatContainPointers_To_Hos
     return S_OK;
 }
 
-void VTL1_Declarations::Start_ReturnNoParams_From_HostApp_Callback_Test()
+void Trusted::Definitions::Start_ReturnNoParams_From_HostApp_Callback_Test()
 {
     // No body, test just here to make sure we have coverage for void returns
 }
 
-HRESULT VTL1_Declarations::Start_ReturnObjectInVector_From_HostApp_Callback_Test()
+HRESULT Trusted::Definitions::Start_ReturnObjectInVector_From_HostApp_Callback_Test()
 {
     std::vector<TestStruct1> result_expected(5, CreateTestStruct1());
 
@@ -596,7 +596,7 @@ HRESULT VTL1_Declarations::Start_ReturnObjectInVector_From_HostApp_Callback_Test
     return S_OK;
 }
 
-HRESULT VTL1_Declarations::Start_PassingPrimitivesInVector_To_HostApp_Callback_Test()
+HRESULT Trusted::Definitions::Start_PassingPrimitivesInVector_To_HostApp_Callback_Test()
 {
     std::vector<std::int8_t> arg1(c_data_size, std::numeric_limits<std::int8_t>::max());
     std::vector<std::int16_t> arg2(c_data_size, std::numeric_limits<std::int16_t>::max());
@@ -635,7 +635,7 @@ HRESULT VTL1_Declarations::Start_PassingPrimitivesInVector_To_HostApp_Callback_T
     return S_OK;
 }
 
-HRESULT VTL1_Declarations::Start_ComplexPassingOfTypesWithVectors_To_HostApp_Callback_Test()
+HRESULT Trusted::Definitions::Start_ComplexPassingOfTypesWithVectors_To_HostApp_Callback_Test()
 {
     auto expect_val1 = CreateTestStruct1();
     auto expect_val2 = CreateTestStruct2();
@@ -672,7 +672,7 @@ HRESULT VTL1_Declarations::Start_ComplexPassingOfTypesWithVectors_To_HostApp_Cal
     return S_OK;
 }
 
-HRESULT VTL1_Declarations::Start_PassingStringTypes_To_HostApp_Callback_Test()
+HRESULT Trusted::Definitions::Start_PassingStringTypes_To_HostApp_Callback_Test()
 {
     std::string arg1 = "test";
     std::string arg2 = "test2";
@@ -707,7 +707,7 @@ HRESULT VTL1_Declarations::Start_PassingStringTypes_To_HostApp_Callback_Test()
     return S_OK;
 }
 
-HRESULT VTL1_Declarations::Start_PassingWStringTypes_To_HostApp_Callback_Test()
+HRESULT Trusted::Definitions::Start_PassingWStringTypes_To_HostApp_Callback_Test()
 {
     std::wstring arg1 = L"test";
     std::wstring arg2 = L"test2";
@@ -742,7 +742,7 @@ HRESULT VTL1_Declarations::Start_PassingWStringTypes_To_HostApp_Callback_Test()
     return S_OK;
 }
 
-HRESULT VTL1_Declarations::Start_PassingArrayTypes_To_HostApp_Callback_Test()
+HRESULT Trusted::Definitions::Start_PassingArrayTypes_To_HostApp_Callback_Test()
 {
     std::array<TestStruct1, 2> arg1 = {CreateTestStruct1(), CreateTestStruct1()};
     std::array<TestStruct1, 2> arg1_expected = {CreateTestStruct1(), CreateTestStruct1()};

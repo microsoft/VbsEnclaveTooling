@@ -25,9 +25,10 @@ namespace CodeGeneration
 
         struct EnclaveToHostContent
         {
-            std::ostringstream m_vtl0_class_public_content {};
-            std::ostringstream m_vtl0_class_private_content {};
-            std::ostringstream m_vtl1_side_of_vtl0_callback_functions {};
+            std::string m_vtl0_class {};
+            std::string m_vtl1_side_of_vtl0_callback_functions {};
+            std::string vtl0_abi_boundary_functions {};
+            std::string vtl0_abi_impl_callback_functions {};
         };
 
         // used to start creating a struct, function, or namespace 
@@ -66,6 +67,7 @@ namespace CodeGeneration
             const std::vector<Declaration>& fields);
 
         std::string BuildStructMetaData(
+            std::string_view generated_namespace,
             std::string_view struct_name,
             const std::vector<Declaration>& fields);
 
@@ -95,6 +97,7 @@ namespace CodeGeneration
             const FunctionParametersInfo& param_info);
 
         std::string BuildTypesHeader(
+            std::string_view generated_namespace,
             const std::vector<DeveloperType>& developer_types_insertion_list,
             const std::vector<DeveloperType>& abi_function_developer_types);
 
@@ -117,17 +120,10 @@ namespace CodeGeneration
             const std::unordered_map<std::string, DeveloperType>& developer_types,
             std::unordered_map<std::string, Function>& functions);
 
-        std::string CombineAndBuildHostAppEnclaveClass(
+        std::string BuildHostAppEnclaveClass(
             std::string_view generated_class_name,
             std::string_view generated_namespace_name,
-            const std::ostringstream& vtl0_class_public_content,
-            const std::ostringstream& vtl0_class_private_content);
-
-        std::string CombineAndBuildVtl1ImplementationsHeader(
-            std::string_view edl_file_name,
-            const std::ostringstream& vtl1_developer_declarations,
-            const std::ostringstream& vtl1_callback_impl_functions,
-            const std::ostringstream& vtl1_abi_impl_functions);
+            std::string_view vtl0_class);
 
         std::string BuildVtl1ExportedFunctionsSourcefile(
             std::string_view generated_namespace_name,
