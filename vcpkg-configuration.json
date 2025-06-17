@@ -1,5 +1,0 @@
-{
-  "overlay-triplets": [
-    "./vcpkg_triplets_overlay"
-  ]
-}
