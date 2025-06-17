@@ -100,14 +100,14 @@
   <PropertyGroup Label="Vcpkg" Condition="'$(Configuration)|$(Platform)'=='Debug|ARM64'">
     <VcpkgUseStatic>true</VcpkgUseStatic>
     <VcpkgUseMD>false</VcpkgUseMD>
-    <VcpkgTriplet>arm64-windows-static-cfg</VcpkgTriplet>
+    <VcpkgTriplet>x64-windows-static-cfg</VcpkgTriplet>
     <VcpkgHostTriplet>x64-windows</VcpkgHostTriplet>
     <VcpkgOverlayTriplets>$(MSBuildProjectDirectory)\..\..\vcpkg_triplets_overlay</VcpkgOverlayTriplets>
   </PropertyGroup>  
   <PropertyGroup Label="Vcpkg" Condition="'$(Configuration)|$(Platform)'=='Release|ARM64'">
     <VcpkgUseStatic>true</VcpkgUseStatic>
     <VcpkgUseMD>false</VcpkgUseMD>
-    <VcpkgTriplet>arm64-windows-static-cfg</VcpkgTriplet>
+    <VcpkgTriplet>x64-windows-static-cfg</VcpkgTriplet>
     <VcpkgHostTriplet>x64-windows</VcpkgHostTriplet>
     <VcpkgOverlayTriplets>$(MSBuildProjectDirectory)\..\..\vcpkg_triplets_overlay</VcpkgOverlayTriplets>
   </PropertyGroup>
