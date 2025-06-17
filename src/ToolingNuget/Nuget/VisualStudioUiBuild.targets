@@ -12,7 +12,7 @@
         -->
         <VbsEnclaveCodeGenNugetPackCppSupportPath>$(OutDir)veil_enclave_cpp_support_$(Platform)_$(Configuration)_lib.lib</VbsEnclaveCodeGenNugetPackCppSupportPath>
         <VbsEnclaveCodeGenNugetPackCppSupportPdbPath>$(OutDir)veil_enclave_cpp_support_$(Platform)_$(Configuration)_lib.pdb</VbsEnclaveCodeGenNugetPackCppSupportPdbPath>
-        <VcpkgSupportPath>$(SolutionDir)src\ToolingSharedLibrary\vcpkg_installed\x64-windows-static-cfg\x64-windows-static</VcpkgSupportPath>
+        <VcpkgSupportPath>$(SolutionDir)src\ToolingSharedLibrary\vcpkg_installed\x64-windows-static-cfg\x64-windows-static-cfg</VcpkgSupportPath>
         <VcpkgToolsPath>$(SolutionDir)src\ToolingSharedLibrary\vcpkg_installed\x64-windows-static-cfg\x64-windows\tools</VcpkgToolsPath>
         <VbsEnclaveNugetPackProperties>target_version=$(VbsEnclaveCodeGenNugetPackVersionNumber);vbsenclave_codegen_x64_exe=$(VbsEnclaveCodegenNugetPackExePath);vcpkg_sources=$(VcpkgSupportPath);vcpkg_tools=$(VcpkgToolsPath);vbsenclave_codegen_cpp_support_$(Platform)_$(configuration)_lib=$(VbsEnclaveCodeGenNugetPackCppSupportPath);vbsenclave_codegen_cpp_support_$(Platform)_$(configuration)_pdb=$(VbsEnclaveCodeGenNugetPackCppSupportPdbPath);</VbsEnclaveNugetPackProperties>
         <VbsEnclaveNugetPackOutputDirectory>$(SolutionDir)_build</VbsEnclaveNugetPackOutputDirectory>

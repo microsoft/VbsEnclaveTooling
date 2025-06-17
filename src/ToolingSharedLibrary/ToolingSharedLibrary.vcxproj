@@ -86,10 +86,8 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|ARM64'">
     <IncludePath>$(VC_IncludePath);$(WindowsSDK_IncludePath);$(ProjectDir);$(SolutionDir)src\ToolingSharedLibrary\Includes</IncludePath>
     <TargetName>ToolingSharedLibrary</TargetName>
-  </PropertyGroup>  
+  </PropertyGroup>    
   <PropertyGroup Label="Vcpkg" Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <VcpkgUseStatic>true</VcpkgUseStatic>
-    <VcpkgUseMD>false</VcpkgUseMD>
     <VcpkgTriplet>x64-windows-static-cfg</VcpkgTriplet>
     <VcpkgHostTriplet>x64-windows</VcpkgHostTriplet>
     <VcpkgOverlayTriplets>$(MSBuildProjectDirectory)\..\..\vcpkg_triplets_overlay</VcpkgOverlayTriplets>
@@ -98,22 +96,16 @@
     <VcpkgEnableManifest>true</VcpkgEnableManifest>
   </PropertyGroup>  
   <PropertyGroup Label="Vcpkg" Condition="'$(Configuration)|$(Platform)'=='Debug|ARM64'">
-    <VcpkgUseStatic>true</VcpkgUseStatic>
-    <VcpkgUseMD>false</VcpkgUseMD>
     <VcpkgTriplet>x64-windows-static-cfg</VcpkgTriplet>
     <VcpkgHostTriplet>x64-windows</VcpkgHostTriplet>
     <VcpkgOverlayTriplets>$(MSBuildProjectDirectory)\..\..\vcpkg_triplets_overlay</VcpkgOverlayTriplets>
   </PropertyGroup>  
   <PropertyGroup Label="Vcpkg" Condition="'$(Configuration)|$(Platform)'=='Release|ARM64'">
-    <VcpkgUseStatic>true</VcpkgUseStatic>
-    <VcpkgUseMD>false</VcpkgUseMD>
     <VcpkgTriplet>x64-windows-static-cfg</VcpkgTriplet>
     <VcpkgHostTriplet>x64-windows</VcpkgHostTriplet>
     <VcpkgOverlayTriplets>$(MSBuildProjectDirectory)\..\..\vcpkg_triplets_overlay</VcpkgOverlayTriplets>
   </PropertyGroup>
   <PropertyGroup Label="Vcpkg" Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <VcpkgUseStatic>true</VcpkgUseStatic>
-    <VcpkgUseMD>false</VcpkgUseMD>
     <VcpkgTriplet>x64-windows-static-cfg</VcpkgTriplet>
     <VcpkgHostTriplet>x64-windows</VcpkgHostTriplet>
     <VcpkgOverlayTriplets>$(MSBuildProjectDirectory)\..\..\vcpkg_triplets_overlay</VcpkgOverlayTriplets>
