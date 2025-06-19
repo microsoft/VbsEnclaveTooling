@@ -171,7 +171,7 @@ namespace VbsEnclaveABI::Shared::Converters
     concept IsPtrType = RawPtr<T> || UniquePtr<T>;
 
     template <typename T, typename U>
-    concept ArePtrTypes = IsPtrType<T> && IsPtrType<U>;
+    concept AreBothPtrTypes = IsPtrType<T> && IsPtrType<U>;
 
     template <typename T, typename U>
     concept AreBothUniquePtrs = UniquePtr<T> && UniquePtr<U>;
@@ -407,11 +407,11 @@ namespace VbsEnclaveABI::Shared::Converters
     template<typename Src, typename Target>
     inline void UpdateParameterValue(Src& src, Target& target)
     {
-        if constexpr (!ArePtrTypes<Src, Target> || AreBothUniquePtrs<Src, Target>)
+        if constexpr (!AreBothPtrTypes<Src, Target> || AreBothUniquePtrs<Src, Target>)
         {
              target = std::move(src);
         }
-        else if constexpr (ArePtrTypes<Src, Target>)
+        else if constexpr (AreBothPtrTypes<Src, Target>)
         {
             // Note: source could be a unique ptr and target could be a raw ptr as is the case for
             // pointer inout values.
@@ -419,11 +419,6 @@ namespace VbsEnclaveABI::Shared::Converters
             {
                 *target = std::move(*src);
             }
-        }
-        else
-        {
-            static_assert(IsPtrType<Src> || IsPtrType<Target>,
-                   "When either src or target type is a pointer, the other type is expected to be a pointer type.");
         }
     }
 }
