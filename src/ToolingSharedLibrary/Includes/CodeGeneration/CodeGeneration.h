@@ -21,7 +21,6 @@ namespace CodeGeneration
             std::string m_vtl1_stub_functions_header_content{};
             std::ostringstream m_vtl1_developer_declaration_functions {};
             std::ostringstream m_vtl1_abi_impl_functions {};
-            std::string m_vtl1_enclave_module_definition_content {};
         };
 
         struct EnclaveToHostContent
@@ -106,8 +105,6 @@ namespace CodeGeneration
             std::string_view abi_function_to_call,
             bool is_vtl0_callback,
             const FunctionParametersInfo& param_info);
-
-        std::string BuildEnclaveModuleDefinitionFile(std::string_view exported_functions);
         
         HostToEnclaveContent BuildHostToEnclaveFunctions(
             std::string_view generated_namespace,
