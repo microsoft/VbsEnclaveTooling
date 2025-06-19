@@ -167,15 +167,6 @@ namespace VbsEnclaveABI::Shared::Converters
     template <typename T, typename U>
     concept AreBothStructures = Structure<T> && Structure<U>;
 
-    template <typename T>
-    concept IsPtrType = RawPtr<T> || UniquePtr<T>;
-
-    template <typename T, typename U>
-    concept AreBothPtrTypes = IsPtrType<T> && IsPtrType<U>;
-
-    template <typename T, typename U>
-    concept AreBothUniquePtrs = UniquePtr<T> && UniquePtr<U>;
-
     // Used only for static_asserts
     template<typename...> struct always_false : std::false_type {};
 
@@ -404,22 +395,19 @@ namespace VbsEnclaveABI::Shared::Converters
         return target_struct;
     }
 
-    template<typename Src, typename Target>
+    template<UniquePtr Src, RawPtr Target>
     inline void UpdateParameterValue(Src& src, Target& target)
     {
-        if constexpr (!AreBothPtrTypes<Src, Target> || AreBothUniquePtrs<Src, Target>)
+        if (src && target)
         {
-             target = std::move(src);
-        }
-        else if constexpr (AreBothPtrTypes<Src, Target>)
-        {
-            // Note: source could be a unique ptr and target could be a raw ptr as is the case for
-            // pointer inout values.
-            if (src && target)
-            {
-                *target = std::move(*src);
-            }
+            *target = std::move(*src);
         }
     }
-}
 
+    template<typename Src, typename Target>
+    requires AreBothTheSame<Src, Target>
+    inline void UpdateParameterValue(Src& src, Target& target)
+    {
+        target = std::move(src);
+    }
+}
