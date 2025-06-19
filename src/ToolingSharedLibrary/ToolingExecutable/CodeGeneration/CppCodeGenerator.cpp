@@ -101,11 +101,6 @@ namespace CodeGeneration
                 enclave_headers_location,
                 host_to_enclave_content.m_vtl1_stub_functions_header_content);
 
-            SaveFileToOutputFolder(
-                c_output_module_def_file_name,
-                enclave_headers_location,
-                host_to_enclave_content.m_vtl1_enclave_module_definition_content);
-
             auto vtl1_impl_header = CombineAndBuildVtl1ImplementationsHeader(
                m_generated_namespace_name,
                host_to_enclave_content.m_vtl1_developer_declaration_functions,
