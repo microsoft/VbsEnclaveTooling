@@ -3,6 +3,15 @@ parameters: # parameters are shown up in ADO UI in a build queue time
   displayName: 'Enable debug output'
   type: boolean
   default: false
+- name: OfficialBuild
+  type: boolean
+  default: true
+- name: BuildTarget
+  type: string
+  default: 'CodeGen'
+  values:
+  - CodeGen
+  - SDK
 
 variables:
 - template: variables/version.yml@self
@@ -52,8 +61,24 @@ extends:
         tsaEnabled: true
       
     stages:
-      - template: jobs/OneBranchBuild.yml@self
-        parameters:
-          CodeGenBuildVersion: $(CodeGenBuildVersion)
-          SdkBuildVersion: $(SdkBuildVersion)
-          OfficialBuild: true
+      - stage: Build_codegen
+        displayName: 'Build CodeGenerator'
+        condition: eq('${{ parameters.BuildTarget }}', 'CodeGen')
+        pool:
+         type: windows
+        jobs:
+        - template: AzurePipelineTemplates/jobs/CodeGenBuildJob.yml@self
+          parameters:
+            CodeGenBuildVersion: $(CodeGenBuildVersion)
+            OfficialBuild: ${{ parameters.OfficialBuild }}
+
+      - stage: Build_veil_sdk
+        displayName: 'Build SDK'
+        condition: eq('${{ parameters.BuildTarget }}', 'SDK')
+        pool:
+          type: windows
+        jobs:
+        - template: AzurePipelineTemplates/jobs/SdkBuildJob.yml@self
+          parameters:
+            SdkBuildVersion: $(SdkBuildVersion)
+            OfficialBuild: ${{ parameters.OfficialBuild }}

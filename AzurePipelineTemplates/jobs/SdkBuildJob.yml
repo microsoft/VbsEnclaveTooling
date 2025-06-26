@@ -1,7 +1,5 @@
 ﻿# build file for the veil soliution using the x64 and arm64 platforms
 parameters:
-  - name: CodeGenBuildVersion
-    type: string
   - name: SdkBuildVersion
     type: string
   - name: OfficialBuild
@@ -19,7 +17,6 @@ jobs:
     VeilHostPackageConfig: $(Build.SourcesDirectory)\src\VbsEnclaveSDK\src\veil_host_lib\packages.config
     VeilEnclaveVcxProj: $(Build.SourcesDirectory)\src\VbsEnclaveSDK\src\veil_enclave_lib\veil_enclave_lib.vcxproj
     VeilEnclavePackageConfig: $(Build.SourcesDirectory)\src\VbsEnclaveSDK\src\veil_enclave_lib\packages.config
-    NewCodeGenVersion: ${{ parameters.CodeGenBuildVersion }}
     ob_outputDirectory: '$(Build.SourcesDirectory)\signed_nuget'   
     ob_artifactBaseName: signed_sdk_nuget_package
     SdkNugetPackageVersion: ${{ parameters.SdkBuildVersion }}
@@ -61,73 +58,6 @@ jobs:
     VeilCppSupportPdbARM64Debug: vbsenclave_sdk_cpp_support_ARM64_Debug_pdb=$(Arm64DebugBuildLocation)\veil_enclave_cpp_support_ARM64_Debug_lib.pdb
     
   steps:
-   # Download the nupkg file from the codegen job
-    - task: DownloadPipelineArtifact@2
-      displayName: Download signed codeGenerator nupkg Artifact
-      inputs:
-       artifactName: 'signed_codegen_nuget_package'
-       targetPath: '$(BaseBuildDirectory)'
-
-    # Work around for Nuget restore not being able to update vcxproj projects to newer versions without the user manually updating
-    # the package.config file and updating old references in vcxproj files. Unfortunately, That feature is only supported for
-    # packages referenced via the <PackageReference /> property, which is only supported for csproj (C#) projects.
-    # See: https://developercommunity.visualstudio.com/t/use-packagereference-in-vcxproj/351636
-    - task: PowerShell@2
-      displayName: 'Update CodeGen package version in Veil Host and Enclave lib packages.config and .vcxproj'
-      inputs:
-        targetType: 'inline'
-        script: |
-          $oldCodeGenVersion = "0.0.0"
-          $CodeGenPackageId = "Microsoft.Windows.VbsEnclave.CodeGenerator"
-
-          # File paths from pipeline variables
-          $packagesConfigFiles = @( $env:VeilHostPackageConfig, $env:VeilEnclavePackageConfig )
-          Write-Host "Updating '$CodeGenPackageId' in veil enclave and host packages.config files to version: '$env:NewCodeGenVersion'"
-
-          # Update packages.config files
-          foreach ($file in $packagesConfigFiles)
-          {
-            Write-Host "Updating $file"
-            [xml]$xml = Get-Content $file
-            $packages = $xml.packages.package
-
-            foreach ($pkg in $packages)
-            {
-                if ($pkg.id -eq $CodeGenPackageId -and $pkg.version -eq $oldCodeGenVersion)
-                {
-                    $pkg.version = $env:NewCodeGenVersion
-                }
-            }
-
-            $xml.Save($file)
-            Write-Host "Updated $file successfully"
-          }
-
-          Write-Host "Updating '$CodeGenPackageId' in veil enclave and host .vcxproj files to version: '$env:NewCodeGenVersion'"
-          $oldVcxprojString = "$CodeGenPackageId.$oldCodeGenVersion"
-          $newVcxprojString   = "$CodeGenPackageId.$env:NewCodeGenVersion"
-          $vcxprojFiles = @( $env:VeilHostVcxProj, $env:VeilEnclaveVcxProj )
-
-          foreach ($file in $vcxprojFiles)
-          {
-            Write-Host "Updating $file"
-            $updated = Get-Content $file | ForEach-Object {
-                if ($_ -like "*$oldVcxprojString*")
-                {
-                    $_ -replace [regex]::Escape($oldVcxprojString), $newVcxprojString
-                } 
-                else
-                {
-                    $_
-                }
-            }
-
-            $updated | Set-Content $file
-            Write-Host "Updated $file successfully"
-          }
-
-          Write-Host "All files updated."
-
     - task: NuGetCommand@2
       displayName: NuGet restore vbs_enclave_implementation_library.sln
       inputs:

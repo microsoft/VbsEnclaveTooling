@@ -7,9 +7,6 @@ Param(
     [ValidateSet('all', 'Debug', 'Release')]
     [System.String]
     $Configurations = "all",
-    
-    [System.Boolean]
-    $BuildCodeGenNugetDependency = $true,
 
     [switch]
     $Help
@@ -70,12 +67,6 @@ if ($Configurations -eq "all")
     $BuildConfiguration = @("Release", "Debug")
 }
 
-if ($BuildCodeGenNugetDependency)
-{
-    $codeGenBuildScriptPath = "$BaseSolutionDirectory\..\..\BuildScripts\build.ps1"
-    & $codeGenBuildScriptPath -Platforms $Platforms -Configurations $Configurations -NugetPackagesToOutput "CodeGenOnly"
-}
-
 # Use the triple zeros as the version number for local builds.
 $BuildTargetVersion = [System.Version]::new(0, 0, 0)
 
@@ -103,6 +94,7 @@ Try
             $msbuildArgs = 
             @(
                 ("$BaseSolutionDirectory\$solutionName.sln"),
+                ("/t:Rebuild"),
                 ("/p:Platform=$Platform"),
                 ("/p:Configuration=$Configuration"),
                 ("/restore"),

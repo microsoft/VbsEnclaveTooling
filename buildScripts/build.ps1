@@ -97,6 +97,7 @@ Try
             $msbuildArgs = 
             @(
                 ("$BaseRepositoryDirectory\$solutionName.sln"),
+                ("/t:Rebuild"),
                 ("/p:Platform=$Platform"),
                 ("/p:Configuration=$Configuration"),
                 ("/restore"),
@@ -142,7 +143,7 @@ Catch
 if ($NugetPackagesToOutput -eq "all")
 {
     $sdkBuildScriptPath = "$BaseRepositoryDirectory\src\VbsEnclaveSDK\BuildScripts\build.ps1"
-    & $sdkBuildScriptPath -Platforms $Platforms -Configurations $Configurations -BuildCodeGenNugetDependency $false
+    & $sdkBuildScriptPath -Platforms $Platforms -Configurations $Configurations
 }
 
 $TotalTime = (Get-Date)-$StartTime

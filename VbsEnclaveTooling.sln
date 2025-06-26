@@ -52,7 +52,6 @@ EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "jobs", "jobs", "{D2331F9A-86B9-4308-B8B7-994114A65122}"
 	ProjectSection(SolutionItems) = preProject
 		AzurePipelineTemplates\jobs\CodeGenBuildJob.yml = AzurePipelineTemplates\jobs\CodeGenBuildJob.yml
-		AzurePipelineTemplates\jobs\OneBranchBuild.yml = AzurePipelineTemplates\jobs\OneBranchBuild.yml
 		AzurePipelineTemplates\jobs\PublishNugetPackages.yml = AzurePipelineTemplates\jobs\PublishNugetPackages.yml
 		AzurePipelineTemplates\jobs\SdkBuildJob.yml = AzurePipelineTemplates\jobs\SdkBuildJob.yml
 	EndProjectSection
