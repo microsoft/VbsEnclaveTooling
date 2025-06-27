@@ -24,8 +24,6 @@ namespace CodeGeneration
 
     static inline constexpr std::string_view c_output_folder_for_generated_untrusted_functions = R"(VbsEnclave\HostApp)";
 
-    static inline constexpr std::string_view c_output_module_def_file_name = "vbsenclave.def";
-
     static inline constexpr std::string_view c_abi_boundary_func_declaration = "    __declspec(dllexport) void* {}(void* function_context);\n";
 
     static inline constexpr std::string_view c_abi_boundary_func_declaration_for_stubs = "        void* {}(void* function_context);\n";

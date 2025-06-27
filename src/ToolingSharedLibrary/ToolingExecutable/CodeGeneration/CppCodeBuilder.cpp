@@ -442,22 +442,6 @@ namespace CodeGeneration
             function_body.str());
     }
 
-    std::string CppCodeBuilder::BuildEnclaveModuleDefinitionFile(std::string_view exported_functions)
-    {
-        auto module_def = std::format(c_enclave_def_file_content, c_autogen_header_string, exported_functions);
-
-        // Replace the // in the autogen header. This way we can have a single source for the header
-        // instead of duplicating it.
-        size_t pos = module_def.find("//");
-        while (pos != std::string::npos)
-        {
-            module_def.replace(pos, 2, ";");
-            pos = module_def.find("//", pos + 1U);
-        }
-
-        return module_def;
-    }
-
     CppCodeBuilder::HostToEnclaveContent CppCodeBuilder::BuildHostToEnclaveFunctions(
         std::string_view generated_namespace,
         const std::unordered_map<std::string, DeveloperType>& developer_types,
@@ -550,8 +534,7 @@ namespace CodeGeneration
             std::move(vtl0_class_public_portion),
             std::format("{}{}{}",c_autogen_header_string, c_vtl1_enclave_stub_includes, vtl1_stubs_in_namespace),
             std::move(vtl1_developer_declaration_functions),
-            std::move(vtl1_abi_impl_functions),
-            BuildEnclaveModuleDefinitionFile(vtl1_generated_module_exports.str())
+            std::move(vtl1_abi_impl_functions)
         };
     }
 
