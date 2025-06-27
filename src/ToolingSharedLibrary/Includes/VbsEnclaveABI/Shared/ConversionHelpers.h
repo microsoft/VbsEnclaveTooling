@@ -394,5 +394,20 @@ namespace VbsEnclaveABI::Shared::Converters
 
         return target_struct;
     }
-}
 
+    template<UniquePtr Src, RawPtr Target>
+    inline void UpdateParameterValue(Src& src, Target& target)
+    {
+        if (src && target)
+        {
+            *target = std::move(*src);
+        }
+    }
+
+    template<typename Src, typename Target>
+    requires AreBothTheSame<Src, Target>
+    inline void UpdateParameterValue(Src& src, Target& target)
+    {
+        target = std::move(src);
+    }
+}

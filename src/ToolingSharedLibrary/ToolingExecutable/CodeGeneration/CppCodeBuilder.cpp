@@ -236,58 +236,6 @@ namespace CodeGeneration
         }
     }
 
-    void AddCopyStatementForReturnedParameter(
-        const Declaration& declaration,
-        CppCodeBuilder::FunctionParametersInfo& param_info,
-        bool should_move_returned_data)
-    {
-        // Out pointer parameters get generated as unique_ptrs so they are moved by default.
-        if (declaration.HasPointer() && declaration.IsOutParameterOnly())
-        {
-            param_info.m_copy_values_from_out_struct_to_original_args << std::format(
-                c_return_param_for_out_param_ptr,
-                declaration.m_name,
-                declaration.m_name,
-                declaration.m_name);
-        }
-        // Inout parameter is a pointer to a struct that contains inner pointers. Use move assignment operator
-        // to update the data it points to.
-        else if (should_move_returned_data && (declaration.HasPointer() && declaration.IsInOutParameter()))
-        {
-            param_info.m_copy_values_from_out_struct_to_original_args << std::format(
-                c_return_param_for_inout_param_ptr_with_move,
-                declaration.m_name,
-                declaration.m_name,
-                declaration.m_name,
-                declaration.m_name);
-        }
-        else if (declaration.HasPointer() && declaration.IsInOutParameter())
-        {
-            param_info.m_copy_values_from_out_struct_to_original_args << std::format(
-                c_return_param_for_inout_param_ptr,
-                declaration.m_name,
-                declaration.m_name,
-                declaration.m_name,
-                declaration.m_name);
-        }
-        // Inout parameter is a struct that contains inner pointers. Use move operator on the returned value.
-        else if (should_move_returned_data)
-        {
-            param_info.m_copy_values_from_out_struct_to_original_args << std::format(
-                c_return_param_for_inout_param_with_move,
-                declaration.m_name,
-                declaration.m_name,
-                declaration.m_name);
-        }
-        else
-        {
-            param_info.m_copy_values_from_out_struct_to_original_args << std::format(
-                c_return_param_for_basic_type,
-                declaration.m_name,
-                declaration.m_name);
-        }
-    }
-
     std::string CppCodeBuilder::BuildTrustBoundaryFunction(
         const Function& function,
         std::string_view abi_function_to_call,
@@ -349,8 +297,10 @@ namespace CodeGeneration
             {
                 in_out_index = declaration.IsInOutParameter() ? in_out_index + 1 : in_out_index;
                 out_index = declaration.IsOutParameterOnly() ? out_index + 1 : out_index;
-                bool should_move_param = ShouldFieldInReturnedStructBeMoved(declaration, developer_types);
-                AddCopyStatementForReturnedParameter(declaration, param_info, should_move_param);
+                param_info.m_copy_values_from_out_struct_to_original_args << std::format(
+                    c_update_inout_and_out_param_statement,
+                    declaration.m_name,
+                    declaration.m_name);
             }
         }
 
@@ -400,9 +350,7 @@ namespace CodeGeneration
 
         if (!param_info.m_function_return_type_void)
         {
-            return_statement = (ShouldFieldInReturnedStructBeMoved(function.m_return_info, developer_types))
-                ? c_return_value_back_to_initial_caller_with_move
-                : c_return_value_back_to_initial_caller_no_move;
+            return_statement = c_return_value_back_to_initial_caller_with_move;
         }
 
         std::string final_part_of_function {};
