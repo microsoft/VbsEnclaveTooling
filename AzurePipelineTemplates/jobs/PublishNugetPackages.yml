@@ -1,3 +1,11 @@
+parameters: 
+- name: ReleaseTarget
+  type: string
+  default: 'CodeGen'
+  values:
+  - CodeGen
+  - SDK
+
 resources:
   repositories:
   - repository: templates
@@ -7,7 +15,7 @@ resources:
   pipelines:
   # Reference pipeline that created the signed nupkg artifacts so we can consume them later
   - pipeline: VbsEnclaveTooling 
-    source: 'Vbs Enclave Tooling OneBranch (Official)'
+    source: 'Vbs Enclave Tooling OneBranch (Official Build)'
     trigger: none
 
 extends:
@@ -17,7 +25,7 @@ extends:
       category: NonAzure
 
     stages:
-    - stage: 'Publish'  
+    - stage: 'Publish'
       displayName: 'Publish to NuGet'
       variables:
         ob_release_environment: Production
@@ -31,10 +39,12 @@ extends:
         templateContext:
           inputs:
           - input: pipelineArtifact
+            condition: eq('${{ parameters.ReleaseTarget }}', 'CodeGen')
             pipeline: VbsEnclaveTooling
             artifactName: signed_codegen_nuget_package
 
           - input: pipelineArtifact
+            condition: eq('${{ parameters.ReleaseTarget }}', 'SDK')
             pipeline: VbsEnclaveTooling
             artifactName: signed_sdk_nuget_package
 
