@@ -109,13 +109,13 @@ namespace CodeGeneration
         HostToEnclaveContent BuildHostToEnclaveFunctions(
             std::string_view generated_namespace,
             const std::unordered_map<std::string, DeveloperType>& developer_types,
-            std::unordered_map<std::string, Function>& functions);
+            std::span<Function> functions);
 
         EnclaveToHostContent BuildEnclaveToHostFunctions(
             std::string_view generated_namespace,
             std::string_view generated_class_name,
             const std::unordered_map<std::string, DeveloperType>& developer_types,
-            std::unordered_map<std::string, Function>& functions);
+            std::span<Function> functions);
 
         std::string CombineAndBuildHostAppEnclaveClass(
             std::string_view generated_class_name,
@@ -131,11 +131,11 @@ namespace CodeGeneration
 
         std::string BuildVtl1ExportedFunctionsSourcefile(
             std::string_view generated_namespace_name,
-            const std::unordered_map<std::string, Function>& developer_functions_to_export);
+            std::span<Function> developer_functions_to_export);
 
         std::string BuildVtl1BoundaryFunctionsStubHeader(
             std::string_view generated_namespace_name,
-            const std::unordered_map<std::string, Function>& functions);
+            std::span<Function> functions);
     };
 
     struct CppCodeGenerator

@@ -509,7 +509,9 @@ namespace EdlProcessor
         std::string m_name{};
         std::unordered_map<std::string, DeveloperType> m_developer_types{};
         std::vector<DeveloperType> m_developer_types_insertion_order_list {};
-        std::unordered_map<std::string, Function> m_trusted_functions{};
-        std::unordered_map<std::string, Function> m_untrusted_functions{};
+        std::unordered_map<std::string, Function> m_trusted_functions_map{};
+        std::vector<Function> m_trusted_functions_list {};
+        std::unordered_map<std::string, Function> m_untrusted_functions_map{};
+        std::vector<Function> m_untrusted_functions_list {};
     };
 }
