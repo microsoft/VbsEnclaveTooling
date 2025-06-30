@@ -10,6 +10,7 @@
 #include <CodeGeneration\Flatbuffers\BuilderHelpers.h>
 #include <CodeGeneration\Flatbuffers\Contants.h>
 #include <sstream>
+
 using namespace EdlProcessor;
 using namespace CodeGeneration::Flatbuffers;
 
@@ -445,7 +446,7 @@ namespace CodeGeneration
     CppCodeBuilder::HostToEnclaveContent CppCodeBuilder::BuildHostToEnclaveFunctions(
         std::string_view generated_namespace,
         const std::unordered_map<std::string, DeveloperType>& developer_types,
-        std::unordered_map<std::string, Function>& functions)
+        std::span<Function> functions)
     {
         std::ostringstream vtl0_class_public_portion {};
         vtl0_class_public_portion << c_vtl0_enclave_class_public_keyword;
@@ -464,7 +465,7 @@ namespace CodeGeneration
 
         std::ostringstream vtl1_generated_module_exports {};
 
-        for (auto&& [name, function] : functions)
+        for (auto& function : functions)
         {
             auto param_info = GetInformationAboutParameters(function, developer_types);
             auto vtl1_exported_func_name = std::format(c_generated_stub_name, function.abi_m_name);
@@ -542,7 +543,7 @@ namespace CodeGeneration
         std::string_view generated_namespace,
         std::string_view generated_class_name,
         const std::unordered_map<std::string, DeveloperType>& developer_types,
-        std::unordered_map<std::string, Function>& functions)
+        std::span<Function> functions)
     {
         size_t number_of_functions = functions.size();
         size_t number_of_functions_plus_allocators = functions.size() + c_number_of_abi_callbacks;
@@ -580,7 +581,7 @@ namespace CodeGeneration
         // function address as the value in a map stored in vtl1. 
         auto vtl1_map_function_index = c_number_of_abi_callbacks + 1;
         auto current_iteration = 0U;
-        for (auto&& [name, function] : functions)
+        for (auto& function : functions)
         {
             auto param_info = GetInformationAboutParameters(function, developer_types);
 
@@ -723,12 +724,12 @@ namespace CodeGeneration
 
     std::string CppCodeBuilder::BuildVtl1ExportedFunctionsSourcefile(
         std::string_view generated_namespace_name,
-        const std::unordered_map<std::string, Function>& developer_functions_to_export)
+        std::span<Function> developer_functions_to_export)
     {
         std::ostringstream exported_definitions {};
         std::ostringstream pragma_link_statements {};
 
-        for (auto& [name, function] : developer_functions_to_export)
+        for (auto& function : developer_functions_to_export)
         {
             auto generated_func_name = std::format(c_generated_stub_name_no_quotes, function.abi_m_name);
             exported_definitions << std::format(
@@ -760,11 +761,11 @@ namespace CodeGeneration
 
     std::string CppCodeBuilder::BuildVtl1BoundaryFunctionsStubHeader(
         std::string_view generated_namespace_name,
-        const std::unordered_map<std::string, Function>& functions)
+        std::span<Function> functions)
     {
         std::ostringstream stub_declarations {};
 
-        for (auto& [name, function] : functions)
+        for (auto& function : functions)
         {
             auto generated_func_name = std::format(c_generated_stub_name_no_quotes, function.abi_m_name);
             stub_declarations << std::format(c_abi_boundary_func_declaration_for_stubs, generated_func_name);
