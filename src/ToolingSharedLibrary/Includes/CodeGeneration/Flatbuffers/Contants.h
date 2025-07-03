@@ -19,7 +19,7 @@ static inline constexpr std::string_view c_enum_definition = "\nenum {} : uint64
 
 static inline constexpr std::string_view c_table_definition = "\ntable {} {{\n{} }}\n";
 
-static inline constexpr std::string_view c_flatbuffer_namespace = "\nnamespace FlatbuffersDevTypes;\n";
+static inline constexpr std::string_view c_flatbuffer_namespace = "\nnamespace {}.FlatbuffersDevTypes;\n";
 
 static inline constexpr std::string_view c_flatbuffer_wstring_table =
 R"(

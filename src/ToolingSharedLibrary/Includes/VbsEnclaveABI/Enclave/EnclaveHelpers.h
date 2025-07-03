@@ -14,10 +14,6 @@
 #include <VbsEnclaveABI\Enclave\Vtl0Pointers.h>
 #include <VbsEnclaveABI\Enclave\MemoryAllocation.h>
 
-using namespace VbsEnclaveABI::Enclave::EnclaveMemoryAllocation;
-using namespace VbsEnclaveABI::Enclave::Pointers;
-using namespace VbsEnclaveABI::Shared;
-
 // Version to ensure all translation units are consuming a consistent version of the codegen
 #pragma detect_mismatch("__VBS_ENCLAVE_CODEGEN_VERSION__", __VBS_ENCLAVE_CODEGEN_VERSION__)
 
@@ -35,6 +31,10 @@ using namespace VbsEnclaveABI::Shared;
 // Content of this file should only be used within an enclave.
 namespace VbsEnclaveABI::Enclave
 {
+    using namespace VbsEnclaveABI::Enclave::EnclaveMemoryAllocation;
+    using namespace VbsEnclaveABI::Enclave::Pointers;
+    using namespace VbsEnclaveABI::Shared;
+
     void static inline
         EnableEnclaveRestrictContainingProcessAccessOnce()
     {

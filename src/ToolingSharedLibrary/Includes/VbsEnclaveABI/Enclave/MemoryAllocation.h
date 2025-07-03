@@ -9,12 +9,12 @@
 #include <VbsEnclaveABI\Shared\VbsEnclaveAbiBase.h>
 #include <VbsEnclaveABI\Enclave\MemoryChecks.h>
 
-using namespace VbsEnclaveABI::Enclave::MemoryChecks;
-
 namespace VbsEnclaveABI::Enclave
 {
     namespace VTL0CallBackHelpers
     {
+        using namespace VbsEnclaveABI::Enclave::MemoryChecks;
+
         inline LPENCLAVE_ROUTINE s_vtl0_allocation_function;
         inline LPENCLAVE_ROUTINE s_vtl0_deallocation_function;
         inline wil::srwlock s_vtl0_function_table_lock{};

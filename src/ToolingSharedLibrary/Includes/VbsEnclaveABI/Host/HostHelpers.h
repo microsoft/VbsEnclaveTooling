@@ -5,11 +5,11 @@
 #pragma once 
 #include <VbsEnclaveABI\Shared\VbsEnclaveAbiBase.h>
 
-using namespace VbsEnclaveABI::Shared;
-
 // Every function in this file should only be used within the HostApp
 namespace VbsEnclaveABI::HostApp
 {
+    using namespace VbsEnclaveABI::Shared;
+
     // VTL0 allocation callback
     inline void* AllocateVtl0MemoryCallback(_In_ void* context)
     {
