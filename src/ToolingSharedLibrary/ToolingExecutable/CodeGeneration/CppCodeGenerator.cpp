@@ -105,7 +105,7 @@ namespace CodeGeneration
                 m_edl.m_trusted_functions_list);
 
             SaveFileToOutputFolder(
-                std::format(c_enclave_exports_source, m_generated_namespace_name),
+                c_enclave_exports_source,
                 save_location,
                 exported_definitions_source);
         }

@@ -18,7 +18,7 @@ namespace CodeGeneration
 
     static inline constexpr std::string_view c_trusted_vtl1_impl_header = "Implementations.h";
 
-    static inline constexpr std::string_view c_enclave_exports_source = "{}_exports.cpp";
+    static inline constexpr std::string_view c_enclave_exports_source = "Exports.cpp";
 
     static inline constexpr std::string_view c_output_folder_for_generated_trusted_functions = R"(VbsEnclave\Enclave)";
 
@@ -148,7 +148,6 @@ namespace {}\n\
 R"({}
 #pragma once
 #include <VbsEnclaveABI\Shared\VbsEnclaveAbiBase.h>
-#undef max // prevent windows max macro from conflicting with flatbuffers macro
 #include "vbsenclave_flatbuffer_support_generated.h"
 #include <VbsEnclaveABI\Shared\ConversionHelpers.h>
 
@@ -164,10 +163,9 @@ namespace VbsEnclaveABI::Shared::Converters
 }}
 )";
 
-    static inline constexpr std::string_view c_vtl0_untrusted_abi_stubs_address_info = R"(
-            std::array<uintptr_t, {}> m_callback_addresses{{ {} }};
-            std::array<std::string, {}> m_callback_names{{ {} }};
-)";
+    static inline constexpr std::string_view c_vtl0_untrusted_abi_stubs_address_info =
+R"(std::array<uintptr_t, {}> m_callback_addresses{{ {} }};
+            std::array<std::string, {}> m_callback_names{{ {} }};)";
 
     static inline constexpr std::string_view c_generated_abi_impl_function = R"(
         static inline void {}_Abi_Impl{}
@@ -207,36 +205,36 @@ R"(     {}_Generated_Stub
     static inline constexpr std::string_view c_static_keyword = "static ";
 
     static inline constexpr std::string_view c_vtl0_register_callbacks_abi_function = R"(
-            HRESULT RegisterVtl0Callbacks()
+        HRESULT RegisterVtl0Callbacks()
+        {{
+            auto lock = m_register_callbacks_lock.lock_exclusive();
+
+            if (m_callbacks_registered)
             {{
-                auto lock = m_register_callbacks_lock.lock_exclusive();
-
-                if (m_callbacks_registered)
-                {{
-                    return S_OK;
-                }}
-
-                FlatbuffersDevTypes::AbiRegisterVtl0Callbacks_argsT input {{}};
-                input.callback_addresses.assign(m_callback_addresses.begin(), m_callback_addresses.end());
-                input.callback_names.assign(m_callback_names.begin(), m_callback_names.end());
-                flatbuffers::FlatBufferBuilder builder = PackFlatbuffer(input);
-                using ReturnParamsT = FlatbuffersDevTypes::AbiRegisterVtl0Callbacks_argsT;
-                ReturnParamsT out_args {{}};
-
-                HRESULT hr = VbsEnclaveABI::HostApp::CallVtl1ExportFromVtl0<ReturnParamsT>(
-                    m_enclave,
-                    {},
-                    builder,
-                    out_args);
-                RETURN_IF_FAILED(hr);
-
-                if (SUCCEEDED(out_args.m__return_value_))
-                {{
-                    m_callbacks_registered = true;
-                }}
-
-                return out_args.m__return_value_;
+                return S_OK;
             }}
+
+            FlatbuffersDevTypes::AbiRegisterVtl0Callbacks_argsT input {{}};
+            input.callback_addresses.assign(m_callback_addresses.begin(), m_callback_addresses.end());
+            input.callback_names.assign(m_callback_names.begin(), m_callback_names.end());
+            flatbuffers::FlatBufferBuilder builder = VbsEnclaveABI::Shared::PackFlatbuffer(input);
+            using ReturnParamsT = FlatbuffersDevTypes::AbiRegisterVtl0Callbacks_argsT;
+            ReturnParamsT out_args {{}};
+
+            HRESULT hr = VbsEnclaveABI::HostApp::CallVtl1ExportFromVtl0<ReturnParamsT>(
+                m_enclave,
+                {},
+                builder,
+                out_args);
+            RETURN_IF_FAILED(hr);
+
+            if (SUCCEEDED(out_args.m__return_value_))
+            {{
+                m_callbacks_registered = true;
+            }}
+
+            return out_args.m__return_value_;
+        }}
 )";
 
     static inline constexpr std::string_view c_vtl1_register_callbacks_abi_export_name = "__AbiRegisterVtl0Callbacks_{}__";
@@ -246,12 +244,12 @@ R"(     {}_Generated_Stub
             _In_ FlatbuffersDevTypes::AbiRegisterVtl0Callbacks_argsT in_params,
             _Inout_ flatbuffers::FlatBufferBuilder& flatbuffer_out_params_builder)
         {{
-            THROW_IF_FAILED(AddVtl0FunctionsToTable(in_params.callback_addresses, in_params.callback_names));
+            THROW_IF_FAILED(VbsEnclaveABI::Enclave::VTL0CallBackHelpers::AddVtl0FunctionsToTable(in_params.callback_addresses, in_params.callback_names));
 
             FlatbuffersDevTypes::AbiRegisterVtl0Callbacks_argsT  result{{}};
             result.m__return_value_ = S_OK;
 
-            flatbuffer_out_params_builder = PackFlatbuffer(result);
+            flatbuffer_out_params_builder = VbsEnclaveABI::Shared::PackFlatbuffer(result);
         }}
 
         void* {}(void* function_context)
