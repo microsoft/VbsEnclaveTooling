@@ -182,21 +182,25 @@ namespace CodeGeneration
     {
         std::string sub_namespace_name{};
         std::string sub_namespace_content{};
+        std::string includes {};
 
         if (header_kind == HeaderKind::Vtl1)
         {
             sub_namespace_name = "Stubs";
+            includes = R"(<VbsEnclaveABI\Enclave\EnclaveHelpers.h>)";
             sub_namespace_content = enclave_to_host_content.m_vtl1_stubs_for_vtl0_untrusted_functions;
         }
         else
         {
             sub_namespace_name = "Implementation";
+            includes = R"(<VbsEnclaveABI\Host\HostHelpers.h>)";
             sub_namespace_content = enclave_to_host_content.m_vtl0_untrusted_function_declarations;
         }
 
         std::string header_content = std::format(
             c_untrusted_stubs_header_template,
             c_autogen_header_string,
+            includes,
             m_generated_namespace_name,
             sub_namespace_name,
             m_generated_namespace_name,
@@ -212,19 +216,23 @@ namespace CodeGeneration
         const CppCodeBuilder::EnclaveToHostContent& enclave_to_host_content)
     {
         std::string namespace_content {};
+        std::string includes {};
 
         if (header_kind == HeaderKind::Vtl1)
         {
             namespace_content = host_to_enclave_content.m_vtl1_abi_functions;
+            includes = R"(<VbsEnclave\Enclave\Trusted.h>)";
         }
         else
         {
             namespace_content = enclave_to_host_content.m_vtl0_abi_functions;
+            includes = R"(<VbsEnclave\HostApp\Untrusted.h>)";
         }
 
         std::string header_content = std::format(
             c_abi_definitions_stubs_header_template,
             c_autogen_header_string,
+            includes,
             m_generated_namespace_name,
             m_generated_namespace_name,
             namespace_content);

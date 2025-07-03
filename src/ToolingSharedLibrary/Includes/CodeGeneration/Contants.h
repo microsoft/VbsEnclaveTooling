@@ -288,9 +288,9 @@ namespace {}
     static inline constexpr std::string_view c_vtl0_trusted_header = 
 R"({}
 #pragma once
-#include <VbsEnclaveABI\Host\HostHelpers.h>
 #include <VbsEnclave\HostApp\AbiDefinitions.h>
 #include <VbsEnclave\HostApp\DeveloperTypes.h>
+#include <VbsEnclaveABI\Host\HostHelpers.h>
 
 namespace {}::Trusted::Stubs
 {{
@@ -312,11 +312,7 @@ namespace {}::Trusted::Stubs
     static inline constexpr std::string_view c_untrusted_stubs_header_template =
 R"({}
 #pragma once
-#ifdef __ENCLAVE_PROJECT__
-#include <VbsEnclaveABI\Enclave\EnclaveHelpers.h>
-#else
-#include <VbsEnclaveABI\Host\HostHelpers.h>
-#endif
+#include {}
 #include "DeveloperTypes.h"
 
 namespace {}
@@ -332,11 +328,7 @@ namespace {}
     static inline constexpr std::string_view c_abi_definitions_stubs_header_template =
 R"({}
 #pragma once
-#ifdef __ENCLAVE_PROJECT__
-#include <VbsEnclave\Enclave\Trusted.h>
-#else
-#include <VbsEnclave\HostApp\Untrusted.h>
-#endif
+#include {}
 
 namespace {}
 {{
