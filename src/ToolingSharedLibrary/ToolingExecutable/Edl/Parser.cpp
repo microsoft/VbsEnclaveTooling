@@ -450,14 +450,7 @@ namespace EdlProcessor
             // Since we allow developer functions to contain the same name but with different
             // parameters, we need to make sure the non developer facing functions are unique
             // in our abi layer. So we append a number to the function name.
-            parsed_function.abi_m_name = std::format("{}{}", parsed_function.m_name, m_abi_function_index++);
-
-            if (function_kind == FunctionKind::Untrusted)
-            {
-                // add callback string at the end to prevent in class name conflicts.
-                parsed_function.m_name = std::format("{}_callback", parsed_function.m_name);
-            }
-
+            parsed_function.abi_m_name = std::format("{}_{}", parsed_function.m_name, m_abi_function_index++);
             map.emplace(function_signature, parsed_function);
         }
 

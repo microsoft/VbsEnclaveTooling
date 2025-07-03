@@ -19,11 +19,13 @@ namespace CodeGeneration::Flatbuffers
     std::unordered_map<std::string, std::string> g_enum_data {};
 
     std::string GenerateFlatbufferSchema(
+        std::string_view developer_namespace_name,
         const std::vector<DeveloperType>& developer_types_insertion_list,
         const std::vector<DeveloperType>& abi_function_developer_types)
     {
         std::ostringstream schema {};
-        schema << c_autogen_header_string << c_flatbuffer_namespace;
+        auto schema_namespace = std::format(c_flatbuffer_namespace, developer_namespace_name);
+        schema << c_autogen_header_string << schema_namespace;
 
         for (auto& dev_type : developer_types_insertion_list)
         {

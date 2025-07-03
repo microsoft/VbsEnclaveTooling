@@ -16,6 +16,7 @@ using namespace CodeGeneration::Flatbuffers;
 namespace CodeGeneration
 {
     std::string CppCodeBuilder::BuildTypesHeader(
+        std::string_view developer_namespace_name,
         const std::vector<DeveloperType>& developer_types_insertion_list,
         const std::vector<DeveloperType>& abi_function_developer_types)
     {
@@ -44,20 +45,22 @@ namespace CodeGeneration
             if (type.IsEdlType(EdlTypeKind::Struct))
             {
                 types_header << BuildStructDefinition(type.m_name, type.m_fields);
-                struct_metadata << BuildStructMetaData(type.m_name, type.m_fields);
+                struct_metadata << BuildStructMetaData(developer_namespace_name, type.m_name, type.m_fields);
             }
         }
 
         for (auto& type : abi_function_developer_types)
         {
             types_header << BuildStructDefinition(type.m_name, type.m_fields);
-            struct_metadata << BuildStructMetaData(type.m_name, type.m_fields);
+            struct_metadata << BuildStructMetaData(developer_namespace_name, type.m_name, type.m_fields);
         }
 
-        auto start_of_file = std::format(c_developer_types_start_of_file, c_autogen_header_string);
-        auto body = std::format(c_developer_types_namespace, types_header.str(), struct_metadata.str());
-
-        return std::format("{}{}\n", start_of_file, body);
+        return std::format(
+            c_developer_types_file,
+            c_autogen_header_string,
+            developer_namespace_name,
+            types_header.str(),
+            struct_metadata.str());
     }
 
     CppCodeBuilder::Definition CppCodeBuilder::BuildStartOfDefinition(
@@ -146,6 +149,7 @@ namespace CodeGeneration
     }
 
     std::string CppCodeBuilder::BuildStructMetaData(
+        std::string_view generated_namespace,
         std::string_view struct_name,
         const std::vector<Declaration>& fields)
     {
@@ -162,18 +166,37 @@ namespace CodeGeneration
             auto separator = ( i + 1 != fields.size()) ? "," : "";
             auto& field = fields[i];
 
-            devtype_field_ptrs << std::format(c_struct_metadata_field_ptr, struct_name, field.m_name, separator);
-            flatbuffer_field_ptrs << std::format(c_flatbuffer_field_ptr, struct_name, field.m_name, separator);
+            devtype_field_ptrs << std::format(
+                c_struct_metadata_field_ptr,
+                generated_namespace,
+                struct_name, 
+                field.m_name,
+                separator);
+
+            flatbuffer_field_ptrs << std::format(
+                c_flatbuffer_field_ptr,
+                generated_namespace, 
+                struct_name, 
+                field.m_name,
+                separator);
         }
 
-        std::string struct_in_dev_type_namespace = std::format("DeveloperTypes::{}", struct_name);
+        std::string struct_in_dev_type_namespace = std::format(
+            "{}::DeveloperTypes::{}",
+            generated_namespace,
+            struct_name);
+
         std::ostringstream struct_metadata {};
         struct_metadata << std::format(
             c_struct_meta_data_outline,
             struct_in_dev_type_namespace,
             devtype_field_ptrs.str());
 
-        std::string struct_in_flatbuffer_namespace = std::format("FlatbuffersDevTypes::{}T", struct_name);
+        std::string struct_in_flatbuffer_namespace = std::format(
+            "{}::FlatbuffersDevTypes::{}T",
+            generated_namespace, 
+            struct_name);
+
         std::ostringstream flatbuffer_metadata {};
         flatbuffer_metadata << std::format(
             c_struct_meta_data_outline,
@@ -251,11 +274,9 @@ namespace CodeGeneration
             is_vtl0_callback ? "" : c_enforce_memory_restriction_call,
             abi_function_to_call);
 
-        auto return_statement = (is_vtl0_callback) ? c_static_void_ptr : c_void_ptr;
-
         return std::format(
             c_outer_abi_function,
-            return_statement,
+            c_static_void_ptr,
             function.abi_m_name,
             inner_body);
     }
@@ -447,22 +468,10 @@ namespace CodeGeneration
         const std::unordered_map<std::string, DeveloperType>& developer_types,
         std::unordered_map<std::string, Function>& functions)
     {
-        std::ostringstream vtl0_class_public_portion {};
-        vtl0_class_public_portion << c_vtl0_enclave_class_public_keyword;
-
         std::ostringstream vtl1_abi_boundary_functions {};
-        vtl1_abi_boundary_functions << c_vtl1_abi_boundary_functions_comment;
-
         std::ostringstream vtl1_abi_impl_functions {};
-        vtl1_abi_impl_functions << c_vtl1_abi_impl_functions_comment;
-
-        std::ostringstream vtl1_developer_declaration_functions {};
-        vtl1_developer_declaration_functions << c_vtl1_developer_declaration_functions_comment;
-
-        std::ostringstream vtl0_side_of_vtl1_developer_impl_functions {};
-        vtl0_side_of_vtl1_developer_impl_functions << c_vtl0_side_of_vtl1_developer_impl_functions_comment;
-
-        std::ostringstream vtl1_generated_module_exports {};
+        std::ostringstream vtl1_trusted_function_declarations {};
+        std::ostringstream vtl0_stubs_for_vtl1_trusted_functions {};
 
         for (auto&& [name, function] : functions)
         {
@@ -474,7 +483,7 @@ namespace CodeGeneration
 
             // This is the vtl0 abi function that the developer will call into to start the flow
             // of calling their vtl1 enclave function impl.
-            vtl0_side_of_vtl1_developer_impl_functions << BuildInitialCallerFunction(
+            vtl0_stubs_for_vtl1_trusted_functions << BuildInitialCallerFunction(
                 function,
                 vtl0_call_to_vtl1_export,
                 false,
@@ -494,48 +503,39 @@ namespace CodeGeneration
                 false,
                 param_info);
 
-            auto vtl1_dev_impl_call = std::format("VTL1_Declarations::{}", function.m_name);
+            auto vtl1_dev_impl_call = std::format("Trusted::Implementation::{}", function.m_name);
 
             // This is the vtl1 abi function that will call the developers vtl1 function implementation.
-            std::string vtl1_abi_impl_definition = BuildAbiImplFunction(
+            vtl1_abi_impl_functions << BuildAbiImplFunction(
                 function,
                 vtl1_dev_impl_call,
                 param_info);
 
             // VTL1 enclave function that the developer will implement. It is called by the vtl1
             // abi function impl for this particular function.
-            vtl1_developer_declaration_functions << std::format(
+            vtl1_trusted_function_declarations << std::format(
                 c_function_declaration,
                 param_info.m_function_return_value,
                 function.m_name,
                 BuildFunctionParameters(function, param_info));
-
-            vtl1_abi_impl_functions << vtl1_abi_impl_definition;
-
-            vtl1_generated_module_exports << std::format(c_exported_function_in_module, function.abi_m_name);
         }
 
-        vtl0_class_public_portion << vtl0_side_of_vtl1_developer_impl_functions.str();
-
-        // Add register callbacks abi export to module file and add it at the end of the vtl1 stubs file.
+        HostToEnclaveContent content{};
+        content.m_vtl0_trusted_stub_functions = vtl0_stubs_for_vtl1_trusted_functions.str();
+        content.m_vtl1_trusted_function_declarations = vtl1_trusted_function_declarations.str();
         std::string callbacks_name = std::format(
             c_vtl1_register_callbacks_abi_export_name,
             generated_namespace);
 
-        vtl1_generated_module_exports << callbacks_name;
         vtl1_abi_boundary_functions << std::format(
             c_vtl1_register_callbacks_abi_export,
             callbacks_name);
 
-        auto vtl1_stubs_in_namespace =
-            std::format(c_vtl1_enclave_stub_namespace, generated_namespace, vtl1_abi_boundary_functions.str());
+        vtl1_abi_impl_functions << c_vtl1_enforce_mem_restriction_func << vtl1_abi_boundary_functions.str();
 
-        return HostToEnclaveContent {
-            std::move(vtl0_class_public_portion),
-            std::format("{}{}{}",c_autogen_header_string, c_vtl1_enclave_stub_includes, vtl1_stubs_in_namespace),
-            std::move(vtl1_developer_declaration_functions),
-            std::move(vtl1_abi_impl_functions)
-        };
+        content.m_vtl1_abi_functions = vtl1_abi_impl_functions.str();
+
+        return content;
     }
 
     CppCodeBuilder::EnclaveToHostContent CppCodeBuilder::BuildEnclaveToHostFunctions(
@@ -546,24 +546,11 @@ namespace CodeGeneration
     {
         size_t number_of_functions = functions.size();
         size_t number_of_functions_plus_allocators = functions.size() + c_number_of_abi_callbacks;
-        std::ostringstream vtl0_class_public_functions {};
-        std::ostringstream vtl0_class_private_portion {};
-        vtl0_class_public_functions << c_vtl0_enclave_class_public_keyword;
-        vtl0_class_private_portion << c_vtl0_enclave_class_private_keyword;
-
         std::ostringstream vtl1_callback_functions {};
-
         std::ostringstream vtl0_abi_boundary_functions {};
-        vtl0_abi_boundary_functions << c_vtl0_abi_boundary_functions_comment;
-
         std::ostringstream vtl0_abi_impl_callback_functions {};
-        vtl0_abi_impl_callback_functions << c_vtl0_abi_impl_callback_functions_comment;
-
         std::ostringstream vtl0_developer_declaration_functions {};
-        vtl0_developer_declaration_functions << c_vtl0_developer_declaration_functions_comment;
-
-        std::ostringstream vtl1_side_of_vtl0_callback_functions {};
-        vtl1_side_of_vtl0_callback_functions << c_vtl1_side_of_vtl0_developer_callback_functions_comment;
+        std::ostringstream vtl1_stubs_for_vtl0_untrusted_functions {};
 
         // Add allocate vtl0 memory function from ABI base file.
         std::ostringstream vtl0_class_method_addresses;
@@ -587,7 +574,6 @@ namespace CodeGeneration
             auto generated_callback_in_namespace = std::format(
                c_generated_callback_in_namespace,
                generated_namespace,
-               generated_class_name,
                function.abi_m_name);
 
             auto vtl1_call_to_vtl0_callback = std::format(
@@ -597,7 +583,7 @@ namespace CodeGeneration
             // This is the vtl1 static function that the developer will call into from vtl1 with the
             // same parameters as their vtl0 callabck function. This initiates the abi call from vtl1 
             // to the vtl0 abi boundary function for this specific function.
-            vtl1_side_of_vtl0_callback_functions << BuildInitialCallerFunction(
+            vtl1_stubs_for_vtl0_untrusted_functions << BuildInitialCallerFunction(
                 function,
                 vtl1_call_to_vtl0_callback,
                 true,
@@ -616,25 +602,27 @@ namespace CodeGeneration
                 vtl0_call_to_vtl0_callback,
                 true,
                 param_info);
-                
+
             // This is our vtl0 abi callback implementation that will finally pass the parameters
             // to the developers vtl0 impl function.
+            auto vtl0_dev_impl_call = std::format("Untrusted::Implementation::{}", function.m_name);
+
             vtl0_abi_impl_callback_functions << BuildAbiImplFunction(
                 function,
-                function.m_name,
+                vtl0_dev_impl_call,
                 param_info);
 
             // This is the developers vtl0 impl function. The develper will implement this static class
             // method.
             vtl0_developer_declaration_functions << std::format(
-                c_static_declaration,
+                c_function_declaration,
                 param_info.m_function_return_value,
                 function.m_name,
                 BuildFunctionParameters(function, param_info));
 
             // capture the addresses for each developer callback so we can pass them to vtl1 later.
             vtl0_class_method_addresses << std::format(
-                c_callback_to_address, 
+                c_callback_to_address,
                 function.abi_m_name);
 
             vtl0_class_method_names << std::format(
@@ -645,80 +633,25 @@ namespace CodeGeneration
             parameter_separator = (current_iteration + 1U == number_of_functions) ? "" : ",";
         }
 
+        EnclaveToHostContent content {};
+
         // This is the array of callbacks addresses that will be passed to vtl1 with the abi's register
         // callbacks functions, that we export from the enclave dll.
-        auto vtl0_class_callbacks_member = std::format(
-            c_vtl0_class_add_callback_member,
+        content.m_vtl0_untrusted_abi_stubs_address_info = std::format(
+            c_vtl0_untrusted_abi_stubs_address_info,
             number_of_functions_plus_allocators,
             vtl0_class_method_addresses.str(),
             number_of_functions_plus_allocators,
             vtl0_class_method_names.str());
-        
-        vtl0_class_private_portion 
-            << vtl0_abi_boundary_functions.str()
-            << vtl0_abi_impl_callback_functions.str()
-            << vtl0_class_callbacks_member;
 
-        // Additional processing will be done to complete the class.
-        // But for now we'll combine the public and private class info into one.
-        vtl0_class_public_functions << vtl0_developer_declaration_functions.str();
+        content.m_vtl0_untrusted_function_declarations = vtl0_developer_declaration_functions.str();
 
-        return EnclaveToHostContent {
-            std::move(vtl0_class_public_functions),
-            std::move(vtl0_class_private_portion),
-            std::move(vtl1_side_of_vtl0_callback_functions)
-        };
-    }
+        vtl0_abi_impl_callback_functions << vtl0_abi_boundary_functions.str();
+        content.m_vtl0_abi_functions = vtl0_abi_impl_callback_functions.str();
 
-    std::string CppCodeBuilder::CombineAndBuildHostAppEnclaveClass(
-        std::string_view generated_class_name,
-        std::string_view generated_namespace_name,
-        const std::ostringstream& vtl0_class_public_content,
-        const std::ostringstream& vtl0_class_private_content)
-    {
-        auto vtl0_class_name = generated_class_name;
-        auto [vtl0_class_header, vtl0_class_body, vtl0_class_footer] = BuildStartOfDefinition(
-            EDL_STRUCT_KEYWORD,
-            vtl0_class_name);
-        
-        auto full_class = std::format(
-            c_vtl0_class_structure,
-            vtl0_class_header.str(),
-            vtl0_class_body.str(),
-            std::format(c_vtl0_class_constructor, vtl0_class_name),
-            vtl0_class_public_content.str(),
-            vtl0_class_private_content.str(),
-            vtl0_class_footer.str());
+        content.m_vtl1_stubs_for_vtl0_untrusted_functions = vtl1_stubs_for_vtl0_untrusted_functions.str();
 
-        auto vtl0_class_in_namespace = std::format(
-            c_vtl0_class_hostapp_namespace,
-            generated_namespace_name, 
-            full_class);
-
-        return std::format(
-            "{}{}{}", 
-            c_autogen_header_string, 
-            c_vtl0_class_start_of_file,
-            vtl0_class_in_namespace);
-    }
-
-    std::string CppCodeBuilder::CombineAndBuildVtl1ImplementationsHeader(
-        std::string_view generated_namespace_name,
-        const std::ostringstream& vtl1_developer_declarations,
-        const std::ostringstream& vtl1_callback_impl_functions,
-        const std::ostringstream& vtl1_abi_impl_functions)
-    {
-        auto vtl1_impls_in_namespace = std::format(
-            c_vtl1_enclave_func_impl_namespace, 
-            generated_namespace_name,
-            vtl1_developer_declarations.str(),
-            vtl1_callback_impl_functions.str(),
-            vtl1_abi_impl_functions.str());
-
-        return std::format("{}{}{}",
-            c_autogen_header_string, 
-            c_vtl1_enclave_func_impl_start_of_file,
-            vtl1_impls_in_namespace);
+        return content;
     }
 
     std::string CppCodeBuilder::BuildVtl1ExportedFunctionsSourcefile(
@@ -753,33 +686,7 @@ namespace CodeGeneration
         return std::format(
             c_vtl1_export_functions_source_file,
             c_autogen_header_string,
-            generated_namespace_name,
             pragma_link_statements.str(),
             exported_definitions.str());
-    }
-
-    std::string CppCodeBuilder::BuildVtl1BoundaryFunctionsStubHeader(
-        std::string_view generated_namespace_name,
-        const std::unordered_map<std::string, Function>& functions)
-    {
-        std::ostringstream stub_declarations {};
-
-        for (auto& [name, function] : functions)
-        {
-            auto generated_func_name = std::format(c_generated_stub_name_no_quotes, function.abi_m_name);
-            stub_declarations << std::format(c_abi_boundary_func_declaration_for_stubs, generated_func_name);
-        }
-        
-        auto register_abi_declaration = std::format(
-            c_vtl1_register_callbacks_abi_export_name,
-            generated_namespace_name);
-
-        stub_declarations << std::format(c_abi_boundary_func_declaration_for_stubs, register_abi_declaration);
-
-        return std::format(
-            c_vtl1_export_stub_declarations_header,
-            c_autogen_header_string,
-            generated_namespace_name, 
-            stub_declarations.str());
     }
 }

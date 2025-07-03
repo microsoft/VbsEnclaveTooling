@@ -70,10 +70,12 @@ namespace CodeGeneration
         // Create developer types. This is shared between
         // the HostApp and the enclave.
         std::string enclave_types_header = BuildTypesHeader(
+            m_generated_namespace_name,
             m_edl.m_developer_types_insertion_order_list,
             abi_function_developer_types);
 
         auto flatbuffer_schema = GenerateFlatbufferSchema(
+            m_generated_namespace_name,
             m_edl.m_developer_types_insertion_order_list,
             abi_function_developer_types);
 
@@ -91,35 +93,12 @@ namespace CodeGeneration
             m_edl.m_untrusted_functions);
 
         std::filesystem::path save_location{};
+        CppCodeBuilder::HeaderKind header_kind{};
 
         if (m_virtual_trust_layer_kind == VirtualTrustLayerKind::Enclave)
         {
             save_location = enclave_headers_location;
-
-            SaveFileToOutputFolder(
-                c_trust_vtl1_stubs_header,
-                enclave_headers_location,
-                host_to_enclave_content.m_vtl1_stub_functions_header_content);
-
-            auto vtl1_impl_header = CombineAndBuildVtl1ImplementationsHeader(
-               m_generated_namespace_name,
-               host_to_enclave_content.m_vtl1_developer_declaration_functions,
-               enclave_to_host_content.m_vtl1_side_of_vtl0_callback_functions,
-               host_to_enclave_content.m_vtl1_abi_impl_functions);
-
-            SaveFileToOutputFolder(
-                c_trusted_vtl1_impl_header,
-                enclave_headers_location,
-                vtl1_impl_header);
-
-            SaveFileToOutputFolder(
-                c_developer_types_header,
-                enclave_headers_location,
-                enclave_types_header);
-
-            SaveFileToOutputFolder(c_flatbuffer_fbs_filename, enclave_headers_location, flatbuffer_schema);
-
-            auto exports_folder = enclave_headers_location / "Exports";
+            header_kind = CppCodeBuilder::HeaderKind::Vtl1;
 
             std::string exported_definitions_source = BuildVtl1ExportedFunctionsSourcefile(
                 m_generated_namespace_name,
@@ -127,65 +106,130 @@ namespace CodeGeneration
 
             SaveFileToOutputFolder(
                 std::format(c_enclave_exports_source, m_generated_namespace_name),
-                exports_folder,
+                save_location,
                 exported_definitions_source);
-
-            std::string boundary_stubs_header = BuildVtl1BoundaryFunctionsStubHeader(
-                m_generated_namespace_name,
-                m_edl.m_trusted_functions);
-
-            SaveFileToOutputFolder(
-                std::format(c_stubs_header_for_enclave_exports, m_generated_namespace_name),
-                exports_folder,
-                boundary_stubs_header);
         }
         else if (m_virtual_trust_layer_kind == VirtualTrustLayerKind::HostApp)
         {
             save_location = hostapp_headers_location;
-
-            // Add the register callbacks abi function and combine the two streams
-            // that contain the vtl0 public class methods.
-            std::string callbacks_name = std::format(
-                c_vtl1_register_callbacks_abi_export_name,
-                m_generated_namespace_name);
-
-            std::string callbacks_name_with_quotes = std::format("{}{}{}",
-                "\"",
-                callbacks_name,
-                "\"");
-
-            std::string vtl0_register_callbacks_abi_function = std::format(
-                c_vtl0_register_callbacks_abi_function,
-                callbacks_name_with_quotes);
-
-            enclave_to_host_content.m_vtl0_class_public_content 
-                << vtl0_register_callbacks_abi_function
-                << host_to_enclave_content.m_vtl0_class_public_content.str();
-
-            auto vtl0_class_header = CombineAndBuildHostAppEnclaveClass(
-                m_generated_vtl0_class_name,
-                m_generated_namespace_name,
-                enclave_to_host_content.m_vtl0_class_public_content,
-                enclave_to_host_content.m_vtl0_class_private_content);
-
-            SaveFileToOutputFolder(
-                c_untrusted_vtl0_stubs_header,
-                hostapp_headers_location,
-                vtl0_class_header);
-
-            SaveFileToOutputFolder(
-                c_developer_types_header,
-                hostapp_headers_location,
-                enclave_types_header);
-
-            SaveFileToOutputFolder(c_flatbuffer_fbs_filename, hostapp_headers_location, flatbuffer_schema);
+            header_kind = CppCodeBuilder::HeaderKind::Vtl0;
         }
         else
         {
             throw CodeGenerationException(ErrorId::VirtualTrustLayerInvalidType);
         }
 
+        SaveTrustedHeader(header_kind, save_location, host_to_enclave_content, enclave_to_host_content);
+        SaveUntrustedHeader(header_kind, save_location, enclave_to_host_content);
+        SaveAbiDefinitionsHeader(header_kind, save_location, host_to_enclave_content, enclave_to_host_content);
+
+        SaveFileToOutputFolder(c_flatbuffer_fbs_filename, save_location, flatbuffer_schema);
         CompileFlatbufferFile(save_location);
+        SaveFileToOutputFolder(c_developer_types_header, save_location, enclave_types_header);
+    }
+
+    void CppCodeGenerator::SaveTrustedHeader(
+        CppCodeBuilder::HeaderKind header_kind,
+        const std::filesystem::path& output_parent_folder,
+        const CppCodeBuilder::HostToEnclaveContent& host_to_enclave_content,
+        const CppCodeBuilder::EnclaveToHostContent& enclave_to_host_content)
+    {
+        std::string header_content{};
+
+        if (header_kind == HeaderKind::Vtl1)
+        {
+            header_content = std::format(
+                c_vtl1_trusted_func_declarations_header,
+                c_autogen_header_string,
+                m_generated_namespace_name,
+                m_generated_namespace_name,
+                host_to_enclave_content.m_vtl1_trusted_function_declarations);
+        }
+        else
+        {
+            std::string callbacks_name = std::format(
+                c_vtl1_register_callbacks_abi_export_name,
+                m_generated_namespace_name);
+
+            std::string callbacks_name_with_quotes = std::format("\"{}\"", callbacks_name);
+
+            std::string vtl0_register_callbacks_abi_function = std::format(
+                c_vtl0_register_callbacks_abi_function,
+                callbacks_name_with_quotes);
+
+            auto public_content = std::format("{}{}",
+                host_to_enclave_content.m_vtl0_trusted_stub_functions,
+                vtl0_register_callbacks_abi_function);
+
+            header_content = std::format(
+                c_vtl0_trusted_header,
+                c_autogen_header_string,
+                m_generated_namespace_name,
+                m_generated_namespace_name,
+                m_generated_vtl0_class_name,
+                m_generated_vtl0_class_name,
+                public_content,
+                enclave_to_host_content.m_vtl0_untrusted_abi_stubs_address_info);
+        }
+
+        SaveFileToOutputFolder("Trusted.h", output_parent_folder, header_content);
+    }
+
+    void CppCodeGenerator::SaveUntrustedHeader(
+        CppCodeBuilder::HeaderKind header_kind,
+        const std::filesystem::path& output_parent_folder,
+        const CppCodeBuilder::EnclaveToHostContent& enclave_to_host_content)
+    {
+        std::string sub_namespace_name{};
+        std::string sub_namespace_content{};
+
+        if (header_kind == HeaderKind::Vtl1)
+        {
+            sub_namespace_name = "Stubs";
+            sub_namespace_content = enclave_to_host_content.m_vtl1_stubs_for_vtl0_untrusted_functions;
+        }
+        else
+        {
+            sub_namespace_name = "Implementation";
+            sub_namespace_content = enclave_to_host_content.m_vtl0_untrusted_function_declarations;
+        }
+
+        std::string header_content = std::format(
+            c_untrusted_stubs_header_template,
+            c_autogen_header_string,
+            m_generated_namespace_name,
+            sub_namespace_name,
+            m_generated_namespace_name,
+            sub_namespace_content);
+
+        SaveFileToOutputFolder("Untrusted.h", output_parent_folder, header_content);
+    }
+
+    void CppCodeGenerator::SaveAbiDefinitionsHeader(
+        CppCodeBuilder::HeaderKind header_kind,
+        const std::filesystem::path& output_parent_folder,
+        const CppCodeBuilder::HostToEnclaveContent& host_to_enclave_content,
+        const CppCodeBuilder::EnclaveToHostContent& enclave_to_host_content)
+    {
+        std::string namespace_content {};
+
+        if (header_kind == HeaderKind::Vtl1)
+        {
+            namespace_content = host_to_enclave_content.m_vtl1_abi_functions;
+        }
+        else
+        {
+            namespace_content = enclave_to_host_content.m_vtl0_abi_functions;
+        }
+
+        std::string header_content = std::format(
+            c_abi_definitions_stubs_header_template,
+            c_autogen_header_string,
+            m_generated_namespace_name,
+            m_generated_namespace_name,
+            namespace_content);
+
+        SaveFileToOutputFolder("AbiDefinitions.h", output_parent_folder, header_content);
     }
 
     void CppCodeGenerator::SaveFileToOutputFolder(
