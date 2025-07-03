@@ -89,13 +89,13 @@ namespace VbsEnclaveToolingTests
 
         if (function_kind == FunctionKind::Trusted)
         {
-            Assert::IsTrue(edl.m_trusted_functions.contains(expected_signature));
-            function = edl.m_trusted_functions.at(expected_signature);
+            Assert::IsTrue(edl.m_trusted_functions_map.contains(expected_signature));
+            function = edl.m_trusted_functions_map.at(expected_signature);
         }
         else
         {
-            Assert::IsTrue(edl.m_untrusted_functions.contains(expected_signature));
-            function = edl.m_untrusted_functions.at(expected_signature);
+            Assert::IsTrue(edl.m_untrusted_functions_map.contains(expected_signature));
+            function = edl.m_untrusted_functions_map.at(expected_signature);
         }
 
          // Confirm function signature is expected signature.

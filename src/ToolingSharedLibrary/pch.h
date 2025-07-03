@@ -10,12 +10,14 @@
 #include <filesystem>
 #include <format>
 #include <fstream>
+#include <functional>
 #include <iostream>
 #include <map>
 #include <ostream>
 #include <sstream>
 #include <string>
 #include <string_view>
+#include <span>
 #include <unordered_map>
 #include <unordered_set>
 #include <utility>

@@ -64,8 +64,8 @@ namespace CodeGeneration
         auto hostapp_headers_location = m_output_folder_path / hostapp_headers_output;
 
         auto abi_function_developer_types = CreateDeveloperTypesForABIFunctions(
-            m_edl.m_trusted_functions,
-            m_edl.m_untrusted_functions);
+            m_edl.m_trusted_functions_list,
+            m_edl.m_untrusted_functions_list);
 
         // Create developer types. This is shared between
         // the HostApp and the enclave.
@@ -83,14 +83,14 @@ namespace CodeGeneration
         auto host_to_enclave_content = BuildHostToEnclaveFunctions(
             m_generated_namespace_name,
             m_edl.m_developer_types,
-            m_edl.m_trusted_functions);
+            m_edl.m_trusted_functions_list);
 
         // Process the content from the untrusted functions
         auto enclave_to_host_content = BuildEnclaveToHostFunctions(
             m_generated_namespace_name, 
             m_generated_vtl0_class_name,
             m_edl.m_developer_types,
-            m_edl.m_untrusted_functions);
+            m_edl.m_untrusted_functions_list);
 
         std::filesystem::path save_location{};
         CppCodeBuilder::HeaderKind header_kind{};
@@ -102,7 +102,7 @@ namespace CodeGeneration
 
             std::string exported_definitions_source = BuildVtl1ExportedFunctionsSourcefile(
                 m_generated_namespace_name,
-                m_edl.m_trusted_functions);
+                m_edl.m_trusted_functions_list);
 
             SaveFileToOutputFolder(
                 std::format(c_enclave_exports_source, m_generated_namespace_name),

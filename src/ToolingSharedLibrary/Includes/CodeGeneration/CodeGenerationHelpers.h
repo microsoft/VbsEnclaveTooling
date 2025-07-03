@@ -92,18 +92,18 @@ namespace CodeGeneration
     }
 
     inline std::vector<DeveloperType> CreateDeveloperTypesForABIFunctions(
-        const std::unordered_map<std::string, Function>& trusted_functions,
-        const std::unordered_map<std::string, Function>& untrusted_functions)
+       std::span<Function> trusted_functions,
+       std::span<Function> untrusted_functions)
     {
         std::vector<DeveloperType> dev_types {};
 
-        for (auto [name, function] : trusted_functions)
+        for (const auto& function : trusted_functions)
         {
             DeveloperType dev_type = GetDeveloperTypeStructForABI(function);
             dev_types.push_back(dev_type);
         }
 
-        for (auto [name, function] : untrusted_functions)
+        for (const auto& function : untrusted_functions)
         {
             DeveloperType dev_type = GetDeveloperTypeStructForABI(function);
             dev_types.push_back(dev_type);

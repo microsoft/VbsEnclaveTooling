@@ -183,8 +183,10 @@ namespace EdlProcessor
             m_file_name.generic_string(),
             m_developer_types,
             m_developer_types_insertion_order_list,
-            m_trusted_functions,
-            m_untrusted_functions };
+            m_trusted_functions_map,
+            m_trusted_functions_list,
+            m_untrusted_functions_map,
+            m_untrusted_functions_list};
     }
 
     void EdlParser::UpdateDeveloperTypeMetadata()
@@ -428,16 +430,21 @@ namespace EdlProcessor
     void EdlParser::ParseFunctions(const FunctionKind& function_kind)
     {
         ThrowIfExpectedTokenNotNext(LEFT_CURLY_BRACKET);
-        auto& map = (function_kind == FunctionKind::Trusted)
-            ? m_trusted_functions
-            : m_untrusted_functions;
+        std::reference_wrapper<std::unordered_map<std::string, Function>> func_map = m_trusted_functions_map;
+        std::reference_wrapper<std::vector<Function>> func_list = m_trusted_functions_list;
+
+        if (function_kind == FunctionKind::Untrusted)
+        {
+            func_map = m_untrusted_functions_map;
+            func_list = m_untrusted_functions_list;
+        }
 
         while (PeekAtCurrentToken() != RIGHT_CURLY_BRACKET)
         {            
             Function parsed_function = ParseFunctionDeclaration();
             std::string function_signature = parsed_function.GetDeclarationSignature();
 
-            if (map.contains(function_signature))
+            if (func_map.get().contains(function_signature))
             {
                 throw EdlAnalysisException(
                     ErrorId::EdlDuplicateFunctionDeclaration,
@@ -451,7 +458,9 @@ namespace EdlProcessor
             // parameters, we need to make sure the non developer facing functions are unique
             // in our abi layer. So we append a number to the function name.
             parsed_function.abi_m_name = std::format("{}_{}", parsed_function.m_name, m_abi_function_index++);
-            map.emplace(function_signature, parsed_function);
+
+            func_map.get().emplace(function_signature, parsed_function);
+            func_list.get().push_back(parsed_function);
         }
 
         ThrowIfExpectedTokenNotNext(RIGHT_CURLY_BRACKET);
@@ -940,12 +949,12 @@ namespace EdlProcessor
     {
         // now that we've finished parsing the function declarations and structs 
         // Make sure the size/count attributes are validated.
-        for (const auto& [function_name, function] : m_trusted_functions)
+        for (const auto& [function_name, function] : m_trusted_functions_map)
         {
             ValidateSizeAndCountAttributeDeclarations(function_name, function.m_parameters);
         }
 
-        for (const auto& [function_name, function] : m_untrusted_functions)
+        for (const auto& [function_name, function] : m_untrusted_functions_map)
         {
             ValidateSizeAndCountAttributeDeclarations(function_name, function.m_parameters);
         }
