@@ -24,10 +24,7 @@
       <WarningLevel>Level4</WarningLevel>
       <SDLCheck>true</SDLCheck>
       <ConformanceMode>true</ConformanceMode>
-      <LanguageStandard Condition="'$(CppWinRTLanguageStandard)'==''">stdcpp17</LanguageStandard>
-      <LanguageStandard Condition="'$(CppWinRTLanguageStandard)'=='20'">stdcpp20</LanguageStandard>
-      <PreprocessorDefinitions Condition="'$(Configuration)'=='Debug'">DEBUG=1;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <PreprocessorDefinitions Condition="'$(Configuration)'!='Debug'">%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_MSVC_STL_HARDENING=1;_MSVC_STL_DESTRUCTOR_TOMBSTONES=1;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <AdditionalOptions>/bigobj</AdditionalOptions>
     </ClCompile>
