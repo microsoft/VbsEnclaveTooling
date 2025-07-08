@@ -21,6 +21,12 @@ namespace CodeGeneration
             Vtl1,
         };
 
+        enum class DataDirectionKind
+        {
+            Vtl0ToVtl1,
+            Vtl1ToVtl0,
+        };
+
         struct HostToEnclaveContent
         {
             std::string m_vtl0_trusted_stub_functions {};
@@ -76,18 +82,15 @@ namespace CodeGeneration
             std::string_view struct_name,
             const std::vector<Declaration>& fields);
 
-        FunctionParametersInfo GetInformationAboutParameters(
-            const Function& function,
-            const std::unordered_map<std::string, DeveloperType>& developer_types);
+        FunctionParametersInfo GetInformationAboutParameters(const Function& function);
 
         // These functions are what the developer will call 
         // to invoke their impl function on the other side of the
         // trust boundary.
-        std::string BuildInitialCallerFunction(
+        std::string BuildStubFunction(
             const Function& function,
-            std::string_view abi_function_to_call,
-            bool should_be_inline,
-            const std::unordered_map<std::string, DeveloperType>& developer_types,
+            DataDirectionKind directon,
+            std::string_view cross_boundary_func_name,
             const FunctionParametersInfo& param_info);
 
         // Intended to forward parameters to the developers callback Impl
@@ -116,13 +119,11 @@ namespace CodeGeneration
         
         HostToEnclaveContent BuildHostToEnclaveFunctions(
             std::string_view generated_namespace,
-            const std::unordered_map<std::string, DeveloperType>& developer_types,
             std::span<Function> functions);
 
         EnclaveToHostContent BuildEnclaveToHostFunctions(
             std::string_view generated_namespace,
             std::string_view generated_class_name,
-            const std::unordered_map<std::string, DeveloperType>& developer_types,
             std::span<Function> functions);
 
         std::string BuildVtl1ExportedFunctionsSourcefile(

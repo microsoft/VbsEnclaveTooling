@@ -18,6 +18,22 @@ namespace VbsEnclaveABI::Shared::Converters
     template <typename T>
     struct StructMetadata;
 
+    struct AbiRegisterVtl0Callbacks_args
+    {
+        std::vector<std::uint64_t> m_callback_addresses;
+        std::vector<std::string> m_callback_names;
+        std::int32_t m__return_value_;
+    };
+
+    template <>
+    struct StructMetadata<AbiRegisterVtl0Callbacks_args>
+    {
+        static constexpr auto members = std::make_tuple(
+            &AbiRegisterVtl0Callbacks_args::m_callback_addresses,
+            &AbiRegisterVtl0Callbacks_args::m_callback_names,
+            &AbiRegisterVtl0Callbacks_args::m__return_value_);
+    };
+
     // Type traits
     template<typename T>
     struct is_unique_ptr : std::false_type {};

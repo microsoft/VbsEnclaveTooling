@@ -117,7 +117,7 @@ namespace VbsEnclaveABI::Enclave::MemoryChecks
     // Returns S_OK if the function pointer is entirely outside the VTL1 address space.
     inline HRESULT CheckForVTL0Function(_In_ void* (*fn)(void*))
     {
-        return CheckForVTL0Buffer(fn, 1);
+        return CheckForVTL0Buffer(fn, sizeof(fn));
     }
 
     namespace details

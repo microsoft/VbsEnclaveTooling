@@ -3,12 +3,14 @@
 // Licensed under the MIT License.
 
 #pragma once 
+#include <VbsEnclaveABI\Shared\ConversionHelpers.h>
 #include <VbsEnclaveABI\Shared\VbsEnclaveAbiBase.h>
 
 // Every function in this file should only be used within the HostApp
 namespace VbsEnclaveABI::HostApp
 {
     using namespace VbsEnclaveABI::Shared;
+    using namespace VbsEnclaveABI::Shared::Converters;
 
     // VTL0 allocation callback
     inline void* AllocateVtl0MemoryCallback(_In_ void* context)
@@ -25,13 +27,13 @@ namespace VbsEnclaveABI::HostApp
 
     // Generated code uses this function to forward input parameters and retrieve
     // return parameters to the developers enclave exported function.
-    template <typename ReturnParamsT>
-    inline HRESULT CallVtl1ExportFromVtl0(
+    template <typename ResultT, typename FlatbufferT>
+    inline ResultT CallVtl1ExportFromVtl0Impl(
+        _In_ const FlatbufferT& flatbuffer_input,
         _In_ void* enclave_instance,
-        _In_ std::string_view function_name,
-        _In_ flatbuffers::FlatBufferBuilder& flatbuffer_in_params_builder,
-        _Inout_ ReturnParamsT& function_result)
+        _In_ std::string_view function_name)
     {
+        auto flatbuffer_in_params_builder = PackFlatbuffer(flatbuffer_input);
         EnclaveFunctionContext function_context {};
         function_context.m_forwarded_parameters.buffer = flatbuffer_in_params_builder.GetBufferPointer();
         function_context.m_forwarded_parameters.buffer_size = flatbuffer_in_params_builder.GetSize();
@@ -40,24 +42,47 @@ namespace VbsEnclaveABI::HostApp
 
         auto module = reinterpret_cast<HMODULE>(enclave_instance);
         auto proc_address = GetProcAddress(module, function_name.data());
-        RETURN_LAST_ERROR_IF_NULL(proc_address);
+        THROW_LAST_ERROR_IF_NULL(proc_address);
 
         auto routine = reinterpret_cast<PENCLAVE_ROUTINE>(proc_address);
         void* result_from_vtl1;
 
-        RETURN_IF_WIN32_BOOL_FALSE((CallEnclave(
+        THROW_IF_WIN32_BOOL_FALSE((CallEnclave(
             routine,
             reinterpret_cast<void*>(&function_context),
             TRUE,
             &result_from_vtl1)));
-        RETURN_IF_FAILED(ABI_PVOID_TO_HRESULT(result_from_vtl1));
+        THROW_IF_FAILED(ABI_PVOID_TO_HRESULT(result_from_vtl1));
 
         auto return_buffer_size = function_context.m_returned_parameters.buffer_size;
         wil::unique_process_heap_ptr<uint8_t> return_buffer {
             reinterpret_cast<uint8_t*>(function_context.m_returned_parameters.buffer)};
-        RETURN_HR_IF(E_INVALIDARG, return_buffer_size > 0 && return_buffer.get() == nullptr);
-        function_result = UnpackFlatbufferWithSize<ReturnParamsT>(return_buffer.get(), return_buffer_size);
-        return S_OK;
+        THROW_HR_IF(E_INVALIDARG, return_buffer_size > 0 && return_buffer.get() == nullptr);
+
+        if constexpr (!std::is_void_v<ResultT>)
+        {
+            return UnpackFlatbufferWithSize<FlatbufferT>(return_buffer.get(), return_buffer_size);
+        }
+    }
+
+    template <Structure ResultT, Structure FlatbufferT>
+    inline ResultT CallVtl1ExportFromVtl0(
+        _In_ const FlatbufferT& flatbuffer_input,
+        _In_ void* enclave_instance,
+        _In_ std::string_view function_name)
+    {
+        auto flatbuffer_result = CallVtl1ExportFromVtl0Impl<FlatbufferT>(flatbuffer_input, enclave_instance, function_name);
+        return Converters::ConvertStruct<ResultT>(flatbuffer_result);
+    }
+
+    template <typename ResultT, Structure InputT>
+    requires std::is_void_v<ResultT>
+    inline void CallVtl1ExportFromVtl0(
+        _In_ const InputT& flatbuffer_input,
+        _In_ void* enclave_instance,
+        _In_ std::string_view function_name)
+    {
+        CallVtl1ExportFromVtl0Impl<void>(flatbuffer_input, enclave_instance, function_name);
     }
 
     // Generated code uses this function to forward input parameters and retrieve
