@@ -11,7 +11,7 @@
 #include <veil\enclave\taskpool.vtl1.h>
 #include <veil\enclave\vtl0_functions.vtl1.h>
 
-#include <VbsEnclave\Enclave\Implementations.h>
+#include <VbsEnclave\Enclave\Trusted.h>
 
 namespace RunTaskpoolExamples
 {
@@ -256,7 +256,7 @@ namespace RunTaskpoolExamples
 //
 // Taskpool
 //
-HRESULT VbsEnclave::VTL1_Declarations::RunTaskpoolExample(_In_ const std::uint32_t threadCount)
+HRESULT VbsEnclave::Trusted::Implementation::RunTaskpoolExample(_In_ const std::uint32_t threadCount)
 {
     using namespace veil::vtl1::vtl0_functions;
 
@@ -286,7 +286,7 @@ HRESULT VbsEnclave::VTL1_Declarations::RunTaskpoolExample(_In_ const std::uint32
 //
 // Secured encryption key
 //
-HRESULT VbsEnclave::VTL1_Declarations::RunEncryptionKeyExample_CreateEncryptionKey(_In_ const std::uint32_t activity_level, _In_ const std::wstring& logFilePath, _Out_  std::vector<std::uint8_t>& securedEncryptionKeyBytes)
+HRESULT VbsEnclave::Trusted::Implementation::RunEncryptionKeyExample_CreateEncryptionKey(_In_ const std::uint32_t activity_level, _In_ const std::wstring& logFilePath, _Out_  std::vector<std::uint8_t>& securedEncryptionKeyBytes)
 {
     using namespace veil::vtl1::vtl0_functions;
     
@@ -449,7 +449,7 @@ HRESULT RunEncryptionKeyExample_LoadEncryptionKeyImpl(
    return true;
 }
 
-HRESULT VbsEnclave::VTL1_Declarations::RunEncryptionKeyExample_LoadEncryptionKey(_In_ const std::vector<std::uint8_t>& securedEncryptionKeyBytes,
+HRESULT VbsEnclave::Trusted::Implementation::RunEncryptionKeyExample_LoadEncryptionKey(_In_ const std::vector<std::uint8_t>& securedEncryptionKeyBytes,
     _In_ const std::wstring& dataToEncrypt,
     _In_ const bool isToBeEncrypted,
     _In_ const std::uint32_t activity_level,
@@ -473,7 +473,7 @@ HRESULT VbsEnclave::VTL1_Declarations::RunEncryptionKeyExample_LoadEncryptionKey
     return S_OK;
 }
 
-HRESULT VbsEnclave::VTL1_Declarations::RunEncryptionKeyExample_LoadEncryptionKeyThreadpool(_In_ const std::vector<std::uint8_t>& securedEncryptionKeyBytes, _In_ const std::wstring& dataToEncrypt1, _In_ const std::wstring& dataToEncrypt2, _In_ const bool isToBeEncrypted, _In_ const std::uint32_t activity_level, _In_ const std::wstring& logFilePath, _Out_  std::vector<std::uint8_t>& resealedEncryptionKeyBytes, _Inout_  std::vector<std::uint8_t>& encryptedInputBytes1, _Inout_  std::vector<std::uint8_t>& encryptedInputBytes2, _Inout_  std::vector<std::uint8_t>& tag1, _Inout_  std::vector<std::uint8_t>& tag2, _Out_  std::wstring& decryptedInputBytes1, _Out_  std::wstring& decryptedInputBytes2)
+HRESULT VbsEnclave::Trusted::Implementation::RunEncryptionKeyExample_LoadEncryptionKeyThreadpool(_In_ const std::vector<std::uint8_t>& securedEncryptionKeyBytes, _In_ const std::wstring& dataToEncrypt1, _In_ const std::wstring& dataToEncrypt2, _In_ const bool isToBeEncrypted, _In_ const std::uint32_t activity_level, _In_ const std::wstring& logFilePath, _Out_  std::vector<std::uint8_t>& resealedEncryptionKeyBytes, _Inout_  std::vector<std::uint8_t>& encryptedInputBytes1, _Inout_  std::vector<std::uint8_t>& encryptedInputBytes2, _Inout_  std::vector<std::uint8_t>& tag1, _Inout_  std::vector<std::uint8_t>& tag2, _Out_  std::wstring& decryptedInputBytes1, _Out_  std::wstring& decryptedInputBytes2)
 {
     using namespace veil::vtl1::vtl0_functions;
     auto threadCount = 2u;

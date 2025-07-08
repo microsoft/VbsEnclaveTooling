@@ -17,7 +17,7 @@
 
 #include "sample_utils.h"
 
-#include <VbsEnclave\HostApp\Stubs.h>
+#include <VbsEnclave\HostApp\Trusted.h>
 
 namespace fs = std::filesystem;
 
@@ -36,11 +36,11 @@ int EncryptFlow(
     //
 
     // Initialize enclave interface
-    auto enclaveInterface = VbsEnclave::VTL0_Stubs::SampleEnclave(enclave);
+    auto enclaveInterface = VbsEnclave::Trusted::Stubs::SampleEnclave(enclave);
     THROW_IF_FAILED(enclaveInterface.RegisterVtl0Callbacks());
 
     // Call into enclave
-    auto securedEncryptionKeyBytes = std::vector<uint8_t>{};
+    auto securedEncryptionKeyBytes = std::vector<uint8_t> {};
     THROW_IF_FAILED(enclaveInterface.RunEncryptionKeyExample_CreateEncryptionKey(
         (const uint32_t)veilLog.GetLogLevel(),
         veilLog.GetLogFilePath(),
@@ -62,12 +62,12 @@ int EncryptFlow(
     // 
     //  Pass the (encrypted) key bytes and the input into enclave to encrypt, store the encrypted bytes to disk
     //
-    
+
     // Call into enclave
-    auto resealedEncryptionKeyBytes = std::vector<uint8_t>{};
-    auto encryptedInputBytes = std::vector<uint8_t>{};
-    auto tag = std::vector<uint8_t>{};
-    auto decryptedData = std::wstring{};
+    auto resealedEncryptionKeyBytes = std::vector<uint8_t> {};
+    auto encryptedInputBytes = std::vector<uint8_t> {};
+    auto tag = std::vector<uint8_t> {};
+    auto decryptedData = std::wstring {};
     THROW_IF_FAILED(enclaveInterface.RunEncryptionKeyExample_LoadEncryptionKey(
         securedEncryptionKeyBytes,
         input,
@@ -109,12 +109,12 @@ int DecryptFlow(
     auto tag = LoadBinaryData(tagFilePath.string());
 
     // Initialize enclave interface
-    auto enclaveInterface = VbsEnclave::VTL0_Stubs::SampleEnclave(enclave);
+    auto enclaveInterface = VbsEnclave::Trusted::Stubs::SampleEnclave(enclave);
     THROW_IF_FAILED(enclaveInterface.RegisterVtl0Callbacks());
 
     // Call into enclave
-    auto resealedEncryptionKeyBytes = std::vector<uint8_t>{};
-    auto decryptedData = std::wstring{};
+    auto resealedEncryptionKeyBytes = std::vector<uint8_t> {};
+    auto decryptedData = std::wstring {};
     THROW_IF_FAILED(enclaveInterface.RunEncryptionKeyExample_LoadEncryptionKey(
         securedEncryptionKeyBytes,
         {},
@@ -154,7 +154,7 @@ int EncryptFlowThreadpool(
     //
 
     // Initialize enclave interface
-    auto enclaveInterface = VbsEnclave::VTL0_Stubs::SampleEnclave(enclave);
+    auto enclaveInterface = VbsEnclave::Trusted::Stubs::SampleEnclave(enclave);
     THROW_IF_FAILED(enclaveInterface.RegisterVtl0Callbacks());
 
     // Call into enclave
@@ -238,7 +238,7 @@ int DecryptFlowThreadpool(
     auto tag2 = LoadBinaryData(tagFilePath.string().append("2"));
 
     // Initialize enclave interface
-    auto enclaveInterface = VbsEnclave::VTL0_Stubs::SampleEnclave(enclave);
+    auto enclaveInterface = VbsEnclave::Trusted::Stubs::SampleEnclave(enclave);
     THROW_IF_FAILED(enclaveInterface.RegisterVtl0Callbacks());
 
     // Call into enclave
@@ -286,10 +286,10 @@ int mainEncryptDecrpyt(uint32_t activityLevel)
     bool programExecuted = false;
 
     veil::vtl0::logger::logger veilLog(
-        L"VeilSampleApp", 
+        L"VeilSampleApp",
         L"70F7212C-1F84-4B86-B550-3D5AE82EC779" /*Generated GUID*/,
         static_cast<veil::any::logger::eventLevel>(activityLevel));
-    
+
     veilLog.AddTimestampedLog(L"[Host] Starting from host", veil::any::logger::eventLevel::EVENT_LEVEL_CRITICAL);
 
     /******************************* Enclave setup *******************************/
@@ -360,7 +360,7 @@ int mainEncryptDecrpyt(uint32_t activityLevel)
     return 0;
 }
 
-int mainThreadPool(uint32_t /*activityLevel*/ )
+int mainThreadPool(uint32_t /*activityLevel*/)
 {
     std::wcout << L"Running sample: Taskpool..." << std::endl;
 
@@ -381,7 +381,7 @@ int mainThreadPool(uint32_t /*activityLevel*/ )
     veil::vtl0::enclave_api::register_callbacks(enclave.get());
 
     // Initialize enclave interface
-    auto enclaveInterface = VbsEnclave::VTL0_Stubs::SampleEnclave(enclave.get());
+    auto enclaveInterface = VbsEnclave::Trusted::Stubs::SampleEnclave(enclave.get());
     THROW_IF_FAILED(enclaveInterface.RegisterVtl0Callbacks());
 
     // Call into enclave to 'RunTaskpoolExample' export

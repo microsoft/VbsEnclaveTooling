@@ -7,9 +7,9 @@
 #include <wil\resource.h>
 #include "TestHelpers.h"
 #include "HostTestHelpers.h"
-#include <VbsEnclave\HostApp\Stubs.h>
+#include <VbsEnclave\HostApp\Untrusted.h>
 
-using namespace VbsEnclave::VTL0_Stubs;
+using namespace VbsEnclave;
 
 // Note about tests, we return Hresults for some of the tests just as an extra test
 // to confirm the abi handles returning them properly. However we throw in those
@@ -17,7 +17,7 @@ using namespace VbsEnclave::VTL0_Stubs;
 
 #pragma region VTL0 (HostApp) Callback implementations
 
-Int8PtrAndSize TestEnclave::ReturnInt8ValPtr_From_HostApp_callback()
+Int8PtrAndSize Untrusted::Implementation::ReturnInt8ValPtr_From_HostApp()
 {
     Int8PtrAndSize ret {};
     ret.int8_val = std::make_unique<std::int8_t>();
@@ -26,17 +26,17 @@ Int8PtrAndSize TestEnclave::ReturnInt8ValPtr_From_HostApp_callback()
     return ret;
 }
 
-std::uint64_t TestEnclave::ReturnUint64Val_From_HostApp_callback()
+std::uint64_t Untrusted::Implementation::ReturnUint64Val_From_HostApp()
 {
     return std::numeric_limits<std::uint64_t>::max();
 }
 
-StructWithNoPointers TestEnclave::ReturnStructWithValues_From_HostApp_callback()
+StructWithNoPointers Untrusted::Implementation::ReturnStructWithValues_From_HostApp()
 {
     return CreateStructWithNoPointers();
 }
 
-HRESULT TestEnclave::TestPassingPrimitivesAsValues_To_HostApp_callback(
+HRESULT Untrusted::Implementation::TestPassingPrimitivesAsValues_To_HostApp(
     _In_ bool bool_val,
     _In_ DecimalEnum enum_val,
     _In_ std::int8_t int8_val)
@@ -49,7 +49,7 @@ HRESULT TestEnclave::TestPassingPrimitivesAsValues_To_HostApp_callback(
     return S_OK;
 }
 
-HRESULT TestEnclave::TestPassingPrimitivesAsInOutValues_To_HostApp_callback(
+HRESULT Untrusted::Implementation::TestPassingPrimitivesAsInOutValues_To_HostApp(
     _Inout_ bool& bool_val,
     _Inout_ HexEnum& enum_val,
     _Inout_ std::int8_t& int8_val)
@@ -66,7 +66,7 @@ HRESULT TestEnclave::TestPassingPrimitivesAsInOutValues_To_HostApp_callback(
     return S_OK;
 }
 
-HRESULT TestEnclave::TestPassingPrimitivesAsOutValues_To_HostApp_callback(
+HRESULT Untrusted::Implementation::TestPassingPrimitivesAsOutValues_To_HostApp(
     _Out_ bool& bool_val,
     _Out_ HexEnum& enum_val,
     _Out_ std::int8_t& int8_val)
@@ -83,7 +83,7 @@ HRESULT TestEnclave::TestPassingPrimitivesAsOutValues_To_HostApp_callback(
     return S_OK;
 }
 
-HRESULT TestEnclave::TestPassingPrimitivesAsInPointers_To_HostApp_callback(
+HRESULT Untrusted::Implementation::TestPassingPrimitivesAsInPointers_To_HostApp(
     _In_ const std::uint8_t* uint8_val,
     _In_ const std::uint16_t* uint16_val,
     _In_ const std::uint32_t* uint32_val,
@@ -101,7 +101,7 @@ HRESULT TestEnclave::TestPassingPrimitivesAsInPointers_To_HostApp_callback(
     return S_OK;
 }
 
-HRESULT TestEnclave::TestPassingPrimitivesAsInOutPointers_To_HostApp_callback(
+HRESULT Untrusted::Implementation::TestPassingPrimitivesAsInOutPointers_To_HostApp(
     _Inout_ std::int8_t* int8_val,
     _Inout_ std::int16_t* int16_val,
     _Inout_ std::int32_t* int32_val)
@@ -123,7 +123,7 @@ HRESULT TestEnclave::TestPassingPrimitivesAsInOutPointers_To_HostApp_callback(
     return S_OK;
 }
 
-HRESULT TestEnclave::TestPassingPrimitivesAsOutPointers_To_HostApp_callback(
+HRESULT Untrusted::Implementation::TestPassingPrimitivesAsOutPointers_To_HostApp(
     _Out_ std::unique_ptr<bool>& bool_val,
     _Out_ std::unique_ptr<DecimalEnum>& enum_val,
     _Out_ std::unique_ptr<std::uint64_t>& uint64_val)
@@ -139,7 +139,7 @@ HRESULT TestEnclave::TestPassingPrimitivesAsOutPointers_To_HostApp_callback(
     return S_OK;
 }
 
-StructWithNoPointers TestEnclave::ComplexPassingOfTypes_To_HostApp_callback(
+StructWithNoPointers Untrusted::Implementation::ComplexPassingOfTypes_To_HostApp(
     _In_ const StructWithNoPointers& arg1,
     _Inout_ StructWithNoPointers& arg2,
     _Out_ std::unique_ptr<StructWithNoPointers>& arg3,
@@ -169,7 +169,7 @@ StructWithNoPointers TestEnclave::ComplexPassingOfTypes_To_HostApp_callback(
     return struct_to_return;
 }
 
-StructWithPointers TestEnclave::ComplexPassingOfTypesThatContainPointers_To_HostApp_callback(
+StructWithPointers Untrusted::Implementation::ComplexPassingOfTypesThatContainPointers_To_HostApp(
     _In_ const StructWithPointers* arg1_null,
     _In_ const StructWithPointers* arg2,
     _Inout_ StructWithPointers* arg3,
@@ -200,17 +200,17 @@ StructWithPointers TestEnclave::ComplexPassingOfTypesThatContainPointers_To_Host
     return struct_to_return;
 }
 
-void TestEnclave::ReturnNoParams_From_HostApp_callback()
+void Untrusted::Implementation::ReturnNoParams_From_HostApp()
 {
     // No body, test just here to make sure we have coverage for void returns
 }
 
-std::vector<TestStruct1> TestEnclave::ReturnObjectInVector_From_HostApp_callback()
+std::vector<TestStruct1> Untrusted::Implementation::ReturnObjectInVector_From_HostApp()
 {
     return {5 , CreateTestStruct1()};
 }
 
-HRESULT TestEnclave::PassingPrimitivesInVector_To_HostApp_callback(
+HRESULT Untrusted::Implementation::PassingPrimitivesInVector_To_HostApp(
     _In_ const std::vector<std::int8_t>& arg1,
     _In_ const std::vector<std::int16_t>& arg2,
     _In_ const std::vector<std::int32_t>& arg3,
@@ -246,7 +246,7 @@ HRESULT TestEnclave::PassingPrimitivesInVector_To_HostApp_callback(
     return S_OK;
 }
 
-TestStruct2 TestEnclave::ComplexPassingOfTypesWithVectors_To_HostApp_callback(
+TestStruct2 Untrusted::Implementation::ComplexPassingOfTypesWithVectors_To_HostApp(
     _In_ const TestStruct1& arg1,
     _Inout_  TestStruct2& arg2,
     _Out_  TestStruct3& arg3,
@@ -267,7 +267,7 @@ TestStruct2 TestEnclave::ComplexPassingOfTypesWithVectors_To_HostApp_callback(
     return CreateTestStruct2();
 }
 
-std::string TestEnclave::PassingStringTypes_To_HostApp_callback(
+std::string Untrusted::Implementation::PassingStringTypes_To_HostApp(
     _In_ const std::string& arg1,
     _Inout_  std::string& arg2,
     _Out_  std::string& arg3,
@@ -289,7 +289,7 @@ std::string TestEnclave::PassingStringTypes_To_HostApp_callback(
     return "return result";
 }
 
-std::wstring TestEnclave::PassingWStringTypes_To_HostApp_callback(
+std::wstring Untrusted::Implementation::PassingWStringTypes_To_HostApp(
     _In_ const std::wstring& arg1,
     _Inout_  std::wstring& arg2,
     _Out_  std::wstring& arg3,
@@ -311,7 +311,7 @@ std::wstring TestEnclave::PassingWStringTypes_To_HostApp_callback(
     return L"return result";
 }
 
-NestedStructWithArray TestEnclave::PassingArrayTypes_To_HostApp_callback(
+NestedStructWithArray Untrusted::Implementation::PassingArrayTypes_To_HostApp(
     _In_ const std::array<TestStruct1, 2>& arg1,
     _Inout_  std::array<std::string, 2>& arg2,
     _Out_  std::array<std::wstring, 2>& arg3,
