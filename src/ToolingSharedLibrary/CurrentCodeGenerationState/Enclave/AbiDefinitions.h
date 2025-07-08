@@ -48,9 +48,9 @@ namespace CodeGenTest
             _In_ FlatbuffersDevTypes::AbiRegisterVtl0Callbacks_argsT in_params,
             _Inout_ flatbuffers::FlatBufferBuilder& flatbuffer_out_params_builder)
         {
-            THROW_IF_FAILED(VbsEnclaveABI::Enclave::VTL0CallBackHelpers::AddVtl0FunctionsToTable(in_params.callback_addresses, in_params.callback_names));
+            THROW_IF_FAILED(VbsEnclaveABI::Enclave::VTL0CallBackHelpers::AddVtl0FunctionsToTable(in_params.m_callback_addresses, in_params.m_callback_names));
 
-            FlatbuffersDevTypes::AbiRegisterVtl0Callbacks_argsT  result{};
+            FlatbuffersDevTypes::AbiRegisterVtl0Callbacks_argsT result{};
             result.m__return_value_ = S_OK;
 
             flatbuffer_out_params_builder = VbsEnclaveABI::Shared::PackFlatbuffer(result);
