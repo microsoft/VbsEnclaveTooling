@@ -16,7 +16,7 @@ namespace VbsEnclaveToolingTests
     TEST_CLASS(CmdlineArgumentsParserTests)
     {
     private:
-        std::string m_exe_name = "vbsenclavetooling.exe";
+        std::string m_exe_name = "edlcodegen.exe";
         std::string m_help_args[2] = { "-h", "--help" };
         std::string m_invalid_arg = "--Invalid";
         std::string m_lang_arg = "--Language";
@@ -24,8 +24,6 @@ namespace VbsEnclaveToolingTests
         std::string m_edl_path_arg = "--EdlPath";
         std::string m_out_dir_arg = "--OutputDirectory";
         std::string m_out_dir_valid_input = ".";
-        std::string m_error_handling_arg = "--ErrorHandling";
-        std::string m_error_handling_valid_input[2] = { "ErrorCode", "Exception" };
     public:
 
         // Test valid parsing for known arguments
@@ -41,8 +39,6 @@ namespace VbsEnclaveToolingTests
                 c_edl_path_valid_input.data(),
                 m_out_dir_arg.data(),
                 m_out_dir_valid_input.data(),
-                m_error_handling_arg.data(),
-                m_error_handling_valid_input[0].data()
             };
 
             int argc = sizeof(argv) / sizeof(argv[0]);
@@ -54,7 +50,6 @@ namespace VbsEnclaveToolingTests
             Assert::IsFalse(parser.ShouldDisplayHelp());
             Assert::AreEqual(std::string_view(c_edl_path_valid_input), parser.EdlFilePath());
             Assert::AreEqual(std::string_view(m_out_dir_valid_input), parser.OutDirectory());
-            Assert::AreEqual(static_cast<uint32_t>(ErrorHandlingKind::ErrorCode), static_cast<uint32_t>(parser.ErrorHandling()));
             Assert::AreEqual(static_cast<uint32_t>(SupportedLanguageKind::Cpp), static_cast<uint32_t>(parser.SupportedLanguage()));
             Assert::IsTrue(parser.ParseSuccessful());
         }
@@ -138,7 +133,6 @@ namespace VbsEnclaveToolingTests
             Assert::IsFalse (parser.ShouldDisplayHelp());
             Assert::IsTrue(parser.EdlFilePath().empty());
             Assert::IsTrue(parser.OutDirectory().empty());
-            Assert::AreEqual(static_cast<uint32_t>(ErrorHandlingKind::Unknown), static_cast<uint32_t>(parser.ErrorHandling()));
             Assert::AreEqual(static_cast<uint32_t>(SupportedLanguageKind::Unknown), static_cast<uint32_t>(parser.SupportedLanguage()));
             Assert::IsFalse (parser.ParseSuccessful());
         }

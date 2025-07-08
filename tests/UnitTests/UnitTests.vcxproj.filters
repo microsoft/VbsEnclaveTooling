@@ -42,6 +42,9 @@
     <ClCompile Include="ToolingExecutableTests\EdlParserStructTypesTests.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="ToolingExecutableTests\EdlParserNamespaceTests.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h">
@@ -61,5 +64,10 @@
     <CopyFileToFolders Include="TestFiles\BasicTypesTest.edl" />
     <CopyFileToFolders Include="TestFiles\EnumTest.edl" />
     <CopyFileToFolders Include="TestFiles\StructTest.edl" />
+    <CopyFileToFolders Include="TestFiles\NamespaceTests\DoubleNamespaceTest.edl" />
+    <CopyFileToFolders Include="TestFiles\NamespaceTests\NestedNamespaceTest.edl" />
+  </ItemGroup>
+  <ItemGroup>
+    <Natvis Include="$(MSBuildThisFileDirectory)..\..\natvis\wil.natvis" />
   </ItemGroup>
 </Project>

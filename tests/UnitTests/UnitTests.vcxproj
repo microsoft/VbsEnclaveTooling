@@ -198,6 +198,7 @@
     <ClCompile Include="ToolingExecutableTests\EdlParserBasicTypesTests.cpp" />
     <ClCompile Include="ToolingExecutableTests\EdlParserArrayTests.cpp" />
     <ClCompile Include="ToolingExecutableTests\EdlParserEnumTypeTests.cpp" />
+    <ClCompile Include="ToolingExecutableTests\EdlParserNamespaceTests.cpp" />
     <ClCompile Include="ToolingExecutableTests\EdlParserStructTypesTests.cpp" />
     <ClCompile Include="ToolingExecutableTests\ErrorHelpersTests.cpp" />
     <ClCompile Include="pch.cpp">
@@ -246,6 +247,20 @@
     <CopyFileToFolders Include="TestFiles\StructTest.edl">
       <FileType>Document</FileType>
       <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</DeploymentContent>
+      <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</DeploymentContent>
+      <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Debug|ARM64'">true</DeploymentContent>
+      <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Release|ARM64'">true</DeploymentContent>
+    </CopyFileToFolders>
+    <CopyFileToFolders Include="TestFiles\NamespaceTests\NestedNamespaceTest.edl">
+      <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Debug|ARM64'">true</DeploymentContent>
+      <FileType>Document</FileType>
+      <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Release|ARM64'">true</DeploymentContent>
+      <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</DeploymentContent>
+      <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</DeploymentContent>
+    </CopyFileToFolders>
+    <CopyFileToFolders Include="TestFiles\NamespaceTests\DoubleNamespaceTest.edl">
+      <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</DeploymentContent>
+      <FileType>Document</FileType>
       <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</DeploymentContent>
       <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Debug|ARM64'">true</DeploymentContent>
       <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Release|ARM64'">true</DeploymentContent>

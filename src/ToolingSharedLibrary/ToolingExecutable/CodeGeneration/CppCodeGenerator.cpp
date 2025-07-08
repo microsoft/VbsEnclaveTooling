@@ -16,19 +16,14 @@ using namespace CodeGeneration::Flatbuffers;
 namespace CodeGeneration
 {
     CppCodeGenerator::CppCodeGenerator(
-        const Edl& edl,
+        Edl& edl,
         const std::filesystem::path& output_path,
-        ErrorHandlingKind error_handling,
         VirtualTrustLayerKind trust_layer,
-        std::string_view generated_namespace_name,
         std::string_view generated_vtl0_class_name,
         std::string_view flatbuffer_compiler_path)
-        :   m_edl(edl),
+        :   m_edl(std::move(edl)),
             m_output_folder_path(output_path),
-            m_error_handling(error_handling),
             m_virtual_trust_layer_kind(trust_layer),
-            m_generated_namespace_name(generated_namespace_name),
-            m_generated_vtl0_class_name(generated_vtl0_class_name),
             m_flatbuffer_compiler_path(flatbuffer_compiler_path)
     {
         if (m_output_folder_path.empty())
@@ -37,14 +32,21 @@ namespace CodeGeneration
             m_output_folder_path = std::filesystem::current_path();
         }
 
-        if (m_generated_namespace_name.empty())
+        if (m_edl.m_namespace)
         {
-            m_generated_namespace_name = edl.m_name;
+            m_generated_namespace_name = m_edl.m_namespace->QualifiedNamespaceName("::");
+            m_generated_flatbuffer_namespace_name = m_edl.m_namespace->QualifiedNamespaceName(".");
         }
 
-        if (m_generated_vtl0_class_name.empty())
+        if (m_generated_namespace_name.empty())
         {
-            m_generated_vtl0_class_name = std::move(std::format(c_vtl0_enclave_class_name, edl.m_name));
+            m_generated_namespace_name = "VbsEnclave";
+            m_generated_flatbuffer_namespace_name = m_generated_namespace_name;
+        }
+
+        if (generated_vtl0_class_name.empty())
+        {
+            m_generated_vtl0_class_name = std::format("enclave_interface_{}", m_edl.m_name);
         }
 
         if (m_flatbuffer_compiler_path.empty())
@@ -75,7 +77,7 @@ namespace CodeGeneration
             abi_function_developer_types);
 
         auto flatbuffer_schema = GenerateFlatbufferSchema(
-            m_generated_namespace_name,
+            m_generated_flatbuffer_namespace_name,
             m_edl.m_developer_types_insertion_order_list,
             abi_function_developer_types);
 
@@ -87,7 +89,7 @@ namespace CodeGeneration
 
         // Process the content from the untrusted functions
         auto enclave_to_host_content = BuildEnclaveToHostFunctions(
-            m_generated_namespace_name, 
+            m_generated_namespace_name,
             m_generated_vtl0_class_name,
             m_edl.m_developer_types,
             m_edl.m_untrusted_functions_list);

@@ -133,11 +133,9 @@ namespace CodeGeneration
     struct CppCodeGenerator
     {
         CppCodeGenerator(
-            const Edl& edl,
+            Edl& edl,
             const std::filesystem::path& output_path,
-            ErrorHandlingKind error_handling,
             VirtualTrustLayerKind trust_layer,
-            std::string_view generated_namespace_name,
             std::string_view generated_vtl0_class_name,
             std::string_view flatbuffer_compiler_path);
 
@@ -170,10 +168,9 @@ namespace CodeGeneration
         void CompileFlatbufferFile(std::filesystem::path save_location);
 
         Edl m_edl {};
-        std::vector<std::string> m_sdk_trusted_function_abi_names {};
-        ErrorHandlingKind m_error_handling {};
-        std::string_view m_generated_namespace_name{};
-        std::string_view m_generated_vtl0_class_name {};
+        std::string m_generated_namespace_name {};
+        std::string m_generated_flatbuffer_namespace_name {};
+        std::string m_generated_vtl0_class_name {};
         VirtualTrustLayerKind m_virtual_trust_layer_kind{};
         std::filesystem::path m_output_folder_path {};
         std::filesystem::path m_flatbuffer_compiler_path {};

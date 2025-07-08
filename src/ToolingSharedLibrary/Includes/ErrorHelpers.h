@@ -82,6 +82,8 @@ namespace ErrorHelpers
         EdlVectorNameIdentifierNotFound,
         EdlVectorDoesNotStartWithArrowBracket,
         EdlTypeInVectorMustBePreviouslyDefined,
+        EdlNamespaceIdentifierNotFound,
+        EdlNamespaceDuplication,
     };
 
     struct ErrorIdHash
@@ -154,6 +156,8 @@ namespace ErrorHelpers
         { ErrorId::EdlVectorNameIdentifierNotFound, "Expected an identifier name for a vector but found '{}'" },
         { ErrorId::EdlTypeInVectorMustBePreviouslyDefined, "Types in vectors must be previously defined. Found '{}'" },
         { ErrorId::EdlVectorDoesNotStartWithArrowBracket, "Vectors must be declared with <T>. where T is a valid type" },
+        { ErrorId::EdlNamespaceIdentifierNotFound, "Expected an identifier name for a namespace but found '{}'" },
+        { ErrorId::EdlNamespaceDuplication, "A namespace has already been defined for the edl file." },
 
         // CodeGen errors
         { ErrorId::CodeGenUnableToOpenOutputFile, "Failed to open '{}' for writing." },

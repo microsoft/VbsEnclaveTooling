@@ -15,36 +15,25 @@ using namespace ErrorHelpers;
 
 namespace CmdlineParsingHelpers
 {   
-    inline constexpr std::string_view g_internal_sdk_edl_name = "veil_abi.edl";
-
     static inline void PrintUsage() {
         std::cout
             << "\n"
-            << "Usage: edlcodegen.exe --Language <cpp> --EdlPath <filePath.edl> --ErrorHandling [ErrorCode | Exception]\n"
+            << "Usage: edlcodegen.exe --Language <cpp> --EdlPath <filePath.edl>\n"
             << "--OutputDirectory <DirectoryPath> --VirtualTrustLayer [HostApp | Enclave] --Vtl0ClassName <name_of_class> \n"
-            << "--Namespace <name_of_class> --FlatbuffersCompilerPath <absolute_path_to_file>\n"
+            << "--FlatbuffersCompilerPath <absolute_path_to_file>\n"
             << "\n"
             << "Mandatory arguments:\n"
-            << "  --Language [cpp]                                     The progamming language that will be used in the generated code\n"
+            << "  --Language [cpp]                                     The programming language that will be used in the generated code\n"
             << "  --EdlPath <filePath.edl>                             Absolute path to the .edl file that we should use to generate code in the language outlined in '--language'\n"
-            << "  --ErrorHandling [ErrorCode | Exception]              The error handling the generated code should use\n"
             << "  --VirtualTrustLayer [HostApp | Enclave]              The virtual trust layer that the code should be generated for.\n"
             << "\n"
             << "Optional arguments:\n"
             << "  -h, --help                                           Print this help message\n"
             << "  --OutputDirectory <DirectoryPath>                    Absolute path to directory where all generated files should be placed. (By default this is the current directory)\n"
-            << "  --Vtl0ClassName <name_of_class>                      name of the vtl0 class that will be generated for use by the hostapp. (By default this is the name of the .edl file with the word 'Wrapper' appended to it).\n"
-            << "  --Namespace <name_of_class>                          name of the namespace that all generated code will be encapsulated in. (By default this is the name of the .edl file).\n"
+            << "  --Vtl0ClassName <name_of_class>                      name of the vtl0 class that will be generated for use by the hostapp. (By default this is 'enclave_interface' with the name of the .edl file appended to it).\n"
             << "  --FlatbuffersCompilerPath <absolute_path_to_file>    Absolute path to the flatbuffer compiler for the language provided in '--Language'. (By default this is the current directory.). The executable must be called flatc.exe and must be an official version of the flatbuffer compiler. \n"
             << std::endl;
     }
-
-    enum class ErrorHandlingKind: std::uint32_t
-    {
-        Unknown,
-        ErrorCode,
-        Exception,
-    };
 
     enum class SupportedLanguageKind : std::uint32_t
     {
@@ -127,34 +116,6 @@ namespace CmdlineParsingHelpers
 
         directory = args[index];
         return ErrorId::Success;
-    }
-
-    static ErrorId inline GetErrorHandlingFromArg(
-        std::uint32_t index,
-        char* args[],
-        std::uint32_t args_size,
-        ErrorHandlingKind& errorKind)
-    {
-        errorKind = ErrorHandlingKind::Unknown;
-        if (index >= args_size)
-        {
-            PRINT_AND_RETURN_ERROR(ErrorId::ErrorHandlingNoMoreArgs);
-        }
-
-        std::string error_handling(args[index]);
-
-        if(error_handling == "ErrorCode")
-        {
-            errorKind = ErrorHandlingKind::ErrorCode;
-            return ErrorId::Success;
-        }
-        else if (error_handling == "Exception")
-        {
-            errorKind = ErrorHandlingKind::Exception;
-            return ErrorId::Success;
-        }
-        
-        PRINT_AND_RETURN_ERROR(ErrorId::ErrorHandlingInvalidType, error_handling);
     }
 
     static inline ErrorId GetVirtualTrustLayerFromArg(

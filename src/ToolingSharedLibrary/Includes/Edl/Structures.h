@@ -9,6 +9,7 @@
 #pragma once
 #include <pch.h>
 #include <unordered_set>
+#include <deque>
 
 namespace EdlProcessor
 {
@@ -442,6 +443,37 @@ namespace EdlProcessor
         bool m_is_default_value {};
     };
 
+    // There can only be one definition of a namespace per edl file. The namespace
+    // configuration is linear and in the form of "namespace MyName1.MyName2.MyName3".
+    // This is similar to how Googles Flatbuffers and protobufs handle namespaces.
+    // MyName3 is a child namespace of MyName2 and MyName2 is a child namespace of MyName1.
+    // The all the types and function declarations inside the edl file will be under the 
+    // MyName1::MyName2::MyName3 namespace in this case.
+    struct Namespace
+    {
+        Namespace() = default;
+        Namespace(std::string name) : m_name(name) {}
+
+        std::string QualifiedNamespaceName(std::string_view delimiter)
+        {
+            std::ostringstream name{};
+            Namespace* child = m_child.get();
+            name << m_name;
+
+            while(child)
+            {
+                name << delimiter << child->m_name;
+                child = child->m_child.get();
+            }
+            
+            return name.str();
+        }
+
+        Namespace* m_parent {};
+        std::unique_ptr<Namespace> m_child{};
+        std::string m_name {};
+    };
+
     // DeveloperTypes can be one of two things
     // 1. A Struct the developer created themselves
     // 2. Or An Enum
@@ -513,5 +545,6 @@ namespace EdlProcessor
         std::vector<Function> m_trusted_functions_list {};
         std::unordered_map<std::string, Function> m_untrusted_functions_map{};
         std::vector<Function> m_untrusted_functions_list {};
+        std::unique_ptr<Namespace> m_namespace {};
     };
 }

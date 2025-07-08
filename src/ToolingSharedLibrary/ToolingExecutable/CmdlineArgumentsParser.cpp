@@ -54,19 +54,9 @@ bool CmdlineArgumentsParser::ParseArguments(int argc, char* argv[])
             CHECK_SUCCESS(GetPathToOutputDirectoryFromArgs(++i, argv, argc, m_out_directory));
             args_found++;
         }
-        else if (arg == "--ErrorHandling")
-        {
-            CHECK_SUCCESS(GetErrorHandlingFromArg(++i, argv, argc, m_error_handling_kind));
-            args_found++;
-        }
         else if (arg == "--VirtualTrustLayer")
         {
             CHECK_SUCCESS(GetVirtualTrustLayerFromArg(++i, argv, argc, m_virtual_trust_layer_kind));
-            args_found++;
-        }
-        else if (arg == "--Namespace")
-        {
-            m_generated_namespace_name = argv[++i];
             args_found++;
         }
         else if (arg == "--Vtl0ClassName")

@@ -25,6 +25,7 @@ TEST_CLASS(LexicalAnalyzerTests)
         std::filesystem::path m_basic_edl_file_name = "BasicTypesTest.edl";
         std::filesystem::path m_enum_edl_file_name = "EnumTest.edl";
         std::filesystem::path m_struct_edl_file_name = "StructTest.edl";
+        std::filesystem::path m_nested_namespace_file_name = "NestedNamespaceTest.edl";
         std::unordered_set<char> m_valid_char_tokens =
         {
             RIGHT_CURLY_BRACKET,
@@ -40,6 +41,7 @@ TEST_CLASS(LexicalAnalyzerTests)
             ASTERISK,
             DOUBLE_QUOTE,
             END_OF_FILE_CHARACTER,
+            PERIOD,
         };
 
         bool IsValidToken(const Token& token)
@@ -124,6 +126,11 @@ TEST_CLASS(LexicalAnalyzerTests)
     TEST_METHOD(TestTokenizingEdlFileThatContainsStructTypes)
     {
         TokenizeFile(m_struct_edl_file_name);
-    }    
+    }
+    
+    TEST_METHOD(TestTokenizingEdlFileThatNamespace)
+    {
+        TokenizeFile(m_nested_namespace_file_name);
+    }
 };
 }

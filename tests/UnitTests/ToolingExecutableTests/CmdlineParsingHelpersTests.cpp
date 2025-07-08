@@ -125,45 +125,6 @@ TEST_CLASS(CmdlineParsingHelpersTests)
             Assert::AreEqual(std::string("."), directory);
         }
 
-        TEST_METHOD(TestGetErrorHandlingFromArg_Valid_ErrorCodeType)
-        {
-            char* args[2] = {first_argument.data(), m_valid_Error_types[0].data()};
-            ErrorHandlingKind errorKind;
-
-            // Call function
-            ErrorId result = GetErrorHandlingFromArg(m_starting_index, args, m_args_size, errorKind);
-
-            // Check that the error kind was correctly set
-            Assert::AreEqual(static_cast<uint32_t>(ErrorId::Success), static_cast<uint32_t>(result));
-            Assert::AreEqual(static_cast<uint32_t>(ErrorHandlingKind::ErrorCode), static_cast<uint32_t>(errorKind));
-        }
-
-        TEST_METHOD(TestGetErrorHandlingFromArg_Valid_ExceptionType)
-        {
-            char* args[2] = {first_argument.data(), m_valid_Error_types[1].data()};
-            ErrorHandlingKind errorKind;
-
-            // Call function
-            ErrorId result = GetErrorHandlingFromArg(m_starting_index, args, m_args_size, errorKind);
-
-            // Check that the error kind was correctly set
-            Assert::AreEqual(static_cast<uint32_t>(ErrorId::Success), static_cast<uint32_t>(result));
-            Assert::AreEqual(static_cast<uint32_t>(ErrorHandlingKind::Exception), static_cast<uint32_t>(errorKind));
-        }
-
-        TEST_METHOD(TestGetErrorHandlingFromArg_InvalidType)
-        {
-            char* args[2] = {first_argument.data(), m_invalid_Error_type.data()};
-            ErrorHandlingKind errorKind;
-
-            // Call function
-            ErrorId result = GetErrorHandlingFromArg(m_starting_index, args, m_args_size, errorKind);
-
-            // Check that the error kind was not changed
-            Assert::AreEqual(static_cast<uint32_t>(ErrorId::ErrorHandlingInvalidType), static_cast<uint32_t>(result));
-            Assert::AreEqual(static_cast<uint32_t>(ErrorHandlingKind::Unknown), static_cast<uint32_t>(errorKind));
-        }
-
         TEST_METHOD(TestGetSupportedLanguageForCodeGen_OutOfBounds)
         {
             char* args[2] = {first_argument.data(),m_validLang.data()};
@@ -188,19 +149,6 @@ TEST_CLASS(CmdlineParsingHelpersTests)
             // Check that no more args result was returned and out param still the same
             Assert::AreEqual(static_cast<uint32_t>(ErrorId::EdlNoMoreArgs), static_cast<uint32_t>(result));
             Assert::AreEqual(std::string(""), edl_path);
-        }
-
-        TEST_METHOD(TestGetErrorHandlingFromArg_OutOfBounds)
-        {
-            char* args[2] = {first_argument.data(), m_valid_Error_types[0].data()};
-            ErrorHandlingKind errorKind;
-
-            // Call function
-            ErrorId result = GetErrorHandlingFromArg(m_invalid_starting_index, args, m_args_size, errorKind);
-
-            // Check that no more args result was returned and out param still the same
-            Assert::AreEqual(static_cast<uint32_t>(ErrorId::ErrorHandlingNoMoreArgs), static_cast<uint32_t>(result));
-            Assert::AreEqual(static_cast<uint32_t>(ErrorHandlingKind::Unknown), static_cast<uint32_t>(errorKind));
         }
 
         TEST_METHOD(TestGetPathToOutputDirectoryFromArgs_OutOfBounds)

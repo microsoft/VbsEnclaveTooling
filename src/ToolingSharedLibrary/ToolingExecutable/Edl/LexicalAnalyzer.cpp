@@ -205,6 +205,7 @@ namespace EdlProcessor
             case COMMA:
             case SEMI_COLON:
             case EQUAL_SIGN:
+            case PERIOD:
             {
                 // Tokenize special structural characters 
                 auto token = Token(

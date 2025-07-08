@@ -9,6 +9,7 @@
 #include <pch.h>
 #include <Edl\Parser.h>
 #include <Exceptions.h>
+#include <ranges>
 
 using namespace ToolingExceptions;
 
@@ -91,7 +92,7 @@ namespace EdlProcessor
 
     inline void EdlParser::ThrowIfTypeNameIdentifierIsReserved(const std::string& name)
     {
-        if (c_string_to_edltype_map.contains(name))
+        if (c_string_to_edltype_map.contains(name) || c_non_type_reserved_words.contains(name))
         {
             throw EdlAnalysisException(
                 ErrorId::EdlTypeNameIdentifierIsReserved,
@@ -143,6 +144,8 @@ namespace EdlProcessor
 
     Edl EdlParser::ParseBody()
     {
+        std::unique_ptr<Namespace> inner_most_namespace {};
+
         while (PeekAtCurrentToken() != RIGHT_CURLY_BRACKET && PeekAtCurrentToken() != END_OF_FILE_CHARACTER)
         {
             
@@ -163,6 +166,10 @@ namespace EdlProcessor
             else if (token == EDL_STRUCT_KEYWORD)
             {
                 ParseStruct();
+            }
+            else if (token == EDL_NAMESPACE_KEYWORD)
+            {
+                inner_most_namespace = ParseNamespace();
             }
             else
             {
@@ -186,7 +193,8 @@ namespace EdlProcessor
             m_trusted_functions_map,
             m_trusted_functions_list,
             m_untrusted_functions_map,
-            m_untrusted_functions_list};
+            m_untrusted_functions_list,
+            std::move(inner_most_namespace)};
     }
 
     void EdlParser::UpdateDeveloperTypeMetadata()
@@ -425,6 +433,59 @@ namespace EdlProcessor
         ThrowIfExpectedTokenNotNext(SEMI_COLON);   
         
         AddDeveloperType(new_struct_type);
+    }
+
+    std::string EdlParser::GetNamespaceFromCurrentToken()
+    {
+        if (m_namespace_parsed)
+        {
+            throw EdlAnalysisException(
+                ErrorId::EdlNamespaceDuplication,
+                m_file_name,
+                m_cur_line,
+                m_cur_column);
+        }
+
+        Token namespace_identifier = GetCurrentTokenAndMoveToNextToken();
+        ThrowIfTokenNotIdentifier(namespace_identifier, ErrorId::EdlNamespaceIdentifierNotFound);
+        auto namespace_str = namespace_identifier.ToString();
+        ThrowIfTypeNameIdentifierIsReserved(namespace_str);
+
+        return namespace_str;
+    }
+
+    std::unique_ptr<Namespace> EdlParser::ParseNamespace()
+    {
+        std::vector<std::string> names { GetNamespaceFromCurrentToken() };
+
+        while (PeekAtCurrentToken() == PERIOD)
+        {
+            GetCurrentTokenAndMoveToNextToken();
+            names.push_back(GetNamespaceFromCurrentToken());
+        }
+
+        std::unique_ptr<Namespace> namespace_to_add{};
+        Namespace* prev_namespace {};
+
+        for (auto& namespace_name : names)
+        {
+            if (prev_namespace)
+            {
+                prev_namespace->m_child = std::make_unique<Namespace>(namespace_name);
+                prev_namespace->m_child->m_parent = prev_namespace;
+                prev_namespace = prev_namespace->m_child.get();
+            }
+            else
+            {
+                namespace_to_add = std::make_unique<Namespace>(namespace_name);
+                prev_namespace = namespace_to_add.get();
+            }
+        }
+
+        ThrowIfExpectedTokenNotNext(SEMI_COLON);
+
+        m_namespace_parsed = true;
+        return namespace_to_add;
     }
 
     void EdlParser::ParseFunctions(const FunctionKind& function_kind)

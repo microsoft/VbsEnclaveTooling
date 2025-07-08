@@ -4,6 +4,8 @@
 
 enclave
 {
+    namespace VbsEnclave;
+
     // Anonymous enum
     enum
     {

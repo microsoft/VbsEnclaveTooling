@@ -34,6 +34,8 @@ namespace EdlProcessor
     private:
         void ParseEnum();
         void ParseStruct();
+        std::unique_ptr<Namespace> ParseNamespace();
+        std::string GetNamespaceFromCurrentToken();
         void ParseFunctions(const FunctionKind& function_kind);
         void ValidatePointers(const Declaration& declaration);
         void PerformFinalValidations();
@@ -96,5 +98,6 @@ namespace EdlProcessor
         std::vector<Function> m_trusted_functions_list {};
         std::unordered_map<std::string, Function> m_untrusted_functions_map;
         std::vector<Function> m_untrusted_functions_list {};
+        bool m_namespace_parsed {};
     };
 }
