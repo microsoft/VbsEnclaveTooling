@@ -1,0 +1,46 @@
+enclave
+{
+    struct TestStruct1
+    {
+        int64_t int64_val;
+        uint64_t uint64_val;
+        int64_t array1[5];
+    };
+
+    struct TestStruct2
+    {
+        int32_t* int32_ptr;
+        TestStruct1 struct_no_ptr;
+        TestStruct1* struct_ptr;
+    };
+
+	trusted
+	{
+	    HRESULT FuncWithAllArgs(
+            bool arg1,
+            [in] uint32_t* arg2,
+            [in, out] int32_t* arg3,
+            [out] uint64_t* arg4,
+            [in, out] TestStruct1 arg5,
+            [out] TestStruct2* arg6,
+            [in, out] vector<TestStruct2> arg7,
+            [out] vector<int16_t> arg8,
+            [out] wstring arg9[2]
+        );
+	};
+
+	untrusted
+	{
+        HRESULT FuncWithAllArgs(
+            bool arg1,
+            [in] uint32_t* arg2,
+            [in, out] int32_t* arg3,
+            [out] uint64_t* arg4,
+            [in, out] TestStruct1 arg5,
+            [out] TestStruct2* arg6,
+            [in, out] vector<TestStruct2> arg7,
+            [out] vector<int16_t> arg8,
+            [out] wstring arg9[2]
+        );
+	};
+};
