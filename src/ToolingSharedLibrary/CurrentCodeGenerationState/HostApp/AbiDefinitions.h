@@ -10,22 +10,13 @@ namespace CodeGenTest
     {
         using namespace CodeGenTest::DeveloperTypes;
         
-        static inline void FuncWithAllArgs_1_Abi_Impl(_In_ FlatbuffersDevTypes::FuncWithAllArgs_1_argsT& in_flatbuffer_params, _In_ flatbuffers::FlatBufferBuilder& flatbuffer_out_params_builder)
-        {
-            auto dev_type_params = VbsEnclaveABI::Shared::Converters::ConvertStruct<FuncWithAllArgs_1_args>(in_flatbuffer_params);
-            dev_type_params.m__return_value_ = Untrusted::Implementation::FuncWithAllArgs( dev_type_params.m_arg1, dev_type_params.m_arg2.get(), dev_type_params.m_arg3.get(), dev_type_params.m_arg4, dev_type_params.m_arg5, dev_type_params.m_arg6, dev_type_params.m_arg7, dev_type_params.m_arg8, dev_type_params.m_arg9);
-
-            auto flatbuffer_out_param = VbsEnclaveABI::Shared::Converters::ConvertStruct<decltype(in_flatbuffer_params)>(dev_type_params);
-            flatbuffer_out_params_builder = VbsEnclaveABI::Shared::PackFlatbuffer(flatbuffer_out_param);
-        }
-
         static inline void* FuncWithAllArgs_1_Generated_Stub(void* function_context)
         try
         {
-            using ParamsT = FlatbuffersDevTypes::FuncWithAllArgs_1_argsT;
-            using ReturnParamsT = FlatbuffersDevTypes::FuncWithAllArgs_1_argsT;
+            using DevTypeT = FuncWithAllArgs_1_args;
+            using FlatBufferT = FlatbuffersDevTypes::FuncWithAllArgs_1_argsT;
             
-            HRESULT hr = VbsEnclaveABI::HostApp::CallVtl0CallbackImplFromVtl0<ParamsT, ReturnParamsT, decltype(FuncWithAllArgs_1_Abi_Impl)>(function_context, FuncWithAllArgs_1_Abi_Impl);
+            HRESULT hr = VbsEnclaveABI::HostApp::CallVtl0CallbackImplFromVtl0<DevTypeT, FlatBufferT>(Untrusted::Implementation::FuncWithAllArgs, function_context);
             LOG_IF_FAILED(hr);
             return ABI_HRESULT_TO_PVOID(hr);
         }
