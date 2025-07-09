@@ -31,8 +31,8 @@ table WString {
 static inline constexpr std::string_view c_flatbuffer_register_callback_tables =
 R"(
 table AbiRegisterVtl0Callbacks_args {
-  callback_addresses:[uint64];
-  callback_names:[string];
+  m_callback_addresses:[uint64];
+  m_callback_names:[string];
   m__return_value_:int32;
 }
 )";

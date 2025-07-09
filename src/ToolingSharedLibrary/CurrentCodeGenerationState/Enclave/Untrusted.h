@@ -20,14 +20,7 @@ namespace CodeGenTest
             in_flatbufferT.m_arg5 = VbsEnclaveABI::Shared::Converters::ConvertType<decltype(in_flatbufferT.m_arg5)>(arg5);
             in_flatbufferT.m_arg7 = VbsEnclaveABI::Shared::Converters::ConvertType<decltype(in_flatbufferT.m_arg7)>(arg7);
             in_flatbufferT.m_arg9 = VbsEnclaveABI::Shared::Converters::ConvertType<decltype(in_flatbufferT.m_arg9)>(arg9);
-
-            using ParamsT = decltype(in_flatbufferT);
-            auto flatbuffer_builder = VbsEnclaveABI::Shared::PackFlatbuffer(in_flatbufferT);
-            using ReturnParamsT = FlatbuffersDevTypes::FuncWithAllArgs_1_argsT;
-            auto function_result = ReturnParamsT();
-            THROW_IF_FAILED((VbsEnclaveABI::Enclave::CallVtl0CallbackFromVtl1<ParamsT, ReturnParamsT>("CodeGenTest::AbiDefinitions::FuncWithAllArgs_1_Generated_Stub", flatbuffer_builder, function_result)));
-            
-            auto return_params = VbsEnclaveABI::Shared::Converters::ConvertStruct<FuncWithAllArgs_1_args>(function_result);
+            auto return_params = VbsEnclaveABI::Enclave::CallVtl0CallbackFromVtl1<FuncWithAllArgs_1_args>(in_flatbufferT, "CodeGenTest::AbiDefinitions::FuncWithAllArgs_1_Generated_Stub");
             VbsEnclaveABI::Shared::Converters::UpdateParameterValue(return_params.m_arg3, arg3);
             VbsEnclaveABI::Shared::Converters::UpdateParameterValue(return_params.m_arg4, arg4);
             VbsEnclaveABI::Shared::Converters::UpdateParameterValue(return_params.m_arg5, arg5);
@@ -36,7 +29,6 @@ namespace CodeGenTest
             VbsEnclaveABI::Shared::Converters::UpdateParameterValue(return_params.m_arg8, arg8);
             VbsEnclaveABI::Shared::Converters::UpdateParameterValue(return_params.m_arg9, arg9);
             return std::move(return_params.m__return_value_);
-
         }
 
     };

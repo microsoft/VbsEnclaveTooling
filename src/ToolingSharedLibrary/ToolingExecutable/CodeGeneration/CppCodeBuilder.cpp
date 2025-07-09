@@ -56,6 +56,11 @@ namespace CodeGeneration
             struct_metadata << BuildStructMetaData(developer_namespace_name, type.m_name, type.m_fields);
         }
 
+        struct_metadata << std::format(
+            c_abi_flatbuffer_register_callbacks_metadata,
+            developer_namespace_name,
+            developer_namespace_name);
+
         return std::format(
             c_developer_types_file,
             c_autogen_header_string,
@@ -282,9 +287,7 @@ namespace CodeGeneration
             inner_body);
     }
     
-    CppCodeBuilder::FunctionParametersInfo CppCodeBuilder::GetInformationAboutParameters(
-        const Function& function,
-        const std::unordered_map<std::string, DeveloperType>& developer_types)
+    CppCodeBuilder::FunctionParametersInfo CppCodeBuilder::GetInformationAboutParameters(const Function& function)
     {
         FunctionParametersInfo param_info {};
         size_t in_out_index = 0U;
@@ -335,14 +338,14 @@ namespace CodeGeneration
         return param_info;
     }
 
-    std::string CppCodeBuilder::BuildInitialCallerFunction(
+    std::string CppCodeBuilder::BuildStubFunction(
         const Function& function,
-        std::string_view abi_function_to_call,
-        bool should_be_inline,
-        const std::unordered_map<std::string, DeveloperType>& developer_types,
+        DataDirectionKind direction,
+        std::string_view cross_boundary_func_name,
         const FunctionParametersInfo& param_info)
     {
-        std::string inline_part = should_be_inline ? "inline " : "";
+        bool forwarding_from_vtl0_to_vtl1 = direction == DataDirectionKind::Vtl0ToVtl1;
+        std::string inline_part = forwarding_from_vtl0_to_vtl1 ? "" : "inline ";
 
         auto function_declaration = std::format(
             "{}{} {}{}",
@@ -352,21 +355,9 @@ namespace CodeGeneration
             BuildFunctionParameters(function, param_info));
 
         std::string function_params_struct_type = std::format(c_function_args_struct, function.abi_m_name);
-
-        // First create the using statements so we can use the type for forwarding parameters
-        // and the type for returning parameters throughout the generated code.
-        std::string return_parameters_using_statement = std::format(
-            c_parameter_return_struct_using_statement,
-            function_params_struct_type);
-
-        std::string parameters_using_statement = std::format(
-            c_pack_params_to_flatbuffer_call,
-            function_params_struct_type,
-            param_info.m_param_to_convert_names.str());
-
-        std::ostringstream copy_and_using_statements;
-
-        copy_and_using_statements << parameters_using_statement << return_parameters_using_statement;
+        std::ostringstream function_body {};
+        function_body << std::format(c_pack_params_to_flatbuffer_call, function_params_struct_type);
+        function_body << param_info.m_param_to_convert_names.str();
 
         std::string return_statement {};
 
@@ -379,17 +370,13 @@ namespace CodeGeneration
 
         if (param_info.m_are_return_params_needed)
         {
-            // Copy all in-out/out values out of the return struct and into the actual reference parameter.
+            // Move all values out of the return struct and into their in-out/out function parameter counterpart.
             std::ostringstream copy_statements_for_return_struct;
-            copy_statements_for_return_struct <<
-                param_info.m_copy_values_from_out_struct_to_original_args.str();
+            copy_statements_for_return_struct 
+                << param_info.m_copy_values_from_out_struct_to_original_args.str()
+                << return_statement;
 
-            copy_statements_for_return_struct << return_statement;
-
-            final_part_of_function = std::format(
-               c_setup_return_params_back_to_developer,
-               function_params_struct_type,
-               copy_statements_for_return_struct.str());
+            final_part_of_function = copy_statements_for_return_struct.str();
         }
         else
         {
@@ -397,12 +384,41 @@ namespace CodeGeneration
             final_part_of_function = return_statement;
         }
 
+        if (param_info.m_function_return_type_void)
+        {
+            if (forwarding_from_vtl0_to_vtl1)
+            {
+                function_body << std::format(c_vtl0_call_to_vtl1_export, cross_boundary_func_name);
+            }
+            else
+            {
+                function_body << std::format(c_vtl1_call_to_vtl0_callback, cross_boundary_func_name);
+            }
+        }
+        else
+        {
+            if (forwarding_from_vtl0_to_vtl1)
+            {
+                function_body << std::format(
+                    c_vtl0_call_to_vtl1_export_with_return,
+                    function_params_struct_type,
+                    cross_boundary_func_name);
+            }
+            else
+            {
+                function_body << std::format(
+                    c_vtl1_call_to_vtl0_callback_with_return,
+                    function_params_struct_type,
+                    cross_boundary_func_name);
+            }
+        }
+       
+        function_body << final_part_of_function;
+
         return std::format(
-            c_initial_caller_function_body,
+            c_stub_function_body,
             function_declaration,
-            copy_and_using_statements.str(),
-            abi_function_to_call,
-            final_part_of_function);
+            function_body.str());
     }
 
     std::string CppCodeBuilder::BuildAbiImplFunction(
@@ -466,7 +482,6 @@ namespace CodeGeneration
 
     CppCodeBuilder::HostToEnclaveContent CppCodeBuilder::BuildHostToEnclaveFunctions(
         std::string_view generated_namespace,
-        const std::unordered_map<std::string, DeveloperType>& developer_types,
         std::span<Function> functions)
     {
         std::ostringstream vtl1_abi_boundary_functions {};
@@ -476,19 +491,15 @@ namespace CodeGeneration
 
         for (auto& function : functions)
         {
-            auto param_info = GetInformationAboutParameters(function, developer_types);
+            auto param_info = GetInformationAboutParameters(function);
             auto vtl1_exported_func_name = std::format(c_generated_stub_name, function.abi_m_name);
-            auto vtl0_call_to_vtl1_export = std::format(
-                c_vtl0_call_to_vtl1_export,
-                vtl1_exported_func_name);
 
-            // This is the vtl0 abi function that the developer will call into to start the flow
+            // This is the vtl0 stub function the developer will call into to start the flow
             // of calling their vtl1 enclave function impl.
-            vtl0_stubs_for_vtl1_trusted_functions << BuildInitialCallerFunction(
+            vtl0_stubs_for_vtl1_trusted_functions << BuildStubFunction(
                 function,
-                vtl0_call_to_vtl1_export,
-                false,
-                developer_types,
+                DataDirectionKind::Vtl0ToVtl1,
+                vtl1_exported_func_name,
                 param_info);
 
             auto vtl1_call_to_vtl1_export = std::format(
@@ -542,7 +553,6 @@ namespace CodeGeneration
     CppCodeBuilder::EnclaveToHostContent CppCodeBuilder::BuildEnclaveToHostFunctions(
         std::string_view generated_namespace,
         std::string_view generated_class_name,
-        const std::unordered_map<std::string, DeveloperType>& developer_types,
         std::span<Function> functions)
     {
         size_t number_of_functions = functions.size();
@@ -563,32 +573,22 @@ namespace CodeGeneration
         vtl0_class_method_names << c_allocate_memory_callback_to_name.data();
         vtl0_class_method_names << c_deallocate_memory_callback_to_name.data();
 
-        // Start index at 3 (1 indexed) since we already added both our abi allocate and
-        // deallocate memory callbacks. A function index will be used as a key and the
-        // function address as the value in a map stored in vtl1. 
-        auto vtl1_map_function_index = c_number_of_abi_callbacks + 1;
-        auto current_iteration = 0U;
         for (auto& function : functions)
         {
-            auto param_info = GetInformationAboutParameters(function, developer_types);
+            auto param_info = GetInformationAboutParameters(function);
 
             auto generated_callback_in_namespace = std::format(
                c_generated_callback_in_namespace,
                generated_namespace,
                function.abi_m_name);
 
-            auto vtl1_call_to_vtl0_callback = std::format(
-                c_vtl1_call_to_vtl0_callback,
-                generated_callback_in_namespace);
-
-            // This is the vtl1 static function that the developer will call into from vtl1 with the
-            // same parameters as their vtl0 callabck function. This initiates the abi call from vtl1 
+            // This is the vtl1 untrusted stub function that the developer will call into from vtl1 with the
+            // same parameters as their vtl0 untrusted impl function. This initiates the abi call from vtl1 
             // to the vtl0 abi boundary function for this specific function.
-            vtl1_stubs_for_vtl0_untrusted_functions << BuildInitialCallerFunction(
+            vtl1_stubs_for_vtl0_untrusted_functions << BuildStubFunction(
                 function,
-                vtl1_call_to_vtl0_callback,
-                true,
-                developer_types,
+                DataDirectionKind::Vtl1ToVtl0,
+                generated_callback_in_namespace,
                 param_info);
 
             auto vtl0_call_to_vtl0_callback = std::format(
@@ -629,9 +629,6 @@ namespace CodeGeneration
             vtl0_class_method_names << std::format(
                 c_callback_to_name,
                 generated_callback_in_namespace);
-
-            current_iteration++;
-            parameter_separator = (current_iteration + 1U == number_of_functions) ? "" : ",";
         }
 
         EnclaveToHostContent content {};

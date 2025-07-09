@@ -9,10 +9,10 @@
 #if !defined(__VBS_ENCLAVE_CODEGEN_VERSION__)
 #error "VBS enclave code generator consumed without without version specified"
 #endif
-
-#include <VbsEnclaveABI\Shared\VbsEnclaveAbiBase.h>
-#include <VbsEnclaveABI\Enclave\Vtl0Pointers.h>
 #include <VbsEnclaveABI\Enclave\MemoryAllocation.h>
+#include <VbsEnclaveABI\Enclave\Vtl0Pointers.h>
+#include <VbsEnclaveABI\Shared\ConversionHelpers.h>
+#include <VbsEnclaveABI\Shared\VbsEnclaveAbiBase.h>
 
 // Version to ensure all translation units are consuming a consistent version of the codegen
 #pragma detect_mismatch("__VBS_ENCLAVE_CODEGEN_VERSION__", __VBS_ENCLAVE_CODEGEN_VERSION__)
@@ -34,6 +34,7 @@ namespace VbsEnclaveABI::Enclave
     using namespace VbsEnclaveABI::Enclave::EnclaveMemoryAllocation;
     using namespace VbsEnclaveABI::Enclave::Pointers;
     using namespace VbsEnclaveABI::Shared;
+    using namespace VbsEnclaveABI::Shared::Converters;
 
     void static inline
         EnableEnclaveRestrictContainingProcessAccessOnce()
@@ -63,17 +64,14 @@ namespace VbsEnclaveABI::Enclave
         auto function_context = reinterpret_cast<EnclaveFunctionContext*>(context);
         RETURN_HR_IF_NULL(E_INVALIDARG, function_context);
         auto vtl0_context_ptr = vtl0_ptr<EnclaveFunctionContext>(function_context);
-        wil::unique_process_heap_ptr<EnclaveFunctionContext> copied_vtl0_context {
-            static_cast<EnclaveFunctionContext*>(AllocateMemory(sizeof(EnclaveFunctionContext)))};
-        RETURN_IF_NULL_ALLOC(copied_vtl0_context.get());
-
+        EnclaveFunctionContext copied_vtl0_context {};
         RETURN_IF_FAILED(EnclaveCopyIntoEnclave(
-            copied_vtl0_context.get(),
+            &copied_vtl0_context,
             vtl0_context_ptr.get(),
             sizeof(EnclaveFunctionContext)));
         
-        size_t forward_params_size = copied_vtl0_context->m_forwarded_parameters.buffer_size;
-        auto forward_params_buffer = copied_vtl0_context->m_forwarded_parameters.buffer;
+        size_t forward_params_size = copied_vtl0_context.m_forwarded_parameters.buffer_size;
+        auto forward_params_buffer = copied_vtl0_context.m_forwarded_parameters.buffer;
         RETURN_HR_IF(E_INVALIDARG, forward_params_size > 0 && forward_params_buffer == nullptr);
 
         wil::unique_process_heap_ptr<std::uint8_t> input_buffer {
@@ -119,19 +117,17 @@ namespace VbsEnclaveABI::Enclave
 
     // Abi functions in VTL1 call this function as an entry point to calling
     // its associated VTL0 callback.
-    template <typename ParamsT, typename ReturnParamsT>
-    inline HRESULT CallVtl0CallbackFromVtl1(
-        _In_ std::string_view function_name,
-        _In_ flatbuffers::FlatBufferBuilder& flatbuffer_in_params_builder,
-        _Inout_ ReturnParamsT& callback_result)
+    template <typename ResultT, Structure FlatbufferT>
+    inline ResultT CallVtl0CallbackFromVtl1Impl(_In_ FlatbufferT flatbuffer_input, _In_ std::string_view function_name)
     {
         LPENCLAVE_ROUTINE vtl0_callback = TryGetFunctionFromVtl0FunctionTable(function_name);
-        RETURN_HR_IF_NULL(E_INVALIDARG, vtl0_callback);
+        THROW_HR_IF_NULL(E_INVALIDARG, vtl0_callback);
 
+        auto flatbuffer_in_params_builder = PackFlatbuffer(flatbuffer_input);
         vtl0_memory_ptr<std::uint8_t> vtl0_in_params;
-        RETURN_IF_FAILED(AllocateVtl0Memory(&vtl0_in_params, flatbuffer_in_params_builder.GetSize()));
-        RETURN_IF_NULL_ALLOC(vtl0_in_params.get());
-        RETURN_IF_FAILED(EnclaveCopyOutOfEnclave(
+        THROW_IF_FAILED(AllocateVtl0Memory(&vtl0_in_params, flatbuffer_in_params_builder.GetSize()));
+        THROW_IF_NULL_ALLOC(vtl0_in_params.get());
+        THROW_IF_FAILED(EnclaveCopyOutOfEnclave(
             vtl0_in_params.get(),
             flatbuffer_in_params_builder.GetBufferPointer(),
             flatbuffer_in_params_builder.GetSize()));
@@ -143,25 +139,25 @@ namespace VbsEnclaveABI::Enclave
         vtl1_outgoing_context.m_returned_parameters.buffer_size = 0;
 
         vtl0_memory_ptr<EnclaveFunctionContext> vtl0_context_ptr;
-        RETURN_IF_FAILED(AllocateVtl0Memory(&vtl0_context_ptr, sizeof(EnclaveFunctionContext)));
-        RETURN_IF_NULL_ALLOC(vtl0_context_ptr.get());
+        THROW_IF_FAILED(AllocateVtl0Memory(&vtl0_context_ptr, sizeof(EnclaveFunctionContext)));
+        THROW_IF_NULL_ALLOC(vtl0_context_ptr.get());
 
-        RETURN_IF_FAILED(EnclaveCopyOutOfEnclave(
+        THROW_IF_FAILED(EnclaveCopyOutOfEnclave(
             vtl0_context_ptr.get(),
             &vtl1_outgoing_context,
             sizeof(EnclaveFunctionContext)));
 
         void* vtl0_output_buffer;
 
-        RETURN_IF_WIN32_BOOL_FALSE((CallEnclave(
+        THROW_IF_WIN32_BOOL_FALSE((CallEnclave(
             vtl0_callback,
             reinterpret_cast<void*>(vtl0_context_ptr.get()),
             TRUE,
             &vtl0_output_buffer)));
-        RETURN_IF_FAILED(ABI_PVOID_TO_HRESULT(vtl0_output_buffer));
+        THROW_IF_FAILED(ABI_PVOID_TO_HRESULT(vtl0_output_buffer));
 
         EnclaveFunctionContext vtl1_incoming_context {};
-        RETURN_IF_FAILED((EnclaveCopyIntoEnclave(
+        THROW_IF_FAILED((EnclaveCopyIntoEnclave(
             &vtl1_incoming_context,
             vtl0_context_ptr.get(),
             sizeof(EnclaveFunctionContext))));
@@ -174,22 +170,38 @@ namespace VbsEnclaveABI::Enclave
 
         // return parameters should have a value e.g ParameterContainer<SomeType>
         // TODO: should create custom hresult to differentiate from others, here.
-        RETURN_HR_IF_NULL(E_INVALIDARG, vtl0_return_params.get());
+        THROW_HR_IF_NULL(E_INVALIDARG, vtl0_return_params.get());
 
         auto return_buffer_size = vtl1_incoming_context.m_returned_parameters.buffer_size;
         auto return_buffer = vtl1_incoming_context.m_returned_parameters.buffer;
-        RETURN_HR_IF(E_INVALIDARG, return_buffer_size > 0 && return_buffer == nullptr);
+        THROW_HR_IF(E_INVALIDARG, return_buffer_size > 0 && return_buffer == nullptr);
 
         wil::unique_process_heap_ptr<uint8_t> vtl1_returned_parameters {
            reinterpret_cast<uint8_t*>(AllocateMemory(return_buffer_size))};
-        RETURN_IF_NULL_ALLOC(vtl1_returned_parameters.get());
+        THROW_IF_NULL_ALLOC(vtl1_returned_parameters.get());
 
-        RETURN_IF_FAILED(EnclaveCopyIntoEnclave(
+        THROW_IF_FAILED(EnclaveCopyIntoEnclave(
             vtl1_returned_parameters.get(),
             vtl0_return_params.get(),
             vtl1_incoming_context.m_returned_parameters.buffer_size));
 
-        callback_result = UnpackFlatbufferWithSize<ReturnParamsT>(vtl1_returned_parameters.get(), return_buffer_size);
-        return S_OK;
+        if constexpr (!std::is_void_v<ResultT>)
+        {
+            return UnpackFlatbufferWithSize<FlatbufferT>(vtl1_returned_parameters.get(), return_buffer_size);
+        }
+    }
+
+    template <Structure ResultT, Structure FlatbufferT>
+    inline ResultT CallVtl0CallbackFromVtl1(_In_ const FlatbufferT& flatbuffer_input, _In_ std::string_view function_name)
+    {
+        auto flatbuffer_result = CallVtl0CallbackFromVtl1Impl<FlatbufferT>(flatbuffer_input, function_name);
+        return Converters::ConvertStruct<ResultT>(flatbuffer_result);
+    }
+
+    template <typename ResultT, Structure FlatbufferT>
+    requires std::is_void_v<ResultT>
+    inline void CallVtl0CallbackFromVtl1(_In_ const FlatbufferT& flatbuffer_input, _In_ std::string_view function_name)
+    {
+        CallVtl0CallbackFromVtl1Impl<void>(flatbuffer_input, function_name);
     }
 }

@@ -82,14 +82,12 @@ namespace CodeGeneration
         // Process content from the trusted content.
         auto host_to_enclave_content = BuildHostToEnclaveFunctions(
             m_generated_namespace_name,
-            m_edl.m_developer_types,
             m_edl.m_trusted_functions_list);
 
         // Process the content from the untrusted functions
         auto enclave_to_host_content = BuildEnclaveToHostFunctions(
             m_generated_namespace_name, 
             m_generated_vtl0_class_name,
-            m_edl.m_developer_types,
             m_edl.m_untrusted_functions_list);
 
         std::filesystem::path save_location{};

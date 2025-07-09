@@ -23,14 +23,7 @@ namespace CodeGenTest::Trusted::Stubs
             in_flatbufferT.m_arg5 = VbsEnclaveABI::Shared::Converters::ConvertType<decltype(in_flatbufferT.m_arg5)>(arg5);
             in_flatbufferT.m_arg7 = VbsEnclaveABI::Shared::Converters::ConvertType<decltype(in_flatbufferT.m_arg7)>(arg7);
             in_flatbufferT.m_arg9 = VbsEnclaveABI::Shared::Converters::ConvertType<decltype(in_flatbufferT.m_arg9)>(arg9);
-
-            using ParamsT = decltype(in_flatbufferT);
-            auto flatbuffer_builder = VbsEnclaveABI::Shared::PackFlatbuffer(in_flatbufferT);
-            using ReturnParamsT = FlatbuffersDevTypes::FuncWithAllArgs_0_argsT;
-            auto function_result = ReturnParamsT();
-            THROW_IF_FAILED((VbsEnclaveABI::HostApp::CallVtl1ExportFromVtl0<ReturnParamsT>(m_enclave, "FuncWithAllArgs_0_Generated_Stub", flatbuffer_builder, function_result)));
-            
-            auto return_params = VbsEnclaveABI::Shared::Converters::ConvertStruct<FuncWithAllArgs_0_args>(function_result);
+            auto return_params = VbsEnclaveABI::HostApp::CallVtl1ExportFromVtl0<FuncWithAllArgs_0_args>(in_flatbufferT, m_enclave, "FuncWithAllArgs_0_Generated_Stub");
             VbsEnclaveABI::Shared::Converters::UpdateParameterValue(return_params.m_arg3, arg3);
             VbsEnclaveABI::Shared::Converters::UpdateParameterValue(return_params.m_arg4, arg4);
             VbsEnclaveABI::Shared::Converters::UpdateParameterValue(return_params.m_arg5, arg5);
@@ -39,7 +32,6 @@ namespace CodeGenTest::Trusted::Stubs
             VbsEnclaveABI::Shared::Converters::UpdateParameterValue(return_params.m_arg8, arg8);
             VbsEnclaveABI::Shared::Converters::UpdateParameterValue(return_params.m_arg9, arg9);
             return std::move(return_params.m__return_value_);
-
         }
 
         HRESULT RegisterVtl0Callbacks()
@@ -51,26 +43,17 @@ namespace CodeGenTest::Trusted::Stubs
                 return S_OK;
             }
 
-            FlatbuffersDevTypes::AbiRegisterVtl0Callbacks_argsT input {};
-            input.callback_addresses.assign(m_callback_addresses.begin(), m_callback_addresses.end());
-            input.callback_names.assign(m_callback_names.begin(), m_callback_names.end());
-            flatbuffers::FlatBufferBuilder builder = VbsEnclaveABI::Shared::PackFlatbuffer(input);
-            using ReturnParamsT = FlatbuffersDevTypes::AbiRegisterVtl0Callbacks_argsT;
-            ReturnParamsT out_args {};
+            FlatbuffersDevTypes::AbiRegisterVtl0Callbacks_argsT in_flatbufferT {};
+            in_flatbufferT.m_callback_addresses.assign(m_callback_addresses.begin(), m_callback_addresses.end());
+            in_flatbufferT.m_callback_names.assign(m_callback_names.begin(), m_callback_names.end());
+            auto return_params = VbsEnclaveABI::HostApp::CallVtl1ExportFromVtl0<VbsEnclaveABI::Shared::Converters::AbiRegisterVtl0Callbacks_args>(in_flatbufferT, m_enclave, "__AbiRegisterVtl0Callbacks_CodeGenTest__");
 
-            HRESULT hr = VbsEnclaveABI::HostApp::CallVtl1ExportFromVtl0<ReturnParamsT>(
-                m_enclave,
-                "__AbiRegisterVtl0Callbacks_CodeGenTest__",
-                builder,
-                out_args);
-            RETURN_IF_FAILED(hr);
-
-            if (SUCCEEDED(out_args.m__return_value_))
+            if (SUCCEEDED(return_params.m__return_value_))
             {
                 m_callbacks_registered = true;
             }
 
-            return out_args.m__return_value_;
+            return return_params.m__return_value_;
         }
 
         private:

@@ -109,4 +109,11 @@ struct StructMetadata<CodeGenTest::FlatbuffersDevTypes::FuncWithAllArgs_1_argsT>
     static constexpr auto members = std::make_tuple(&CodeGenTest::FlatbuffersDevTypes::FuncWithAllArgs_1_argsT::m__return_value_,&CodeGenTest::FlatbuffersDevTypes::FuncWithAllArgs_1_argsT::m_arg1,&CodeGenTest::FlatbuffersDevTypes::FuncWithAllArgs_1_argsT::m_arg2,&CodeGenTest::FlatbuffersDevTypes::FuncWithAllArgs_1_argsT::m_arg3,&CodeGenTest::FlatbuffersDevTypes::FuncWithAllArgs_1_argsT::m_arg4,&CodeGenTest::FlatbuffersDevTypes::FuncWithAllArgs_1_argsT::m_arg5,&CodeGenTest::FlatbuffersDevTypes::FuncWithAllArgs_1_argsT::m_arg6,&CodeGenTest::FlatbuffersDevTypes::FuncWithAllArgs_1_argsT::m_arg7,&CodeGenTest::FlatbuffersDevTypes::FuncWithAllArgs_1_argsT::m_arg8,&CodeGenTest::FlatbuffersDevTypes::FuncWithAllArgs_1_argsT::m_arg9);
 };
 
+template <>
+struct StructMetadata<CodeGenTest::FlatbuffersDevTypes::AbiRegisterVtl0Callbacks_argsT>
+{
+    using CallbackArgs = CodeGenTest::FlatbuffersDevTypes::AbiRegisterVtl0Callbacks_argsT;
+    static constexpr auto members = std::make_tuple(&CallbackArgs::m_callback_addresses, &CallbackArgs::m_callback_names, &CallbackArgs::m__return_value_);
+};
+
 }
