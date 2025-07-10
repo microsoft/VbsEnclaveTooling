@@ -3,6 +3,7 @@
 #pragma once 
 #include <algorithm>
 #include <array>
+#include <functional>
 #include <memory>
 #include <optional>
 #include <stdexcept>
@@ -10,6 +11,7 @@
 #include <type_traits>
 #include <vector>
 #include <wil/result_macros.h>
+#include <VbsEnclaveABI\Shared\VbsEnclaveAbiBase.h>
 
 // All types and functions within this file should be usable within both the hostApp and the enclave.
 namespace VbsEnclaveABI::Shared::Converters
@@ -145,6 +147,22 @@ namespace VbsEnclaveABI::Shared::Converters
 
     template <typename T>
     using vector_or_array_inner_type_t = vector_or_array_inner_type<std::decay_t<T>>::type;
+
+    template<typename T>
+    concept FunctionPtr =
+        std::is_pointer_v<std::decay_t<T>> &&
+        std::is_function_v<std::remove_pointer_t<std::decay_t<T>>>;
+
+    template<FunctionPtr T>
+    struct FunctionInfo;
+
+    template<typename ReturnT, typename... Args>
+    struct FunctionInfo<ReturnT(*)(Args...)> {
+        using ReturnType = ReturnT;
+        static constexpr std::size_t NumberOfParameters = sizeof...(Args);
+        template<std::size_t N>
+        using arg = std::tuple_element_t<N, std::tuple<Args...>>;
+    };
 
     template<typename T>
     concept UniquePtr = is_unique_ptr_v<T>;
@@ -425,5 +443,67 @@ namespace VbsEnclaveABI::Shared::Converters
     inline void UpdateParameterValue(Src& src, Target& target)
     {
         target = std::move(src);
+    }
+
+    template<typename Expected, typename Actual>
+    constexpr bool ShouldCallGet()
+    {
+        return false; // base case, all others should have a specialized template.
+    }
+
+    template<RawPtr Expected, UniquePtr Actual>
+    constexpr bool ShouldCallGet()
+    {
+        return AreBothTheSame<std::decay_t<std::remove_pointer_t<Expected>>, unique_ptr_inner_type_t<Actual>>;
+    }
+
+    template<typename Expected, typename Actual>
+    constexpr decltype(auto) ConvertIfNeeded(Actual&& value)
+    {
+        if constexpr (ShouldCallGet<Expected, Actual>())
+        {
+            return value.get();
+        }
+        else
+        {
+            return value;
+        }
+    }
+
+    template <Structure FlatBufferT, Structure DevTypeT, FunctionPtr FuncT>
+    constexpr decltype(auto) ForwardAbiStructFieldsToDevImpl(DevTypeT& input_args, FuncT&& func)
+    {
+        using FuncTrait = FunctionInfo<std::decay_t<FuncT>>;
+        constexpr size_t struct_fields_size = std::tuple_size_v<decltype(StructMetadata<DevTypeT>::members)>;
+
+        auto forward_to_developer_impl = [&]<std::size_t... I>(std::index_sequence<I...>) -> decltype(auto)
+        {
+            if constexpr (std::is_void_v<typename FuncTrait::ReturnType>)
+            {
+                static_assert(
+                    struct_fields_size == FuncTrait::NumberOfParameters, 
+                    "For functions that return void, the number of fields in the abi struct must match the number of function parameters.");
+
+                std::invoke(
+                    std::forward<FuncT>(func),
+                    ConvertIfNeeded<typename FuncTrait::template arg<I>>(input_args.*(std::get<I>(StructMetadata<DevTypeT>::members)))...
+                );
+            }
+            else
+            {
+                static_assert(
+                    struct_fields_size == FuncTrait::NumberOfParameters + 1,
+                    "For functions that return a non void value, the number of fields in the abi struct must be one more than the number of function parameters.");
+
+                input_args.m__return_value_ = std::invoke(
+                    std::forward<FuncT>(func),
+                    ConvertIfNeeded<typename FuncTrait::template arg<I>>(input_args.*(std::get<I>(StructMetadata<DevTypeT>::members)))...
+                );
+            }
+
+            return VbsEnclaveABI::Shared::PackFlatbuffer(ConvertStruct<FlatBufferT>(input_args));
+        };
+
+        return forward_to_developer_impl(std::make_index_sequence<FuncTrait::NumberOfParameters>{});
     }
 }

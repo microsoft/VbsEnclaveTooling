@@ -10,15 +10,6 @@ namespace CodeGenTest
     {
         using namespace CodeGenTest::DeveloperTypes;
         
-        static inline void FuncWithAllArgs_0_Abi_Impl(_In_ FlatbuffersDevTypes::FuncWithAllArgs_0_argsT& in_flatbuffer_params, _In_ flatbuffers::FlatBufferBuilder& flatbuffer_out_params_builder)
-        {
-            auto dev_type_params = VbsEnclaveABI::Shared::Converters::ConvertStruct<FuncWithAllArgs_0_args>(in_flatbuffer_params);
-            dev_type_params.m__return_value_ = Trusted::Implementation::FuncWithAllArgs( dev_type_params.m_arg1, dev_type_params.m_arg2.get(), dev_type_params.m_arg3.get(), dev_type_params.m_arg4, dev_type_params.m_arg5, dev_type_params.m_arg6, dev_type_params.m_arg7, dev_type_params.m_arg8, dev_type_params.m_arg9);
-
-            auto flatbuffer_out_param = VbsEnclaveABI::Shared::Converters::ConvertStruct<decltype(in_flatbuffer_params)>(dev_type_params);
-            flatbuffer_out_params_builder = VbsEnclaveABI::Shared::PackFlatbuffer(flatbuffer_out_param);
-        }
-
         static void EnforceMemoryRestriction()
         {
             if (ENABLE_ENCLAVE_RESTRICT_CONTAINING_PROCESS_ACCESS)
@@ -30,10 +21,10 @@ namespace CodeGenTest
         static inline void* FuncWithAllArgs_0_Generated_Stub(void* function_context)
         try
         {
-            using ParamsT = FlatbuffersDevTypes::FuncWithAllArgs_0_argsT;
-            using ReturnParamsT = FlatbuffersDevTypes::FuncWithAllArgs_0_argsT;
+            using DevTypeT = FuncWithAllArgs_0_args;
+            using FlatBufferT = FlatbuffersDevTypes::FuncWithAllArgs_0_argsT;
             EnforceMemoryRestriction();
-            HRESULT hr = VbsEnclaveABI::Enclave::CallVtl1ExportFromVtl1<ParamsT, decltype(AbiDefinitions::FuncWithAllArgs_0_Abi_Impl)>(function_context, AbiDefinitions::FuncWithAllArgs_0_Abi_Impl);
+            HRESULT hr = VbsEnclaveABI::Enclave::CallVtl1ExportFromVtl1<DevTypeT, FlatBufferT>(Trusted::Implementation::FuncWithAllArgs, function_context);
             LOG_IF_FAILED(hr);
             return ABI_HRESULT_TO_PVOID(hr);
         }
@@ -44,24 +35,17 @@ namespace CodeGenTest
             return ABI_HRESULT_TO_PVOID(hr);
         }
 
-        void RegisterVtl0Callbacks(
-            _In_ FlatbuffersDevTypes::AbiRegisterVtl0Callbacks_argsT in_params,
-            _Inout_ flatbuffers::FlatBufferBuilder& flatbuffer_out_params_builder)
+        HRESULT RegisterVtl0Callbacks(const std::vector<std::uint64_t>& callback_addresses, const std::vector<std::string>& callback_names)
         {
-            THROW_IF_FAILED(VbsEnclaveABI::Enclave::VTL0CallBackHelpers::AddVtl0FunctionsToTable(in_params.m_callback_addresses, in_params.m_callback_names));
-
-            FlatbuffersDevTypes::AbiRegisterVtl0Callbacks_argsT result{};
-            result.m__return_value_ = S_OK;
-
-            flatbuffer_out_params_builder = VbsEnclaveABI::Shared::PackFlatbuffer(result);
+            RETURN_IF_FAILED(VbsEnclaveABI::Enclave::VTL0CallBackHelpers::AddVtl0FunctionsToTable(callback_addresses, callback_names));
+            return S_OK;
         }
 
         void* __AbiRegisterVtl0Callbacks_CodeGenTest__(void* function_context)
         try
         {
             EnforceMemoryRestriction();
-            using ParamsT = FlatbuffersDevTypes::AbiRegisterVtl0Callbacks_argsT;
-            HRESULT hr = VbsEnclaveABI::Enclave::CallVtl1ExportFromVtl1<ParamsT, decltype(RegisterVtl0Callbacks)>(function_context, RegisterVtl0Callbacks);
+            HRESULT hr = VbsEnclaveABI::Enclave::CallVtl1ExportFromVtl1<VbsEnclaveABI::Shared::Converters::AbiRegisterVtl0Callbacks_args, FlatbuffersDevTypes::AbiRegisterVtl0Callbacks_argsT>(RegisterVtl0Callbacks, function_context);
             LOG_IF_FAILED(hr);
             return ABI_HRESULT_TO_PVOID(hr);
         }

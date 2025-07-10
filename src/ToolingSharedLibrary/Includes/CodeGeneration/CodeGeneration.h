@@ -55,7 +55,6 @@ namespace CodeGeneration
             // Used to moving parameters through trust boundary
             std::ostringstream m_param_to_convert_names {};
             std::ostringstream m_copy_values_from_out_struct_to_original_args {};
-            std::ostringstream m_params_to_forward_to_dev_impl {};
 
 
             // General info about function that can affect how the the 
@@ -91,13 +90,6 @@ namespace CodeGeneration
             const Function& function,
             DataDirectionKind directon,
             std::string_view cross_boundary_func_name,
-            const FunctionParametersInfo& param_info);
-
-        // Intended to forward parameters to the developers callback Impl
-        // on the other side of the boundary
-        std::string BuildAbiImplFunction(
-            const Function& function,
-            std::string_view call_impl_str,
             const FunctionParametersInfo& param_info);
 
         std::string BuildFunctionParameters(
