@@ -16,10 +16,9 @@ using namespace CodeGeneration::Flatbuffers;
 
 namespace CodeGeneration
 {
-    std::string CppCodeBuilder::BuildTypesHeader(
+    std::string CppCodeBuilder::BuildDeveloperTypesHeader(
         std::string_view developer_namespace_name,
-        const std::vector<DeveloperType>& developer_types_insertion_list,
-        const std::vector<DeveloperType>& abi_function_developer_types)
+        std::span<const DeveloperType> developer_types_insertion_list)
     {
         std::ostringstream types_header {};
         std::ostringstream enums_definitions {};
@@ -46,14 +45,39 @@ namespace CodeGeneration
             if (type.IsEdlType(EdlTypeKind::Struct))
             {
                 types_header << BuildStructDefinition(type.m_name, type.m_fields);
-                struct_metadata << BuildStructMetaData(developer_namespace_name, type.m_name, type.m_fields);
+            }
+        }
+
+        return std::format(
+            c_developer_types_file,
+            c_autogen_header_string,
+            developer_namespace_name,
+            types_header.str());
+    }
+
+    std::string CppCodeBuilder::BuildAbiTypesHeader(
+        std::string_view developer_namespace_name,
+        std::span<const DeveloperType> developer_types_insertion_list,
+        std::span<const DeveloperType> abi_function_developer_types)
+    {
+        std::ostringstream types_header {};
+        std::ostringstream enums_definitions {};
+        std::ostringstream struct_declarations {};
+
+        std::ostringstream struct_metadata {};
+
+        for (auto& type : developer_types_insertion_list)
+        {
+            if (type.IsEdlType(EdlTypeKind::Struct))
+            {
+                struct_metadata << BuildStructMetaData(developer_namespace_name, "DeveloperTypes", type.m_name, type.m_fields);
             }
         }
 
         for (auto& type : abi_function_developer_types)
         {
             types_header << BuildStructDefinition(type.m_name, type.m_fields);
-            struct_metadata << BuildStructMetaData(developer_namespace_name, type.m_name, type.m_fields);
+            struct_metadata << BuildStructMetaData(developer_namespace_name, "AbiTypes", type.m_name, type.m_fields);
         }
 
         struct_metadata << std::format(
@@ -62,8 +86,9 @@ namespace CodeGeneration
             developer_namespace_name);
 
         return std::format(
-            c_developer_types_file,
+            c_abi_types_file,
             c_autogen_header_string,
+            developer_namespace_name,
             developer_namespace_name,
             types_header.str(),
             struct_metadata.str());
@@ -155,7 +180,8 @@ namespace CodeGeneration
     }
 
     std::string CppCodeBuilder::BuildStructMetaData(
-        std::string_view generated_namespace,
+        std::string_view generated_parent_namespace,
+        std::string_view generated_sub_namespace,
         std::string_view struct_name,
         const std::vector<Declaration>& fields)
     {
@@ -174,22 +200,24 @@ namespace CodeGeneration
 
             devtype_field_ptrs << std::format(
                 c_struct_metadata_field_ptr,
-                generated_namespace,
-                struct_name, 
+                generated_parent_namespace,
+                generated_sub_namespace,
+                struct_name,
                 field.m_name,
                 separator);
 
             flatbuffer_field_ptrs << std::format(
                 c_flatbuffer_field_ptr,
-                generated_namespace, 
-                struct_name, 
+                generated_parent_namespace,
+                struct_name,
                 field.m_name,
                 separator);
         }
 
         std::string struct_in_dev_type_namespace = std::format(
-            "{}::DeveloperTypes::{}",
-            generated_namespace,
+            "{}::{}::{}",
+            generated_parent_namespace,
+            generated_sub_namespace,
             struct_name);
 
         std::ostringstream struct_metadata {};
@@ -200,7 +228,7 @@ namespace CodeGeneration
 
         std::string struct_in_flatbuffer_namespace = std::format(
             "{}::FlatbuffersDevTypes::{}T",
-            generated_namespace, 
+            generated_parent_namespace,
             struct_name);
 
         std::ostringstream flatbuffer_metadata {};
@@ -266,6 +294,7 @@ namespace CodeGeneration
     }
 
     std::string CppCodeBuilder::BuildTrustBoundaryFunction(
+        std::string_view developer_namespace_name,
         const Function& function,
         std::string_view abi_function_to_call,
         bool is_vtl0_callback,
@@ -275,6 +304,7 @@ namespace CodeGeneration
 
         std::string inner_body = std::format(
             c_inner_abi_function,
+            developer_namespace_name,
             function_params_struct_type,
             function_params_struct_type,
             is_vtl0_callback ? "" : c_enforce_memory_restriction_call,
@@ -339,6 +369,7 @@ namespace CodeGeneration
     }
 
     std::string CppCodeBuilder::BuildStubFunction(
+        std::string_view developer_namespace_name,
         const Function& function,
         DataDirectionKind direction,
         std::string_view cross_boundary_func_name,
@@ -401,6 +432,7 @@ namespace CodeGeneration
             {
                 function_body << std::format(
                     c_vtl0_call_to_vtl1_export_with_return,
+                    developer_namespace_name,
                     function_params_struct_type,
                     cross_boundary_func_name);
             }
@@ -408,6 +440,7 @@ namespace CodeGeneration
             {
                 function_body << std::format(
                     c_vtl1_call_to_vtl0_callback_with_return,
+                    developer_namespace_name,
                     function_params_struct_type,
                     cross_boundary_func_name);
             }
@@ -497,6 +530,7 @@ namespace CodeGeneration
             // This is the vtl0 stub function the developer will call into to start the flow
             // of calling their vtl1 enclave function impl.
             vtl0_stubs_for_vtl1_trusted_functions << BuildStubFunction(
+                generated_namespace,
                 function,
                 DataDirectionKind::Vtl0ToVtl1,
                 vtl1_exported_func_name,
@@ -509,7 +543,8 @@ namespace CodeGeneration
 
             // This is the vtl0 function that is exported by the enclave and called via a
             // CallEnclave call by the abi.
-            vtl1_abi_boundary_functions << BuildTrustBoundaryFunction(
+            vtl1_abi_functions << BuildTrustBoundaryFunction(
+                generated_namespace,
                 function,
                 vtl1_call_to_vtl1_export,
                 false,
@@ -586,6 +621,7 @@ namespace CodeGeneration
             // same parameters as their vtl0 untrusted impl function. This initiates the abi call from vtl1 
             // to the vtl0 abi boundary function for this specific function.
             vtl1_stubs_for_vtl0_untrusted_functions << BuildStubFunction(
+                generated_namespace,
                 function,
                 DataDirectionKind::Vtl1ToVtl0,
                 generated_callback_in_namespace,
@@ -599,6 +635,7 @@ namespace CodeGeneration
             // This is the vtl0 callback that will call into our abi vtl0 callback implementation.
             // This callback is what vtl1 will call with CallEnclave.
             vtl0_abi_boundary_functions << BuildTrustBoundaryFunction(
+                generated_namespace,
                 function,
                 vtl0_call_to_vtl0_callback,
                 true,

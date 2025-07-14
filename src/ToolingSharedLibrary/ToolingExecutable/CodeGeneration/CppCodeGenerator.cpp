@@ -67,13 +67,6 @@ namespace CodeGeneration
             m_edl.m_trusted_functions_list,
             m_edl.m_untrusted_functions_list);
 
-        // Create developer types. This is shared between
-        // the HostApp and the enclave.
-        std::string enclave_types_header = BuildTypesHeader(
-            m_generated_namespace_name,
-            m_edl.m_developer_types_insertion_order_list,
-            abi_function_developer_types);
-
         auto flatbuffer_schema = GenerateFlatbufferSchema(
             m_generated_namespace_name,
             m_edl.m_developer_types_insertion_order_list,
@@ -123,7 +116,19 @@ namespace CodeGeneration
 
         SaveFileToOutputFolder(c_flatbuffer_fbs_filename, save_location, flatbuffer_schema);
         CompileFlatbufferFile(save_location);
-        SaveFileToOutputFolder(c_developer_types_header, save_location, enclave_types_header);
+
+        std::string developer_types_header = BuildDeveloperTypesHeader(
+            m_generated_namespace_name,
+            m_edl.m_developer_types_insertion_order_list);
+
+        SaveFileToOutputFolder(c_developer_types_header, save_location, developer_types_header);
+
+        std::string abi_types_header = BuildAbiTypesHeader(
+            m_generated_namespace_name,
+            m_edl.m_developer_types_insertion_order_list,
+            abi_function_developer_types);
+
+        SaveFileToOutputFolder(c_abi_types_header, save_location, abi_types_header);
     }
 
     void CppCodeGenerator::SaveTrustedHeader(

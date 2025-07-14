@@ -78,7 +78,8 @@ namespace CodeGeneration
             const std::vector<Declaration>& fields);
 
         std::string BuildStructMetaData(
-            std::string_view generated_namespace,
+            std::string_view generated_parent_namespace,
+            std::string_view generated_sub_namespace,
             std::string_view struct_name,
             const std::vector<Declaration>& fields);
 
@@ -88,6 +89,7 @@ namespace CodeGeneration
         // to invoke their impl function on the other side of the
         // trust boundary.
         std::string BuildStubFunction(
+            std::string_view developer_namespace_name,
             const Function& function,
             DataDirectionKind directon,
             std::string_view cross_boundary_func_name,
@@ -104,14 +106,19 @@ namespace CodeGeneration
             const Function& function,
             const FunctionParametersInfo& param_info);
 
-        std::string BuildTypesHeader(
+        std::string BuildDeveloperTypesHeader(
             std::string_view developer_namespace_name,
-            const std::vector<DeveloperType>& developer_types_insertion_list,
-            const std::vector<DeveloperType>& abi_function_developer_types);
+            std::span<const DeveloperType> developer_types_insertion_list);
+    
+        std::string BuildAbiTypesHeader(
+            std::string_view developer_namespace_name,
+            std::span<const DeveloperType> developer_types_insertion_list,
+            std::span<const DeveloperType> abi_function_developer_types);
 
         // Intended to be used by in a CallEnclave Win32 function by the
         // abi layer.
         std::string BuildTrustBoundaryFunction(
+            std::string_view developer_namespace_name,
             const Function& function,
             std::string_view abi_function_to_call,
             bool is_vtl0_callback,
