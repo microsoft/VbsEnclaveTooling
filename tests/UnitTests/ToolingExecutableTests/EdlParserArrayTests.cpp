@@ -84,9 +84,8 @@ TEST_CLASS(EdlParserArrayTests)
 
     TEST_METHOD(Parse_ArrayUint64_t_Trusted_Function)
     {
-        ParseAndValidateTestFunction(m_array_edl_file_name, "ArrayUint64_t", FunctionKind::Untrusted, EdlTypeKind::Void);
+        ParseAndValidateTestFunction(m_array_edl_file_name, "ArrayUint64_t", FunctionKind::Trusted, EdlTypeKind::Void);
     }
-
 
     // Untrusted functions
 
