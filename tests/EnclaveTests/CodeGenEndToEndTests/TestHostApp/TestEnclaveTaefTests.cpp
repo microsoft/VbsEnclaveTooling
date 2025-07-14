@@ -7,7 +7,7 @@
 #include <WexTestClass.h>
 #include "TestHelpers.h"
 #include "HostTestHelpers.h"
-#include <VbsEnclave\HostApp\Trusted.h>
+#include <VbsEnclave\HostApp\Stubs\Trusted.h>
 
 using namespace VbsEnclave::Trusted::Stubs;
 using namespace WEX::Common;

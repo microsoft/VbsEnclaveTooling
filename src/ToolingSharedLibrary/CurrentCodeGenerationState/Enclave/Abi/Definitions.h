@@ -2,13 +2,14 @@
 // Changes to this file may be lost if the file is regenerated.
 
 #pragma once
-#include <VbsEnclave\Enclave\Trusted.h>
+#include <VbsEnclave\Enclave\Implementation\Trusted.h>
+#include <VbsEnclave\Enclave\Abi\TypeMetadata.h>
+
 
 namespace CodeGenTest
 {
-    namespace AbiDefinitions
+    namespace Abi::Definitions
     {
-        using namespace CodeGenTest::DeveloperTypes;
         
         static void EnforceMemoryRestriction()
         {
@@ -21,10 +22,10 @@ namespace CodeGenTest
         static inline void* FuncWithAllArgs_0_Generated_Stub(void* function_context)
         try
         {
-            using DevTypeT = FuncWithAllArgs_0_args;
-            using FlatBufferT = FlatbuffersDevTypes::FuncWithAllArgs_0_argsT;
+            using AbiTypeT = CodeGenTest::Abi::Types::FuncWithAllArgs_0_args;
+            using FlatBufferT = FlatbufferTypes::FuncWithAllArgs_0_argsT;
             EnforceMemoryRestriction();
-            HRESULT hr = VbsEnclaveABI::Enclave::CallVtl1ExportFromVtl1<DevTypeT, FlatBufferT>(Trusted::Implementation::FuncWithAllArgs, function_context);
+            HRESULT hr = VbsEnclaveABI::Enclave::CallVtl1ExportFromVtl1<AbiTypeT, FlatBufferT>(Trusted::Implementation::FuncWithAllArgs, function_context);
             LOG_IF_FAILED(hr);
             return ABI_HRESULT_TO_PVOID(hr);
         }
@@ -45,7 +46,7 @@ namespace CodeGenTest
         try
         {
             EnforceMemoryRestriction();
-            HRESULT hr = VbsEnclaveABI::Enclave::CallVtl1ExportFromVtl1<VbsEnclaveABI::Shared::Converters::AbiRegisterVtl0Callbacks_args, FlatbuffersDevTypes::AbiRegisterVtl0Callbacks_argsT>(RegisterVtl0Callbacks, function_context);
+            HRESULT hr = VbsEnclaveABI::Enclave::CallVtl1ExportFromVtl1<VbsEnclaveABI::Shared::Converters::AbiRegisterVtl0Callbacks_args, FlatbufferTypes::AbiRegisterVtl0Callbacks_argsT>(RegisterVtl0Callbacks, function_context);
             LOG_IF_FAILED(hr);
             return ABI_HRESULT_TO_PVOID(hr);
         }
