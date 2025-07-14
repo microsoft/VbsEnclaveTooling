@@ -3,7 +3,7 @@
 
 #pragma once
 #include <VbsEnclaveABI\Enclave\EnclaveHelpers.h>
-#include "DeveloperTypes.h"
+#include "AbiTypes.h"
 
 namespace CodeGenTest
 {
@@ -20,7 +20,7 @@ namespace CodeGenTest
             in_flatbufferT.m_arg5 = VbsEnclaveABI::Shared::Converters::ConvertType<decltype(in_flatbufferT.m_arg5)>(arg5);
             in_flatbufferT.m_arg7 = VbsEnclaveABI::Shared::Converters::ConvertType<decltype(in_flatbufferT.m_arg7)>(arg7);
             in_flatbufferT.m_arg9 = VbsEnclaveABI::Shared::Converters::ConvertType<decltype(in_flatbufferT.m_arg9)>(arg9);
-            auto return_params = VbsEnclaveABI::Enclave::CallVtl0CallbackFromVtl1<FuncWithAllArgs_1_args>(in_flatbufferT, "CodeGenTest::AbiDefinitions::FuncWithAllArgs_1_Generated_Stub");
+            auto return_params = VbsEnclaveABI::Enclave::CallVtl0CallbackFromVtl1<CodeGenTest::AbiTypes::FuncWithAllArgs_1_args>(in_flatbufferT, "CodeGenTest::AbiDefinitions::FuncWithAllArgs_1_Generated_Stub");
             VbsEnclaveABI::Shared::Converters::UpdateParameterValue(return_params.m_arg3, arg3);
             VbsEnclaveABI::Shared::Converters::UpdateParameterValue(return_params.m_arg4, arg4);
             VbsEnclaveABI::Shared::Converters::UpdateParameterValue(return_params.m_arg5, arg5);

@@ -13,7 +13,7 @@ namespace CodeGenTest
         static inline void* FuncWithAllArgs_1_Generated_Stub(void* function_context)
         try
         {
-            using DevTypeT = FuncWithAllArgs_1_args;
+            using DevTypeT = CodeGenTest::AbiTypes::FuncWithAllArgs_1_args;
             using FlatBufferT = FlatbuffersDevTypes::FuncWithAllArgs_1_argsT;
             
             HRESULT hr = VbsEnclaveABI::HostApp::CallVtl0CallbackImplFromVtl0<DevTypeT, FlatBufferT>(Untrusted::Implementation::FuncWithAllArgs, function_context);

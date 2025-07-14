@@ -3,7 +3,7 @@
 
 #pragma once
 #include <VbsEnclaveABI\Host\HostHelpers.h>
-#include "DeveloperTypes.h"
+#include "AbiTypes.h"
 
 namespace CodeGenTest
 {

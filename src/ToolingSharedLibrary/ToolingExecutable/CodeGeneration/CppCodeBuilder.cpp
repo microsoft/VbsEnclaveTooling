@@ -16,10 +16,9 @@ using namespace CodeGeneration::Flatbuffers;
 
 namespace CodeGeneration
 {
-    std::string CppCodeBuilder::BuildTypesHeader(
+    std::string CppCodeBuilder::BuildDeveloperTypesHeader(
         std::string_view developer_namespace_name,
-        const std::vector<DeveloperType>& developer_types_insertion_list,
-        const std::vector<DeveloperType>& abi_function_developer_types)
+        std::span<const DeveloperType> developer_types_insertion_list)
     {
         std::ostringstream types_header {};
         std::ostringstream enums_definitions {};
@@ -37,23 +36,65 @@ namespace CodeGeneration
             }
         }
 
-        types_header << struct_declarations.str();
-        types_header << enums_definitions.str();
-        std::ostringstream struct_metadata {};
+        types_header << struct_declarations.str() << enums_definitions.str();
 
         for (auto& type : developer_types_insertion_list)
         {
             if (type.IsEdlType(EdlTypeKind::Struct))
             {
                 types_header << BuildStructDefinition(type.m_name, type.m_fields);
-                struct_metadata << BuildStructMetaData(developer_namespace_name, type.m_name, type.m_fields);
+            }
+        }
+
+        return std::format(
+            c_developer_types_file,
+            c_autogen_header_string,
+            developer_namespace_name,
+            types_header.str());
+    }
+
+    std::string CppCodeBuilder::BuildAbiTypesHeader(
+        std::string_view developer_namespace_name,
+        std::string_view sub_folder_name,
+        std::span<const DeveloperType> abi_function_developer_types)
+    {
+        std::ostringstream types_header {};
+
+        for (auto& type : abi_function_developer_types)
+        {
+            types_header << BuildStructDefinition(type.m_name, type.m_fields);
+        }
+
+        return std::format(
+            c_abi_function_types_file,
+            c_autogen_header_string,
+            sub_folder_name,
+            sub_folder_name,
+            developer_namespace_name,
+            developer_namespace_name,
+            types_header.str());
+    }
+
+
+    std::string CppCodeBuilder::BuildAbiTypesMetadataHeader(
+        std::string_view developer_namespace_name,
+        std::string_view sub_folder_name,
+        std::span<const DeveloperType> developer_types_insertion_list,
+        std::span<const DeveloperType> abi_function_developer_types)
+    {
+        std::ostringstream struct_metadata {};
+
+        for (auto& type : developer_types_insertion_list)
+        {
+            if (type.IsEdlType(EdlTypeKind::Struct))
+            {
+                struct_metadata << BuildStructMetaData(developer_namespace_name, "Types", type.m_name, type.m_fields);
             }
         }
 
         for (auto& type : abi_function_developer_types)
         {
-            types_header << BuildStructDefinition(type.m_name, type.m_fields);
-            struct_metadata << BuildStructMetaData(developer_namespace_name, type.m_name, type.m_fields);
+            struct_metadata << BuildStructMetaData(developer_namespace_name, "Abi::Types", type.m_name, type.m_fields);
         }
 
         struct_metadata << std::format(
@@ -62,30 +103,44 @@ namespace CodeGeneration
             developer_namespace_name);
 
         return std::format(
-            c_developer_types_file,
+            c_abi_struct_metadata_file,
             c_autogen_header_string,
-            developer_namespace_name,
-            types_header.str(),
+            sub_folder_name,
             struct_metadata.str());
+    }
+
+    std::string GenerateTabs(std::size_t count)
+    {
+        // User 4 spaces as tabs
+        std::string spaces {};
+        while (count > 0)
+        {
+            spaces += c_four_spaces;
+            count--;
+        }
+
+        return spaces;
     }
 
     CppCodeBuilder::Definition CppCodeBuilder::BuildStartOfDefinition(
         std::string_view type_name,
-        std::string_view identifier_name)
+        std::string_view identifier_name,
+        std::size_t num_of_tabs)
     {
         CppCodeBuilder::Definition definition{};
-
+        auto spaces = GenerateTabs(num_of_tabs);
         if (identifier_name.empty())
         {
-            definition.m_header << std::format("{}", type_name);
+            
+            definition.m_header << std::format("{}{}", spaces, type_name);
         }
         else
         {
-            definition.m_header << std::format("{} {}", type_name, identifier_name);
+            definition.m_header << std::format("{}{} {}", spaces, type_name, identifier_name);
         }
 
-        definition.m_body << std::format("\n{}\n", LEFT_CURLY_BRACKET);
-        definition.m_footer << std::format("{}{}\n", RIGHT_CURLY_BRACKET, SEMI_COLON);
+        definition.m_body << std::format("\n{}{}\n", spaces, LEFT_CURLY_BRACKET);
+        definition.m_footer << std::format("{}{}{}\n", spaces, RIGHT_CURLY_BRACKET, SEMI_COLON);
 
         return definition;
     }
@@ -100,7 +155,12 @@ namespace CodeGeneration
         auto is_named_enum = (developer_types.m_type_kind == EdlTypeKind::Enum);
         std::string enum_name = (is_named_enum) ? developer_types.m_name : "";
 
-        auto [enum_header, enum_body, enum_footer] = BuildStartOfDefinition(EDL_ENUM_KEYWORD, enum_name);
+        auto [enum_header, enum_body, enum_footer] = BuildStartOfDefinition(
+            EDL_ENUM_KEYWORD,
+            enum_name, 
+            c_type_definition_tab_count);
+
+        auto body_tab_count = GenerateTabs(2);
 
         for (auto& [enum_value_name, enum_value] : developer_types.m_items)
         {
@@ -108,17 +168,17 @@ namespace CodeGeneration
             {
                 // Value was the enum name for a value within the anonymous enum.
                 Token value_token = enum_value.m_value.value();
-                enum_body << std::format("{}{} = {},\n", c_four_spaces, enum_value_name, value_token.ToString());
+                enum_body << std::format("{}{} = {},\n", body_tab_count, enum_value_name, value_token.ToString());
             }
             else if (enum_value.m_is_hex)
             {
                 auto hex_value = uint64_to_hex(enum_value.m_declared_position);
-                enum_body << std::format("{}{} = {},\n", c_four_spaces, enum_value_name, hex_value);
+                enum_body << std::format("{}{} = {},\n", body_tab_count, enum_value_name, hex_value);
             }
             else
             {
                 auto decimal_value = uint64_to_decimal(enum_value.m_declared_position);
-                enum_body << std::format("{}{} = {},\n", c_four_spaces, enum_value_name, decimal_value);
+                enum_body << std::format("{}{} = {},\n", body_tab_count, enum_value_name, decimal_value);
             }
         }
 
@@ -137,13 +197,16 @@ namespace CodeGeneration
     {
         auto [struct_header, struct_body, struct_footer] = BuildStartOfDefinition(
             EDL_STRUCT_KEYWORD,
-            struct_name);
+            struct_name,
+            c_type_definition_tab_count);
+
+        auto body_tab_count = GenerateTabs(2);
 
         for (auto& field : fields)
         {
             struct_body << std::format(
                 "{}{} {{}}{}\n",
-                c_four_spaces,
+                body_tab_count,
                 BuildStructField(field),
                 SEMI_COLON);
         }
@@ -155,7 +218,8 @@ namespace CodeGeneration
     }
 
     std::string CppCodeBuilder::BuildStructMetaData(
-        std::string_view generated_namespace,
+        std::string_view generated_parent_namespace,
+        std::string_view generated_sub_namespace,
         std::string_view struct_name,
         const std::vector<Declaration>& fields)
     {
@@ -169,22 +233,24 @@ namespace CodeGeneration
 
             devtype_field_ptrs << std::format(
                 c_struct_metadata_field_ptr,
-                generated_namespace,
-                struct_name, 
+                generated_parent_namespace,
+                generated_sub_namespace,
+                struct_name,
                 field.m_name,
                 separator);
 
             flatbuffer_field_ptrs << std::format(
                 c_flatbuffer_field_ptr,
-                generated_namespace, 
-                struct_name, 
+                generated_parent_namespace,
+                struct_name,
                 field.m_name,
                 separator);
         }
 
         std::string struct_in_dev_type_namespace = std::format(
-            "{}::DeveloperTypes::{}",
-            generated_namespace,
+            "{}::{}::{}",
+            generated_parent_namespace,
+            generated_sub_namespace,
             struct_name);
 
         std::ostringstream struct_metadata {};
@@ -194,8 +260,8 @@ namespace CodeGeneration
             devtype_field_ptrs.str());
 
         std::string struct_in_flatbuffer_namespace = std::format(
-            "{}::FlatbuffersDevTypes::{}T",
-            generated_namespace, 
+            "{}::FlatbufferTypes::{}T",
+            generated_parent_namespace,
             struct_name);
 
         std::ostringstream flatbuffer_metadata {};
@@ -238,6 +304,7 @@ namespace CodeGeneration
     }
 
     std::string CppCodeBuilder::BuildTrustBoundaryFunction(
+        std::string_view developer_namespace_name,
         const Function& function,
         std::string_view abi_function_to_call,
         bool is_vtl0_callback,
@@ -247,6 +314,7 @@ namespace CodeGeneration
 
         std::string inner_body = std::format(
             c_inner_abi_function,
+            developer_namespace_name,
             function_params_struct_type,
             function_params_struct_type,
             is_vtl0_callback ? "" : c_enforce_memory_restriction_call,
@@ -303,6 +371,7 @@ namespace CodeGeneration
     }
 
     std::string CppCodeBuilder::BuildStubFunction(
+        std::string_view developer_namespace_name,
         const Function& function,
         DataDirectionKind direction,
         std::string_view cross_boundary_func_name,
@@ -365,6 +434,7 @@ namespace CodeGeneration
             {
                 function_body << std::format(
                     c_vtl0_call_to_vtl1_export_with_return,
+                    developer_namespace_name,
                     function_params_struct_type,
                     cross_boundary_func_name);
             }
@@ -372,6 +442,7 @@ namespace CodeGeneration
             {
                 function_body << std::format(
                     c_vtl1_call_to_vtl0_callback_with_return,
+                    developer_namespace_name,
                     function_params_struct_type,
                     cross_boundary_func_name);
             }
@@ -403,6 +474,7 @@ namespace CodeGeneration
             // This is the vtl0 stub function the developer will call into to start the flow
             // of calling their vtl1 enclave function impl.
             vtl0_stubs_for_vtl1_trusted_functions << BuildStubFunction(
+                generated_namespace,
                 function,
                 DataDirectionKind::Vtl0ToVtl1,
                 vtl1_exported_func_name,
@@ -416,6 +488,7 @@ namespace CodeGeneration
             // This is the vtl0 function that is exported by the enclave and called via a
             // CallEnclave call by the abi.
             vtl1_abi_functions << BuildTrustBoundaryFunction(
+                generated_namespace,
                 function,
                 vtl1_call_to_vtl1_export,
                 false,
@@ -478,6 +551,7 @@ namespace CodeGeneration
             // same parameters as their vtl0 untrusted impl function. This initiates the abi call from vtl1 
             // to the vtl0 abi boundary function for this specific function.
             vtl1_stubs_for_vtl0_untrusted_functions << BuildStubFunction(
+                generated_namespace,
                 function,
                 DataDirectionKind::Vtl1ToVtl0,
                 generated_callback_in_namespace,
@@ -491,6 +565,7 @@ namespace CodeGeneration
             // This is the vtl0 callback that will call into our abi vtl0 callback implementation.
             // This callback is what vtl1 will call with CallEnclave.
             vtl0_abi_boundary_functions << BuildTrustBoundaryFunction(
+                generated_namespace,
                 function,
                 vtl0_call_to_vtl0_callback,
                 true,

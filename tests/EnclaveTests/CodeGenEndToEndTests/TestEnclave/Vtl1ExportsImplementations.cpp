@@ -1,8 +1,8 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
-#include <VbsEnclave\Enclave\Trusted.h>
-#include <VbsEnclave\Enclave\Untrusted.h>
+#include <VbsEnclave\Enclave\Implementation\Trusted.h>
+#include <VbsEnclave\Enclave\Stubs\Untrusted.h>
 #include "..\TestHostApp\TestHelpers.h"
 
 using namespace VbsEnclave;

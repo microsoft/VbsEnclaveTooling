@@ -11,7 +11,7 @@
 #include <veil\enclave\taskpool.vtl1.h>
 #include <veil\enclave\vtl0_functions.vtl1.h>
 
-#include <VbsEnclave\Enclave\Trusted.h>
+#include <VbsEnclave\Enclave\Implementation\Trusted.h>
 
 namespace RunTaskpoolExamples
 {

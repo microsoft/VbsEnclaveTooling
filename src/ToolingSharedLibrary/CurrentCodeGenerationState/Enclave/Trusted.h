@@ -3,7 +3,7 @@
 
 #pragma once
 #include <VbsEnclaveABI\Enclave\EnclaveHelpers.h>
-#include "DeveloperTypes.h"
+#include "AbiTypes.h"
 
 namespace CodeGenTest
 {
