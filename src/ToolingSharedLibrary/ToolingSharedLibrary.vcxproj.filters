@@ -75,6 +75,9 @@
     <ClInclude Include="Includes\CodeGeneration\Flatbuffers\BuilderHelpers.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="Includes\Utils\Helpers.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp">

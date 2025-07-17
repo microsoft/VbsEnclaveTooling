@@ -21,6 +21,7 @@ namespace ErrorHelpers
     enum class ErrorId : std::uint32_t
     {
         Success = 0,
+        Unknown,
         LanguageNoMoreArgs,
         UnsupportedLanguage,
         EdlNoMoreArgs,
@@ -82,6 +83,13 @@ namespace ErrorHelpers
         EdlVectorNameIdentifierNotFound,
         EdlVectorDoesNotStartWithArrowBracket,
         EdlTypeInVectorMustBePreviouslyDefined,
+        ImportDirectoriesNoMoreArgs,
+        ImportDirectoryDoesNotExist,
+        ImportedEdlFileDoesNotExist,
+        DuplicateDevTypeInImportFile,
+        DuplicateTrustedFunctionInImportFile,
+        DuplicateUntrustedFunctionInImportFile,
+        ImportCycleFound,
     };
 
     struct ErrorIdHash
@@ -111,6 +119,13 @@ namespace ErrorHelpers
         { ErrorId::FlatbufferCompilerNoMoreArgs,"Unable to find flatbuffers compiler file path. No more commandline arguments available to find the path to the flatbuffer compiler file." },
         { ErrorId::FlatbufferCompilerDoesNotExist,"The path to the provided flatbuffer compiler file '{}' does not exist." },
         { ErrorId::NotAFile, "The path '{}' must be to a valid file." },
+        { ErrorId::ImportDirectoriesNoMoreArgs,"Unable to find import directiories. No more commandline arguments available to find edl import directories." },
+        { ErrorId::ImportDirectoryDoesNotExist,"The import directory '{}' does not exist or is not a directory." },
+        { ErrorId::ImportedEdlFileDoesNotExist, "import file '{}' was not found for '{}'. Check that the .edl file exists in your import directories." },
+        { ErrorId::DuplicateDevTypeInImportFile, "Found duplicate type '{}' in import file '{}' when parsing '{}'. Types must only be defined once per .edl file." },
+        { ErrorId::DuplicateTrustedFunctionInImportFile, "Found duplicate trusted function '{}' in import file '{}' when parsing '{}'. Functions must only be defined once per scope (trusted/untrusted), per .edl file." },
+        { ErrorId::DuplicateUntrustedFunctionInImportFile, "Found duplicate untrusted function '{}' in import file '{}' when parsing '{}'. Functions must only be defined once per scope (trusted/untrusted), per .edl file." },
+        { ErrorId::ImportCycleFound, "Import cycle found when attempting to import '{}' into '{}'." },
 
         // Edl file lexical analysis errors
         { ErrorId::EdlCommentEndingNotFound, "EOF while looking for '*/' to match the '/*'" },

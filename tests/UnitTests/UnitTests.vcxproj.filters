@@ -42,6 +42,9 @@
     <ClCompile Include="ToolingExecutableTests\EdlParserStructTypesTests.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="ToolingExecutableTests\EdlParserImportTests.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h">
@@ -53,13 +56,23 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="README.md" />
-    <None Include="TestFiles\TrustedFunctionsCodeGen.edl" />
     <None Include="packages.config" />
+    <None Include="TestFiles\ImportTestFiles\ImproperImportStatementsTest.edl" />
+    <None Include="TestFiles\ArrayTest.edl" />
+    <None Include="TestFiles\BasicTypesTest.edl" />
+    <None Include="TestFiles\EnumTest.edl" />
+    <None Include="TestFiles\ImportTestFiles\ImportTest.edl" />
+    <None Include="TestFiles\StructTest.edl" />
+    <None Include="TestFiles\ImportTestFiles\DuplicateImports\A_Duplicate.edl" />
+    <None Include="TestFiles\ImportTestFiles\DuplicateImports\B_Duplicate.edl" />
+    <None Include="TestFiles\ImportTestFiles\DuplicateImports\C_Duplicate.edl" />
+    <None Include="TestFiles\ImportTestFiles\DuplicateImports\D_Duplicate.edl" />
+    <None Include="TestFiles\ImportTestFiles\CycleImports\A_Cycle.edl" />
+    <None Include="TestFiles\ImportTestFiles\CycleImports\B_Cycle.edl" />
+    <None Include="TestFiles\ImportTestFiles\CycleImports\C_Cycle.edl" />
+    <None Include="TestFiles\ImportTestFiles\CycleImports\D_Cycle.edl" />
   </ItemGroup>
   <ItemGroup>
-    <CopyFileToFolders Include="TestFiles\ArrayTest.edl" />
-    <CopyFileToFolders Include="TestFiles\BasicTypesTest.edl" />
-    <CopyFileToFolders Include="TestFiles\EnumTest.edl" />
-    <CopyFileToFolders Include="TestFiles\StructTest.edl" />
+    <Natvis Include="$(MSBuildThisFileDirectory)..\..\natvis\wil.natvis" />
   </ItemGroup>
 </Project>

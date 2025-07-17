@@ -12,6 +12,7 @@
 #include <unordered_set>
 #include "LexicalAnalyzer.h"
 #include "Utils.h"
+#include <Utils\Helpers.h>
 
 using namespace ErrorHelpers;
 
@@ -23,15 +24,40 @@ namespace EdlProcessor
         Untrusted,
     };
 
+
+    enum class MapKind
+    {
+        DeveloperType,
+        UntrustedFunction,
+        TrustedFunction,
+    };
+
+    enum class ParseStatus
+    {
+        NotSeen,
+        Parsing,
+        Parsed,
+    };
+
+    struct ParsedState
+    {
+        ParseStatus m_status {ParseStatus::NotSeen};
+        Edl m_edl{};
+    };
+
     class EdlParser
     {
     public:
-        EdlParser(const std::filesystem::path& file_path);
+        EdlParser(
+            const std::filesystem::path& file_path, 
+            std::vector<std::filesystem::path> import_directories);
+
         ~EdlParser() = default;
 
         Edl Parse();
-        
+
     private:
+        void ParseInternal(std::unordered_map<std::filesystem::path, ParsedState>& parsed_files);
         void ParseEnum();
         void ParseStruct();
         void ParseFunctions(const FunctionKind& function_kind);
@@ -68,7 +94,9 @@ namespace EdlProcessor
 
         Token PeekAtCurrentToken();
         Token PeekAtNextToken();
-        Edl ParseBody();
+        Edl ParseBody(std::unordered_map<std::filesystem::path, ParsedState>& parsed_files);
+        Edl GenerateEdlObject(std::unordered_map<std::filesystem::path, ParsedState>& parsed_files);
+        void ParseImport(std::unordered_map<std::filesystem::path, ParsedState>& parsed_files);
         Function ParseFunctionDeclaration();
         EdlTypeInfo ParseDeclarationTypeInfo();
         ArrayDimensions ParseArrayDimensions();
@@ -83,18 +111,15 @@ namespace EdlProcessor
 
         std::filesystem::path m_file_path;
         std::filesystem::path m_file_name;
-        std::unique_ptr<LexicalAnalyzer> m_lexical_analyzer {};
+        LexicalAnalyzer m_lexical_analyzer {};
         Token m_cur_token {};
         Token m_next_token {};
         std::uint32_t m_cur_line {};
         std::uint32_t m_cur_column {};
-        std::uint32_t m_abi_function_index {};
-
-        std::vector<DeveloperType> m_developer_types_insertion_order_list {};
-        std::unordered_map<std::string, DeveloperType> m_developer_types;
-        std::unordered_map<std::string, Function> m_trusted_functions_map;
-        std::vector<Function> m_trusted_functions_list {};
-        std::unordered_map<std::string, Function> m_untrusted_functions_map;
-        std::vector<Function> m_untrusted_functions_list {};
+        OrderedMap<std::string, DeveloperType> m_developer_types {};
+        OrderedMap<std::string, Function> m_trusted_functions;
+        OrderedMap<std::string, Function> m_untrusted_functions;
+        std::vector<std::filesystem::path> m_import_directories {};
+        std::vector<std::filesystem::path> m_imported_edl_files {};
     };
 }

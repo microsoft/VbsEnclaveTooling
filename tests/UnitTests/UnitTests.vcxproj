@@ -198,6 +198,7 @@
     <ClCompile Include="ToolingExecutableTests\EdlParserBasicTypesTests.cpp" />
     <ClCompile Include="ToolingExecutableTests\EdlParserArrayTests.cpp" />
     <ClCompile Include="ToolingExecutableTests\EdlParserEnumTypeTests.cpp" />
+    <ClCompile Include="ToolingExecutableTests\EdlParserImportTests.cpp" />
     <ClCompile Include="ToolingExecutableTests\EdlParserStructTypesTests.cpp" />
     <ClCompile Include="ToolingExecutableTests\ErrorHelpersTests.cpp" />
     <ClCompile Include="pch.cpp">
@@ -222,35 +223,48 @@
   <ItemGroup>
     <None Include="packages.config" />
     <None Include="README.md" />
-    <CopyFileToFolders Include="TestFiles\ArrayTest.edl">
-      <FileType>Document</FileType>
-      <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</DeploymentContent>
-      <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</DeploymentContent>
-      <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Debug|ARM64'">true</DeploymentContent>
-      <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Release|ARM64'">true</DeploymentContent>
-    </CopyFileToFolders>
-    <CopyFileToFolders Include="TestFiles\BasicTypesTest.edl">
-      <FileType>Document</FileType>
-      <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</DeploymentContent>
-      <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</DeploymentContent>
-      <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Debug|ARM64'">true</DeploymentContent>
-      <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Release|ARM64'">true</DeploymentContent>
-    </CopyFileToFolders>
-    <CopyFileToFolders Include="TestFiles\EnumTest.edl">
-      <FileType>Document</FileType>
-      <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</DeploymentContent>
-      <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</DeploymentContent>
-      <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Debug|ARM64'">true</DeploymentContent>
-      <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Release|ARM64'">true</DeploymentContent>
-    </CopyFileToFolders>
-    <CopyFileToFolders Include="TestFiles\StructTest.edl">
-      <FileType>Document</FileType>
-      <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</DeploymentContent>
-      <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</DeploymentContent>
-      <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Debug|ARM64'">true</DeploymentContent>
-      <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Release|ARM64'">true</DeploymentContent>
-    </CopyFileToFolders>
-    <None Include="TestFiles\TrustedFunctionsCodeGen.edl" />
+    <None Include="TestFiles\ArrayTest.edl">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Include="TestFiles\BasicTypesTest.edl">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Include="TestFiles\EnumTest.edl">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Include="TestFiles\ImportTestFiles\CycleImports\A_Cycle.edl">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Include="TestFiles\ImportTestFiles\CycleImports\B_Cycle.edl">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Include="TestFiles\ImportTestFiles\CycleImports\C_Cycle.edl">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Include="TestFiles\ImportTestFiles\CycleImports\D_Cycle.edl">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Include="TestFiles\ImportTestFiles\DuplicateImports\A_Duplicate.edl">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Include="TestFiles\ImportTestFiles\DuplicateImports\B_Duplicate.edl">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Include="TestFiles\ImportTestFiles\DuplicateImports\C_Duplicate.edl">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Include="TestFiles\ImportTestFiles\DuplicateImports\D_Duplicate.edl">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Include="TestFiles\ImportTestFiles\ImportTest.edl">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Include="TestFiles\ImportTestFiles\ImproperImportStatementsTest.edl">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Include="TestFiles\StructTest.edl">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

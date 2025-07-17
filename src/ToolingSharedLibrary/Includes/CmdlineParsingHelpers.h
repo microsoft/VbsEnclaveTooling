@@ -22,7 +22,7 @@ namespace CmdlineParsingHelpers
             << "\n"
             << "Usage: edlcodegen.exe --Language <cpp> --EdlPath <filePath.edl> --ErrorHandling [ErrorCode | Exception]\n"
             << "--OutputDirectory <DirectoryPath> --VirtualTrustLayer [HostApp | Enclave] --Vtl0ClassName <name_of_class> \n"
-            << "--Namespace <name_of_class> --FlatbuffersCompilerPath <absolute_path_to_file>\n"
+            << "--Namespace <name_of_class> --FlatbuffersCompilerPath <absolute_path_to_file> --ImportDirectories <absolute_directory_paths> \n"
             << "\n"
             << "Mandatory arguments:\n"
             << "  --Language [cpp]                                     The progamming language that will be used in the generated code\n"
@@ -32,6 +32,7 @@ namespace CmdlineParsingHelpers
             << "\n"
             << "Optional arguments:\n"
             << "  -h, --help                                           Print this help message\n"
+            << "  --ImportDirectories                                  A semicolon-separated list of fully qualified directory paths containing .edl files that may be imported by the .edl file specified with the --EdlPath argument. The parent directory of the .edl file given in --EdlPath is included by default. \n"
             << "  --OutputDirectory <DirectoryPath>                    Absolute path to directory where all generated files should be placed. (By default this is the current directory)\n"
             << "  --Vtl0ClassName <name_of_class>                      name of the vtl0 class that will be generated for use by the hostapp. (By default this is the name of the .edl file with the word 'Wrapper' appended to it).\n"
             << "  --Namespace <name_of_class>                          name of the namespace that all generated code will be encapsulated in. (By default this is the name of the .edl file).\n"
@@ -86,7 +87,7 @@ namespace CmdlineParsingHelpers
         std::uint32_t index,
         char* args[],
         std::uint32_t args_size,
-        std::string& edl_path)
+        std::filesystem::path& edl_path)
     {
         edl_path = "";
         if (index >= args_size)
@@ -109,7 +110,7 @@ namespace CmdlineParsingHelpers
             PRINT_AND_RETURN_ERROR(ErrorId::NotAnEdlFile, item_path.generic_string());
         }
 
-        edl_path = args[index];
+        edl_path = std::move(item_path);
         return ErrorId::Success;
     }
 
@@ -117,7 +118,7 @@ namespace CmdlineParsingHelpers
         std::uint32_t index,
         char* args[],
         std::uint32_t args_size,
-        std::string& directory)
+        std::filesystem::path& directory)
     {
         directory = "";
         if (index >= args_size)
@@ -189,7 +190,7 @@ namespace CmdlineParsingHelpers
         std::uint32_t index,
         char* args[],
         std::uint32_t args_size,
-        std::string& flatbuffers_compiler_path)
+        std::filesystem::path& flatbuffers_compiler_path)
     {
         flatbuffers_compiler_path = "";
         if (index >= args_size)
@@ -217,6 +218,62 @@ namespace CmdlineParsingHelpers
         // the necessary structs/enum types our generated code relies on, which will ultimately make them
         // not compile. So, we're ok with the 3 checks above.
         flatbuffers_compiler_path = args[index];
+        return ErrorId::Success;
+    }
+
+    // Helper function to trim leading and trailing spaces from a string
+    static inline std::string Trim(const std::string& str)
+    {
+        size_t first = str.find_first_not_of(" \t\n\r");
+        
+        if (first == std::string::npos)
+        {
+            return "";
+        }
+
+        size_t last = str.find_last_not_of(" \t\n\r");
+        return str.substr(first, (last - first + 1));
+    }
+
+    static inline std::vector<std::string> Split(const std::string& s, char delim = ';')
+    {
+        std::vector<std::string> tokens;
+        std::stringstream token_stream(s);
+        std::string token;
+        while (std::getline(token_stream, token, delim))
+        {
+            token = Trim(token);
+            tokens.push_back(token);
+        }
+        return tokens;
+    }
+
+    static inline ErrorId GetImportDirectoriesFromArgs(
+        std::uint32_t index,
+        char* args[],
+        std::uint32_t args_size,
+        std::vector<std::filesystem::path>& import_directories)
+    {
+        if (index >= args_size)
+        {
+            PRINT_AND_RETURN_ERROR(ErrorId::ImportDirectoriesNoMoreArgs);
+        }
+
+        auto directories_list = Split(args[index]);
+
+        for (auto& directory : directories_list)
+        {
+            auto path = std::filesystem::path(directory);
+
+            // Check if the item exists
+            if (!std::filesystem::is_directory(path))
+            {
+                PRINT_AND_RETURN_ERROR(ErrorId::ImportDirectoryDoesNotExist, path.generic_string());
+            }
+
+            import_directories.push_back(std::move(path));
+        }
+
         return ErrorId::Success;
     }
 }

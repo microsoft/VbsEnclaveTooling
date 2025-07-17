@@ -74,6 +74,11 @@ bool CmdlineArgumentsParser::ParseArguments(int argc, char* argv[])
             m_vtl0_class_name = argv[++i];
             args_found++;
         }
+        else if (arg == "--ImportDirectories")
+        {
+            CHECK_SUCCESS(GetImportDirectoriesFromArgs(++i, argv, argc, m_import_directories));
+            args_found++;
+        }
         else if (arg == "--FlatbuffersCompilerPath")
         {
             CHECK_SUCCESS(GetFlatbuffersCompilerPathFromArgs(++i, argv, argc, m_flatbuffer_compiler_path));
@@ -85,6 +90,9 @@ bool CmdlineArgumentsParser::ParseArguments(int argc, char* argv[])
             return false;
         }
     }
+
+    // Add parent directory by default
+    m_import_directories.push_back(m_edl_path.parent_path());
 
     if (args_found < m_required_args)
     {

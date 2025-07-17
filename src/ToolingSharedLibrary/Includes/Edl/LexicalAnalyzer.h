@@ -19,6 +19,7 @@ namespace EdlProcessor
     class LexicalAnalyzer
     {
     public:
+        LexicalAnalyzer() = default;
         LexicalAnalyzer(const std::filesystem::path& file_path);
 
         Token GetNextToken();

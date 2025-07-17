@@ -1,0 +1,32 @@
+// Copyright (c) Microsoft Corporation.
+// Licensed under the MIT License.
+
+enclave
+{   
+   import "A_Cycle.edl";
+
+   enum 
+    {
+         DValue,
+    };
+
+    enum DEnum
+    {
+         value,
+    };
+
+    struct DStruct
+    {
+        int32_t value;
+    };
+
+    trusted
+    {
+        void DFunc();
+    };
+
+    untrusted
+    {
+        void DFunc();
+    };
+};
