@@ -10,7 +10,8 @@ namespace CodeGeneration::Flatbuffers
 {
     std::string GenerateFlatbufferSchema(
         std::string_view developer_namespace_name,
-        const std::vector<DeveloperType>& developer_types_insertion_list,
+        const std::unordered_map<std::string, DeveloperType> developer_types_map,
+        std::span<const std::string> developer_types_names,
         const std::vector<DeveloperType>& abi_function_developer_types);
 
     std::string BuildEnum(const DeveloperType& enum_type);

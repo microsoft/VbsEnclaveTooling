@@ -20,15 +20,17 @@ namespace CodeGeneration::Flatbuffers
 
     std::string GenerateFlatbufferSchema(
         std::string_view developer_namespace_name,
-        const std::vector<DeveloperType>& developer_types_insertion_list,
+        const std::unordered_map<std::string, DeveloperType> developer_types_map,
+        std::span<const std::string> developer_types_names,
         const std::vector<DeveloperType>& abi_function_developer_types)
     {
         std::ostringstream schema {};
         auto schema_namespace = std::format(c_flatbuffer_namespace, developer_namespace_name);
         schema << c_autogen_header_string << schema_namespace;
 
-        for (auto& dev_type : developer_types_insertion_list)
+        for (auto& dev_type_name : developer_types_names)
         {
+            auto& dev_type = developer_types_map.at(dev_type_name);
             if (dev_type.IsEdlType(EdlTypeKind::Enum))
             {
                 schema << BuildEnum(dev_type);

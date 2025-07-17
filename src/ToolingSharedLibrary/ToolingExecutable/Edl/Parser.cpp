@@ -15,9 +15,16 @@ using namespace ToolingExceptions;
 namespace EdlProcessor
 {
     static const std::uint32_t c_max_number_of_pointers = 1;
+    std::unordered_map<std::filesystem::path, ParsedState> EdlParser::s_edl_files_parsed;
 
-    EdlParser::EdlParser(const std::filesystem::path& file_path)
-        : m_file_path(file_path), m_file_name(m_file_path.filename().replace_extension()), m_cur_line(1), m_cur_column(1)
+    EdlParser::EdlParser(
+        const std::filesystem::path& file_path, 
+        std::vector<std::filesystem::path> import_directories) :
+            m_import_directories(std::move(import_directories)),
+            m_file_path(file_path),
+            m_file_name(m_file_path.filename().replace_extension()),
+            m_cur_line(1),
+            m_cur_column(1)
     {
     }
 
@@ -35,7 +42,7 @@ namespace EdlProcessor
     {
         Token token = m_cur_token;
         m_cur_token = m_next_token;
-        m_next_token = m_lexical_analyzer->GetNextToken();
+        m_next_token = m_lexical_analyzer.GetNextToken();
         m_cur_line = token.m_line_number;
         m_cur_column = token.m_column_number;
         return token;
@@ -118,16 +125,22 @@ namespace EdlProcessor
                 struct_or_function_name);
         }
     }
-
     Edl EdlParser::Parse()
+    {
+        ParseInternal();
+        return s_edl_files_parsed[m_file_path].m_edl;
+    }
+    
+    void EdlParser::ParseInternal()
     {
         std::string status = std::format("Processing {}", m_file_name.generic_string());
         PrintStatus(Status::Info, status);
+        s_edl_files_parsed[m_file_path] = { ParseStatus::Parsing, m_file_name.generic_string() };
 
         // Start LexicalAnalyzer so we can walk through .edl file.
-        m_lexical_analyzer = std::make_unique<LexicalAnalyzer>(m_file_path);
-        m_cur_token = m_lexical_analyzer->GetNextToken();
-        m_next_token = m_lexical_analyzer->GetNextToken();
+        m_lexical_analyzer = LexicalAnalyzer{m_file_path};
+        m_cur_token = m_lexical_analyzer.GetNextToken();
+        m_next_token = m_lexical_analyzer.GetNextToken();
 
         ThrowIfExpectedTokenNotNext(EDL_ENCLAVE_KEYWORD);
         ThrowIfExpectedTokenNotNext(LEFT_CURLY_BRACKET);
@@ -137,8 +150,153 @@ namespace EdlProcessor
 
         status = std::format("Completed parsing {} successfully", m_file_name.generic_string());
         PrintStatus(Status::Info, status);
+        s_edl_files_parsed[m_file_path].m_status = ParseStatus::Parsed;
+        s_edl_files_parsed[m_file_path].m_edl = std::move(edl);
+    }
 
-        return edl;
+    template<typename T>
+    void MergeMaps(
+        const std::unordered_map<std::string, T>& src,
+        std::unordered_map<std::string, T>& dest)
+    {
+        for (const auto& [key, value] : src)
+        {
+            if (dest.contains(key))
+            {
+                continue;
+            }
+
+            dest[key] = value;
+        }
+    }
+
+    template <typename T>
+    void MergeVectors(std::vector<T>& dest, std::vector<T>& src)
+    {
+        std::unordered_set<T> seen(dest.begin(), dest.end());
+
+        for (const auto& item : src)
+        {
+            if (seen.insert(item).second)
+            {
+                dest.push_back(item);
+            }
+        }
+    }
+
+    void MergeEdl(
+        Edl& src_edl, 
+        Edl& dest_edl,
+        std::uint32_t line_num,
+        std::uint32_t column_num)
+    {
+        auto extend_edl_map = [&]<typename T>(
+            MapKind map_kind,
+            const std::unordered_map<std::string, T>& src_map,
+            std::unordered_map<std::string, T>& dest_map)
+        {
+            for (const auto& [src_key, src_value] : src_map)
+            {   
+                if (src_key == EDL_ANONYMOUS_ENUM_KEYWORD)
+                {
+                    continue;
+                }
+
+                if (dest_map.contains(src_key))
+                {
+                    // Confirm this DevType/Function wasn't imported already during a
+                    // previous Edl parse scenario. E.g. A.edl imports B.edl and 
+                    // A.edl imports C.edl but both B.edl and C.edl import D.edl
+                    auto& dest_value = dest_map.at(src_key);
+                    if (src_value.m_parent_file == dest_value.m_parent_file)
+                    {
+                        continue;
+                    }
+
+                    ErrorId error_id = ErrorId::DuplicateDevTypeInImportFile;
+
+                    if (map_kind == MapKind::TrustedFunction)
+                    {
+                        error_id = ErrorId::DuplicateTrustedFunctionInImportFile;
+                    }
+                    else if (map_kind == MapKind::UntrustedFunction)
+                    {
+                        error_id = ErrorId::DuplicateUntrustedFunctionInImportFile;
+                    }
+
+                    throw EdlAnalysisException(
+                        error_id,
+                        src_edl.m_name,
+                        line_num,
+                        column_num,
+                        src_value.m_name,
+                        dest_edl.m_name,
+                        src_edl.m_name);
+                }
+
+                dest_map.insert({src_key, src_value});
+            }
+        };
+
+        auto imported_anonymous_enum = src_edl.m_developer_types.find(EDL_ANONYMOUS_ENUM_KEYWORD);
+        auto anonymous_enum_to_extend = dest_edl.m_developer_types.find(EDL_ANONYMOUS_ENUM_KEYWORD);
+
+        // Make sure the anonymous enum's values get merged. If we see the same enum value in both the src 
+        // anonymous enum list and the destination list (which is in the current edl file) then the 
+        // value in the destination list is used.
+        if (imported_anonymous_enum != src_edl.m_developer_types.end())
+        {
+            if (anonymous_enum_to_extend != dest_edl.m_developer_types.end())
+            {
+                MergeMaps(imported_anonymous_enum->second.m_items, anonymous_enum_to_extend->second.m_items);
+            }
+            else
+            {
+                dest_edl.m_developer_types.insert({EDL_ANONYMOUS_ENUM_KEYWORD, imported_anonymous_enum->second});
+                dest_edl.m_developer_types_list.insert(dest_edl.m_developer_types_list.begin(), EDL_ANONYMOUS_ENUM_KEYWORD);
+            }
+        }
+
+        // There should not be duplicate developer types or functions between the imported edl files
+        // and the edl object generated by the parser.
+        extend_edl_map(MapKind::DeveloperType, src_edl.m_developer_types, dest_edl.m_developer_types);
+        extend_edl_map(MapKind::TrustedFunction, src_edl.m_trusted_functions_map, dest_edl.m_trusted_functions_map);
+        extend_edl_map(MapKind::UntrustedFunction, src_edl.m_untrusted_functions_map, dest_edl.m_untrusted_functions_map);
+
+        // Update the vectors to remove duplicate names.
+        MergeVectors(dest_edl.m_developer_types_list, src_edl.m_developer_types_list);
+        MergeVectors(dest_edl.m_trusted_functions_list, src_edl.m_trusted_functions_list);
+        MergeVectors(dest_edl.m_untrusted_functions_list, src_edl.m_untrusted_functions_list);
+    }
+
+    Edl EdlParser::GenerateEdlObject()
+    {
+        Edl cur_file_edl =
+        {
+            m_file_name.generic_string(),
+            m_developer_types,
+            m_developer_types_list,
+            m_trusted_functions_map,
+            m_trusted_functions_list,
+            m_untrusted_functions_map,
+            m_untrusted_functions_list
+        };
+
+        if (!m_imported_edl_files.empty())
+        {
+            Edl edl_with_imported_data { cur_file_edl.m_name };
+
+            for (auto& edl_file : m_imported_edl_files)
+            {
+                auto& imported_edl = s_edl_files_parsed.at(edl_file).m_edl;
+                MergeEdl(imported_edl, edl_with_imported_data, m_cur_line, m_cur_column);
+            }
+
+            MergeEdl(cur_file_edl, edl_with_imported_data, m_cur_line, m_cur_column);
+            return edl_with_imported_data;
+        }
+
+        return cur_file_edl;
     }
 
     Edl EdlParser::ParseBody()
@@ -164,6 +322,10 @@ namespace EdlProcessor
             {
                 ParseStruct();
             }
+            else if (token == EDL_IMPORT_KEYWORD)
+            {
+                ParseImport();
+            }
             else
             {
                 throw EdlAnalysisException(
@@ -173,20 +335,12 @@ namespace EdlProcessor
                     token.m_column_number,
                     token.ToString());
             }
-            
         }
 
         PerformFinalValidations();
         UpdateDeveloperTypeMetadata();
 
-        return Edl{
-            m_file_name.generic_string(),
-            m_developer_types,
-            m_developer_types_insertion_order_list,
-            m_trusted_functions_map,
-            m_trusted_functions_list,
-            m_untrusted_functions_map,
-            m_untrusted_functions_list};
+        return GenerateEdlObject();
     }
 
     void EdlParser::UpdateDeveloperTypeMetadata()
@@ -225,7 +379,7 @@ namespace EdlProcessor
     void EdlParser::AddDeveloperType(const DeveloperType& new_type)
     {
         m_developer_types.emplace(new_type.m_name, new_type);
-        m_developer_types_insertion_order_list.push_back(new_type);
+        m_developer_types_list.push_back(new_type.m_name);
     }
 
     void EdlParser::ParseEnum()
@@ -348,8 +502,8 @@ namespace EdlProcessor
 
         ThrowIfExpectedTokenNotNext(RIGHT_CURLY_BRACKET);
         ThrowIfExpectedTokenNotNext(SEMI_COLON);
-
-        m_developer_types_insertion_order_list.push_back(m_developer_types[type_name]);
+        m_developer_types[type_name].m_parent_file = m_file_path;
+        m_developer_types_list.push_back(type_name);
     }
 
     void EdlParser::ParseThroughFieldsOrParameterList(
@@ -423,7 +577,7 @@ namespace EdlProcessor
 
         ThrowIfExpectedTokenNotNext(RIGHT_CURLY_BRACKET);
         ThrowIfExpectedTokenNotNext(SEMI_COLON);   
-        
+        new_struct_type.m_parent_file = m_file_path;
         AddDeveloperType(new_struct_type);
     }
 
@@ -431,7 +585,7 @@ namespace EdlProcessor
     {
         ThrowIfExpectedTokenNotNext(LEFT_CURLY_BRACKET);
         std::reference_wrapper<std::unordered_map<std::string, Function>> func_map = m_trusted_functions_map;
-        std::reference_wrapper<std::vector<Function>> func_list = m_trusted_functions_list;
+        std::reference_wrapper<std::vector<std::string>> func_list = m_trusted_functions_list;
 
         if (function_kind == FunctionKind::Untrusted)
         {
@@ -443,6 +597,7 @@ namespace EdlProcessor
         {            
             Function parsed_function = ParseFunctionDeclaration();
             std::string function_signature = parsed_function.GetDeclarationSignature();
+            parsed_function.m_parent_file = m_file_path;
 
             if (func_map.get().contains(function_signature))
             {
@@ -457,10 +612,12 @@ namespace EdlProcessor
             // Since we allow developer functions to contain the same name but with different
             // parameters, we need to make sure the non developer facing functions are unique
             // in our abi layer. So we append a number to the function name.
+            static std::size_t m_abi_function_index{};
+
             parsed_function.abi_m_name = std::format("{}_{}", parsed_function.m_name, m_abi_function_index++);
 
             func_map.get().emplace(function_signature, parsed_function);
-            func_list.get().push_back(parsed_function);
+            func_list.get().push_back(function_signature);
         }
 
         ThrowIfExpectedTokenNotNext(RIGHT_CURLY_BRACKET);
@@ -1042,4 +1199,80 @@ namespace EdlProcessor
             }
         }
     }
+
+    std::string RemoveOuterQuotes(const std::string& input)
+    {
+        if (input.size() >= 2 && input.front() == '"' && input.back() == '"')
+        {
+            return input.substr(1, input.size() - 2);
+        }
+
+        return input; // Return unchanged if no outer quotes
+    }
+
+    void EdlParser::ParseImport()
+    {
+        auto import_file_token = GetCurrentTokenAndMoveToNextToken();
+        auto import_file_str = RemoveOuterQuotes(import_file_token.ToString());
+        std::filesystem::path full_file_path{};
+
+        for (auto& directory : m_import_directories)
+        {
+            auto potential_file = directory / import_file_str;
+
+            if (std::filesystem::exists(potential_file) && potential_file.extension() == L".edl")
+            {
+                full_file_path = std::move(potential_file);
+                break;
+            }
+        }
+
+        auto importer = m_file_path.filename();
+
+        if (full_file_path.empty())
+        {
+            throw EdlAnalysisException(
+                ErrorId::ImportedEdlFileDoesNotExist,
+                m_file_name,
+                m_cur_line,
+                m_cur_column,
+                import_file_str,
+                importer.generic_string());
+        }
+
+        ThrowIfExpectedTokenNotNext(SEMI_COLON);
+
+        auto find_import_file = std::find(m_imported_edl_files.begin(), m_imported_edl_files.end(), full_file_path);
+
+        if (find_import_file == m_imported_edl_files.end())
+        {
+            m_imported_edl_files.push_back(full_file_path);
+        }
+
+        auto parse_data = s_edl_files_parsed.find(full_file_path);
+
+        if (parse_data != s_edl_files_parsed.end())
+        {
+            auto& parse_state = parse_data->second;
+
+            if (parse_state.m_status == ParseStatus::Parsing)
+            {
+                throw EdlAnalysisException(
+                    ErrorId::ImportCycleFound,
+                    m_file_name,
+                    m_cur_line,
+                    m_cur_column,
+                    import_file_str,
+                    importer.generic_string());
+            }
+            else if (parse_state.m_status == ParseStatus::Parsed)
+            {
+                return;
+            }
+        }
+
+        EdlParser parser(full_file_path, m_import_directories);
+        parser.ParseInternal();
+    }
+
 }

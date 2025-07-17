@@ -18,15 +18,17 @@ namespace CodeGeneration
 {
     std::string CppCodeBuilder::BuildTypesHeader(
         std::string_view developer_namespace_name,
-        const std::vector<DeveloperType>& developer_types_insertion_list,
-        const std::vector<DeveloperType>& abi_function_developer_types)
+        const std::unordered_map<std::string, DeveloperType>& developer_types_map,
+        std::span<std::string> developer_types_names,
+        std::span<const DeveloperType> abi_function_developer_types)
     {
         std::ostringstream types_header {};
         std::ostringstream enums_definitions {};
         std::ostringstream struct_declarations {};
 
-        for (auto& type : developer_types_insertion_list)
+        for (auto& type_name : developer_types_names)
         {
+            auto& type = developer_types_map.at(type_name);
             if (type.IsEdlType(EdlTypeKind::Enum) || type.IsEdlType(EdlTypeKind::AnonymousEnum))
             {
                 enums_definitions << BuildEnumDefinition(type);
@@ -41,8 +43,9 @@ namespace CodeGeneration
         types_header << enums_definitions.str();
         std::ostringstream struct_metadata {};
 
-        for (auto& type : developer_types_insertion_list)
+        for (auto& type_name : developer_types_names)
         {
+            auto& type = developer_types_map.at(type_name);
             if (type.IsEdlType(EdlTypeKind::Struct))
             {
                 types_header << BuildStructDefinition(type.m_name, type.m_fields);
@@ -482,15 +485,17 @@ namespace CodeGeneration
 
     CppCodeBuilder::HostToEnclaveContent CppCodeBuilder::BuildHostToEnclaveFunctions(
         std::string_view generated_namespace,
-        std::span<Function> functions)
+        const std::unordered_map<std::string, Function>& function_map,
+        std::span<std::string> function_names)
     {
         std::ostringstream vtl1_abi_boundary_functions {};
         std::ostringstream vtl1_abi_impl_functions {};
         std::ostringstream vtl1_trusted_function_declarations {};
         std::ostringstream vtl0_stubs_for_vtl1_trusted_functions {};
 
-        for (auto& function : functions)
+        for (auto& function_name : function_names)
         {
+            auto& function = function_map.at(function_name);
             auto param_info = GetInformationAboutParameters(function);
             auto vtl1_exported_func_name = std::format(c_generated_stub_name, function.abi_m_name);
 
@@ -553,10 +558,11 @@ namespace CodeGeneration
     CppCodeBuilder::EnclaveToHostContent CppCodeBuilder::BuildEnclaveToHostFunctions(
         std::string_view generated_namespace,
         std::string_view generated_class_name,
-        std::span<Function> functions)
+        const std::unordered_map<std::string, Function>& function_map,
+        std::span<std::string> function_names)
     {
-        size_t number_of_functions = functions.size();
-        size_t number_of_functions_plus_allocators = functions.size() + c_number_of_abi_callbacks;
+        size_t number_of_functions = function_map.size();
+        size_t number_of_functions_plus_allocators = function_map.size() + c_number_of_abi_callbacks;
         std::ostringstream vtl1_callback_functions {};
         std::ostringstream vtl0_abi_boundary_functions {};
         std::ostringstream vtl0_abi_impl_callback_functions {};
@@ -573,8 +579,9 @@ namespace CodeGeneration
         vtl0_class_method_names << c_allocate_memory_callback_to_name.data();
         vtl0_class_method_names << c_deallocate_memory_callback_to_name.data();
 
-        for (auto& function : functions)
+        for (auto& function_name : function_names)
         {
+            auto& function = function_map.at(function_name);
             auto param_info = GetInformationAboutParameters(function);
 
             auto generated_callback_in_namespace = std::format(
@@ -654,13 +661,15 @@ namespace CodeGeneration
 
     std::string CppCodeBuilder::BuildVtl1ExportedFunctionsSourcefile(
         std::string_view generated_namespace_name,
-        std::span<Function> developer_functions_to_export)
+        const std::unordered_map<std::string, Function>& function_map,
+        std::span<std::string> function_names)
     {
         std::ostringstream exported_definitions {};
         std::ostringstream pragma_link_statements {};
 
-        for (auto& function : developer_functions_to_export)
+        for (auto& function_name : function_names)
         {
+            auto& function = function_map.at(function_name);
             auto generated_func_name = std::format(c_generated_stub_name_no_quotes, function.abi_m_name);
             exported_definitions << std::format(
                 c_enclave_export_func_definition,

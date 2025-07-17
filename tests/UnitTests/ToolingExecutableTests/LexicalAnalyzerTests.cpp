@@ -21,10 +21,7 @@ namespace VbsEnclaveToolingTests
 TEST_CLASS(LexicalAnalyzerTests)
 {
     private:
-        std::filesystem::path m_array_edl_file_name = "ArrayTest.edl";
-        std::filesystem::path m_basic_edl_file_name = "BasicTypesTest.edl";
-        std::filesystem::path m_enum_edl_file_name = "EnumTest.edl";
-        std::filesystem::path m_struct_edl_file_name = "StructTest.edl";
+
         std::unordered_set<char> m_valid_char_tokens =
         {
             RIGHT_CURLY_BRACKET,

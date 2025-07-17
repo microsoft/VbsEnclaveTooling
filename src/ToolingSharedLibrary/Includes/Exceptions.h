@@ -22,6 +22,7 @@ namespace ToolingExceptions
         {
             m_message = std::format("{}: line: {}, column: {}\n", file_name.generic_string(), line_num, column_num);
             m_message += GetErrorMessageById(id, std::forward<Args>(args)...);
+            m_id = id;
         }
 
         template<typename... Args>
@@ -30,6 +31,7 @@ namespace ToolingExceptions
             const std::filesystem::path& file_name)
         {
             m_message = GetErrorMessageById(id, file_name.generic_string());
+            m_id = id;
         }
 
         const char* what() const noexcept override
@@ -37,8 +39,11 @@ namespace ToolingExceptions
             return m_message.c_str();
         }
 
+        ErrorId GetErrorId() { return  m_id; }
+
     private:
         std::string m_message;
+        ErrorId m_id {ErrorId::Unknown};
     };
 
     class CodeGenerationException : public std::exception

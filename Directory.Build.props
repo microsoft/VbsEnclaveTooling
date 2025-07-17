@@ -17,6 +17,7 @@
   <PropertyGroup>
     <OutDir>$(SolutionDir)_build\$(Platform)\$(Configuration)\</OutDir>
     <ShowAllFiles>true</ShowAllFiles>
+    <ReplaceWildcardsInProjectItems>true</ReplaceWildcardsInProjectItems>
   </PropertyGroup>
 
   <ItemDefinitionGroup>

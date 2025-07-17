@@ -62,7 +62,7 @@ TEST_CLASS(CmdlineParsingHelpersTests)
         TEST_METHOD(TestGetEdlPathFromArgs_FileExists)
         {
             char* args[2] = {first_argument.data(), m_test_edl.data()};
-            std::string edl_path;
+            std::filesystem::path edl_path;
 
             // Create a mock file(make sure to clean it up if testing in actual file system)
             std::ofstream file(m_test_edl);
@@ -73,7 +73,7 @@ TEST_CLASS(CmdlineParsingHelpersTests)
 
             // Check that the file exists.
             Assert::AreEqual(static_cast<uint32_t>(ErrorId::Success), static_cast<uint32_t>(result));
-            Assert::AreEqual(m_test_edl, edl_path);
+            Assert::AreEqual(m_test_edl, edl_path.generic_string());
 
             // Cleanup the mock file
             std::filesystem::remove(m_test_edl);
@@ -82,7 +82,7 @@ TEST_CLASS(CmdlineParsingHelpersTests)
         TEST_METHOD(TestGetEdlPathFromArgs_NotAnEdlFile)
         {
             char* args[2] = {first_argument.data(), m_regular_txt_file.data()};
-            std::string edl_path;
+            std::filesystem::path edl_path;
 
             // Create a mock file(make sure to clean it up if testing in actual file system)
             std::ofstream file(m_regular_txt_file);
@@ -93,7 +93,7 @@ TEST_CLASS(CmdlineParsingHelpersTests)
 
             // Make sure edl_path variable hasn't been updated.
             Assert::AreEqual(static_cast<uint32_t>(ErrorId::NotAnEdlFile), static_cast<uint32_t>(result));
-            Assert::AreEqual(std::string(""), edl_path);
+            Assert::AreEqual(std::string(""), edl_path.generic_string());
 
             // Cleanup the mock file
             std::filesystem::remove(m_regular_txt_file);
@@ -102,27 +102,27 @@ TEST_CLASS(CmdlineParsingHelpersTests)
         TEST_METHOD(TestGetEdlPathFromArgs_FileDoesNotExist)
         {
             char* args[2] = {first_argument.data(), m_regular_txt_file.data()};
-            std::string edl_path;
+            std::filesystem::path edl_path;
 
             // Call function
             ErrorId result = GetEdlPathFromArgs(m_starting_index, args, m_args_size, edl_path);
 
             // Check that the file does not exist and that the edl_path_variable hasn't been changed.
             Assert::AreEqual(static_cast<uint32_t>(ErrorId::EdlDoesNotExist), static_cast<uint32_t>(result));
-            Assert::AreEqual(std::string(""), edl_path);
+            Assert::AreEqual(std::string(""), edl_path.generic_string());
         }
 
         TEST_METHOD(TestGetPathToOutputDirectoryFromArgs_Valid)
         {
             char* args[2] = {first_argument.data(), m_cur_directory.data()};
-            std::string directory;
+            std::filesystem::path directory;
 
             // Call function
             ErrorId result = GetPathToOutputDirectoryFromArgs(m_starting_index, args, m_args_size, directory);
 
             // Check that the directory was correctly set
             Assert::AreEqual(static_cast<uint32_t>(ErrorId::Success), static_cast<uint32_t>(result));
-            Assert::AreEqual(std::string("."), directory);
+            Assert::AreEqual(std::string("."), directory.generic_string());
         }
 
         TEST_METHOD(TestGetErrorHandlingFromArg_Valid_ErrorCodeType)
@@ -180,14 +180,14 @@ TEST_CLASS(CmdlineParsingHelpersTests)
         TEST_METHOD(TestGetEdlPathFromArgs_OutOfBounds)
         {
             char* args[2] = {first_argument.data(), m_test_edl.data()};
-            std::string edl_path;
+            std::filesystem::path edl_path;
 
             // Call function
             ErrorId result = GetEdlPathFromArgs(m_invalid_starting_index, args, m_args_size, edl_path);
 
             // Check that no more args result was returned and out param still the same
             Assert::AreEqual(static_cast<uint32_t>(ErrorId::EdlNoMoreArgs), static_cast<uint32_t>(result));
-            Assert::AreEqual(std::string(""), edl_path);
+            Assert::AreEqual(std::string(""), edl_path.generic_string());
         }
 
         TEST_METHOD(TestGetErrorHandlingFromArg_OutOfBounds)
@@ -206,14 +206,14 @@ TEST_CLASS(CmdlineParsingHelpersTests)
         TEST_METHOD(TestGetPathToOutputDirectoryFromArgs_OutOfBounds)
         {
             char* args[2] = {first_argument.data(), m_cur_directory.data()};
-            std::string directory;
+            std::filesystem::path directory;
 
             // Call function
             ErrorId result = GetPathToOutputDirectoryFromArgs(m_invalid_starting_index, args, m_args_size, directory);
 
             // Check that no more args result was returned and out param still the same
             Assert::AreEqual(static_cast<uint32_t>(ErrorId::OutputDirNoMoreArgs), static_cast<uint32_t>(result));
-            Assert::AreEqual(std::string(""), directory);
+            Assert::AreEqual(std::string(""), directory.generic_string());
         }
     };
 }
