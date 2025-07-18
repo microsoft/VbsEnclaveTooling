@@ -12,12 +12,19 @@ enclave
     struct MyStruct0
     {
         int32_t x;
+        MyStruct2* mystruct2_ptr;
+        vector<MyStruct2> mystruct2_vec;
     };
 
     struct MyStruct1
     {
         MyStruct0 s0;
         int32_t y;
+    };
+
+    struct MyStruct2
+    {
+        MyStruct2* mystruct2;
     };
 
     trusted 
@@ -53,6 +60,8 @@ enclave
             size_t arg20,
             size_t arg21
         );
+
+         MyStruct1* GetStruct1Ptr();
     };
 
     untrusted
@@ -88,5 +97,7 @@ enclave
             size_t arg20,
             size_t arg21
         );
+
+        MyStruct1* GetStruct1Ptr();
     };
 };

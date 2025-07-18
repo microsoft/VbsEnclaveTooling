@@ -48,13 +48,9 @@ HRESULT inline VerifyContainsSameValuesArray(const T* data, size_t size, T value
 
 #pragma region VTL1 Enclave developer implementation functions
 
-Int8PtrAndSize Trusted::Implementation::ReturnInt8ValPtr_From_Enclave()
+std::unique_ptr<std::int32_t> Trusted::Implementation::ReturnInt32Ptr_From_Enclave()
 {
-    Int8PtrAndSize ret {};
-    ret.int8_val = std::make_unique<std::int8_t>();
-    *ret.int8_val = std::numeric_limits<std::int8_t>::max();
-
-    return ret;
+    return std::make_unique<std::int32_t>(std::numeric_limits<std::int32_t>::max());
 }
 
 std::uint64_t Trusted::Implementation::ReturnUint64Val_From_Enclave()
@@ -374,12 +370,12 @@ StructWithPointers Trusted::Implementation::ComplexPassingOfTypesThatContainPoin
 // For testing vtl0 callbacks we use HRESULTS as our success/failure metrics since we can't use TAEF in the
 // enclave.
 
-HRESULT Trusted::Implementation::Start_ReturnInt8ValPtr_From_HostApp_Callback_Test()
+HRESULT Trusted::Implementation::Start_ReturnInt32Ptr_From_HostApp_Callback_Test()
 {
     // Note: struct is returned by vtl1, and copied to vtl0 then returned to this function.
-    Int8PtrAndSize result = Untrusted::Stubs::ReturnInt8ValPtr_From_HostApp();
-    THROW_HR_IF_NULL(E_INVALIDARG, result.int8_val);
-    THROW_HR_IF(E_INVALIDARG, *result.int8_val != std::numeric_limits<std::int8_t>::max());
+    auto result = Untrusted::Stubs::ReturnInt32Ptr_From_HostApp();
+    THROW_HR_IF_NULL(E_INVALIDARG, result.get());
+    THROW_HR_IF(E_INVALIDARG, *result != std::numeric_limits<std::int32_t>::max());
 
     return S_OK;
 }

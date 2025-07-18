@@ -17,13 +17,9 @@ using namespace VbsEnclave;
 
 #pragma region VTL0 (HostApp) Callback implementations
 
-Int8PtrAndSize Untrusted::Implementation::ReturnInt8ValPtr_From_HostApp()
+std::unique_ptr<std::int32_t> Untrusted::Implementation::ReturnInt32Ptr_From_HostApp()
 {
-    Int8PtrAndSize ret {};
-    ret.int8_val = std::make_unique<std::int8_t>();
-    *ret.int8_val = std::numeric_limits<std::int8_t>::max();
-
-    return ret;
+    return std::make_unique<std::int32_t>(std::numeric_limits<std::int32_t>::max());
 }
 
 std::uint64_t Untrusted::Implementation::ReturnUint64Val_From_HostApp()

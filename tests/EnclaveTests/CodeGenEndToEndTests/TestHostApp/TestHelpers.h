@@ -225,7 +225,10 @@ inline bool CompareTestStruct1(TestStruct1 a, TestStruct1 b)
 
     if (a.array1.size() == b.array1.size())
     {
-        return std::equal(a.array1.begin(), a.array1.end(), b.array1.begin());
+        if (!std::equal(a.array1.begin(), a.array1.end(), b.array1.begin()))
+        {
+            return false;
+        }
     }
     else
     {
