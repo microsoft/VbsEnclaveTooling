@@ -71,21 +71,22 @@ namespace CodeGeneration
     {
         std::string function_params_struct_type = std::format(c_function_args_struct, function.abi_m_name);
         DeveloperType new_type {function_params_struct_type, EdlTypeKind::Struct };
+        
+        // Add all parameters to the struct as fields first.
+        for (Declaration parameter : function.m_parameters)
+        {
+            parameter.m_name = "m_" + parameter.m_name;
+            parameter.m_parent_kind = DeclarationParentKind::Struct;
+            new_type.m_fields.push_back(parameter);
+        }
 
-        // Add return type to out struct if it's not void.
+        // Add the return type as the last field in the struct if the function does not return void.
         if (!function.m_return_info.IsEdlType(EdlTypeKind::Void))
         {
             auto return_copy = function.m_return_info;
             return_copy.m_name = "m_" + return_copy.m_name;
             return_copy.m_parent_kind = DeclarationParentKind::Struct;
             new_type.m_fields.push_back(return_copy);
-        }
-
-        for (Declaration parameter : function.m_parameters)
-        {
-            parameter.m_name = "m_" + parameter.m_name;
-            parameter.m_parent_kind = DeclarationParentKind::Struct;
-            new_type.m_fields.push_back(parameter);
         }
 
         return new_type;

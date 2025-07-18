@@ -87,21 +87,23 @@ namespace VbsEnclaveABI::HostApp
 
     // Generated code uses this function to forward input parameters and retrieve
     // return parameters from the the developers vtl0 callback implementation function.
-    template <typename ParamsT, typename ReturnParamsT, typename FuncImplT>
-    inline HRESULT CallVtl0CallbackImplFromVtl0(_In_ void* context, _In_ FuncImplT abi_impl_func)
+    template <Structure DevTypeT, Structure FlatBufferT, FunctionPtr FuncImplT>
+    inline HRESULT CallVtl0CallbackImplFromVtl0(_In_ FuncImplT dev_impl_func, _In_ void* context)
     {
         auto function_context = reinterpret_cast<EnclaveFunctionContext*>(context);
         RETURN_IF_NULL_ALLOC(function_context);
         auto forward_params_buffer = reinterpret_cast<uint8_t*>(function_context->m_forwarded_parameters.buffer);
         size_t forward_params_size = function_context->m_forwarded_parameters.buffer_size;
         RETURN_IF_NULL_ALLOC(forward_params_buffer);
-
         RETURN_HR_IF(E_INVALIDARG, forward_params_size > 0 && forward_params_buffer == nullptr);
 
-        auto flatbuffer_in_params = UnpackFlatbufferWithSize<ParamsT>(forward_params_buffer, forward_params_size);
-        flatbuffers::FlatBufferBuilder flatbuffer_out_params_builder {};
-        abi_impl_func(flatbuffer_in_params, flatbuffer_out_params_builder);
-       
+        auto flatbuffer_in_params = UnpackFlatbufferWithSize<FlatBufferT>(forward_params_buffer, forward_params_size);
+        auto func_args = Converters::ConvertStruct<DevTypeT>(flatbuffer_in_params);
+        
+        // Call user implementation
+        Converters::CallDevImpl(dev_impl_func, func_args);
+        auto flatbuffer_out_params_builder = PackFlatbuffer(Converters::ConvertStruct<FlatBufferT>(func_args));
+
         // VTL1 frees with vtl0_memory_ptr.
         wil::unique_process_heap_ptr<uint8_t> vtl0_returned_parameters {
            reinterpret_cast<uint8_t*>(AllocateMemory(flatbuffer_out_params_builder.GetSize()))};

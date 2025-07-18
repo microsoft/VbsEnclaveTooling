@@ -56,10 +56,8 @@ namespace VbsEnclaveABI::Enclave
 
     // Generated ABI export functions in VTL1 call this function as an entry point to calling
     // its associated VTL1 ABI impl function.
-    template <typename ParamsT, typename FuncImplT>
-    inline HRESULT CallVtl1ExportFromVtl1(
-        _In_ void* context,
-        _In_ FuncImplT abi_impl_func)
+    template <Structure DevTypeT, Structure FlatBufferT, FunctionPtr FuncImplT>
+    inline HRESULT CallVtl1ExportFromVtl1(_In_ FuncImplT dev_impl_func, _In_ void* context)
     {
         auto function_context = reinterpret_cast<EnclaveFunctionContext*>(context);
         RETURN_HR_IF_NULL(E_INVALIDARG, function_context);
@@ -82,11 +80,12 @@ namespace VbsEnclaveABI::Enclave
             forward_params_buffer,
             forward_params_size));
 
-        auto flatbuffer_in_params = UnpackFlatbufferWithSize<ParamsT>(input_buffer.get(), forward_params_size);
-        flatbuffers::FlatBufferBuilder flatbuffer_out_params_builder {};
+        auto flatbuffer_in_params = UnpackFlatbufferWithSize<FlatBufferT>(input_buffer.get(), forward_params_size);
+        auto func_args = Converters::ConvertStruct<DevTypeT>(flatbuffer_in_params);
 
         // Call user implementation
-        abi_impl_func(flatbuffer_in_params, flatbuffer_out_params_builder);
+        Converters::CallDevImpl(dev_impl_func, func_args);
+        auto flatbuffer_out_params_builder = PackFlatbuffer(Converters::ConvertStruct<FlatBufferT>(func_args));
 
         // Copy the return flatbuffer data (VTL0 will free this memory)
         vtl0_memory_ptr<std::uint8_t> vtl0_return_params;
