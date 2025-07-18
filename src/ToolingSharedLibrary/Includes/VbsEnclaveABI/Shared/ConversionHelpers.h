@@ -470,13 +470,13 @@ namespace VbsEnclaveABI::Shared::Converters
         }
     }
 
-    template <Structure FlatBufferT, Structure DevTypeT, FunctionPtr FuncT>
-    constexpr decltype(auto) ForwardAbiStructFieldsToDevImpl(DevTypeT& input_args, FuncT&& func)
+    template <FunctionPtr FuncT, Structure DevTypeT>
+    constexpr void CallDevImpl(FuncT&& func, DevTypeT& input_args)
     {
         using FuncTrait = FunctionInfo<std::decay_t<FuncT>>;
         constexpr size_t struct_fields_size = std::tuple_size_v<decltype(StructMetadata<DevTypeT>::members)>;
 
-        auto forward_to_developer_impl = [&]<std::size_t... I>(std::index_sequence<I...>) -> decltype(auto)
+        auto forward_to_developer_impl = [&]<std::size_t... I>(std::index_sequence<I...>)
         {
             if constexpr (std::is_void_v<typename FuncTrait::ReturnType>)
             {
@@ -500,10 +500,8 @@ namespace VbsEnclaveABI::Shared::Converters
                     ConvertIfNeeded<typename FuncTrait::template arg<I>>(input_args.*(std::get<I>(StructMetadata<DevTypeT>::members)))...
                 );
             }
-
-            return VbsEnclaveABI::Shared::PackFlatbuffer(ConvertStruct<FlatBufferT>(input_args));
         };
 
-        return forward_to_developer_impl(std::make_index_sequence<FuncTrait::NumberOfParameters>{});
+        forward_to_developer_impl(std::make_index_sequence<FuncTrait::NumberOfParameters>{});
     }
 }

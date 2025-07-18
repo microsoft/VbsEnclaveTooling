@@ -81,8 +81,11 @@ namespace VbsEnclaveABI::Enclave
             forward_params_size));
 
         auto flatbuffer_in_params = UnpackFlatbufferWithSize<FlatBufferT>(input_buffer.get(), forward_params_size);
-        auto dev_type = Converters::ConvertStruct<DevTypeT>(flatbuffer_in_params);
-        auto flatbuffer_out_params_builder = Converters::ForwardAbiStructFieldsToDevImpl<FlatBufferT>(dev_type, dev_impl_func);
+        auto func_args = Converters::ConvertStruct<DevTypeT>(flatbuffer_in_params);
+
+        // Call user implementation
+        Converters::CallDevImpl(dev_impl_func, func_args);
+        auto flatbuffer_out_params_builder = PackFlatbuffer(Converters::ConvertStruct<FlatBufferT>(func_args));
 
         // Copy the return flatbuffer data (VTL0 will free this memory)
         vtl0_memory_ptr<std::uint8_t> vtl0_return_params;

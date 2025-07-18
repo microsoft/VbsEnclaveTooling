@@ -95,13 +95,15 @@ namespace VbsEnclaveABI::HostApp
         auto forward_params_buffer = reinterpret_cast<uint8_t*>(function_context->m_forwarded_parameters.buffer);
         size_t forward_params_size = function_context->m_forwarded_parameters.buffer_size;
         RETURN_IF_NULL_ALLOC(forward_params_buffer);
-
         RETURN_HR_IF(E_INVALIDARG, forward_params_size > 0 && forward_params_buffer == nullptr);
 
         auto flatbuffer_in_params = UnpackFlatbufferWithSize<FlatBufferT>(forward_params_buffer, forward_params_size);
-        auto dev_type = Converters::ConvertStruct<DevTypeT>(flatbuffer_in_params);
-        auto flatbuffer_out_params_builder = Converters::ForwardAbiStructFieldsToDevImpl<FlatBufferT>(dev_type, dev_impl_func);
-       
+        auto func_args = Converters::ConvertStruct<DevTypeT>(flatbuffer_in_params);
+        
+        // Call user implementation
+        Converters::CallDevImpl(dev_impl_func, func_args);
+        auto flatbuffer_out_params_builder = PackFlatbuffer(Converters::ConvertStruct<FlatBufferT>(func_args));
+
         // VTL1 frees with vtl0_memory_ptr.
         wil::unique_process_heap_ptr<uint8_t> vtl0_returned_parameters {
            reinterpret_cast<uint8_t*>(AllocateMemory(flatbuffer_out_params_builder.GetSize()))};
