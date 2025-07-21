@@ -159,11 +159,6 @@ namespace CodeGeneration
         std::string_view struct_name,
         const std::vector<Declaration>& fields)
     {
-        if (fields.empty())
-        {
-            return {};
-        }
-
         std::ostringstream devtype_field_ptrs{};
         std::ostringstream flatbuffer_field_ptrs {};
 
@@ -242,29 +237,6 @@ namespace CodeGeneration
         return function_parameters.str();
     }
 
-    void AddParameterToTheForwardToDevImplList(
-        const Declaration& declaration,
-        std::string_view all_params_separator,
-        CppCodeBuilder::FunctionParametersInfo& param_info)
-    {
-        // pass the actual pointer from the unique pointer to the developers impl
-        // function if its not an out parameter.
-        if (declaration.HasPointer() && !declaration.IsOutParameterOnly())
-        {
-            param_info.m_params_to_forward_to_dev_impl << FormatString(
-                    "{} dev_type_params.m_{}.get()",
-                    all_params_separator,
-                    declaration.m_name);
-        }
-        else
-        {
-            param_info.m_params_to_forward_to_dev_impl << FormatString(
-                "{} dev_type_params.m_{}",
-                all_params_separator,
-                declaration.m_name);
-        }
-    }
-
     std::string CppCodeBuilder::BuildTrustBoundaryFunction(
         const Function& function,
         std::string_view abi_function_to_call,
@@ -291,15 +263,11 @@ namespace CodeGeneration
     {
         FunctionParametersInfo param_info {};
         size_t in_out_index = 0U;
-        size_t in_index = 0U;
         size_t out_index = 0U;
 
         for (size_t params_index = 0U; params_index < function.m_parameters.size(); params_index++)
         {
-            auto all_params_separator = (in_out_index == 0 && in_index == 0 && out_index == 0) ? "" : ",";
             const Declaration& declaration = function.m_parameters[params_index];
-
-            AddParameterToTheForwardToDevImplList(declaration, all_params_separator, param_info);
 
             // These will be copied into the flatbuffer. For Out param std::arrays we need to make sure the flatbuffer vector 
             // that is created is of size std::array<T, N>::size() and not 0/empty so we keep the invariant that the vector.size() will always
@@ -314,11 +282,7 @@ namespace CodeGeneration
                     declaration.m_name);
             }
 
-            if (declaration.IsInParameterOnly())
-            {
-                in_index++;
-            }
-            else
+            if (!declaration.IsInParameterOnly())
             {
                 in_out_index = declaration.IsInOutParameter() ? in_out_index + 1 : in_out_index;
                 out_index = declaration.IsOutParameterOnly() ? out_index + 1 : out_index;
@@ -421,70 +385,12 @@ namespace CodeGeneration
             function_body.str());
     }
 
-    std::string CppCodeBuilder::BuildAbiImplFunction(
-        const Function& function,
-        std::string_view call_impl_str,
-        const FunctionParametersInfo& param_info)
-    {
-        std::string function_params_struct_type = std::format(c_function_args_struct, function.abi_m_name);
-
-        auto abi_parameters = std::format(c_abi_impl_function_parameters, function.abi_m_name);
-        std::string params_to_forward = param_info.m_params_to_forward_to_dev_impl.str();
-        std::ostringstream function_body {};
-
-        std::ostringstream updated_parameters_received_from_dev_impl{};;
-        
-        if (param_info.m_are_return_params_needed)
-        {
-            updated_parameters_received_from_dev_impl << c_setup_return_params_struct;
-        }
-        else
-        {
-            updated_parameters_received_from_dev_impl
-                << std::format(c_setup_no_return_params_struct, function_params_struct_type);
-        }
-
-        std::string_view abi_func_return_statement {};
-        if (param_info.m_function_return_type_void)
-        {
-            abi_func_return_statement = c_abi_func_return_when_void;
-        }
-        else
-        {
-            abi_func_return_statement = c_abi_func_return_value;
-        }
-
-        // If we need to forward parameters to the developer impl or if we need to receive the return value
-        // from the developer impl, we must instantiate the dev type struct associated with the function. If 
-        // neither of those things are true (e.g function that takes no in/inout args and returns no values) then 
-        // we do not generate the dev type struct variable as there is no need.
-        if (!params_to_forward.empty())
-        {
-            function_body << std::format(c_conversion_to_dev_type_statement, function_params_struct_type);
-        }
-        else if (param_info.m_are_return_params_needed)
-        {
-            function_body << std::format(c_instantiate_dev_type, function_params_struct_type);
-        }
-
-        function_body << FormatString(
-            abi_func_return_statement,
-            call_impl_str,
-            params_to_forward,
-            updated_parameters_received_from_dev_impl.str());
-
-        return std::format(
-            c_generated_abi_impl_function,
-            function.abi_m_name,
-            abi_parameters,
-            function_body.str());
-    }
-
     CppCodeBuilder::HostToEnclaveContent CppCodeBuilder::BuildHostToEnclaveFunctions(
         std::string_view generated_namespace,
         const OrderedMap<std::string, Function>& trusted_functions)
     {
-        std::ostringstream vtl1_abi_boundary_functions {};
+        std::ostringstream vtl1_abi_functions {};
+        vtl1_abi_functions << c_vtl1_enforce_mem_restriction_func;
         std::ostringstream vtl1_abi_impl_functions {};
         std::ostringstream vtl1_trusted_function_declarations {};
         std::ostringstream vtl0_stubs_for_vtl1_trusted_functions {};
@@ -504,23 +410,15 @@ namespace CodeGeneration
 
             auto vtl1_call_to_vtl1_export = std::format(
                 c_vtl1_call_to_vtl1_export,
-                function.abi_m_name,
-                function.abi_m_name);
+                function.m_name,
+                function.m_name);
 
             // This is the vtl0 function that is exported by the enclave and called via a
             // CallEnclave call by the abi.
-            vtl1_abi_boundary_functions << BuildTrustBoundaryFunction(
+            vtl1_abi_functions << BuildTrustBoundaryFunction(
                 function,
                 vtl1_call_to_vtl1_export,
                 false,
-                param_info);
-
-            auto vtl1_dev_impl_call = std::format("Trusted::Implementation::{}", function.m_name);
-
-            // This is the vtl1 abi function that will call the developers vtl1 function implementation.
-            vtl1_abi_impl_functions << BuildAbiImplFunction(
-                function,
-                vtl1_dev_impl_call,
                 param_info);
 
             // VTL1 enclave function that the developer will implement. It is called by the vtl1
@@ -532,20 +430,18 @@ namespace CodeGeneration
                 BuildFunctionParameters(function, param_info));
         }
 
-        HostToEnclaveContent content{};
+        HostToEnclaveContent content {};
         content.m_vtl0_trusted_stub_functions = vtl0_stubs_for_vtl1_trusted_functions.str();
         content.m_vtl1_trusted_function_declarations = vtl1_trusted_function_declarations.str();
         std::string callbacks_name = std::format(
             c_vtl1_register_callbacks_abi_export_name,
             generated_namespace);
 
-        vtl1_abi_boundary_functions << std::format(
+        vtl1_abi_functions << std::format(
             c_vtl1_register_callbacks_abi_export,
             callbacks_name);
 
-        vtl1_abi_impl_functions << c_vtl1_enforce_mem_restriction_func << vtl1_abi_boundary_functions.str();
-
-        content.m_vtl1_abi_functions = vtl1_abi_impl_functions.str();
+        content.m_vtl1_abi_functions = vtl1_abi_functions.str();
 
         return content;
     }
@@ -557,16 +453,12 @@ namespace CodeGeneration
     {
         size_t number_of_functions = untrusted_functions.size();
         size_t number_of_functions_plus_allocators = untrusted_functions.size() + c_number_of_abi_callbacks;
-        std::ostringstream vtl1_callback_functions {};
         std::ostringstream vtl0_abi_boundary_functions {};
-        std::ostringstream vtl0_abi_impl_callback_functions {};
         std::ostringstream vtl0_developer_declaration_functions {};
         std::ostringstream vtl1_stubs_for_vtl0_untrusted_functions {};
 
         // Add allocate vtl0 memory function from ABI base file.
         std::ostringstream vtl0_class_method_addresses;
-        auto parameter_separator = (number_of_functions == 0) ? "" : ",";;
-        auto addresses_separator = "";
         vtl0_class_method_addresses << c_allocate_memory_callback_to_address.data();
         vtl0_class_method_addresses << c_deallocate_memory_callback_to_address.data();
         std::ostringstream vtl0_class_method_names;
@@ -593,8 +485,8 @@ namespace CodeGeneration
 
             auto vtl0_call_to_vtl0_callback = std::format(
                 c_vtl0_call_to_vtl0_callback,
-                function.abi_m_name,
-                function.abi_m_name);
+                function.m_name,
+                function.m_name);
 
             // This is the vtl0 callback that will call into our abi vtl0 callback implementation.
             // This callback is what vtl1 will call with CallEnclave.
@@ -604,16 +496,7 @@ namespace CodeGeneration
                 true,
                 param_info);
 
-            // This is our vtl0 abi callback implementation that will finally pass the parameters
-            // to the developers vtl0 impl function.
-            auto vtl0_dev_impl_call = std::format("Untrusted::Implementation::{}", function.m_name);
-
-            vtl0_abi_impl_callback_functions << BuildAbiImplFunction(
-                function,
-                vtl0_dev_impl_call,
-                param_info);
-
-            // This is the developers vtl0 impl function. The develper will implement this static class
+            // This is the developers vtl0 impl function. The developer will implement this static class
             // method.
             vtl0_developer_declaration_functions << std::format(
                 c_function_declaration,
@@ -643,10 +526,7 @@ namespace CodeGeneration
             vtl0_class_method_names.str());
 
         content.m_vtl0_untrusted_function_declarations = vtl0_developer_declaration_functions.str();
-
-        vtl0_abi_impl_callback_functions << vtl0_abi_boundary_functions.str();
-        content.m_vtl0_abi_functions = vtl0_abi_impl_callback_functions.str();
-
+        content.m_vtl0_abi_functions = vtl0_abi_boundary_functions.str();
         content.m_vtl1_stubs_for_vtl0_untrusted_functions = vtl1_stubs_for_vtl0_untrusted_functions.str();
 
         return content;

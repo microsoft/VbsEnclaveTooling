@@ -16,7 +16,6 @@ table TestStruct2 {
  }
 
 table FuncWithAllArgs_0_args {
-    m__return_value_ : int32;
     m_arg1 : bool;
     m_arg2 : uint32 = null;
     m_arg3 : int32 = null;
@@ -26,10 +25,10 @@ table FuncWithAllArgs_0_args {
     m_arg7 : [TestStruct2] (native_inline);
     m_arg8 : [int16] ;
     m_arg9 : [WString] (native_inline);
+    m__return_value_ : int32;
  }
 
 table FuncWithAllArgs_1_args {
-    m__return_value_ : int32;
     m_arg1 : bool;
     m_arg2 : uint32 = null;
     m_arg3 : int32 = null;
@@ -39,6 +38,7 @@ table FuncWithAllArgs_1_args {
     m_arg7 : [TestStruct2] (native_inline);
     m_arg8 : [int16] ;
     m_arg9 : [WString] (native_inline);
+    m__return_value_ : int32;
  }
 
 table WString {
