@@ -7,9 +7,10 @@
 #define PCH_H
 
 #include <filesystem>
-#include <string>
-#include <iostream>
 #include <fstream> 
+#include <iostream>
+#include <span>
+#include <string>
 #include <unordered_map>
 
 #endif //PCH_H

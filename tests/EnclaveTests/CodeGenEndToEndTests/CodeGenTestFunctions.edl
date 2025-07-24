@@ -53,11 +53,6 @@ enclave
         HRESULT result;
     };
 
-    struct Int8PtrAndSize
-    {
-        int8_t* int8_val;
-    };
-
     struct NestedStructWithArray
     {
         int64_t array1[value1];
@@ -102,16 +97,16 @@ enclave
         TestStruct2 field5;
     };
 
+    struct StructWithPointers
+    {
+        NestedStructWithPointers* nested_struct_ptr;
+    };
+
     struct NestedStructWithPointers
     {
         int32_t* int32_ptr;
         DecimalEnum* deci_ptr;
         TestStruct1* struct_ptr;
-    };
-
-    struct StructWithPointers
-    {
-        NestedStructWithPointers* nested_struct_ptr;
     };
 
     // Host to enclave functions
@@ -151,10 +146,9 @@ enclave
             [out] DecimalEnum* enum_val,
             [out] uint64_t* uint64_val); 
 
-        // Example of returning a pointer since we don't allow return pointers of primitives, 
-        // only structs. Pointer marhaling works the same way for primitive so we only need a test
+        // Example of returning a pointer. Marshalling works the same way for primitive so we only need a test
         // for one.
-        Int8PtrAndSize ReturnInt8ValPtr_From_Enclave();
+        int32_t* ReturnInt32Ptr_From_Enclave();
 
         uint64_t ReturnUint64Val_From_Enclave();
 
@@ -233,7 +227,7 @@ enclave
         HRESULT Start_TestPassingPrimitivesAsInPointers_To_HostApp_Callback_Test();
         HRESULT Start_TestPassingPrimitivesAsInOutPointers_To_HostApp_Callback_Test();
         HRESULT Start_TestPassingPrimitivesAsOutPointers_To_HostApp_Callback_Test(); 
-        HRESULT Start_ReturnInt8ValPtr_From_HostApp_Callback_Test();
+        HRESULT Start_ReturnInt32Ptr_From_HostApp_Callback_Test();
         HRESULT Start_ReturnUint64Val_From_HostApp_Callback_Test();
         HRESULT Start_ReturnStructWithValues_From_HostApp_Callback_Test();
         HRESULT Start_ComplexPassingOfTypes_To_HostApp_Callback_Test();
@@ -285,10 +279,9 @@ enclave
             [out] DecimalEnum* enum_val,
             [out] uint64_t* uint64_val); 
 
-        // Example of returning a pointer since we don't allow return pointers of primitives, 
-        // only structs. Pointer marhaling works the same way for primitive so we only need a test
+        // Example of returning a pointer. Marshalling works the same way for primitive so we only need a test
         // for one.
-        Int8PtrAndSize ReturnInt8ValPtr_From_HostApp();
+        int32_t* ReturnInt32Ptr_From_HostApp();
 
         uint64_t ReturnUint64Val_From_HostApp();
 

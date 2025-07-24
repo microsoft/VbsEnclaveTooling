@@ -53,6 +53,7 @@ namespace EdlProcessor
             const std::vector<Declaration>& declarations);
             
         void ValidateNonSizeAndCountAttributes(const Declaration& declaration);
+        void UpdateTypeDeclarations(std::span<Declaration> declarations);
 
         inline void ThrowIfExpectedTokenNotNext(const char* token_expected_next);
         inline void ThrowIfExpectedTokenNotNext(char token_expected_next);
@@ -96,5 +97,6 @@ namespace EdlProcessor
         std::vector<Function> m_trusted_functions_list {};
         std::unordered_map<std::string, Function> m_untrusted_functions_map;
         std::vector<Function> m_untrusted_functions_list {};
+        std::unordered_set<std::string> m_unresolved_types{};
     };
 }
