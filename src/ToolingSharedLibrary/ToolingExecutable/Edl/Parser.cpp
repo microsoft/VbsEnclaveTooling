@@ -1079,14 +1079,14 @@ namespace EdlProcessor
 
     void EdlParser::PerformFinalValidations()
     {
-        for (auto& dev_type : m_developer_types_insertion_order_list)
+        for (auto& dev_type : m_developer_types.values())
         {
             UpdateTypeDeclarations(dev_type.m_fields);
         }
 
-        for (auto& vec : {std::ref(m_trusted_functions_list), std::ref(m_untrusted_functions_list)})
+        for (auto& map : {std::ref(m_trusted_functions), std::ref(m_untrusted_functions)})
         {
-            for (auto& function : vec.get())
+            for (auto& function : map.get().values())
             {
                 UpdateTypeDeclarations(function.m_parameters);
             }
