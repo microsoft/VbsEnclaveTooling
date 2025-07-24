@@ -30,6 +30,8 @@ TEST_CLASS(LexicalAnalyzerTests)
             LEFT_ROUND_BRACKET,
             RIGHT_SQUARE_BRACKET,
             LEFT_SQUARE_BRACKET,
+            RIGHT_ARROW_BRACKET,
+            LEFT_ARROW_BRACKET,
             EQUAL_SIGN,
             SEMI_COLON,
             COMMA,

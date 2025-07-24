@@ -44,6 +44,8 @@ enclave
         uint32_t RetUint32_t();
         uint64_t RetUint64_t();
         void RetVoid();
+
+        uint32_t* RetUint32Ptr();
     };
 
     untrusted 
@@ -80,5 +82,7 @@ enclave
         uint32_t RetUint32_t();
         uint64_t RetUint64_t();
         void RetVoid();
+
+        uint32_t* RetUint32Ptr();
     };
 };

@@ -527,6 +527,18 @@ namespace EdlProcessor
             {
                 new_struct_type.m_contains_container_type = true;
             }
+
+            auto is_field_type_same_as_struct = field.m_edl_type_info.m_name == new_struct_type.m_name;
+
+            // Ensure no field contains the struct type itself, unless it's a pointer to the struct.
+            if (is_field_type_same_as_struct && !field.m_edl_type_info.is_pointer)
+            {
+                throw EdlAnalysisException(
+                    ErrorId::EdlStructSelfReference,
+                    m_file_name,
+                    m_cur_line,
+                    m_cur_column);
+            }
         }
 
         ThrowIfExpectedTokenNotNext(RIGHT_CURLY_BRACKET);
@@ -581,25 +593,12 @@ namespace EdlProcessor
         attribute_info.m_in_and_out_present = false;
         function.m_return_info.m_attribute_info = attribute_info;
         function.m_return_info.m_name = "_return_value_";
+        ValidatePointers(function.m_return_info);
 
         Token function_name_token = GetCurrentTokenAndMoveToNextToken();
         ThrowIfTokenNotIdentifier(function_name_token, ErrorId::EdlFunctionIdentifierNotFound);
         function.m_name = function_name_token.ToString();
         
-        // Return of pointers aren't allowed. Only primitive types and structs as values. Pointers
-        // in structs must have a an associated size/count attribute, so by preventing the return of pointers directly
-        // developers must enclose them in structs. This way the abi layer can properly copy the underlying memory to 
-        // the appropriate virtual trust layer as it will know the size of the data the pointer points to.
-        if (function.m_return_info.m_edl_type_info.is_pointer)
-        {
-            throw EdlAnalysisException(
-                ErrorId::EdlReturnValuesCannotBePointers,
-                m_file_name,
-                m_cur_line,
-                m_cur_column,
-                function.m_name);
-        }
-
         ThrowIfTypeNameIdentifierIsReserved(function.m_name);
         ThrowIfExpectedTokenNotNext(LEFT_ROUND_BRACKET);
 
@@ -765,7 +764,7 @@ namespace EdlProcessor
         Token type_token = GetCurrentTokenAndMoveToNextToken();
         ThrowIfTokenNotIdentifier(type_token, ErrorId::EdlIdentifierNameNotFound);
         auto type_name = type_token.ToString();
-        auto type_info = EdlTypeInfo(type_name);
+        auto type_info = EdlTypeInfo(type_name, EdlTypeKind::Unknown);
 
         // Check if type is a keyword for a type we support out of the box by default within
         // function parameters and structs. E.g uint8_t
@@ -787,16 +786,6 @@ namespace EdlProcessor
             DeveloperType& developer_type = m_developer_types.at(type_name);
             type_info.m_type_kind = developer_type.m_type_kind;
         }
-        else
-        {
-            // Custom type that isn't defined yet.
-            throw EdlAnalysisException(
-                ErrorId::EdlDeveloperTypesMustBeDefinedBeforeUse,
-                m_file_name,
-                m_cur_line,
-                m_cur_column,
-                type_name);
-        }
 
         // Add the pointer if it exists.
         if (PeekAtCurrentToken() == ASTERISK)
@@ -813,6 +802,18 @@ namespace EdlProcessor
                     m_cur_line,
                     m_cur_column);
             }
+        }
+
+        // Make sure we cover inner type case E.g vector<type>.
+        auto* cur_info = &type_info;
+        if (cur_info->inner_type)
+        {
+            cur_info = cur_info->inner_type.get();
+        }
+
+        if (!m_unresolved_types.contains(cur_info->m_name) && cur_info->m_type_kind == EdlTypeKind::Unknown)
+        {
+            m_unresolved_types.insert(cur_info->m_name);
         }
 
         return type_info;
@@ -927,12 +928,7 @@ namespace EdlProcessor
             }
             else
             {
-                throw EdlAnalysisException(
-                    ErrorId::EdlTypeInVectorMustBePreviouslyDefined,
-                    m_file_name,
-                    m_cur_line,
-                    m_cur_column,
-                    token_name);
+                vector_info.inner_type = std::make_shared<EdlTypeInfo>(token_name, EdlTypeKind::Unknown);
             }
 
             ThrowIfExpectedTokenNotNext(RIGHT_ARROW_BRACKET);
@@ -1049,8 +1045,69 @@ namespace EdlProcessor
         return {};
     }
 
+    void EdlParser::UpdateTypeDeclarations(std::span<Declaration> declarations)
+    {
+        std::vector<std::string> resolved_types {};
+
+        for (auto& declaration : declarations)
+        {
+            auto type_info_ptr = &declaration.m_edl_type_info;
+
+            // Cover vector<type> case.
+            if (type_info_ptr->inner_type)
+            {
+                type_info_ptr = type_info_ptr->inner_type.get();
+            }
+
+            auto type_name_found = declaration.m_edl_type_info.m_name;
+            auto type_name_is_unresolved = m_unresolved_types.contains(type_name_found);
+            auto dev_type_iter = m_developer_types.find(type_name_found);
+            auto type_name_is_dev_type = dev_type_iter != m_developer_types.end();
+
+            if (type_name_is_unresolved && type_name_is_dev_type)
+            {
+                type_info_ptr->m_type_kind = dev_type_iter->second.m_type_kind;
+                resolved_types.push_back(type_name_found);
+            }
+        }
+
+        for (auto& name : resolved_types)
+        {
+            m_unresolved_types.erase(name);
+        }
+    }
+
     void EdlParser::PerformFinalValidations()
     {
+        for (auto& dev_type : m_developer_types_insertion_order_list)
+        {
+            UpdateTypeDeclarations(dev_type.m_fields);
+        }
+
+        for (auto& vec : {std::ref(m_trusted_functions_list), std::ref(m_untrusted_functions_list)})
+        {
+            for (auto& function : vec.get())
+            {
+                UpdateTypeDeclarations(function.m_parameters);
+            }
+        }
+
+        if (!m_unresolved_types.empty())
+        {
+            std::string type_names;
+            for (const auto& type_name : m_unresolved_types)
+            {
+                type_names += (type_names.empty() ? "" : ", ") + type_name;
+            }
+
+            throw EdlAnalysisException(
+                ErrorId::EdlTypenameInvalid,
+                m_file_name,
+                m_cur_line,
+                m_cur_column,
+                type_names);
+        }
+        
         // now that we've finished parsing the function declarations and structs 
         // Make sure the size/count attributes are validated.
         for (auto& function : m_trusted_functions.values())

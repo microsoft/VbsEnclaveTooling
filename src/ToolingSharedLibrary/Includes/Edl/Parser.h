@@ -79,6 +79,7 @@ namespace EdlProcessor
             const std::vector<Declaration>& declarations);
             
         void ValidateNonSizeAndCountAttributes(const Declaration& declaration);
+        void UpdateTypeDeclarations(std::span<Declaration> declarations);
 
         inline void ThrowIfExpectedTokenNotNext(const char* token_expected_next);
         inline void ThrowIfExpectedTokenNotNext(char token_expected_next);
@@ -116,6 +117,7 @@ namespace EdlProcessor
         Token m_next_token {};
         std::uint32_t m_cur_line {};
         std::uint32_t m_cur_column {};
+        std::unordered_set<std::string> m_unresolved_types{};
         OrderedMap<std::string, DeveloperType> m_developer_types {};
         OrderedMap<std::string, Function> m_trusted_functions;
         OrderedMap<std::string, Function> m_untrusted_functions;

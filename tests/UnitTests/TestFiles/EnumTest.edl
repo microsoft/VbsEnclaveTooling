@@ -63,6 +63,8 @@ enclave
             size_t arg20,
             size_t arg21
         );
+
+        Color* GetColorPtr();
     };
 
     untrusted 
@@ -102,5 +104,7 @@ enclave
             size_t arg20,
             size_t arg21
         );
+
+        Color* GetColorPtr();
     };
 };

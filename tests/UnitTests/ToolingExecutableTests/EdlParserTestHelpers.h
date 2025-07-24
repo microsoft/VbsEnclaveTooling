@@ -59,16 +59,19 @@ namespace VbsEnclaveToolingTests
         { "RetUint32_t", "RetUint32_t()" },
         { "RetUint64_t", "RetUint64_t()" },
         { "RetVoid", "RetVoid()" },
+        { "RetUint32Ptr", "RetUint32Ptr()" },
 
         // EnumTest.edl function signatures where key is function name and value is its signature
 
         {"TrustedGetColor", "TrustedGetColor(Color,Color[Nine],Color[5],Color[1],Color*,Color*,Color*,Color*,Color*,Color*,Color*,Color*,Color*,Color*,Color*,Color*,Color*,Color*,Color*,size_t,size_t)"},
         {"UntrustedGetColor", "UntrustedGetColor(Color,Color[5],Color[5],Color[1],Color*,Color*,Color*,Color*,Color*,Color*,Color*,Color*,Color*,Color*,Color*,Color*,Color*,Color*,Color*,size_t,size_t)"},
+        { "GetColorPtr", "GetColorPtr()" },
 
         // StructTest.edl function signatures where key is function name and value is its signature
 
         {"TrustedGetStruct1", "TrustedGetStruct1(MyStruct1,MyStruct1[5],MyStruct1[5],MyStruct1[1],MyStruct1*,MyStruct1*,MyStruct1*,MyStruct1*,MyStruct1*,MyStruct1*,MyStruct1*,MyStruct1*,MyStruct1*,MyStruct1*,MyStruct1*,MyStruct1*,MyStruct1*,MyStruct1*,MyStruct1*,size_t,size_t)"},
         {"UntrustedGetStruct1", "UntrustedGetStruct1(MyStruct1,MyStruct1[5],MyStruct1[5],MyStruct1[1],MyStruct1*,MyStruct1*,MyStruct1*,MyStruct1*,MyStruct1*,MyStruct1*,MyStruct1*,MyStruct1*,MyStruct1*,MyStruct1*,MyStruct1*,MyStruct1*,MyStruct1*,MyStruct1*,MyStruct1*,size_t,size_t)"},
+        { "GetStruct1Ptr", "GetStruct1Ptr()" },
 
         // ImportTest.edl function signatures where key is the function name and value is its signature
         { "NonImportFunc1", "NonImportFunc1()"},
@@ -84,6 +87,12 @@ namespace VbsEnclaveToolingTests
 
         // D.edl function signatures where key is the function name and value is its signature
         { "DFunc", "DFunc()" },
+    };
+
+    enum class FunctionReturnKind
+    {
+        NonPtr,
+        Ptr,
     };
 
     static inline std::wstring ConvertExceptionMessageToWstring(const std::exception& exception)
@@ -128,7 +137,8 @@ namespace VbsEnclaveToolingTests
         const std::filesystem::path& test_file_name,
         const std::string& function_name,
         const FunctionKind& function_kind,
-        const EdlTypeKind& expected_return_type)
+        const EdlTypeKind& expected_return_type,
+        FunctionReturnKind return_kind = FunctionReturnKind::NonPtr)
     {
         try
         {
@@ -148,6 +158,15 @@ namespace VbsEnclaveToolingTests
             auto actual_return_type_string = c_edlTypes_to_string_map.at(function.m_return_info.m_edl_type_info.m_type_kind);
             auto expected_return_type_string = c_edlTypes_to_string_map.at(expected_return_type);
             Assert::AreEqual(expected_return_type_string, actual_return_type_string);
+
+            if (return_kind == FunctionReturnKind::NonPtr)
+            {
+                Assert::IsFalse(function.m_return_info.HasPointer());
+            }
+            else
+            {
+                Assert::IsTrue(function.m_return_info.HasPointer());
+            }
         }
         catch (const std::exception& exception)
         {
