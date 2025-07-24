@@ -32,7 +32,7 @@ namespace VbsEnclaveToolingTests
                 std::vector<std::filesystem::path> import_directories,
                 size_t trusted_function_list_size,
                 size_t untrusted_function_list_size,
-                std::unordered_set<std::string>& m_dev_type_names)
+                std::unordered_set<std::string>& dev_type_names)
             {
                 std::filesystem::path running_test_dir = std::filesystem::current_path();
                 auto edl_parser = EdlParser(edl_file, import_directories);
@@ -55,11 +55,11 @@ namespace VbsEnclaveToolingTests
                 check_functions_expected(edl.m_untrusted_functions);
 
                 // Verify developer types were added to edl object
-                Assert::AreEqual(m_dev_type_names.size(), edl.m_developer_types.size());
+                Assert::AreEqual(dev_type_names.size(), edl.m_developer_types.size());
                 for (auto& dev_type_name : edl.m_developer_types.keys())
                 {
                     auto& dev_type = edl.m_developer_types.at(dev_type_name);
-                    Assert::IsTrue(m_dev_type_names.contains(dev_type.m_name));
+                    Assert::IsTrue(dev_type_names.contains(dev_type.m_name));
                 }
             }
 
@@ -68,28 +68,31 @@ namespace VbsEnclaveToolingTests
             // Trusted functions
         TEST_METHOD(Parse_edl_file_without_duplicate_or_cycle_imports)
         {
-            std::unordered_set<std::string> m_dev_type_names =
+            std::unordered_set<std::string> dev_type_names =
             {
                 "__anonymous_enum",
-                "MyStruct1",
                 "MyStruct0",
+                "MyStruct1",
+                "MyStruct2",
                 "NonImportStruct",
                 "NonImportEnum",
                 "Color",
             };
 
-            auto num_of_functions_to_parse = 31; // 31 trusted and 31 untrusted
+            // 34 trusted and 34 untrusted. Should match number of values in `c_test_func_signatures`
+            // which is located in EdlParserTestHelpers.h
+            auto num_of_functions_to_parse = 34;
             ParseEdlFileWithImports(
                 m_edl_file_without_duplicate_imports,
                 {std::filesystem::current_path()},
                 num_of_functions_to_parse,
                 num_of_functions_to_parse,
-                m_dev_type_names);
+                dev_type_names);
         }
 
         TEST_METHOD(Parse_Edl_file_with_duplicate_imports)
         {
-            std::unordered_set<std::string> m_dev_type_names =
+            std::unordered_set<std::string> dev_type_names =
             {
                 "__anonymous_enum",
                 "AEnum",
@@ -110,7 +113,7 @@ namespace VbsEnclaveToolingTests
                     directories,
                     num_of_functions_to_parse,
                     num_of_functions_to_parse,
-                    m_dev_type_names);
+                    dev_type_names);
             }
 
             TEST_METHOD(Parse_Edl_file_with_cycle_in_imports)
