@@ -12,10 +12,7 @@ static inline constexpr std::string_view c_flatbuffer_compiler_name = "flatc.exe
 
 static inline constexpr std::string_view c_flatbuffer_compiler_default_path = "{}\\flatc.exe";
 
-// The flatbuffer compiler generates style warnings if the table fields are not snake case. We'll use
-// --no-warnings to prevent this, since we can't dictate to users that they must use snake
-// case for their function variable names.
-static inline constexpr std::string_view c_cpp_gen_args = "--cpp --no-prefix --cpp-std c++17 --gen-object-api --force-empty --no-warnings --filename-suffix \"\"";
+static inline constexpr std::string_view c_cpp_gen_args = "--cpp --no-prefix --cpp-std c++17 --gen-object-api --force-empty --filename-suffix \"\"";
 
 // Since we allow Hex inside the edl enum, we will default to uint64 to cover all scenarios.
 static inline constexpr std::string_view c_enum_definition = "\nenum {} : uint64 {{\n{}}}\n";
