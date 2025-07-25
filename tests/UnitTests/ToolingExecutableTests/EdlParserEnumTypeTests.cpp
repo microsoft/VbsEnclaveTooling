@@ -20,10 +20,6 @@ namespace VbsEnclaveToolingTests
 
 TEST_CLASS(EdlParserEnumTypeTests)
 {
-    private:
-
-    std::filesystem::path m_enum_edl_file_name = "EnumTest.edl";
-
     public:
 
     // Trusted functions

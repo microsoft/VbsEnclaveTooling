@@ -1,0 +1,12 @@
+// Copyright (c) Microsoft Corporation.
+// Licensed under the MIT License.
+
+enclave
+{
+    import "TestFiles\EnumTest.edl";
+   
+   enum 
+    {
+         Nine,
+    };
+};

@@ -1,0 +1,35 @@
+// Copyright (c) Microsoft Corporation.
+// Licensed under the MIT License.
+
+enclave
+{
+    import "TestFiles\ArrayTest.edl";
+    import "TestFiles\StructTest.edl";
+    import "TestFiles\BasicTypesTest.edl";
+    import "TestFiles\EnumTest.edl";
+   
+   enum 
+    {
+         Eleven,
+    };
+
+    enum NonImportEnum
+    {
+         value,
+    };
+
+    struct NonImportStruct
+    {
+        int32_t value;
+    };
+
+    trusted
+    {
+        void NonImportFunc1();
+    };
+
+    untrusted
+    {
+        void NonImportFunc1();
+    };
+};

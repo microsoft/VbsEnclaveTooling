@@ -5,11 +5,10 @@
 #include <CmdlineParsingHelpers.h>
 #include <CmdlineArgumentsParser.h>
 #include "CppUnitTest.h"
+#include "EdlParserTestHelpers.h"
 
 using namespace CmdlineParsingHelpers;
 using namespace Microsoft::VisualStudio::CppUnitTestFramework;
-
-const std::string c_edl_path_valid_input = "BasicTypesTest.edl";
 
 namespace VbsEnclaveToolingTests
 {
@@ -32,13 +31,14 @@ namespace VbsEnclaveToolingTests
         TEST_METHOD(TestValidArguments)
         {
             // Simulate command line arguments
+            auto edl_valid_path = c_edl_path_valid_input.generic_string();
             const char* argv[] =
             {
                 m_exe_name.data(),
                 m_lang_arg.data(),
                 m_lang_valid_input.data(),
                 m_edl_path_arg.data(),
-                c_edl_path_valid_input.data(),
+                edl_valid_path.data(),
                 m_out_dir_arg.data(),
                 m_out_dir_valid_input.data(),
                 m_error_handling_arg.data(),
@@ -52,8 +52,8 @@ namespace VbsEnclaveToolingTests
 
             // Test if the parser parsed the arguments correctly
             Assert::IsFalse(parser.ShouldDisplayHelp());
-            Assert::AreEqual(std::string_view(c_edl_path_valid_input), parser.EdlFilePath());
-            Assert::AreEqual(std::string_view(m_out_dir_valid_input), parser.OutDirectory());
+            Assert::AreEqual(c_edl_path_valid_input.generic_string(), parser.EdlFilePath().generic_string());
+            Assert::AreEqual(m_out_dir_valid_input, parser.OutDirectory().generic_string());
             Assert::AreEqual(static_cast<uint32_t>(ErrorHandlingKind::ErrorCode), static_cast<uint32_t>(parser.ErrorHandling()));
             Assert::AreEqual(static_cast<uint32_t>(SupportedLanguageKind::Cpp), static_cast<uint32_t>(parser.SupportedLanguage()));
             Assert::IsTrue(parser.ParseSuccessful());
