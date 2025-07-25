@@ -71,6 +71,7 @@
     <None Include="TestFiles\ImportTestFiles\CycleImports\B_Cycle.edl" />
     <None Include="TestFiles\ImportTestFiles\CycleImports\C_Cycle.edl" />
     <None Include="TestFiles\ImportTestFiles\CycleImports\D_Cycle.edl" />
+    <None Include="TestFiles\ImportTestFiles\DuplicateAnonymousEnumValues.edl" />
   </ItemGroup>
   <ItemGroup>
     <Natvis Include="$(MSBuildThisFileDirectory)..\..\natvis\wil.natvis" />

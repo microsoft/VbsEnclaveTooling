@@ -262,6 +262,9 @@
     <None Include="TestFiles\ImportTestFiles\ImproperImportStatementsTest.edl">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
+    <None Include="TestFiles\ImportTestFiles\DuplicateAnonymousEnumValues.edl">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
     <None Include="TestFiles\StructTest.edl">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>

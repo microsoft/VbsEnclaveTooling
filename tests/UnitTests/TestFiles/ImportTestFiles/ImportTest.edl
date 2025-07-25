@@ -10,7 +10,7 @@ enclave
    
    enum 
     {
-         Nine,
+         Eleven,
     };
 
     enum NonImportEnum

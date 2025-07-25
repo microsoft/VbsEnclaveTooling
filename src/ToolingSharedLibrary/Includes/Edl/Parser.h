@@ -80,6 +80,7 @@ namespace EdlProcessor
             
         void ValidateNonSizeAndCountAttributes(const Declaration& declaration);
         void UpdateTypeDeclarations(std::span<Declaration> declarations);
+        void MergeEdl(Edl& src_edl, Edl& dest_edl);
 
         inline void ThrowIfExpectedTokenNotNext(const char* token_expected_next);
         inline void ThrowIfExpectedTokenNotNext(char token_expected_next);

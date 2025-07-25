@@ -32,7 +32,7 @@ namespace CmdlineParsingHelpers
             << "\n"
             << "Optional arguments:\n"
             << "  -h, --help                                           Print this help message\n"
-            << "  --ImportDirectories                                  A semicolon-separated list of fully qualified directory paths containing .edl files that may be imported by the .edl file specified with the --EdlPath argument. The parent directory of the .edl file given in --EdlPath is included by default. \n"
+            << "  --ImportDirectories                                  A semicolon-separated list of fully qualified directory paths containing .edl files that may be imported by the .edl file specified with the --EdlPath argument. \n"
             << "  --OutputDirectory <DirectoryPath>                    Absolute path to directory where all generated files should be placed. (By default this is the current directory)\n"
             << "  --Vtl0ClassName <name_of_class>                      name of the vtl0 class that will be generated for use by the hostapp. (By default this is the name of the .edl file with the word 'Wrapper' appended to it).\n"
             << "  --Namespace <name_of_class>                          name of the namespace that all generated code will be encapsulated in. (By default this is the name of the .edl file).\n"

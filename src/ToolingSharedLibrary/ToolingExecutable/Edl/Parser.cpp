@@ -9,6 +9,7 @@
 #include <pch.h>
 #include <Edl\Parser.h>
 #include <Exceptions.h>
+#include <cwchar> // for _wcsicmp
 
 using namespace ToolingExceptions;
 
@@ -154,18 +155,21 @@ namespace EdlProcessor
         parsed_files[m_file_path].m_edl = std::move(edl);
     }
 
-    void MergeEdl(
-        Edl& src_edl, 
-        Edl& dest_edl,
-        std::uint32_t line_num,
-        std::uint32_t column_num)
+    bool AreFilePathsTheSame(
+        const std::filesystem::path& path1, 
+        const std::filesystem::path& path2)
+    {
+        return _wcsicmp(path1.wstring().c_str(), path2.wstring().c_str()) == 0;
+    }
+
+    void EdlParser::MergeEdl(Edl& src_edl, Edl& dest_edl)
     {
         auto make_conflict_checker = [&](MapKind map_kind) 
         {
             return [&, map_kind](const std::string& key, const auto& src_value, const auto& dest_value) 
             {    
                 // Same source file, no conflict
-                if (src_value.m_parent_file == dest_value.m_parent_file) 
+                if (AreFilePathsTheSame(src_value.m_parent_file, dest_value.m_parent_file))
                 {
                     return;
                 }
@@ -182,13 +186,31 @@ namespace EdlProcessor
 
                 throw EdlAnalysisException(
                     error_id,
-                    src_edl.m_name,
-                    line_num,
-                    column_num,
+                    m_file_name,
+                    m_cur_line,
+                    m_cur_column,
                     src_value.m_name,
-                    dest_edl.m_name,
-                    src_edl.m_name);
+                    src_edl.m_name,
+                    dest_edl.m_name);
             };
+        };
+
+        auto anon_enum_conflict_checker = [&](const std::string& key, const auto& src_value, const auto& dest_value)
+        {
+            // Same source file, no conflict
+            if (AreFilePathsTheSame(src_value.m_parent_file, dest_value.m_parent_file))
+            {
+                return;
+            }
+
+            throw EdlAnalysisException(
+                ErrorId::DuplicateAnonEnumValueInImportFile,
+                m_file_name,
+                m_cur_line,
+                m_cur_column,
+                src_value.m_name,
+                src_edl.m_name,
+                dest_edl.m_name);
         };
 
         // Merge using OrderedMap's merge function with conflict resolution lambdas
@@ -205,8 +227,7 @@ namespace EdlProcessor
                     
                     if (dest_enum != dest_edl.m_developer_types.end())
                     {
-                        // if it exists in the dest_edl, values in the dest_edl version will take precedence.
-                        dest_enum->second.m_items.merge(imported_enum.m_items);
+                        dest_enum->second.m_items.merge(imported_enum.m_items, anon_enum_conflict_checker);
                     }
                     else
                     {
@@ -238,15 +259,14 @@ namespace EdlProcessor
         if (!m_imported_edl_files.empty())
         {
             Edl edl_with_imported_data;
-            edl_with_imported_data.m_name = cur_file_edl.m_name;
 
             for (auto& edl_file : m_imported_edl_files)
             {
                 auto& imported_edl = parsed_files.at(edl_file).m_edl;
-                MergeEdl(imported_edl, edl_with_imported_data, m_cur_line, m_cur_column);
+                MergeEdl(imported_edl, edl_with_imported_data);
             }
 
-            MergeEdl(cur_file_edl, edl_with_imported_data, m_cur_line, m_cur_column);
+            MergeEdl(cur_file_edl, edl_with_imported_data);
             return edl_with_imported_data;
         }
 
@@ -431,6 +451,7 @@ namespace EdlProcessor
                 }
 
                 enum_type.m_value = enum_value_token;
+                enum_type.m_parent_file = m_file_path;
             }
 
             if (PeekAtCurrentToken() != RIGHT_CURLY_BRACKET)

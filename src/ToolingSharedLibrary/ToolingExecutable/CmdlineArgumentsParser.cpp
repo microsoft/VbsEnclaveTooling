@@ -91,9 +91,6 @@ bool CmdlineArgumentsParser::ParseArguments(int argc, char* argv[])
         }
     }
 
-    // Add parent directory by default
-    m_import_directories.push_back(m_edl_path.parent_path());
-
     if (args_found < m_required_args)
     {
         PrintError(

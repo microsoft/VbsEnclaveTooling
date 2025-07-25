@@ -26,6 +26,7 @@ namespace VbsEnclaveToolingTests
             std::filesystem::path m_edl_file_without_duplicate_imports = m_base_imports_path / "ImportTest.edl";
             std::filesystem::path m_edl_file_with_duplicate_imports = m_base_imports_path / "DuplicateImports" / "A_Duplicate.edl";
             std::filesystem::path m_edl_file_with_cycle_imports = m_base_imports_path / "CycleImports" / "A_Cycle.edl";
+            std::filesystem::path m_edl_file_duplicate_anon_enums = m_base_imports_path / "DuplicateAnonymousEnumValues.edl";
 
             void ParseEdlFileWithImports(
                 std::filesystem::path edl_file,
@@ -118,18 +119,39 @@ namespace VbsEnclaveToolingTests
 
             TEST_METHOD(Parse_Edl_file_with_cycle_in_imports)
             {
-                auto cycle_dir = m_base_imports_path / "CycleImports";
-                auto directories = {std::filesystem::current_path(), cycle_dir};
-                auto edl_parser = EdlParser(m_edl_file_with_cycle_imports, directories);
+                Assert::ExpectException<EdlAnalysisException>([&]()
+                {
+                    try
+                    {
+                        auto cycle_dir = m_base_imports_path / "CycleImports";
+                        auto directories = {std::filesystem::current_path(), cycle_dir};
+                        auto edl_parser = EdlParser(m_edl_file_with_cycle_imports, directories);
+                        Edl edl = edl_parser.Parse();
+                    }
+                    catch (EdlAnalysisException& ex)
+                    {
+                        Assert::AreEqual(static_cast<std::uint32_t>(ErrorId::ImportCycleFound), static_cast<std::uint32_t>(ex.GetErrorId()));
+                        throw;
+                    }
+                });
+            }
 
-                try
-                {   
-                    Edl edl = edl_parser.Parse();
-                }
-                catch (EdlAnalysisException& ex)
-                {                    
-                    Assert::AreEqual(static_cast<std::uint32_t>(ErrorId::ImportCycleFound), static_cast<std::uint32_t>(ex.GetErrorId()));
-                }
+            TEST_METHOD(Parse_Edl_file_with_duplicate_anonymous_enum_values_in_imports)
+            {
+                Assert::ExpectException<EdlAnalysisException>([&]()
+                {
+                    try
+                    {
+                        auto directories = {std::filesystem::current_path(), m_base_imports_path};
+                        auto edl_parser = EdlParser(m_edl_file_duplicate_anon_enums, directories);
+                        Edl edl = edl_parser.Parse();
+                    }
+                    catch (EdlAnalysisException& ex)
+                    {
+                        Assert::AreEqual(static_cast<std::uint32_t>(ErrorId::DuplicateAnonEnumValueInImportFile), static_cast<std::uint32_t>(ex.GetErrorId()));
+                        throw;
+                    }
+                });
             }
 
     };

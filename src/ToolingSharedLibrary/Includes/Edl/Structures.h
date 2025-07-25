@@ -444,6 +444,7 @@ namespace EdlProcessor
 
         // first value is always the default.
         bool m_is_default_value {};
+        std::filesystem::path m_parent_file {};
     };
 
     // DeveloperTypes can be one of two things

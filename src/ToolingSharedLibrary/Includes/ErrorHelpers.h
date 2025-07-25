@@ -88,6 +88,7 @@ namespace ErrorHelpers
         DuplicateDevTypeInImportFile,
         DuplicateTrustedFunctionInImportFile,
         DuplicateUntrustedFunctionInImportFile,
+        DuplicateAnonEnumValueInImportFile,
         ImportCycleFound,
     };
 
@@ -124,6 +125,7 @@ namespace ErrorHelpers
         { ErrorId::DuplicateDevTypeInImportFile, "Found duplicate type '{}' in import file '{}' when parsing '{}'. Types must only be defined once per .edl file." },
         { ErrorId::DuplicateTrustedFunctionInImportFile, "Found duplicate trusted function '{}' in import file '{}' when parsing '{}'. Functions must only be defined once per scope (trusted/untrusted), per .edl file." },
         { ErrorId::DuplicateUntrustedFunctionInImportFile, "Found duplicate untrusted function '{}' in import file '{}' when parsing '{}'. Functions must only be defined once per scope (trusted/untrusted), per .edl file." },
+        { ErrorId::DuplicateAnonEnumValueInImportFile, "Found duplicate anonymous enum value '{}' in import file '{}' when parsing '{}'. A named value inside the anonymous enum can only be defined once for all .edl files." },
         { ErrorId::ImportCycleFound, "Import cycle found when attempting to import '{}' into '{}'." },
 
         // Edl file lexical analysis errors
