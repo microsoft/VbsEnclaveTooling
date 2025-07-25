@@ -9,7 +9,7 @@
 #include <pch.h>
 #include <Edl\Parser.h>
 #include <Exceptions.h>
-#include <cwchar> // for _wcsicmp
+#include <Windows.h>
 
 using namespace ToolingExceptions;
 
@@ -156,13 +156,23 @@ namespace EdlProcessor
     }
 
     bool AreFilePathsTheSame(
-        const std::filesystem::path& path1, 
+        const std::filesystem::path& path1,
         const std::filesystem::path& path2)
     {
-        return _wcsicmp(path1.wstring().c_str(), path2.wstring().c_str()) == 0;
+        auto canonical_path1 = std::filesystem::weakly_canonical(path1);
+        auto canonical_path2 = std::filesystem::weakly_canonical(path2);
+
+        return CSTR_EQUAL == CompareStringOrdinal(
+                   canonical_path1.wstring().c_str(),
+                   -1, // null-terminated
+                   canonical_path2.wstring().c_str(),
+                   -1, // null-terminated
+                   TRUE // case-insensitive
+                );
     }
 
-    void EdlParser::MergeEdl(Edl& src_edl, Edl& dest_edl)
+
+    void EdlParser::MergeEdl(const Edl& src_edl, Edl& dest_edl)
     {
         auto make_conflict_checker = [&](MapKind map_kind) 
         {
