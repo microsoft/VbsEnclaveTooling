@@ -2,7 +2,8 @@
 // Changes to this file may be lost if the file is regenerated.
 
 #pragma once
-#include <VbsEnclave\Enclave\AbiDefinitions.h>
+#include <wil/enclave/wil_for_enclaves.h>
+#include <VbsEnclave\Enclave\Abi\Definitions.h>
 
 // Explicitly add linker statements so the generated export functions created by the code generator 
 // can be exported when used to create a static lib.
@@ -11,11 +12,11 @@
 
 extern "C" __declspec(dllexport) void* FuncWithAllArgs_0_Generated_Stub(void* function_context) 
 {
-    return CodeGenTest::AbiDefinitions::FuncWithAllArgs_0_Generated_Stub(function_context);
+    return CodeGenTest::Abi::Definitions::FuncWithAllArgs_0_Generated_Stub(function_context);
 }
 
 extern "C" __declspec(dllexport) void* __AbiRegisterVtl0Callbacks_CodeGenTest__(void* function_context) 
 {
-    return CodeGenTest::AbiDefinitions::__AbiRegisterVtl0Callbacks_CodeGenTest__(function_context);
+    return CodeGenTest::Abi::Definitions::__AbiRegisterVtl0Callbacks_CodeGenTest__(function_context);
 }
 

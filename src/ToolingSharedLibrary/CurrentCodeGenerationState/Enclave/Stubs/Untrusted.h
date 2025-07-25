@@ -2,25 +2,25 @@
 // Changes to this file may be lost if the file is regenerated.
 
 #pragma once
+#include <VbsEnclave\Enclave\Abi\TypeMetadata.h>
 #include <VbsEnclaveABI\Enclave\EnclaveHelpers.h>
-#include "DeveloperTypes.h"
 
 namespace CodeGenTest
 {
     namespace Untrusted::Stubs
     {
-        using namespace CodeGenTest::DeveloperTypes;
+        using namespace CodeGenTest::Types;
         
         inline HRESULT FuncWithAllArgs(_In_  bool arg1, _In_ const uint32_t* arg2, _Inout_  int32_t* arg3, _Out_  std::unique_ptr<uint64_t>& arg4, _Inout_  TestStruct1& arg5, _Out_  std::unique_ptr<TestStruct2>& arg6, _Inout_  std::vector<TestStruct2>& arg7, _Out_  std::vector<std::int16_t>& arg8, _Out_  std::array<std::wstring, 2>& arg9)
         {
-            FlatbuffersDevTypes::FuncWithAllArgs_1_argsT in_flatbufferT {};
+            FlatbufferTypes::FuncWithAllArgs_1_argsT in_flatbufferT {};
             in_flatbufferT.m_arg1 = VbsEnclaveABI::Shared::Converters::ConvertType<decltype(in_flatbufferT.m_arg1)>(arg1);
             in_flatbufferT.m_arg2 = VbsEnclaveABI::Shared::Converters::ConvertType<decltype(in_flatbufferT.m_arg2)>(arg2);
             in_flatbufferT.m_arg3 = VbsEnclaveABI::Shared::Converters::ConvertType<decltype(in_flatbufferT.m_arg3)>(arg3);
             in_flatbufferT.m_arg5 = VbsEnclaveABI::Shared::Converters::ConvertType<decltype(in_flatbufferT.m_arg5)>(arg5);
             in_flatbufferT.m_arg7 = VbsEnclaveABI::Shared::Converters::ConvertType<decltype(in_flatbufferT.m_arg7)>(arg7);
             in_flatbufferT.m_arg9 = VbsEnclaveABI::Shared::Converters::ConvertType<decltype(in_flatbufferT.m_arg9)>(arg9);
-            auto return_params = VbsEnclaveABI::Enclave::CallVtl0CallbackFromVtl1<FuncWithAllArgs_1_args>(in_flatbufferT, "CodeGenTest::AbiDefinitions::FuncWithAllArgs_1_Generated_Stub");
+            auto return_params = VbsEnclaveABI::Enclave::CallVtl0CallbackFromVtl1<CodeGenTest::Abi::Types::FuncWithAllArgs_1_args>(in_flatbufferT, "CodeGenTest::Abi::Definitions::FuncWithAllArgs_1_Generated_Stub");
             VbsEnclaveABI::Shared::Converters::UpdateParameterValue(return_params.m_arg3, arg3);
             VbsEnclaveABI::Shared::Converters::UpdateParameterValue(return_params.m_arg4, arg4);
             VbsEnclaveABI::Shared::Converters::UpdateParameterValue(return_params.m_arg5, arg5);

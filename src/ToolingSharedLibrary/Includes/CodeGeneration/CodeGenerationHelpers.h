@@ -14,6 +14,8 @@ using namespace ToolingExceptions;
 
 namespace CodeGeneration
 {
+    static size_t c_type_definition_tab_count = 1;
+
     static inline std::string uint64_to_hex(uint64_t value)
     {
         std::stringstream string_stream;
