@@ -11,11 +11,14 @@ namespace CodeGenTest
     namespace Abi::Definitions
     {
         
-        static void EnforceMemoryRestriction()
+        namespace Abi::Runtime
         {
-            if (ENABLE_ENCLAVE_RESTRICT_CONTAINING_PROCESS_ACCESS)
+            static void EnforceMemoryRestriction()
             {
-                VbsEnclaveABI::Enclave::EnableEnclaveRestrictContainingProcessAccessOnce();
+                if (ENABLE_ENCLAVE_RESTRICT_CONTAINING_PROCESS_ACCESS)
+                {
+                    VbsEnclaveABI::Enclave::EnableEnclaveRestrictContainingProcessAccessOnce();
+                }
             }
         }
 
@@ -24,7 +27,7 @@ namespace CodeGenTest
         {
             using AbiTypeT = CodeGenTest::Abi::Types::FuncWithAllArgs_0_args;
             using FlatBufferT = FlatbufferTypes::FuncWithAllArgs_0_argsT;
-            EnforceMemoryRestriction();
+            Abi::Runtime::EnforceMemoryRestriction();
             HRESULT hr = VbsEnclaveABI::Enclave::CallVtl1ExportFromVtl1<AbiTypeT, FlatBufferT>(Trusted::Implementation::FuncWithAllArgs, function_context);
             LOG_IF_FAILED(hr);
             return ABI_HRESULT_TO_PVOID(hr);
@@ -36,17 +39,11 @@ namespace CodeGenTest
             return ABI_HRESULT_TO_PVOID(hr);
         }
 
-        HRESULT RegisterVtl0Callbacks(const std::vector<std::uint64_t>& callback_addresses, const std::vector<std::string>& callback_names)
-        {
-            RETURN_IF_FAILED(VbsEnclaveABI::Enclave::VTL0CallBackHelpers::AddVtl0FunctionsToTable(callback_addresses, callback_names));
-            return S_OK;
-        }
-
         void* __AbiRegisterVtl0Callbacks_CodeGenTest__(void* function_context)
         try
         {
-            EnforceMemoryRestriction();
-            HRESULT hr = VbsEnclaveABI::Enclave::CallVtl1ExportFromVtl1<VbsEnclaveABI::Shared::Converters::AbiRegisterVtl0Callbacks_args, FlatbufferTypes::AbiRegisterVtl0Callbacks_argsT>(RegisterVtl0Callbacks, function_context);
+            Abi::Runtime::EnforceMemoryRestriction();
+            HRESULT hr = VbsEnclaveABI::Enclave::CallVtl1ExportFromVtl1<VbsEnclaveABI::Shared::Converters::AbiRegisterVtl0Callbacks_args, FlatbufferTypes::AbiRegisterVtl0Callbacks_argsT>(VbsEnclaveABI::Enclave::RegisterVtl0Callbacks, function_context);
             LOG_IF_FAILED(hr);
             return ABI_HRESULT_TO_PVOID(hr);
         }
