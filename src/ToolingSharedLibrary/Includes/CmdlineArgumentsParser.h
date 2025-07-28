@@ -15,9 +15,9 @@ namespace CmdlineParsingHelpers
 
         bool ShouldDisplayHelp() const {return m_should_display_help; }
         
-        std::string_view EdlFilePath() const { return m_edl_path; }
+        std::filesystem::path EdlFilePath() const { return m_edl_path; }
 
-        std::string_view OutDirectory() const { return m_out_directory; }
+        std::filesystem::path OutDirectory() const { return m_out_directory; }
 
         std::string_view Vtl0ClassName() const { return m_vtl0_class_name; }
 
@@ -29,18 +29,20 @@ namespace CmdlineParsingHelpers
 
         SupportedLanguageKind SupportedLanguage() const { return m_supported_language; }
 
-        std::string_view FlatbufferCompiler() const { return m_flatbuffer_compiler_path; }
+        std::filesystem::path FlatbufferCompiler() const { return m_flatbuffer_compiler_path; }
 
         bool ParseSuccessful() const { return m_parse_successful; }
+
+        std::vector<std::filesystem::path> ImportDirectories() const { return m_import_directories; }
 
     private:
 
         bool ParseArguments(int argc, char* argv[]);
 
         bool m_parse_successful = false;
-        std::string m_edl_path {};
-        std::string m_out_directory {};
-        std::string m_flatbuffer_compiler_path {};
+        std::filesystem::path m_edl_path {};
+        std::filesystem::path m_out_directory {};
+        std::filesystem::path m_flatbuffer_compiler_path {};
         ErrorHandlingKind m_error_handling_kind = ErrorHandlingKind::Unknown;
         VirtualTrustLayerKind m_virtual_trust_layer_kind = VirtualTrustLayerKind::Unknown;
         std::string m_vtl0_class_name{};
@@ -48,5 +50,6 @@ namespace CmdlineParsingHelpers
         bool m_should_display_help = false;
         SupportedLanguageKind m_supported_language = SupportedLanguageKind::Unknown;
         const uint32_t m_required_args = 4;
+        std::vector<std::filesystem::path> m_import_directories;
     };
 }

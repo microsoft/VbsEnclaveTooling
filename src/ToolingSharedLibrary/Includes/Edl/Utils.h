@@ -38,6 +38,7 @@ namespace EdlProcessor
     constexpr const char* EDL_UNTRUSTED_KEYWORD = "untrusted";
     constexpr const char* EDL_ENUM_KEYWORD = "enum";
     constexpr const char* EDL_STRUCT_KEYWORD = "struct";
+    constexpr const char* EDL_IMPORT_KEYWORD = "import";
     constexpr const std::uint32_t MINIMUM_HEX_LENGTH = 3;
     constexpr const std::uint32_t HEX_PREFIX_LENGTH = 2;
     constexpr const char* HEX_PREFIX[HEX_PREFIX_LENGTH] = { "0x", "0X"};

@@ -17,8 +17,13 @@ using namespace Microsoft::VisualStudio::CppUnitTestFramework;
 
 namespace VbsEnclaveToolingTests
 {
+    static std::filesystem::path m_array_edl_file_name = "TestFiles\\ArrayTest.edl";
+    static std::filesystem::path m_basic_edl_file_name = "TestFiles\\BasicTypesTest.edl";
+    static std::filesystem::path m_enum_edl_file_name = "TestFiles\\EnumTest.edl";
+    static std::filesystem::path m_struct_edl_file_name = "TestFiles\\StructTest.edl";
+    static std::filesystem::path c_edl_path_valid_input = "TestFiles\\BasicTypesTest.edl";
 
-    static const std::unordered_map<std::string, std::string> test_func_signatures =
+    static const std::unordered_map<std::string, std::string> c_test_func_signatures =
     {
         // ArrayTest.edl expected function signatures where key is function name and value is its signature
 
@@ -67,6 +72,21 @@ namespace VbsEnclaveToolingTests
         {"TrustedGetStruct1", "TrustedGetStruct1(MyStruct1,MyStruct1[5],MyStruct1[5],MyStruct1[1],MyStruct1*,MyStruct1*,MyStruct1*,MyStruct1*,MyStruct1*,MyStruct1*,MyStruct1*,MyStruct1*,MyStruct1*,MyStruct1*,MyStruct1*,MyStruct1*,MyStruct1*,MyStruct1*,MyStruct1*,size_t,size_t)"},
         {"UntrustedGetStruct1", "UntrustedGetStruct1(MyStruct1,MyStruct1[5],MyStruct1[5],MyStruct1[1],MyStruct1*,MyStruct1*,MyStruct1*,MyStruct1*,MyStruct1*,MyStruct1*,MyStruct1*,MyStruct1*,MyStruct1*,MyStruct1*,MyStruct1*,MyStruct1*,MyStruct1*,MyStruct1*,MyStruct1*,size_t,size_t)"},
         { "GetStruct1Ptr", "GetStruct1Ptr()" },
+
+        // ImportTest.edl function signatures where key is the function name and value is its signature
+        { "NonImportFunc1", "NonImportFunc1()"},
+
+        // A.edl function signatures where key is the function name and value is its signature
+        { "AFunc", "AFunc()" },
+
+        // B.edl function signatures where key is the function name and value is its signature
+        { "BFunc", "BFunc()" },
+
+        // C.edl function signatures where key is the function name and value is its signature
+        { "CFunc", "CFunc()" },
+
+        // D.edl function signatures where key is the function name and value is its signature
+        { "DFunc", "DFunc()" },
     };
 
     enum class FunctionReturnKind
@@ -87,24 +107,24 @@ namespace VbsEnclaveToolingTests
         const std::string& function_name,
         const FunctionKind& function_kind)
     {
-        auto edl_parser = EdlParser(test_file_name);
+        auto edl_parser = EdlParser(test_file_name, {"."});
         Edl edl = edl_parser.Parse();
 
         // Verify function name
         Assert::AreEqual(edl.m_name, test_file_name.stem().generic_string());
 
-        auto expected_signature = test_func_signatures.at(function_name);
+        auto expected_signature = c_test_func_signatures.at(function_name);
         Function function;
 
         if (function_kind == FunctionKind::Trusted)
         {
-            Assert::IsTrue(edl.m_trusted_functions_map.contains(expected_signature));
-            function = edl.m_trusted_functions_map.at(expected_signature);
+            Assert::IsTrue(edl.m_trusted_functions.contains(expected_signature));
+            function = edl.m_trusted_functions.at(expected_signature);
         }
         else
         {
-            Assert::IsTrue(edl.m_untrusted_functions_map.contains(expected_signature));
-            function = edl.m_untrusted_functions_map.at(expected_signature);
+            Assert::IsTrue(edl.m_untrusted_functions.contains(expected_signature));
+            function = edl.m_untrusted_functions.at(expected_signature);
         }
 
          // Confirm function signature is expected signature.
