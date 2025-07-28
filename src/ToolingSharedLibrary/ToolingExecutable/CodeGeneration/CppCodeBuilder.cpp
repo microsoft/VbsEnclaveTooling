@@ -18,13 +18,14 @@ namespace CodeGeneration
 {
     std::string CppCodeBuilder::BuildDeveloperTypesHeader(
         std::string_view developer_namespace_name,
-        std::span<const DeveloperType> developer_types_insertion_list)
+        const OrderedMap<std::string, DeveloperType>& developer_types_map,
+        std::span<const DeveloperType> abi_function_developer_types)
     {
         std::ostringstream types_header {};
         std::ostringstream enums_definitions {};
         std::ostringstream struct_declarations {};
 
-        for (auto& type : developer_types_insertion_list)
+        for (auto& type : developer_types_map.values())
         {
             if (type.IsEdlType(EdlTypeKind::Enum) || type.IsEdlType(EdlTypeKind::AnonymousEnum))
             {
@@ -38,7 +39,7 @@ namespace CodeGeneration
 
         types_header << struct_declarations.str() << enums_definitions.str();
 
-        for (auto& type : developer_types_insertion_list)
+        for (auto& type : developer_types_map.values())
         {
             if (type.IsEdlType(EdlTypeKind::Struct))
             {
@@ -162,7 +163,7 @@ namespace CodeGeneration
 
         auto body_tab_count = GenerateTabs(2);
 
-        for (auto& [enum_value_name, enum_value] : developer_types.m_items)
+        for (auto& enum_value : developer_types.m_items.values())
         {
             if (enum_value.m_value)
             {
@@ -458,7 +459,7 @@ namespace CodeGeneration
 
     CppCodeBuilder::HostToEnclaveContent CppCodeBuilder::BuildHostToEnclaveFunctions(
         std::string_view generated_namespace,
-        std::span<Function> functions)
+        const OrderedMap<std::string, Function>& trusted_functions)
     {
         std::ostringstream vtl1_abi_functions {};
         vtl1_abi_functions << c_vtl1_enforce_mem_restriction_func;
@@ -466,7 +467,7 @@ namespace CodeGeneration
         std::ostringstream vtl1_trusted_function_declarations {};
         std::ostringstream vtl0_stubs_for_vtl1_trusted_functions {};
 
-        for (auto& function : functions)
+        for (auto& function : trusted_functions.values())
         {
             auto param_info = GetInformationAboutParameters(function);
             auto vtl1_exported_func_name = std::format(c_generated_stub_name, function.abi_m_name);
@@ -522,10 +523,10 @@ namespace CodeGeneration
     CppCodeBuilder::EnclaveToHostContent CppCodeBuilder::BuildEnclaveToHostFunctions(
         std::string_view generated_namespace,
         std::string_view generated_class_name,
-        std::span<Function> functions)
+        const OrderedMap<std::string, Function>& untrusted_functions)
     {
-        size_t number_of_functions = functions.size();
-        size_t number_of_functions_plus_allocators = functions.size() + c_number_of_abi_callbacks;
+        size_t number_of_functions = untrusted_functions.size();
+        size_t number_of_functions_plus_allocators = untrusted_functions.size() + c_number_of_abi_callbacks;
         std::ostringstream vtl0_abi_boundary_functions {};
         std::ostringstream vtl0_developer_declaration_functions {};
         std::ostringstream vtl1_stubs_for_vtl0_untrusted_functions {};
@@ -538,7 +539,7 @@ namespace CodeGeneration
         vtl0_class_method_names << c_allocate_memory_callback_to_name.data();
         vtl0_class_method_names << c_deallocate_memory_callback_to_name.data();
 
-        for (auto& function : functions)
+        for (const auto& function : untrusted_functions.values())
         {
             auto param_info = GetInformationAboutParameters(function);
 
@@ -609,12 +610,12 @@ namespace CodeGeneration
 
     std::string CppCodeBuilder::BuildVtl1ExportedFunctionsSourcefile(
         std::string_view generated_namespace_name,
-        std::span<Function> developer_functions_to_export)
+        const OrderedMap<std::string, Function>& trusted_functions)
     {
         std::ostringstream exported_definitions {};
         std::ostringstream pragma_link_statements {};
 
-        for (auto& function : developer_functions_to_export)
+        for (const auto& function : trusted_functions.values())
         {
             auto generated_func_name = std::format(c_generated_stub_name_no_quotes, function.abi_m_name);
             exported_definitions << std::format(

@@ -33,7 +33,7 @@ int main(int argc, char* argv[])
 
     try
     {
-        auto edl_parser = EdlParser(argument_parser.EdlFilePath());
+        auto edl_parser = EdlParser(argument_parser.EdlFilePath(), argument_parser.ImportDirectories());
         Edl edl = edl_parser.Parse();
 
         auto cpp_code_generator = CppCodeGenerator(

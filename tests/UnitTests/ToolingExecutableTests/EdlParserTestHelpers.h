@@ -17,8 +17,13 @@ using namespace Microsoft::VisualStudio::CppUnitTestFramework;
 
 namespace VbsEnclaveToolingTests
 {
+    static std::filesystem::path m_array_edl_file_name = "TestFiles\\ArrayTest.edl";
+    static std::filesystem::path m_basic_edl_file_name = "TestFiles\\BasicTypesTest.edl";
+    static std::filesystem::path m_enum_edl_file_name = "TestFiles\\EnumTest.edl";
+    static std::filesystem::path m_struct_edl_file_name = "TestFiles\\StructTest.edl";
+    static std::filesystem::path c_edl_path_valid_input = "TestFiles\\BasicTypesTest.edl";
 
-    static const std::unordered_map<std::string, std::string> test_func_signatures =
+    static const std::unordered_map<std::string, std::string> c_test_func_signatures =
     {
         // ArrayTest.edl expected function signatures where key is function name and value is its signature
 
@@ -54,16 +59,40 @@ namespace VbsEnclaveToolingTests
         { "RetUint32_t", "RetUint32_t()" },
         { "RetUint64_t", "RetUint64_t()" },
         { "RetVoid", "RetVoid()" },
+        { "RetUint32Ptr", "RetUint32Ptr()" },
 
         // EnumTest.edl function signatures where key is function name and value is its signature
 
         {"TrustedGetColor", "TrustedGetColor(Color,Color[Nine],Color[5],Color[1],Color*,Color*,Color*,Color*,Color*,Color*,Color*,Color*,Color*,Color*,Color*,Color*,Color*,Color*,Color*,size_t,size_t)"},
         {"UntrustedGetColor", "UntrustedGetColor(Color,Color[5],Color[5],Color[1],Color*,Color*,Color*,Color*,Color*,Color*,Color*,Color*,Color*,Color*,Color*,Color*,Color*,Color*,Color*,size_t,size_t)"},
+        { "GetColorPtr", "GetColorPtr()" },
 
         // StructTest.edl function signatures where key is function name and value is its signature
 
         {"TrustedGetStruct1", "TrustedGetStruct1(MyStruct1,MyStruct1[5],MyStruct1[5],MyStruct1[1],MyStruct1*,MyStruct1*,MyStruct1*,MyStruct1*,MyStruct1*,MyStruct1*,MyStruct1*,MyStruct1*,MyStruct1*,MyStruct1*,MyStruct1*,MyStruct1*,MyStruct1*,MyStruct1*,MyStruct1*,size_t,size_t)"},
         {"UntrustedGetStruct1", "UntrustedGetStruct1(MyStruct1,MyStruct1[5],MyStruct1[5],MyStruct1[1],MyStruct1*,MyStruct1*,MyStruct1*,MyStruct1*,MyStruct1*,MyStruct1*,MyStruct1*,MyStruct1*,MyStruct1*,MyStruct1*,MyStruct1*,MyStruct1*,MyStruct1*,MyStruct1*,MyStruct1*,size_t,size_t)"},
+        { "GetStruct1Ptr", "GetStruct1Ptr()" },
+
+        // ImportTest.edl function signatures where key is the function name and value is its signature
+        { "NonImportFunc1", "NonImportFunc1()"},
+
+        // A.edl function signatures where key is the function name and value is its signature
+        { "AFunc", "AFunc()" },
+
+        // B.edl function signatures where key is the function name and value is its signature
+        { "BFunc", "BFunc()" },
+
+        // C.edl function signatures where key is the function name and value is its signature
+        { "CFunc", "CFunc()" },
+
+        // D.edl function signatures where key is the function name and value is its signature
+        { "DFunc", "DFunc()" },
+    };
+
+    enum class FunctionReturnKind
+    {
+        NonPtr,
+        Ptr,
     };
 
     static inline std::wstring ConvertExceptionMessageToWstring(const std::exception& exception)
@@ -78,24 +107,24 @@ namespace VbsEnclaveToolingTests
         const std::string& function_name,
         const FunctionKind& function_kind)
     {
-        auto edl_parser = EdlParser(test_file_name);
+        auto edl_parser = EdlParser(test_file_name, {"."});
         Edl edl = edl_parser.Parse();
 
         // Verify function name
         Assert::AreEqual(edl.m_name, test_file_name.stem().generic_string());
 
-        auto expected_signature = test_func_signatures.at(function_name);
+        auto expected_signature = c_test_func_signatures.at(function_name);
         Function function;
 
         if (function_kind == FunctionKind::Trusted)
         {
-            Assert::IsTrue(edl.m_trusted_functions_map.contains(expected_signature));
-            function = edl.m_trusted_functions_map.at(expected_signature);
+            Assert::IsTrue(edl.m_trusted_functions.contains(expected_signature));
+            function = edl.m_trusted_functions.at(expected_signature);
         }
         else
         {
-            Assert::IsTrue(edl.m_untrusted_functions_map.contains(expected_signature));
-            function = edl.m_untrusted_functions_map.at(expected_signature);
+            Assert::IsTrue(edl.m_untrusted_functions.contains(expected_signature));
+            function = edl.m_untrusted_functions.at(expected_signature);
         }
 
          // Confirm function signature is expected signature.
@@ -108,7 +137,8 @@ namespace VbsEnclaveToolingTests
         const std::filesystem::path& test_file_name,
         const std::string& function_name,
         const FunctionKind& function_kind,
-        const EdlTypeKind& expected_return_type)
+        const EdlTypeKind& expected_return_type,
+        FunctionReturnKind return_kind = FunctionReturnKind::NonPtr)
     {
         try
         {
@@ -128,6 +158,15 @@ namespace VbsEnclaveToolingTests
             auto actual_return_type_string = c_edlTypes_to_string_map.at(function.m_return_info.m_edl_type_info.m_type_kind);
             auto expected_return_type_string = c_edlTypes_to_string_map.at(expected_return_type);
             Assert::AreEqual(expected_return_type_string, actual_return_type_string);
+
+            if (return_kind == FunctionReturnKind::NonPtr)
+            {
+                Assert::IsFalse(function.m_return_info.HasPointer());
+            }
+            else
+            {
+                Assert::IsTrue(function.m_return_info.HasPointer());
+            }
         }
         catch (const std::exception& exception)
         {

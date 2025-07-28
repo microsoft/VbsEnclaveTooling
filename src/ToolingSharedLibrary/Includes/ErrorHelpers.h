@@ -21,6 +21,7 @@ namespace ErrorHelpers
     enum class ErrorId : std::uint32_t
     {
         Success = 0,
+        Unknown,
         LanguageNoMoreArgs,
         UnsupportedLanguage,
         EdlNoMoreArgs,
@@ -51,7 +52,6 @@ namespace ErrorHelpers
         EdlDuplicateAttributeFound,
         EdlSizeOrCountAttributeValueMissing,
         EdlPointerToPointerInvalid,
-        EdlDeveloperTypesMustBeDefinedBeforeUse,
         EdlTypenameInvalid,
         EdlArrayDimensionIdentifierInvalid,
         EdlOnlySingleDimensionsSupported,
@@ -67,7 +67,6 @@ namespace ErrorHelpers
         EdlEnumNameDuplicated,
         EdlDuplicateFieldOrParameter,
         EdlSizeAndCountNotValidForNonPointer,
-        EdlReturnValuesCannotBePointers,
         CodeGenUnableToOpenOutputFile,
         CodeGenUnableToCreateHeaderFile,
         VirtualTrustLayerNoMoreArgs,
@@ -81,7 +80,16 @@ namespace ErrorHelpers
         EdlVectorMustHaveAValidType,
         EdlVectorNameIdentifierNotFound,
         EdlVectorDoesNotStartWithArrowBracket,
+        EdlStructSelfReference,
         EdlTypeInVectorMustBePreviouslyDefined,
+        ImportDirectoriesNoMoreArgs,
+        ImportDirectoryDoesNotExist,
+        ImportedEdlFileDoesNotExist,
+        DuplicateDevTypeInImportFile,
+        DuplicateTrustedFunctionInImportFile,
+        DuplicateUntrustedFunctionInImportFile,
+        DuplicateAnonEnumValueInImportFile,
+        ImportCycleFound,
     };
 
     struct ErrorIdHash
@@ -111,6 +119,14 @@ namespace ErrorHelpers
         { ErrorId::FlatbufferCompilerNoMoreArgs,"Unable to find flatbuffers compiler file path. No more commandline arguments available to find the path to the flatbuffer compiler file." },
         { ErrorId::FlatbufferCompilerDoesNotExist,"The path to the provided flatbuffer compiler file '{}' does not exist." },
         { ErrorId::NotAFile, "The path '{}' must be to a valid file." },
+        { ErrorId::ImportDirectoriesNoMoreArgs,"Unable to find import directiories. No more commandline arguments available to find edl import directories." },
+        { ErrorId::ImportDirectoryDoesNotExist,"The import directory '{}' does not exist or is not a directory." },
+        { ErrorId::ImportedEdlFileDoesNotExist, "import file '{}' was not found for '{}'. Check that the .edl file exists in your import directories." },
+        { ErrorId::DuplicateDevTypeInImportFile, "Found duplicate type '{}' in import file '{}' when parsing '{}'. Types must only be defined once per .edl file." },
+        { ErrorId::DuplicateTrustedFunctionInImportFile, "Found duplicate trusted function '{}' in import file '{}' when parsing '{}'. Functions must only be defined once per scope (trusted/untrusted), per .edl file." },
+        { ErrorId::DuplicateUntrustedFunctionInImportFile, "Found duplicate untrusted function '{}' in import file '{}' when parsing '{}'. Functions must only be defined once per scope (trusted/untrusted), per .edl file." },
+        { ErrorId::DuplicateAnonEnumValueInImportFile, "Found duplicate anonymous enum value '{}' in import file '{}' when parsing '{}'. A named value inside the anonymous enum can only be defined once for all .edl files." },
+        { ErrorId::ImportCycleFound, "Import cycle found when attempting to import '{}' into '{}'." },
 
         // Edl file lexical analysis errors
         { ErrorId::EdlCommentEndingNotFound, "EOF while looking for '*/' to match the '/*'" },
@@ -133,7 +149,7 @@ namespace ErrorHelpers
         { ErrorId::EdlDuplicateAttributeFound, "Duplicate '{}' attributes for a struct declaration or a function parameter are not allowed." },
         { ErrorId::EdlSizeOrCountAttributeValueMissing, "the {} attribute is not supported." },
         { ErrorId::EdlPointerToPointerInvalid, "VbsEnclaveTooling .edl files do not support pointer to pointer declarations." },
-        { ErrorId::EdlTypenameInvalid, "Reached end of file and no definition was found for type '{}'." },
+        { ErrorId::EdlTypenameInvalid, "Reached end of file and no definition was found for the following types: '{}'." },
         { ErrorId::EdlArrayDimensionIdentifierInvalid, "'{}' not supported within array brackets. Arrays in VbsEnclaveTooling .edl files only support arrays with an integer literal '[5]' and arrays with string literals previously declared in the edl file e.g. '[int_max]'." },
         { ErrorId::EdlPointerMustBeAnnotatedWithDirection, "Pointers must have a pointer direction. Use the 'in' or 'out' attribute." },
         { ErrorId::EdlPointerToArrayNotAllowed, "VbsEnclaveTooling .edl files do not support the pointers to arrays or vectors." },
@@ -146,14 +162,12 @@ namespace ErrorHelpers
         { ErrorId::EdlEnumNameDuplicated, "'{}' enum value already defined." },
         { ErrorId::EdlDuplicateFieldOrParameter, "duplicate name '{}' found in '{}'." },
         { ErrorId::EdlSizeAndCountNotValidForNonPointer, "Size/count attributes are only valid for pointer types. Found type '{}'" },
-        { ErrorId::EdlReturnValuesCannotBePointers, "Functions cannot return a pointer. Instead return a struct that contains the pointer and the size of the data it points to." },
         { ErrorId::EdlPointerToVoidMustBeAnnotated, "Pointers to void are not allowed. To use a pointer that does not have a type use the 'uintptr_t' type. Note: The codegen layer will only copy the 'uintptr_t' type, not the data it points to." },
         { ErrorId::EdlOnlySingleDimensionsSupported, "Only linear arrays and vectors are supported." },
-        { ErrorId::EdlDeveloperTypesMustBeDefinedBeforeUse, "Developer types must be defined before using. Found '{}'" },
         { ErrorId::EdlVectorMustHaveAValidType, "Vector must contain a valid type." },
         { ErrorId::EdlVectorNameIdentifierNotFound, "Expected an identifier name for a vector but found '{}'" },
-        { ErrorId::EdlTypeInVectorMustBePreviouslyDefined, "Types in vectors must be previously defined. Found '{}'" },
         { ErrorId::EdlVectorDoesNotStartWithArrowBracket, "Vectors must be declared with <T>. where T is a valid type" },
+        { ErrorId::EdlStructSelfReference, "A struct cannot contain itself directly. Use a pointer to the struct instead." },
 
         // CodeGen errors
         { ErrorId::CodeGenUnableToOpenOutputFile, "Failed to open '{}' for writing." },

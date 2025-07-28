@@ -1,0 +1,33 @@
+// Copyright (c) Microsoft Corporation.
+// Licensed under the MIT License.
+
+enclave
+{
+    import "TestFiles\ImportTestFiles\DuplicateImports\B_Duplicate.edl"; 
+    import "C_Duplicate.edl";
+       
+   enum 
+    {
+         AValue,
+    };
+
+    enum AEnum
+    {
+         value,
+    };
+
+    struct AStruct
+    {
+        int32_t value;
+    };
+
+    trusted
+    {
+        void AFunc();
+    };
+
+    untrusted
+    {
+        void AFunc();
+    };
+};

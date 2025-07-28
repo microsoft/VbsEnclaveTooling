@@ -20,10 +20,6 @@ namespace VbsEnclaveToolingTests
 
 TEST_CLASS(EdlParserEnumTypeTests)
 {
-    private:
-
-    std::filesystem::path m_enum_edl_file_name = "EnumTest.edl";
-
     public:
 
     // Trusted functions
@@ -32,11 +28,21 @@ TEST_CLASS(EdlParserEnumTypeTests)
         ParseAndValidateTestFunction(m_enum_edl_file_name, "TrustedGetColor", FunctionKind::Trusted, EdlTypeKind::Enum);
     }
 
+    TEST_METHOD(Parse_TrustedGetColorPtr_Function)
+    {
+        ParseAndValidateTestFunction(m_enum_edl_file_name, "GetColorPtr", FunctionKind::Trusted, EdlTypeKind::Enum, FunctionReturnKind::Ptr);
+    }
+
     // Untrusted functions
 
     TEST_METHOD(Parse_UntrustedGetColor_Function)
     {
         ParseAndValidateTestFunction(m_enum_edl_file_name, "UntrustedGetColor", FunctionKind::Untrusted, EdlTypeKind::Enum);
     }    
+
+    TEST_METHOD(Parse_UntrustedGetColorPtr_Function)
+    {
+        ParseAndValidateTestFunction(m_enum_edl_file_name, "GetColorPtr", FunctionKind::Untrusted, EdlTypeKind::Enum, FunctionReturnKind::Ptr);
+    }
 };
 }

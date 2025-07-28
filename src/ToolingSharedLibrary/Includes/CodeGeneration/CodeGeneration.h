@@ -7,6 +7,7 @@
 #include <CmdlineParsingHelpers.h>
 #include <CmdlineArgumentsParser.h>
 #include "CodeGenerationHelpers.h"
+#include <Utils\Helpers.h>
 
 using namespace CmdlineParsingHelpers;
 using namespace EdlProcessor;
@@ -99,21 +100,6 @@ namespace CodeGeneration
             const Function& function,
             const FunctionParametersInfo& param_info);
 
-        std::string BuildDeveloperTypesHeader(
-            std::string_view developer_namespace_name,
-            std::span<const DeveloperType> developer_types_insertion_list);
-    
-        std::string BuildAbiTypesHeader(
-            std::string_view developer_namespace_name,
-            std::string_view sub_folder_name,
-            std::span<const DeveloperType> abi_function_developer_types);
-
-        std::string BuildAbiTypesMetadataHeader(
-            std::string_view developer_namespace_name,
-            std::string_view sub_folder_name,
-            std::span<const DeveloperType> developer_types_insertion_list,
-            std::span<const DeveloperType> abi_function_developer_types);
-
         // Intended to be used by in a CallEnclave Win32 function by the
         // abi layer.
         std::string BuildTrustBoundaryFunction(
@@ -122,31 +108,36 @@ namespace CodeGeneration
             std::string_view abi_function_to_call,
             bool is_vtl0_callback,
             const FunctionParametersInfo& param_info);
+
+        std::string BuildTypesHeader(
+            std::string_view developer_namespace_name,
+            const OrderedMap<std::string, DeveloperType>& developer_types_map,
+            std::span<const DeveloperType> abi_function_developer_types);
         
         HostToEnclaveContent BuildHostToEnclaveFunctions(
             std::string_view generated_namespace,
-            std::span<Function> functions);
+            const OrderedMap<std::string, Function>& trusted_functions);
 
         EnclaveToHostContent BuildEnclaveToHostFunctions(
             std::string_view generated_namespace,
             std::string_view generated_class_name,
-            std::span<Function> functions);
+            const OrderedMap<std::string, Function>& untrusted_functions);
 
         std::string BuildVtl1ExportedFunctionsSourcefile(
             std::string_view generated_namespace_name,
-            std::span<Function> developer_functions_to_export);
+            const OrderedMap<std::string, Function>& trusted_functions);
     };
 
     struct CppCodeGenerator
     {
         CppCodeGenerator(
-            const Edl& edl,
+            Edl&& edl,
             const std::filesystem::path& output_path,
             ErrorHandlingKind error_handling,
             VirtualTrustLayerKind trust_layer,
             std::string_view generated_namespace_name,
             std::string_view generated_vtl0_class_name,
-            std::string_view flatbuffer_compiler_path);
+            const std::filesystem::path& flatbuffer_compiler_path);
 
         void Generate();
 

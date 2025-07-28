@@ -16,14 +16,14 @@ using namespace CodeGeneration::Flatbuffers;
 namespace CodeGeneration
 {
     CppCodeGenerator::CppCodeGenerator(
-        const Edl& edl,
+        Edl&& edl,
         const std::filesystem::path& output_path,
         ErrorHandlingKind error_handling,
         VirtualTrustLayerKind trust_layer,
         std::string_view generated_namespace_name,
         std::string_view generated_vtl0_class_name,
-        std::string_view flatbuffer_compiler_path)
-        :   m_edl(edl),
+        const std::filesystem::path& flatbuffer_compiler_path)
+        :   m_edl(std::move(edl)),
             m_output_folder_path(output_path),
             m_error_handling(error_handling),
             m_virtual_trust_layer_kind(trust_layer),
@@ -65,25 +65,33 @@ namespace CodeGeneration
         auto enclave_headers_location = m_output_folder_path / enclave_headers_output;
         auto hostapp_headers_location = m_output_folder_path / hostapp_headers_output;
 
+        // Use OrderedMap directly
         auto abi_function_developer_types = CreateDeveloperTypesForABIFunctions(
-            m_edl.m_trusted_functions_list,
-            m_edl.m_untrusted_functions_list);
+            m_edl.m_trusted_functions,
+            m_edl.m_untrusted_functions);
+
+        // Create developer types. This is shared between
+        // the HostApp and the enclave.
+        std::string enclave_types_header = BuildTypesHeader(
+            m_generated_namespace_name,
+            m_edl.m_developer_types,
+            std::span<const DeveloperType>(abi_function_developer_types));
 
         auto flatbuffer_schema = GenerateFlatbufferSchema(
             m_generated_namespace_name,
-            m_edl.m_developer_types_insertion_order_list,
+            m_edl.m_developer_types,
             abi_function_developer_types);
 
         // Process content from the trusted content.
         auto host_to_enclave_content = BuildHostToEnclaveFunctions(
             m_generated_namespace_name,
-            m_edl.m_trusted_functions_list);
+            m_edl.m_trusted_functions);
 
         // Process the content from the untrusted functions
         auto enclave_to_host_content = BuildEnclaveToHostFunctions(
             m_generated_namespace_name, 
             m_generated_vtl0_class_name,
-            m_edl.m_untrusted_functions_list);
+            m_edl.m_untrusted_functions);
 
         std::filesystem::path save_location{};
         HeaderKind header_kind{};
@@ -95,7 +103,7 @@ namespace CodeGeneration
 
             std::string exported_definitions_source = BuildVtl1ExportedFunctionsSourcefile(
                 m_generated_namespace_name,
-                m_edl.m_trusted_functions_list);
+                m_edl.m_trusted_functions);
 
             SaveFileToOutputFolder(
                 c_enclave_exports_source,

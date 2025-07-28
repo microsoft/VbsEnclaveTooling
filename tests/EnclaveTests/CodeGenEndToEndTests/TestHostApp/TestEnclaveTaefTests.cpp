@@ -108,14 +108,14 @@ struct EnclaveTestClass
         return VERIFY_SUCCEEDED(generated_enclave_class.RegisterVtl0Callbacks());
     }
 
-    TEST_METHOD(ReturnInt8ValPtr_From_Enclave_Test)
+    TEST_METHOD(ReturnInt32ValPtr_From_Enclave_Test)
     {
         auto generated_enclave_class = TestEnclave(m_enclave);
 
-        // Note: Int8PtrAndSize is returned by vtl1, and copied to vtl0 then returned to this function.
-        Int8PtrAndSize result = generated_enclave_class.ReturnInt8ValPtr_From_Enclave();
-        VERIFY_IS_NOT_NULL(result.int8_val.get());
-        VERIFY_ARE_EQUAL(*result.int8_val, std::numeric_limits<std::int8_t>::max());
+        // Note: the int8_t unique ptr is returned by vtl1, and copied to vtl0 then returned to this function.
+        auto result = generated_enclave_class.ReturnInt32Ptr_From_Enclave();
+        VERIFY_IS_NOT_NULL(result.get());
+        VERIFY_ARE_EQUAL(*result, std::numeric_limits<std::int32_t>::max());
     }
 
     TEST_METHOD(ReturnUint64Val_From_Enclave_Test)
@@ -562,12 +562,12 @@ struct EnclaveTestClass
         VERIFY_SUCCEEDED(generated_enclave_class.Start_TestPassingPrimitivesAsOutPointers_To_HostApp_Callback_Test());
     }
 
-    TEST_METHOD(Start_ReturnInt8ValPtr_From_HostApp_Callback_Test)
+    TEST_METHOD(Start_ReturnInt32Ptr_From_HostApp_Callback_Test)
     {
         auto generated_enclave_class = TestEnclave(m_enclave);
 
         // Note: Hresult is returned by vtl1, and copied to vtl0 then returned to this function.
-        VERIFY_SUCCEEDED(generated_enclave_class.Start_ReturnInt8ValPtr_From_HostApp_Callback_Test());
+        VERIFY_SUCCEEDED(generated_enclave_class.Start_ReturnInt32Ptr_From_HostApp_Callback_Test());
     }
 
     TEST_METHOD(Start_ReturnUint64Val_From_HostApp_Callback_Test)
