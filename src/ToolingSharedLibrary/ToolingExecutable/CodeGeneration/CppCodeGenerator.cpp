@@ -72,10 +72,9 @@ namespace CodeGeneration
 
         // Create developer types. This is shared between
         // the HostApp and the enclave.
-        std::string enclave_types_header = BuildTypesHeader(
+        std::string enclave_types_header = BuildDeveloperTypesHeader(
             m_generated_namespace_name,
-            m_edl.m_developer_types,
-            std::span<const DeveloperType>(abi_function_developer_types));
+            m_edl.m_developer_types);
 
         auto flatbuffer_schema = GenerateFlatbufferSchema(
             m_generated_namespace_name,
@@ -122,7 +121,7 @@ namespace CodeGeneration
 
         std::string developer_types_header = BuildDeveloperTypesHeader(
             m_generated_namespace_name,
-            m_edl.m_developer_types_insertion_order_list);
+            m_edl.m_developer_types);
 
         SaveFileToOutputFolder(c_types_header_name, save_location / "Implementation", developer_types_header);
         SaveTrustedHeader(header_kind, save_location, host_to_enclave_content, enclave_to_host_content);
@@ -142,7 +141,7 @@ namespace CodeGeneration
         std::string abi_metadata_types_header = BuildAbiTypesMetadataHeader(
             m_generated_namespace_name,
             sub_folder_name,
-            m_edl.m_developer_types_insertion_order_list,
+            m_edl.m_developer_types,
             abi_function_developer_types);
 
         SaveFileToOutputFolder("TypeMetadata.h", abi_save_location, abi_metadata_types_header);

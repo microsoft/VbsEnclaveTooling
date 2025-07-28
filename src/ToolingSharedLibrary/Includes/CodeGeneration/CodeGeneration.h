@@ -109,14 +109,24 @@ namespace CodeGeneration
             bool is_vtl0_callback,
             const FunctionParametersInfo& param_info);
 
-        std::string BuildTypesHeader(
+        std::string BuildDeveloperTypesHeader(
             std::string_view developer_namespace_name,
-            const OrderedMap<std::string, DeveloperType>& developer_types_map,
-            std::span<const DeveloperType> abi_function_developer_types);
+            const OrderedMap<std::string, DeveloperType>& developer_types_map);
         
+        std::string BuildAbiTypesHeader(
+            std::string_view developer_namespace_name,
+            std::string_view sub_folder_name,
+            std::span<const DeveloperType> abi_function_developer_types);
+
         HostToEnclaveContent BuildHostToEnclaveFunctions(
             std::string_view generated_namespace,
             const OrderedMap<std::string, Function>& trusted_functions);
+
+        std::string BuildAbiTypesMetadataHeader(
+            std::string_view developer_namespace_name,
+            std::string_view sub_folder_name,
+            const OrderedMap<std::string, DeveloperType>& developer_types_map,
+            std::span<const DeveloperType> abi_function_developer_types);
 
         EnclaveToHostContent BuildEnclaveToHostFunctions(
             std::string_view generated_namespace,

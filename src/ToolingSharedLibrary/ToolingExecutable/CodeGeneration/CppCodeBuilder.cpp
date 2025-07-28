@@ -18,8 +18,7 @@ namespace CodeGeneration
 {
     std::string CppCodeBuilder::BuildDeveloperTypesHeader(
         std::string_view developer_namespace_name,
-        const OrderedMap<std::string, DeveloperType>& developer_types_map,
-        std::span<const DeveloperType> abi_function_developer_types)
+        const OrderedMap<std::string, DeveloperType>& developer_types_map)
     {
         std::ostringstream types_header {};
         std::ostringstream enums_definitions {};
@@ -80,12 +79,12 @@ namespace CodeGeneration
     std::string CppCodeBuilder::BuildAbiTypesMetadataHeader(
         std::string_view developer_namespace_name,
         std::string_view sub_folder_name,
-        std::span<const DeveloperType> developer_types_insertion_list,
+        const OrderedMap<std::string, DeveloperType>& developer_types_map,
         std::span<const DeveloperType> abi_function_developer_types)
     {
         std::ostringstream struct_metadata {};
 
-        for (auto& type : developer_types_insertion_list)
+        for (auto& type : developer_types_map.values())
         {
             if (type.IsEdlType(EdlTypeKind::Struct))
             {
@@ -169,17 +168,17 @@ namespace CodeGeneration
             {
                 // Value was the enum name for a value within the anonymous enum.
                 Token value_token = enum_value.m_value.value();
-                enum_body << std::format("{}{} = {},\n", body_tab_count, enum_value_name, value_token.ToString());
+                enum_body << std::format("{}{} = {},\n", body_tab_count, enum_value.m_name, value_token.ToString());
             }
             else if (enum_value.m_is_hex)
             {
                 auto hex_value = uint64_to_hex(enum_value.m_declared_position);
-                enum_body << std::format("{}{} = {},\n", body_tab_count, enum_value_name, hex_value);
+                enum_body << std::format("{}{} = {},\n", body_tab_count, enum_value.m_name, hex_value);
             }
             else
             {
                 auto decimal_value = uint64_to_decimal(enum_value.m_declared_position);
-                enum_body << std::format("{}{} = {},\n", body_tab_count, enum_value_name, decimal_value);
+                enum_body << std::format("{}{} = {},\n", body_tab_count, enum_value.m_name, decimal_value);
             }
         }
 
