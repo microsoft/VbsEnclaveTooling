@@ -8,6 +8,7 @@
 
 namespace CodeGenTest
 {
+    
     namespace Abi::Definitions
     {
         

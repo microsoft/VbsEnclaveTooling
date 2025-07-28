@@ -8,20 +8,20 @@
 
 namespace CodeGenTest
 {
+    namespace Abi::Runtime
+    {
+        static void EnforceMemoryRestriction()
+        {
+            if (ENABLE_ENCLAVE_RESTRICT_CONTAINING_PROCESS_ACCESS)
+            {
+                VbsEnclaveABI::Enclave::EnableEnclaveRestrictContainingProcessAccessOnce();
+            }
+        }
+    }
+
     namespace Abi::Definitions
     {
         
-        namespace Abi::Runtime
-        {
-            static void EnforceMemoryRestriction()
-            {
-                if (ENABLE_ENCLAVE_RESTRICT_CONTAINING_PROCESS_ACCESS)
-                {
-                    VbsEnclaveABI::Enclave::EnableEnclaveRestrictContainingProcessAccessOnce();
-                }
-            }
-        }
-
         static inline void* FuncWithAllArgs_0_Generated_Stub(void* function_context)
         try
         {

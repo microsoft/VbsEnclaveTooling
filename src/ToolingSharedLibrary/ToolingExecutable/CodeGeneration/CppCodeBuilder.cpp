@@ -461,7 +461,6 @@ namespace CodeGeneration
         const OrderedMap<std::string, Function>& trusted_functions)
     {
         std::ostringstream vtl1_abi_functions {};
-        vtl1_abi_functions << c_vtl1_enforce_mem_restriction_func;
         std::ostringstream vtl1_abi_impl_functions {};
         std::ostringstream vtl1_trusted_function_declarations {};
         std::ostringstream vtl0_stubs_for_vtl1_trusted_functions {};

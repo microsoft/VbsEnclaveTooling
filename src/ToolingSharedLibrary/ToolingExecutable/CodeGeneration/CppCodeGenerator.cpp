@@ -239,17 +239,19 @@ namespace CodeGeneration
         const CppCodeBuilder::HostToEnclaveContent& host_to_enclave_content,
         const CppCodeBuilder::EnclaveToHostContent& enclave_to_host_content)
     {
-        std::string namespace_content {};
+        std::string definitions_namespace_content {};
+        std::string runtime_namespace_content {};
         std::string includes {};
 
         if (header_kind == HeaderKind::Vtl1)
         {
-            namespace_content = host_to_enclave_content.m_vtl1_abi_functions;
+            runtime_namespace_content = c_vtl1_enforce_mem_restriction_func;
+            definitions_namespace_content = host_to_enclave_content.m_vtl1_abi_functions;
             includes = c_vtl1_abi_definitions_includes;
         }
         else
         {
-            namespace_content = enclave_to_host_content.m_vtl0_abi_functions;
+            definitions_namespace_content = enclave_to_host_content.m_vtl0_abi_functions;
             includes = c_vtl0_abi_definitions_includes;
         }
 
@@ -258,7 +260,8 @@ namespace CodeGeneration
             c_autogen_header_string,
             includes,
             m_generated_namespace_name,
-            namespace_content);
+            runtime_namespace_content,
+            definitions_namespace_content);
 
         SaveFileToOutputFolder("Definitions.h", output_parent_folder, header_content);
     }
