@@ -17,7 +17,7 @@
 
 #include "sample_utils.h"
 
-#include <VbsEnclave\HostApp\Trusted.h>
+#include <VbsEnclave\HostApp\Stubs\Trusted.h>
 
 namespace fs = std::filesystem;
 

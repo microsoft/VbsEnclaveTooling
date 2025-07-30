@@ -203,4 +203,10 @@ namespace VbsEnclaveABI::Enclave
     {
         CallVtl0CallbackFromVtl1Impl<void>(flatbuffer_input, function_name);
     }
+
+    inline HRESULT RegisterVtl0Callbacks(const std::vector<std::uint64_t>& callback_addresses, const std::vector<std::string>& callback_names)
+    {
+        RETURN_IF_FAILED(AddVtl0FunctionsToTable(callback_addresses, callback_names));
+        return S_OK;  
+    }
 }

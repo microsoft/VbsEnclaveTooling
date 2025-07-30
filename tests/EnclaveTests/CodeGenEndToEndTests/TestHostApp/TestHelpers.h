@@ -2,9 +2,9 @@
 // Licensed under the MIT License.
 
 #ifdef __ENCLAVE_PROJECT__
-#include <VbsEnclave\Enclave\DeveloperTypes.h>
+#include <VbsEnclave\Enclave\Implementation\Types.h>
 #else
-#include <VbsEnclave\HostApp\DeveloperTypes.h>
+#include <VbsEnclave\HostApp\Implementation\Types.h>
 #endif
 
 #include <wil\result_macros.h>
@@ -16,7 +16,7 @@
 #include <algorithm>
 #include <functional>
 
-using namespace VbsEnclave::DeveloperTypes;
+using namespace VbsEnclave::Types;
 
 constexpr size_t c_data_size = 5;
 constexpr size_t c_arbitrary_size_1 = 5;
