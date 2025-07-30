@@ -29,8 +29,9 @@
     <DefaultLanguage>en-US</DefaultLanguage>
     <GenerateProjectSpecificOutputFolder>true</GenerateProjectSpecificOutputFolder>
     <ConfigurationType>StaticLibrary</ConfigurationType>
-    <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
+    <TargetPlatformVersion>10.0.26458.0</TargetPlatformVersion>
     <WindowsTargetPlatformMinVersion>10.0.2-prerelease.250520.3.0</WindowsTargetPlatformMinVersion>
+    <WindowsTargetPlatformVersion>10.0.26458.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <PropertyGroup>
     <VbsEnclaveVirtualTrustLayer>HostApp</VbsEnclaveVirtualTrustLayer>
@@ -119,7 +120,7 @@
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ItemGroup>
     <ClInclude Include="enclave_api.vtl0.h" />
-	<ClInclude Include="keycredentialmanager.vtl0.h" />
+    <ClInclude Include="keycredentialmanager.vtl0.h" />
     <ClInclude Include="pch.h" />
     <ClInclude Include="taskpool.vtl0.h" />
     <ClInclude Include="logger.vtl0.h" />
@@ -130,7 +131,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="enclave_api.vtl0.cpp" />
-	<ClCompile Include="hello_winrt_kcm.vtl0.cpp" />
+    <ClCompile Include="hello_winrt_kcm.vtl0.cpp" />
     <ClCompile Include="taskpool.vtl0.cpp" />
     <ClCompile Include="logger.vtl0.cpp" />
     <ClCompile Include="utils.vtl0.cpp" />

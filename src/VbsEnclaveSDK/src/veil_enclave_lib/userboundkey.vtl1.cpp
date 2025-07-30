@@ -3,6 +3,7 @@
 #include "crypto.vtl1.h"
 #include "utils.vtl1.h"
 #include "vengcdll.h" // OS APIs
+#include "userboundkey.vtl1.h" // Function declarations
 
 namespace veil_abi::VTL1_Declarations
 {
@@ -33,7 +34,7 @@ attestationReportAndSessionKeyPtr userboundkey_get_attestation_report(_In_ const
 
 namespace veil::vtl1::userboundkey
 {
-    // RAII wrapper for USER_BOUND_KEY_AUTH_CONTEXT_HANDLE to prevent resource leaks
+// RAII wrapper for USER_BOUND_KEY_AUTH_CONTEXT_HANDLE to prevent resource leaks
 class unique_auth_context_handle
 {
     public:
@@ -106,11 +107,11 @@ wil::secure_vector<uint8_t> enclave_create_user_bound_key(
     const std::wstring& keyName,
     KEY_CREDENTIAL_CACHE_CONFIG& cacheConfig,
     const std::wstring& message,
-    HWND windowId,
+    uintptr_t windowId,
     ENCLAVE_SEALING_IDENTITY_POLICY sealingPolicy)
 {
     // SESSION
-    auto authContextBlobAndSessionKeyPtr = veil_abi::VTL0_Callbacks::userboundkey_establish_session_for_create_callback(keyName, reinterpret_cast<uintptr_t>(BCRYPT_ECDH_P384_ALG_HANDLE), message, (uintptr_t)windowId);
+    auto authContextBlobAndSessionKeyPtr = veil_abi::VTL0_Callbacks::userboundkey_establish_session_for_create_callback(keyName, reinterpret_cast<uintptr_t>(BCRYPT_ECDH_P384_ALG_HANDLE), message, windowId);
     auto& authContextBlob = authContextBlobAndSessionKeyPtr.authContextBlob;
 
     // AUTH CONTEXT
@@ -147,7 +148,7 @@ std::vector<uint8_t> enclave_load_user_bound_key(
     const std::wstring& keyName,
     KEY_CREDENTIAL_CACHE_CONFIG& cacheConfig,
     const std::wstring& message,
-    HWND windowId,
+    uintptr_t windowId,
     std::vector<uint8_t>& sealedBoundKeyBytes)
 {
     // UNSEAL
@@ -156,7 +157,7 @@ std::vector<uint8_t> enclave_load_user_bound_key(
     std::vector<uint8_t> ephemeralPublicKeyBytes = GetEphemeralPublicKeyBytesFromBoundKeyBytes(boundKeyBytes);
 
     // SESSION
-    auto secretAndAuthorizationContextAndSessionKeyPtr = veil_abi::VTL0_Callbacks::userboundkey_establish_session_for_load_callback(keyName, ephemeralPublicKeyBytes, message, (uintptr_t)windowId);
+    auto secretAndAuthorizationContextAndSessionKeyPtr = veil_abi::VTL0_Callbacks::userboundkey_establish_session_for_load_callback(keyName, ephemeralPublicKeyBytes, message, windowId);
 
     auto& secret = secretAndAuthorizationContextAndSessionKeyPtr.secret;
     auto& authContextBlob = secretAndAuthorizationContextAndSessionKeyPtr.authorizationContext;

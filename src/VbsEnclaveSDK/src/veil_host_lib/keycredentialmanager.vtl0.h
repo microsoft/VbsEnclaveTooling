@@ -22,6 +22,7 @@ enum class KeyCredentialCacheOption
     TimeAndUsageBased
 };
 
+/*
 namespace winrt::Windows::Security::Credentials
 {
 enum class ChallengeResponseKind
@@ -44,6 +45,7 @@ struct KeyCredentialCacheConfiguration
     {
     }
 };
+*/
 
 // Placeholder types to match usage.  
 namespace KeyAlgorithmNames
@@ -91,6 +93,7 @@ namespace winrt::Windows::UI
 using WindowId = HWND;
 }
 
+/*
 namespace winrt::Windows::Security::Credentials
 {
 // Key Credential Manager class with static methods
@@ -117,3 +120,4 @@ class KeyCredentialManager
         AuthenticatedSessionChallengeCallback&& challengeCallback);
 };
 }
+*/

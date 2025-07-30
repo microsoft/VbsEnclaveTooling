@@ -3,6 +3,8 @@
 #include <string>
 #include <conio.h> // For getch()
 #include <filesystem> // For directory validation
+#include <chrono>
+#include <optional>
 
 #include <windows.h>
 #include <stdio.h>
@@ -12,6 +14,10 @@
 #include <sddl.h>
 #include <limits>
 
+#include <winrt/base.h>
+#include <winrt/Windows.Foundation.h>
+#include <winrt/Windows.Security.Credentials.h>
+
 #include <veil\host\enclave_api.vtl0.h>
 #include <veil\host\logger.vtl0.h>
 
@@ -20,6 +26,56 @@
 #include <VbsEnclave\HostApp\Trusted.h>
 
 namespace fs = std::filesystem;
+
+// Global variables (declared but not initialized, need to be encapsulated)
+std::wstring g_helloKeyName;
+std::wstring g_pinMessage;
+std::optional<winrt::Windows::Security::Credentials::KeyCredentialCacheConfiguration> g_keyCredentialCacheConfig;
+HWND g_hCurWnd;
+
+// Initialize function to set up global variables
+void Initialize()
+{
+    g_helloKeyName = L"MyEncryptionKey-001";
+    g_pinMessage = L"Please enter your PIN to access the encryption key.";
+    g_keyCredentialCacheConfig = winrt::Windows::Security::Credentials::KeyCredentialCacheConfiguration(
+        winrt::Windows::Security::Credentials::KeyCredentialCacheOption::CacheWhenUnlocked,
+        winrt::Windows::Foundation::TimeSpan(std::chrono::seconds(300)), // timeout in seconds 
+        5 // usage count
+    );
+    g_hCurWnd = GetForegroundWindow();
+}
+
+std::vector<uint8_t> OnFirstRun(void* enclave)
+{
+    Initialize();
+
+    // Initialize enclave interface
+    auto enclaveInterface = VbsEnclave::Trusted::Stubs::SampleEnclave(enclave);
+    THROW_IF_FAILED(enclaveInterface.RegisterVtl0Callbacks());
+
+    // Call into enclave
+    auto securedEncryptionKeyBytes = std::vector<uint8_t> {};
+    
+    // Convert g_keyCredentialCacheConfig (WinRT type) to enclave keyCredentialCacheConfig (struct)
+    VbsEnclave::DeveloperTypes::keyCredentialCacheConfig cacheConfig{};
+    if (g_keyCredentialCacheConfig.has_value())
+    {
+        cacheConfig.cacheOption = static_cast<uint32_t>(g_keyCredentialCacheConfig->CacheOption());
+        cacheConfig.cacheTimeoutInSeconds = static_cast<uint32_t>(g_keyCredentialCacheConfig->Timeout().count() / 10'000'000); // TimeSpan is in 100ns units
+        cacheConfig.cacheUsageCount = static_cast<uint32_t>(g_keyCredentialCacheConfig->UsageCount());
+    }
+
+    THROW_IF_FAILED(enclaveInterface.MyEnclaveCreateUserBoundKey(
+        g_helloKeyName,
+        g_pinMessage,
+        reinterpret_cast<uintptr_t>(g_hCurWnd), // <-- Fix: cast HWND to uintptr_t
+        cacheConfig,
+        securedEncryptionKeyBytes));
+
+    return securedEncryptionKeyBytes;
+    // *** securedEncryptionKeyBytes persisted to disk
+}
 
 int EncryptFlow(
     void* enclave, 
