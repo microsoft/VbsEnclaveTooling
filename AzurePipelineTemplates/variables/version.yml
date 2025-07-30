@@ -8,18 +8,18 @@ variables:
 - name: CodeGenMajorVersion
   value: "0"
 - name: CodeGenMinorVersion
-  value: "0"
+  value: "1"
 - name: CodeGenPatchVersion
-  value: "2"
+  value: "0"
 
 
 # SDK versioning info
 - name: SdkMajorVersion
   value: "0"
 - name: SdkMinorVersion
-  value: "0"
+  value: "1"
 - name: SdkPatchVersion
-  value: "2"
+  value: "0"
 
 
 # Conditionally set values if branch name starts with 'prerelease'
