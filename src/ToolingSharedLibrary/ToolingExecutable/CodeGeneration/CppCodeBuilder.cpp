@@ -167,8 +167,7 @@ namespace CodeGeneration
             if (enum_value.m_value)
             {
                 // Value was the enum name for a value within the anonymous enum.
-                Token value_token = enum_value.m_value.value();
-                enum_body << std::format("{}{} = {},\n", body_tab_count, enum_value.m_name, value_token.ToString());
+                enum_body << std::format("{}{} = {},\n", body_tab_count, enum_value.m_name, enum_value.m_value.value());
             }
             else if (enum_value.m_is_hex)
             {

@@ -79,16 +79,16 @@ namespace VbsEnclaveToolingTests
                 "NonImportEnum",
                 "Color",
             };
-
-            // 34 trusted and 34 untrusted. Should match number of values in `c_test_func_signatures`
+            
+            // 35 trusted and 35 untrusted. Should match number of values in `c_test_func_signatures`
             // which is located in EdlParserTestHelpers.h
-            auto num_of_functions_to_parse = 34;
+            auto num_of_functions_to_parse = 35;
             ParseEdlFileWithImports(
                 m_edl_file_without_duplicate_imports,
                 {std::filesystem::current_path()},
                 num_of_functions_to_parse,
                 num_of_functions_to_parse,
-                dev_type_names);
+                dev_type_names);            
         }
 
         TEST_METHOD(Parse_Edl_file_with_duplicate_imports)
@@ -106,7 +106,7 @@ namespace VbsEnclaveToolingTests
                 "DStruct",
             };
 
-            auto duplicate_dir = m_base_imports_path / "DuplicateImports";
+                auto duplicate_dir = m_base_imports_path / "DuplicateImports";
                 auto directories = {std::filesystem::current_path(), duplicate_dir};
                 auto num_of_functions_to_parse = 4;// 4 trusted and 4 untrusted
                 ParseEdlFileWithImports(
@@ -148,7 +148,7 @@ namespace VbsEnclaveToolingTests
                     }
                     catch (EdlAnalysisException& ex)
                     {
-                        Assert::AreEqual(static_cast<std::uint32_t>(ErrorId::DuplicateAnonEnumValueInImportFile), static_cast<std::uint32_t>(ex.GetErrorId()));
+                        Assert::AreEqual(static_cast<std::uint32_t>(ErrorId::EdlEnumNameDuplicated), static_cast<std::uint32_t>(ex.GetErrorId()));
                         throw;
                     }
                 });

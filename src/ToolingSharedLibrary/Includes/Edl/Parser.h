@@ -96,8 +96,7 @@ namespace EdlProcessor
 
         Token PeekAtCurrentToken();
         Token PeekAtNextToken();
-        Edl ParseBody(std::unordered_map<std::filesystem::path, ParsedState>& parsed_files);
-        Edl GenerateEdlObject(std::unordered_map<std::filesystem::path, ParsedState>& parsed_files);
+        void ParseBody(std::unordered_map<std::filesystem::path, ParsedState>& parsed_files);
         void ParseImport(std::unordered_map<std::filesystem::path, ParsedState>& parsed_files);
         Function ParseFunctionDeclaration();
         EdlTypeInfo ParseDeclarationTypeInfo();
@@ -119,10 +118,7 @@ namespace EdlProcessor
         std::uint32_t m_cur_line {};
         std::uint32_t m_cur_column {};
         std::unordered_set<std::string> m_unresolved_types{};
-        OrderedMap<std::string, DeveloperType> m_developer_types {};
-        OrderedMap<std::string, Function> m_trusted_functions;
-        OrderedMap<std::string, Function> m_untrusted_functions;
+        Edl m_edl {};
         std::vector<std::filesystem::path> m_import_directories {};
-        std::vector<std::filesystem::path> m_imported_edl_files {};
     };
 }

@@ -75,6 +75,8 @@ namespace VbsEnclaveToolingTests
 
         // ImportTest.edl function signatures where key is the function name and value is its signature
         { "NonImportFunc1", "NonImportFunc1()"},
+        { "NonImportFuncWithArrayArgs1", "NonImportFuncWithArrayArgs1(int32_t[Nine],MyStruct2)"},
+        { "NonImportFuncWithArrayArgs2", "NonImportFuncWithArrayArgs2(int32_t[Fifteen])"},
 
         // A.edl function signatures where key is the function name and value is its signature
         { "AFunc", "AFunc()" },

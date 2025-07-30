@@ -85,7 +85,7 @@ namespace EdlProcessor
 
     inline void EdlParser::ThrowIfDuplicateDefinition(const std::string& type_name)
     {
-        if (m_developer_types.contains(type_name))
+        if (m_edl.m_developer_types.contains(type_name))
         {
             throw EdlAnalysisException(
                 ErrorId::EdlDuplicateTypeDefinition,
@@ -125,13 +125,14 @@ namespace EdlProcessor
                 struct_or_function_name);
         }
     }
+
     Edl EdlParser::Parse()
     {
         std::unordered_map<std::filesystem::path, ParsedState> parsed_files;
         ParseInternal(parsed_files);
         return parsed_files[m_file_path].m_edl;
     }
-    
+
     void EdlParser::ParseInternal(std::unordered_map<std::filesystem::path, ParsedState>& parsed_files)
     {
         std::string status = std::format("Processing {}", m_file_name.generic_string());
@@ -145,14 +146,14 @@ namespace EdlProcessor
 
         ThrowIfExpectedTokenNotNext(EDL_ENCLAVE_KEYWORD);
         ThrowIfExpectedTokenNotNext(LEFT_CURLY_BRACKET);
-        Edl edl = ParseBody(parsed_files);
-        edl.m_name = m_file_name.generic_string();
+        ParseBody(parsed_files);
+        m_edl.m_name = m_file_name.generic_string();
         ThrowIfExpectedTokenNotNext(RIGHT_CURLY_BRACKET);
 
         status = std::format("Completed parsing {} successfully", m_file_name.generic_string());
         PrintStatus(Status::Info, status);
         parsed_files[m_file_path].m_status = ParseStatus::Parsed;
-        parsed_files[m_file_path].m_edl = std::move(edl);
+        parsed_files[m_file_path].m_edl = std::move(m_edl);
     }
 
     bool AreFilePathsTheSame(
@@ -171,62 +172,12 @@ namespace EdlProcessor
                 );
     }
 
-
     void EdlParser::MergeEdl(const Edl& src_edl, Edl& dest_edl)
     {
-        auto make_conflict_checker = [&](MapKind map_kind) 
-        {
-            return [&, map_kind](const std::string& key, const auto& src_value, const auto& dest_value) 
-            {    
-                // Same source file, no conflict
-                if (AreFilePathsTheSame(src_value.m_parent_file, dest_value.m_parent_file))
-                {
-                    return;
-                }
-
-                ErrorId error_id = ErrorId::DuplicateDevTypeInImportFile;
-
-                if (map_kind == MapKind::TrustedFunction)
-                {
-                    error_id = ErrorId::DuplicateTrustedFunctionInImportFile;
-                } else if (map_kind == MapKind::UntrustedFunction)
-                {
-                    error_id = ErrorId::DuplicateUntrustedFunctionInImportFile;
-                }
-
-                throw EdlAnalysisException(
-                    error_id,
-                    m_file_name,
-                    m_cur_line,
-                    m_cur_column,
-                    src_value.m_name,
-                    src_edl.m_name,
-                    dest_edl.m_name);
-            };
-        };
-
-        auto anon_enum_conflict_checker = [&](const std::string& key, const auto& src_value, const auto& dest_value)
-        {
-            // Same source file, no conflict
-            if (AreFilePathsTheSame(src_value.m_parent_file, dest_value.m_parent_file))
-            {
-                return;
-            }
-
-            throw EdlAnalysisException(
-                ErrorId::DuplicateAnonEnumValueInImportFile,
-                m_file_name,
-                m_cur_line,
-                m_cur_column,
-                src_value.m_name,
-                src_edl.m_name,
-                dest_edl.m_name);
-        };
-
         // Merge using OrderedMap's merge function with conflict resolution lambdas
         dest_edl.m_developer_types.merge(
-            src_edl.m_developer_types, 
-            [&](const std::string& key, const auto& src_value, const auto& dest_value) 
+            src_edl.m_developer_types,
+            [&](const std::string& key, const auto& src_value, const auto& dest_value)
             {
                 if (key == EDL_ANONYMOUS_ENUM_KEYWORD)
                 {
@@ -234,56 +185,23 @@ namespace EdlProcessor
                     // anonymous enum. We'll just merge them together.
                     auto imported_enum = src_edl.m_developer_types.at(EDL_ANONYMOUS_ENUM_KEYWORD);
                     auto dest_enum = dest_edl.m_developer_types.find(EDL_ANONYMOUS_ENUM_KEYWORD);
-                    
+
                     if (dest_enum != dest_edl.m_developer_types.end())
                     {
-                        dest_enum->second.m_items.merge(imported_enum.m_items, anon_enum_conflict_checker);
+                        dest_enum->second.m_items.merge(imported_enum.m_items);
                     }
                     else
                     {
                         dest_edl.m_developer_types.insert_front(EDL_ANONYMOUS_ENUM_KEYWORD, imported_enum);
                     }
                 }
-                else
-                {
-                    make_conflict_checker(MapKind::DeveloperType)(key, src_value, dest_value);
-                }
             });
 
-        dest_edl.m_trusted_functions.merge(src_edl.m_trusted_functions, make_conflict_checker(MapKind::TrustedFunction));
-
-        dest_edl.m_untrusted_functions.merge(src_edl.m_untrusted_functions, make_conflict_checker(MapKind::UntrustedFunction));
+        dest_edl.m_trusted_functions.merge(src_edl.m_trusted_functions);
+        dest_edl.m_untrusted_functions.merge(src_edl.m_untrusted_functions);
     }
 
-    Edl EdlParser::GenerateEdlObject(std::unordered_map<std::filesystem::path, ParsedState>& parsed_files)
-    {
-        Edl cur_file_edl
-        { 
-            m_file_name.generic_string(),
-            m_developer_types,
-            m_trusted_functions,
-            m_untrusted_functions,
-        };
-
-        // Merge imported edl object data into the current edl object.
-        if (!m_imported_edl_files.empty())
-        {
-            Edl edl_with_imported_data;
-
-            for (auto& edl_file : m_imported_edl_files)
-            {
-                auto& imported_edl = parsed_files.at(edl_file).m_edl;
-                MergeEdl(imported_edl, edl_with_imported_data);
-            }
-
-            MergeEdl(cur_file_edl, edl_with_imported_data);
-            return edl_with_imported_data;
-        }
-
-        return cur_file_edl;
-    }
-
-    Edl EdlParser::ParseBody(std::unordered_map<std::filesystem::path, ParsedState>& parsed_files)
+    void EdlParser::ParseBody(std::unordered_map<std::filesystem::path, ParsedState>& parsed_files)
     {
         while (PeekAtCurrentToken() != RIGHT_CURLY_BRACKET && PeekAtCurrentToken() != END_OF_FILE_CHARACTER)
         {
@@ -320,16 +238,14 @@ namespace EdlProcessor
             }
         }
 
-        PerformFinalValidations();
         UpdateDeveloperTypeMetadata();
-
-        return GenerateEdlObject(parsed_files);
+        PerformFinalValidations();
     }
 
     void EdlParser::UpdateDeveloperTypeMetadata()
     {
-        for (auto& developer_type : m_developer_types.values())
-        {           
+        for (auto& developer_type : m_edl.m_developer_types.values())
+        {
             // Update developer type to take into account struct fields where the type may contain
             // a container type or a pointer.
             for (auto& field : developer_type.m_fields)
@@ -344,9 +260,9 @@ namespace EdlProcessor
                     continue;
                 }
 
-                if (m_developer_types.contains(field.m_edl_type_info.m_name))
+                if (m_edl.m_developer_types.contains(field.m_edl_type_info.m_name))
                 {
-                    const auto& struct_field = m_developer_types.at(field.m_edl_type_info.m_name);
+                    const auto& struct_field = m_edl.m_developer_types.at(field.m_edl_type_info.m_name);
 
                     if (struct_field.m_contains_inner_pointer)
                     {
@@ -364,7 +280,7 @@ namespace EdlProcessor
 
     void EdlParser::AddDeveloperType(const DeveloperType& new_type)
     {
-        m_developer_types.insert(new_type.m_name, new_type);
+        m_edl.m_developer_types.insert(new_type.m_name, new_type);
     }
 
     void EdlParser::ParseEnum()
@@ -378,9 +294,9 @@ namespace EdlProcessor
             type_name = EDL_ANONYMOUS_ENUM_KEYWORD;
 
             // Handle anonymous enum type
-            if (!m_developer_types.contains(type_name))
+            if (!m_edl.m_developer_types.contains(type_name))
             {
-                m_developer_types[type_name] = DeveloperType(type_name, EdlTypeKind::AnonymousEnum);
+                m_edl.m_developer_types[type_name] = DeveloperType(type_name, EdlTypeKind::AnonymousEnum);
             }
         }
         else
@@ -390,7 +306,7 @@ namespace EdlProcessor
             ThrowIfTokenNotIdentifier(enum_identifier_token, ErrorId::EdlEnumNameIdentifierNotFound);
             ThrowIfTypeNameIdentifierIsReserved(type_name);
             ThrowIfDuplicateDefinition(type_name);
-            m_developer_types[type_name] = DeveloperType(type_name, EdlTypeKind::Enum);
+            m_edl.m_developer_types[type_name] = DeveloperType(type_name, EdlTypeKind::Enum);
 
             // Move past starting '{' token.
             GetCurrentTokenAndMoveToNextToken();
@@ -430,10 +346,10 @@ namespace EdlProcessor
                 GetCurrentTokenAndMoveToNextToken();
                 Token enum_value_token = GetCurrentTokenAndMoveToNextToken();
 
-                std::uint64_t hex_value{};
+                std::uint64_t hex_value {};
                 bool is_hex = TryParseHexidecimal(enum_value_token, hex_value);
 
-                std::uint64_t decimal_value{};
+                std::uint64_t decimal_value {};
                 bool is_decimal = TryParseDecimal(enum_value_token, decimal_value);
 
                 if (is_decimal)
@@ -460,7 +376,7 @@ namespace EdlProcessor
                         enum_value_token.ToString());
                 }
 
-                enum_type.m_value = enum_value_token;
+                enum_type.m_value = enum_value_token.ToString();
                 enum_type.m_parent_file = m_file_path;
             }
 
@@ -471,7 +387,7 @@ namespace EdlProcessor
                 ThrowIfExpectedTokenNotNext(COMMA);
             }
 
-            if (m_developer_types[type_name].m_items.contains(value_name))
+            if (m_edl.m_developer_types[type_name].m_items.contains(value_name))
             {
                 throw EdlAnalysisException(
                     ErrorId::EdlEnumNameDuplicated,
@@ -481,14 +397,14 @@ namespace EdlProcessor
                     value_name);
             }
 
-            m_developer_types[type_name].m_items.insert(value_name, enum_type);
+            m_edl.m_developer_types[type_name].m_items.insert(value_name, enum_type);
             cur_enum_value_position++;
             is_default_value = false;
         }
 
         ThrowIfExpectedTokenNotNext(RIGHT_CURLY_BRACKET);
         ThrowIfExpectedTokenNotNext(SEMI_COLON);
-        m_developer_types[type_name].m_parent_file = m_file_path;
+        m_edl.m_developer_types[type_name].m_parent_file = m_file_path;
     }
 
     void EdlParser::ParseThroughFieldsOrParameterList(
@@ -508,7 +424,7 @@ namespace EdlProcessor
             {
                 // make [in] attribute the default for all function parameters if the
                 // developer does not provide it in the edl.
-                declaration.m_attribute_info = ParsedAttributeInfo{ true };
+                declaration.m_attribute_info = ParsedAttributeInfo {true};
             }
 
 
@@ -533,11 +449,11 @@ namespace EdlProcessor
         Token struct_name_identifier = GetCurrentTokenAndMoveToNextToken();
         ThrowIfTokenNotIdentifier(struct_name_identifier, ErrorId::EdlStructIdentifierNotFound);
         auto new_struct_type = DeveloperType(struct_name_identifier.ToString(), EdlTypeKind::Struct);
-        
+
         ThrowIfTypeNameIdentifierIsReserved(new_struct_type.m_name);
         ThrowIfDuplicateDefinition(new_struct_type.m_name);
         ThrowIfExpectedTokenNotNext(LEFT_CURLY_BRACKET);
-        std::unordered_set<std::string> param_names{};
+        std::unordered_set<std::string> param_names {};
 
         ParseThroughFieldsOrParameterList(
             DeclarationParentKind::Struct,
@@ -573,7 +489,7 @@ namespace EdlProcessor
         }
 
         ThrowIfExpectedTokenNotNext(RIGHT_CURLY_BRACKET);
-        ThrowIfExpectedTokenNotNext(SEMI_COLON);   
+        ThrowIfExpectedTokenNotNext(SEMI_COLON);
         new_struct_type.m_parent_file = m_file_path;
         AddDeveloperType(new_struct_type);
     }
@@ -581,13 +497,13 @@ namespace EdlProcessor
     void EdlParser::ParseFunctions(const FunctionKind& function_kind)
     {
         ThrowIfExpectedTokenNotNext(LEFT_CURLY_BRACKET);
-        OrderedMap<std::string, Function>& func_map = 
-            (function_kind == FunctionKind::Untrusted) 
-            ? m_untrusted_functions
-            : m_trusted_functions;
+        OrderedMap<std::string, Function>& func_map =
+            (function_kind == FunctionKind::Untrusted)
+            ? m_edl.m_untrusted_functions
+            : m_edl.m_trusted_functions;
 
         while (PeekAtCurrentToken() != RIGHT_CURLY_BRACKET)
-        {            
+        {
             Function parsed_function = ParseFunctionDeclaration();
             std::string function_signature = parsed_function.GetDeclarationSignature();
             parsed_function.m_parent_file = m_file_path;
@@ -605,7 +521,7 @@ namespace EdlProcessor
             // Since we allow developer functions to contain the same name but with different
             // parameters, we need to make sure the non developer facing functions are unique
             // in our abi layer. So we append a number to the function name.
-            static std::size_t m_abi_function_index{};
+            static std::size_t m_abi_function_index {};
             parsed_function.abi_m_name = std::format("{}_{}", parsed_function.m_name, m_abi_function_index++);
             func_map.insert(function_signature, parsed_function);
         }
@@ -616,7 +532,7 @@ namespace EdlProcessor
 
     Function EdlParser::ParseFunctionDeclaration()
     {
-        Function function{};
+        Function function {};
         function.m_return_info.m_edl_type_info = ParseDeclarationTypeInfo();
         ParsedAttributeInfo attribute_info {};
         attribute_info.m_out_present = true;
@@ -629,7 +545,7 @@ namespace EdlProcessor
         Token function_name_token = GetCurrentTokenAndMoveToNextToken();
         ThrowIfTokenNotIdentifier(function_name_token, ErrorId::EdlFunctionIdentifierNotFound);
         function.m_name = function_name_token.ToString();
-        
+
         ThrowIfTypeNameIdentifierIsReserved(function.m_name);
         ThrowIfExpectedTokenNotNext(LEFT_ROUND_BRACKET);
 
@@ -648,7 +564,7 @@ namespace EdlProcessor
 
     Declaration EdlParser::ParseDeclaration(const DeclarationParentKind& parent_kind)
     {
-        std::vector<std::pair<AttributeKind, Token>> attribute_and_token_pairs{};
+        std::vector<std::pair<AttributeKind, Token>> attribute_and_token_pairs {};
         auto declaration = Declaration(parent_kind);
         declaration.m_attribute_info = ParseAttributes(parent_kind, attribute_and_token_pairs);
         declaration.m_edl_type_info = ParseDeclarationTypeInfo();
@@ -812,9 +728,9 @@ namespace EdlProcessor
                 type_info.m_type_kind = c_string_to_edltype_map.at(type_name);
             }
         }
-        else if (m_developer_types.contains(type_name))
+        else if (m_edl.m_developer_types.contains(type_name))
         {
-            DeveloperType& developer_type = m_developer_types.at(type_name);
+            DeveloperType& developer_type = m_edl.m_developer_types.at(type_name);
             type_info.m_type_kind = developer_type.m_type_kind;
         }
 
@@ -852,19 +768,19 @@ namespace EdlProcessor
 
     ArrayDimensions EdlParser::ParseArrayDimensions()
     {
-        ArrayDimensions dimensions{};
+        ArrayDimensions dimensions {};
 
         // Return early if the current token isn't the start of an array dimension.
         if (PeekAtCurrentToken() != LEFT_SQUARE_BRACKET)
         {
             return dimensions;
         }
-        
+
         // Only support single dimension arrays for now as it requires more thought
         // on marshaling/unmarshaling.
         std::uint32_t dimensions_found = 0;
 
-        while (PeekAtCurrentToken() == LEFT_SQUARE_BRACKET )
+        while (PeekAtCurrentToken() == LEFT_SQUARE_BRACKET)
         {
             if (dimensions_found >= 1)
             {
@@ -883,11 +799,11 @@ namespace EdlProcessor
             bool is_valid_identifier = false;
 
             if (array_value_token.IsIdentifier() &&
-                m_developer_types.contains(EDL_ANONYMOUS_ENUM_KEYWORD))
+                m_edl.m_developer_types.contains(EDL_ANONYMOUS_ENUM_KEYWORD))
             {
                 // token identifier can only be a value from an
                 // anonymous enum.
-                DeveloperType& type = m_developer_types.at(EDL_ANONYMOUS_ENUM_KEYWORD);
+                DeveloperType& type = m_edl.m_developer_types.at(EDL_ANONYMOUS_ENUM_KEYWORD);
                 is_valid_identifier = type.m_items.contains(token_name);
             }
 
@@ -950,9 +866,9 @@ namespace EdlProcessor
 
                 vector_info.inner_type = std::make_shared<EdlTypeInfo>(token_name, edl_type);
             }
-            else if (m_developer_types.contains(token_name))
+            else if (m_edl.m_developer_types.contains(token_name))
             {
-                DeveloperType& dev_type = m_developer_types.at(token_name);
+                DeveloperType& dev_type = m_edl.m_developer_types.at(token_name);
                 vector_info.inner_type = std::make_shared<EdlTypeInfo>(
                     dev_type.m_name,
                     dev_type.m_type_kind);
@@ -1092,8 +1008,8 @@ namespace EdlProcessor
 
             auto type_name_found = declaration.m_edl_type_info.m_name;
             auto type_name_is_unresolved = m_unresolved_types.contains(type_name_found);
-            auto dev_type_iter = m_developer_types.find(type_name_found);
-            auto type_name_is_dev_type = dev_type_iter != m_developer_types.end();
+            auto dev_type_iter = m_edl.m_developer_types.find(type_name_found);
+            auto type_name_is_dev_type = dev_type_iter != m_edl.m_developer_types.end();
 
             if (type_name_is_unresolved && type_name_is_dev_type)
             {
@@ -1110,12 +1026,12 @@ namespace EdlProcessor
 
     void EdlParser::PerformFinalValidations()
     {
-        for (auto& dev_type : m_developer_types.values())
+        for (auto& dev_type : m_edl.m_developer_types.values())
         {
             UpdateTypeDeclarations(dev_type.m_fields);
         }
 
-        for (auto& map : {std::ref(m_trusted_functions), std::ref(m_untrusted_functions)})
+        for (auto& map : {std::ref(m_edl.m_trusted_functions), std::ref(m_edl.m_untrusted_functions)})
         {
             for (auto& function : map.get().values())
             {
@@ -1138,20 +1054,20 @@ namespace EdlProcessor
                 m_cur_column,
                 type_names);
         }
-        
+
         // now that we've finished parsing the function declarations and structs 
         // Make sure the size/count attributes are validated.
-        for (auto& function : m_trusted_functions.values())
+        for (auto& function : m_edl.m_trusted_functions.values())
         {
             ValidateSizeAndCountAttributeDeclarations(function.m_name, function.m_parameters);
         }
 
-        for (auto& function : m_untrusted_functions.values())
+        for (auto& function : m_edl.m_untrusted_functions.values())
         {
             ValidateSizeAndCountAttributeDeclarations(function.m_name, function.m_parameters);
         }
 
-        for (auto& developer_type : m_developer_types.values())
+        for (auto& developer_type : m_edl.m_developer_types.values())
         {
             ValidateSizeAndCountAttributeDeclarations(developer_type.m_name, developer_type.m_fields);
         }
@@ -1178,9 +1094,9 @@ namespace EdlProcessor
                 // values from the anonymous enum type, or an unsigned integer literal
                 // or an unsigned value field within a struct or an unsigned value
                 // within a function parameter.
-                if (m_developer_types.contains(EDL_ANONYMOUS_ENUM_KEYWORD))
+                if (m_edl.m_developer_types.contains(EDL_ANONYMOUS_ENUM_KEYWORD))
                 {
-                    DeveloperType& type = m_developer_types.at(EDL_ANONYMOUS_ENUM_KEYWORD);
+                    DeveloperType& type = m_edl.m_developer_types.at(EDL_ANONYMOUS_ENUM_KEYWORD);
                     if (type.m_items.contains(token.ToString()))
                     {
                         continue;
@@ -1289,14 +1205,6 @@ namespace EdlProcessor
         }
 
         ThrowIfExpectedTokenNotNext(SEMI_COLON);
-
-        auto find_import_file = std::find(m_imported_edl_files.begin(), m_imported_edl_files.end(), full_file_path);
-
-        if (find_import_file == m_imported_edl_files.end())
-        {
-            m_imported_edl_files.push_back(full_file_path);
-        }
-
         auto parse_data = parsed_files.find(full_file_path);
 
         if (parse_data != parsed_files.end())
@@ -1323,6 +1231,10 @@ namespace EdlProcessor
 
         EdlParser parser(full_file_path, m_import_directories);
         parser.ParseInternal(parsed_files);
+
+        // Merge imported edl object data into the current edl object.
+        auto& imported_edl = parsed_files.at(full_file_path).m_edl;
+        MergeEdl(imported_edl, m_edl);
     }
 
 }
