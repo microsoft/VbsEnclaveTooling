@@ -430,7 +430,7 @@ namespace EdlProcessor
         }
 
         std::string m_name{};
-        std::optional<Token> m_value{};
+        std::optional<std::string> m_value{};
 
         // When the value isn't defined with an '=' symbol, the value of the enum
         // will be the position it appears in the edl file. e.g first will be 0,

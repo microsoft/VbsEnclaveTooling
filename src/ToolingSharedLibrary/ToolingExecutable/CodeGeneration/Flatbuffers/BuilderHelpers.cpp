@@ -64,8 +64,7 @@ namespace CodeGeneration::Flatbuffers
             if (enum_value.m_value)
             {
                 // Raw value will only ever be an numeric value.
-                Token value_token = enum_value.m_value.value();
-                enum_body << std::format("    {} = {},\n", enum_value.m_name, value_token.ToString());
+                enum_body << std::format("    {} = {},\n", enum_value.m_name, enum_value.m_value.value());
             }
             else
             {

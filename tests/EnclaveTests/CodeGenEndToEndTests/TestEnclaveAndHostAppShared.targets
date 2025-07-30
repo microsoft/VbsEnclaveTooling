@@ -4,5 +4,6 @@
         <VbsEnclaveEdlPath>$(ProjectDir)..\CodeGenTestFunctions.edl</VbsEnclaveEdlPath>
         <VbsEnclaveVtl0ClassName>TestEnclave</VbsEnclaveVtl0ClassName>
         <VbsEnclaveNamespace>VbsEnclave</VbsEnclaveNamespace>
+        <VbsEnclaveImportDirectories>$(SolutionDir)\</VbsEnclaveImportDirectories>
     </PropertyGroup>
 </Project>
