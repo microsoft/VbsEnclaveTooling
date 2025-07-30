@@ -28,6 +28,7 @@ Here is the general structure and grammar of our .edl format.
 
 enclave 
 {
+    import "<path_to_edl_file.edl>"; // Importing another edl file
 
     enum // Anonymous enum
     {
@@ -75,6 +76,8 @@ A simple example of a `.edl` file.
 
 ```edl
 enclave {
+    import "EdlFiles\Crypto\Types.edl";
+
     struct ExampleStruct
     {
         int32_t int_field;
@@ -133,9 +136,17 @@ enum
 
 struct
 {
-    uint32_t[my_number] my_array; // This also works in a function declaration.
+    uint32_t my_array[my_number]; // This also works in a function declaration.
 };
 ```
+
+### Importing other .edl files
+You can import other `.edl` files into your `.edl` file using the `import` keyword. This allows you to reuse types and function declarations across multiple `.edl` files.
+
+> [!NOTE]
+> The `edlcodegen.exe` provides the `--ImportDirectories` option to specify the directories where it should look for imported `.edl` files. 
+> The paths inside `--ImportDirectories` must be absolute paths to directories that exist.
+> You can specify multiple directories by separating them with a semicolon (`;`).
 
 ### Unsupported functionality
 
@@ -156,6 +167,4 @@ While our `.edl` parser is based on Open Enclave's implementation of Intel's .ed
 
 - The `const` keyword is not supported. In code generation, all non-struct/non-container `[in]` parameters won't have the `const` qualifier; all struct/container
   `[in]` parameters will have the `const` qualifier. All other attributes (`[in, out]` and `[out]`) are generated without the const qualifier, regardless of type.
-- Functions are not permitted to return raw pointers; use `[out]` with `*` to return a smart pointer.
-- The ability to compose `.edl` files with the `import` or `include` keywords is not supported.
 

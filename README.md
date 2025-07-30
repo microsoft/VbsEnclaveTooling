@@ -15,9 +15,9 @@ features that interact with a VBS enclave easier. To learn more about VBS enclav
 
 | OS                  | Build                 |
 |---------------------|-----------------------|
-| Windows 11 24H2     | `26100.3624 or later` |
+| Windows 11 24H2     | `26100.3916 or later` |
 
-Developers will need to make sure they have `Windows SDK version 26100.3624` or later installed on their system or integrated into their Visual Studio projects.
+Developers will need to make sure they have `Windows SDK version 26100.3916` or later installed on their system or integrated into their Visual Studio projects.
 
 The Windows SDK can be installed in one of the following ways:
 1. via installing the `Windows 11 SDK (10.0.26100.0)` individual component in the `Visual Studio v17.14` installer
@@ -54,16 +54,9 @@ The projects in this repository support only x64 and arm64 builds.
 - In a PowerShell window run the `buildScripts\build.ps1` script. This will build the `CodeGenerator` and `SDK` nuget packages.
 Once this is complete the `CodeGenerator` and `SDK` nuget packages can be found in the `_build` folder in the root of the repository.
 
-CodeGenerator and SDK consumption
+CodeGenerator and SDK consumption via nuget
 ------------
-Once you have built (or downloaded) the `CodeGenerator` and `SDK` nuget packages, you can add them directly to your own visual studio
-project by doing the following:
-
-1. Right click your project > Manage Nuget Packages... > click the gear icon on the top right
-   of the page and add `<path-to-cloned-VbsEnclaveTooling-repo>\_build` as a package source and click ok.
-1. Switch the package source in the dropdown on the top right of the page to
-   your new package source that points to the location above.
-1. You should now see the `Microsoft.Windows.VbsEnclave.Codegenerator` and the `Microsoft.Windows.VbsEnclave.SDK` nuget packages show up in the browse list.
+1. packages: [Microsoft.Windows.VbsEnclave.CodeGenerator](https://www.nuget.org/packages/Microsoft.Windows.VbsEnclave.CodeGenerator) and [Microsoft.Windows.VbsEnclave.SDK](https://www.nuget.org/packages/Microsoft.Windows.VBSEnclave.SDK).
 1. Install them both your into **enclave** project and your **hostApp** project. 
    
 In your **enclave** projects .vcxproj or .props file add the following:
@@ -72,6 +65,9 @@ In your **enclave** projects .vcxproj or .props file add the following:
     <VbsEnclaveVirtualTrustLayer>Enclave</VbsEnclaveVirtualTrustLayer>
     <VbsEnclaveEdlPath>Absolute-Path-To-Your-.Edl-File</VbsEnclaveEdlPath>
     <VbsEnclaveNamespace>Namespace-for-the-generated-code</VbsEnclaveNamespace>
+    
+    <!-- Optional, only needed if you are importing other .edl files -->
+    <VbsEnclaveImportDirectories>paths-to-directories-containing-.edl-files<VbsEnclaveImportDirectories>
 </PropertyGroup>
 ```
 
@@ -84,12 +80,15 @@ In your **hostApp** projects .vcxproj or .props file add the following:
     <VbsEnclaveEdlPath>Absolute-Path-To-Your-.Edl-File</VbsEnclaveEdlPath>
     <VbsEnclaveNamespace>Namespace-for-the-generated-code</VbsEnclaveNamespace>
     <VbsEnclaveVtl0ClassName>Encapsulated-classname-for-your-enclave</VbsEnclaveVtl0ClassName>
+
+    <!-- Optional, only needed if you are importing other .edl files -->
+    <VbsEnclaveImportDirectories>paths-to-directories-containing-.edl-files<VbsEnclaveImportDirectories>
 </PropertyGroup>
 ```
 
 This will kick off the code generation and ingest the SDK inside your **hostApp** project at build time.
 
-*Note* : Be sure to update the `<VbsEnclaveEdlPath>`, `<VbsEnclaveNamespace>` and `<VbsEnclaveVtl0ClassName>` properties with valid values.
+*Note* : Be sure to update the `<VbsEnclaveEdlPath>`, `<VbsEnclaveNamespace>`, `<VbsEnclaveVtl0ClassName>` and `<VbsEnclaveImportDirectories>` properties with valid values.
 
 Also see the docs on the `.edl` format and `CodeGeneration` [here](./docs/Edl.md) and [here](./docs/CodeGeneration.md) for more information on them.
 
