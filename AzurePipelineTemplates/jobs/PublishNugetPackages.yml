@@ -18,6 +18,12 @@ resources:
     source: 'Vbs Enclave Tooling OneBranch (Official Build)'
     trigger: none
 
+variables:
+  ${{ if eq(parameters.ReleaseTarget, 'CodeGen') }}:
+    ArtifactName: 'signed_codegen_nuget_package'
+  ${{ else }}:
+    ArtifactName: 'signed_sdk_nuget_package'
+
 extends:
   template: v2/OneBranch.Official.CrossPlat.yml@templates
   parameters:
@@ -39,14 +45,8 @@ extends:
         templateContext:
           inputs:
           - input: pipelineArtifact
-            condition: eq('${{ parameters.ReleaseTarget }}', 'CodeGen')
             pipeline: VbsEnclaveTooling
-            artifactName: signed_codegen_nuget_package
-
-          - input: pipelineArtifact
-            condition: eq('${{ parameters.ReleaseTarget }}', 'SDK')
-            pipeline: VbsEnclaveTooling
-            artifactName: signed_sdk_nuget_package
+            artifactName: $(ArtifactName)
 
         steps:
         - task: NuGetCommand@2
