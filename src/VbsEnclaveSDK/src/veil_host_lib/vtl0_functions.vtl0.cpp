@@ -8,9 +8,9 @@
 
 #include "utils.vtl0.h"
 
-#include <VbsEnclave\HostApp\Stubs.h>
+#include <VbsEnclave\HostApp\Implementation\Untrusted.h>
 
-HRESULT veil_abi::VTL0_Stubs::export_interface::printf_callback(_In_ const std::string& str)
+HRESULT veil_abi::Untrusted::Implementation::printf(_In_ const std::string& str)
 {
     auto lock = std::scoped_lock<std::mutex>(veil::vtl0::implementation::g_printMutex);
 
@@ -18,7 +18,7 @@ HRESULT veil_abi::VTL0_Stubs::export_interface::printf_callback(_In_ const std::
     return S_OK;
 }
 
-HRESULT veil_abi::VTL0_Stubs::export_interface::wprintf_callback(_In_ const std::wstring& str)
+HRESULT veil_abi::Untrusted::Implementation::wprintf(_In_ const std::wstring& str)
 {
     auto lock = std::scoped_lock<std::mutex>(veil::vtl0::implementation::g_printMutex);
 

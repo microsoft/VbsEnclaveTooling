@@ -5,7 +5,7 @@
 #include <iostream>
 #include <veil\host\enclave_api.vtl0.h>
 #include <veil\host\logger.vtl0.h>
-#include <VbsEnclave\HostApp\Stubs.h>
+#include <VbsEnclave\HostApp\Stubs\Trusted.h>
 
 int main()
 {
@@ -37,7 +37,7 @@ int main()
     veil::vtl0::enclave_api::register_callbacks(enclave.get());
 
     // Initialize enclave interface. Note that MySecretEnclave is a codegen generated class.
-    auto enclaveInterface = VbsEnclave::VTL0_Stubs::MySecretEnclave(enclave.get());
+    auto enclaveInterface = VbsEnclave::Trusted::Stubs::MySecretEnclave(enclave.get());
     THROW_IF_FAILED(enclaveInterface.RegisterVtl0Callbacks());
 
     //Call into the enclave

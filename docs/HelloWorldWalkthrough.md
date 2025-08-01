@@ -227,9 +227,9 @@ enclave
 * Add a cpp file to the dll project and name it `MySecretEnclaveExports.cpp`. This is where we will define the `DoSecretMath` function that we declared in the `MySecretEnclave.edl` file. You need to include the `Implementations.h` file, and then define the function:
 ```cpp
 #include "pch.h"
-#include <VbsEnclave\Enclave\Implementations.h>
+#include <VbsEnclave\Enclave\Implementation\Trusted.h>
 
-uint32_t VbsEnclave::VTL1_Declarations::DoSecretMath(_In_  std::uint32_t val1, _In_  std::uint32_t val2)
+uint32_t VbsEnclave::Trusted::Implementation::DoSecretMath(_In_  std::uint32_t val1, _In_  std::uint32_t val2)
 {
     return val1 * val2;
 }
@@ -271,7 +271,7 @@ uint32_t VbsEnclave::VTL1_Declarations::DoSecretMath(_In_  std::uint32_t val1, _
         #include <conio.h>
         #include <iostream>
         #include <veil\host\enclave_api.vtl0.h>
-        #include <VbsEnclave\HostApp\Stubs.h>
+        #include <VbsEnclave\HostApp\Stubs\Trusted.h>
         ```
     * Initialize the enclave and call its interface:
         ```cpp
@@ -300,7 +300,7 @@ uint32_t VbsEnclave::VTL1_Declarations::DoSecretMath(_In_  std::uint32_t val1, _
         veil::vtl0::enclave_api::register_callbacks(enclave.get());
     
         // Initialize enclave interface
-        auto enclaveInterface = VbsEnclave::VTL0_Stubs::MySecretEnclave(enclave.get());
+        auto enclaveInterface = VbsEnclave::Trusted::Stubs::MySecretEnclave(enclave.get());
         THROW_IF_FAILED(enclaveInterface.RegisterVtl0Callbacks());
     
         //Call into the enclave
