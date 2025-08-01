@@ -27,7 +27,7 @@
     <file src="Microsoft.Windows.VbsEnclave.SDK.targets" target="build\native"/>
     <file src="Microsoft.Windows.VbsEnclave.SDK.props" target="build\native"/>
     <file src="..\..\veil_enclave_lib\**\*.h" exclude="..\..\veil_enclave_lib\Generated Files\**\*" target="src\veil\enclave" />
-    <file src="..\..\veil_enclave_lib\Generated Files\VbsEnclave\Enclave\Exports\*.*" target="src\exports" />
+    <file src="..\..\veil_enclave_lib\Generated Files\Veil\Enclave\veil_abi_exports.cpp" target="src\exports" />
     <file src="..\..\veil_host_lib\**\*.h" exclude="..\..\veil_enclave_lib\Generated Files\**\*" target="src\veil\host" />
     <file src="..\..\veil_any_inc\**" target="src\veil\veil_any_inc" />
     <file src="..\..\..\..\..\Common\veil_enclave_wil_inc\**" target="src\" />

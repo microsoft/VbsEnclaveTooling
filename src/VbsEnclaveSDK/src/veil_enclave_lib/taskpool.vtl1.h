@@ -84,10 +84,10 @@ namespace veil::vtl1::implementation
 
 namespace veil::vtl1::implementation::taskpool::callouts
 {
-    HRESULT taskpool_make_callback(_In_ const void* enclave, _In_ const std::uint64_t taskpool_instance_vtl1, _In_ const std::uint32_t thread_count, _In_ const bool must_finish_all_queued_tasks, _Out_  void** taskpool_instance_vtl0);
-    HRESULT taskpool_delete_callback(_In_ const void* taskpool_instance_vtl0);
-    HRESULT taskpool_schedule_task_callback(_In_ const void* taskpool_instance_vtl0, _In_ const std::uint64_t task_id);
-    HRESULT taskpool_cancel_queued_tasks_callback(_In_ const void* taskpool_instance_vtl0);
+    HRESULT taskpool_make(_In_ const void* enclave, _In_ const std::uint64_t taskpool_instance_vtl1, _In_ const std::uint32_t thread_count, _In_ const bool must_finish_all_queued_tasks, _Out_  void** taskpool_instance_vtl0);
+    HRESULT taskpool_delete(_In_ const void* taskpool_instance_vtl0);
+    HRESULT taskpool_schedule_task(_In_ const void* taskpool_instance_vtl0, _In_ const std::uint64_t task_id);
+    HRESULT taskpool_cancel_queued_tasks(_In_ const void* taskpool_instance_vtl0);
 }
 
 // impl
@@ -120,7 +120,7 @@ namespace veil::vtl1
             void* enclave = veil::vtl1::enclave_information().BaseAddress;
 
             // Call out to VTL0 to create the backing threads
-            THROW_IF_FAILED(veil::vtl1::implementation::taskpool::callouts::taskpool_make_callback(enclave, static_cast<uint64_t>(m_objectTableEntryId), threadCount, mustFinishAllQueuedTasks, &m_taskpoolInstanceVtl0));
+            THROW_IF_FAILED(veil::vtl1::implementation::taskpool::callouts::taskpool_make(enclave, static_cast<uint64_t>(m_objectTableEntryId), threadCount, mustFinishAllQueuedTasks, &m_taskpoolInstanceVtl0));
         }
 
         // Delete copy
@@ -134,7 +134,7 @@ namespace veil::vtl1
         ~taskpool()
         {
             // Call out to VTL0 to delete the backing threads
-            THROW_IF_FAILED(veil::vtl1::implementation::taskpool::callouts::taskpool_delete_callback(m_taskpoolInstanceVtl0));
+            THROW_IF_FAILED(veil::vtl1::implementation::taskpool::callouts::taskpool_delete(m_taskpoolInstanceVtl0));
 
             // Erase weak reference from weak object table so nobody else can run tasks
             veil::vtl1::implementation::get_taskpool_object_table().erase(m_objectTableEntryId);
@@ -191,7 +191,7 @@ namespace veil::vtl1
             auto taskId = m_tasks.store(std::move(func));
 
             // Call out to VTL0 to get the task scheduled (into the VTL0 std::deque instance) so it can eventually be scheduled on a VTL0 backing thread.
-            THROW_IF_FAILED(veil::vtl1::implementation::taskpool::callouts::taskpool_schedule_task_callback(m_taskpoolInstanceVtl0, taskId));
+            THROW_IF_FAILED(veil::vtl1::implementation::taskpool::callouts::taskpool_schedule_task(m_taskpoolInstanceVtl0, taskId));
 
             return fut;
         }
@@ -224,7 +224,7 @@ namespace veil::vtl1
             m_cancelledId = m_tasks.peek_next_id();
             m_tasks.clear();
 
-            THROW_IF_FAILED(veil::vtl1::implementation::taskpool::callouts::taskpool_cancel_queued_tasks_callback(m_taskpoolInstanceVtl0));
+            THROW_IF_FAILED(veil::vtl1::implementation::taskpool::callouts::taskpool_cancel_queued_tasks(m_taskpoolInstanceVtl0));
         }
 
     private:
