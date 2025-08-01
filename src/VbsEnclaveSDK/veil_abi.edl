@@ -3,12 +3,35 @@
 
 enclave
 {
+    struct secretAndAuthorizationContextAndSessionKeyPtr
+    {
+        vector<uint8_t> secret;
+        vector<uint8_t> authorizationContext;
+        uintptr_t sessionKeyPtr;
+    };
+
+    struct attestationReportAndSessionKeyPtr
+    {
+        vector<uint8_t> attestationReport;
+        uintptr_t sessionKeyPtr;
+    };
+
+    struct authContextBlobAndSessionKeyPtr
+    {
+        vector<uint8_t> authContextBlob;
+        uintptr_t sessionKeyPtr;
+    };
+
     trusted
     {
         HRESULT taskpool_run_task(
             uint64_t taskpool_instance_vtl1,
             uint64_t task_id
         );
+
+        // hello user bound key
+        attestationReportAndSessionKeyPtr userboundkey_get_attestation_report(
+            vector<uint8_t> challenge);
     };
 
     untrusted
@@ -44,6 +67,20 @@ enclave
             wstring log,
             wstring log_file_path
         );
+
+        // hello user bound key
+        authContextBlobAndSessionKeyPtr userboundkey_establish_session_for_create(
+            wstring key_name,
+            uintptr_t ecdh_protocol,
+            wstring message,
+            uintptr_t window_id
+            );
+
+        secretAndAuthorizationContextAndSessionKeyPtr userboundkey_establish_session_for_load(
+            wstring key_name,
+            vector<uint8_t> public_key,
+            wstring message,
+            uintptr_t window_id);
     };
 
 };
