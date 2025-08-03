@@ -4,6 +4,7 @@
 #include "utils.vtl1.h"
 #include "vengcdll.h" // OS APIs
 #include "userboundkey.vtl1.h" // Function declarations
+#include "vtl0_functions.vtl1.h"
 
 namespace veil_abi::VTL1_Declarations
 {
@@ -26,7 +27,7 @@ attestationReportAndSessionKeyPtr userboundkey_get_attestation_report(_In_ const
 
     reportPtr = static_cast<uint8_t*>(tempReportPtr); // Cast back to uint8_t*
     std::vector<uint8_t> report(reportPtr, reportPtr + reportSize);
-    CoTaskMemFree(reportPtr);
+    HeapFree(GetProcessHeap(), 0, reportPtr);
 
     return attestationReportAndSessionKeyPtr {std::move(report), static_cast<std::uintptr_t>(sessionKeyPtr)};
 }
@@ -34,6 +35,16 @@ attestationReportAndSessionKeyPtr userboundkey_get_attestation_report(_In_ const
 
 namespace veil::vtl1::userboundkey
 {
+// Helper function to convert KEY_CREDENTIAL_CACHE_CONFIG to DeveloperTypes::keyCredentialCacheConfig
+DeveloperTypes::keyCredentialCacheConfig ConvertToDeveloperType(const KEY_CREDENTIAL_CACHE_CONFIG& cacheConfig)
+{
+    DeveloperTypes::keyCredentialCacheConfig devType;
+    devType.cacheOption = cacheConfig.cacheType;
+    devType.cacheTimeoutInSeconds = cacheConfig.cacheTimeout;
+    devType.cacheUsageCount = cacheConfig.cacheCallCount;
+    return devType;
+}
+
 // RAII wrapper for USER_BOUND_KEY_AUTH_CONTEXT_HANDLE to prevent resource leaks
 class unique_auth_context_handle
 {
@@ -110,9 +121,27 @@ wil::secure_vector<uint8_t> enclave_create_user_bound_key(
     uintptr_t windowId,
     ENCLAVE_SEALING_IDENTITY_POLICY sealingPolicy)
 {
+    veil::vtl1::vtl0_functions::debug_print(L"In enclave_create_user_bound_key");
+
+    // Convert cacheConfig to the type expected by the callback
+    auto devCacheConfig = ConvertToDeveloperType(cacheConfig);
+
+    veil::vtl1::vtl0_functions::debug_print(L"ConvertToDeveloperType");
+
     // SESSION
-    auto authContextBlobAndSessionKeyPtr = veil_abi::VTL0_Callbacks::userboundkey_establish_session_for_create_callback(keyName, reinterpret_cast<uintptr_t>(BCRYPT_ECDH_P384_ALG_HANDLE), message, windowId);
+    void* enclave = veil::vtl1::enclave_information().BaseAddress;
+    auto authContextBlobAndSessionKeyPtr = veil_abi::VTL0_Callbacks::userboundkey_establish_session_for_create_callback(
+        reinterpret_cast<uint64_t>(enclave),
+        keyName,
+        reinterpret_cast<uintptr_t>(BCRYPT_ECDH_P384_ALG_HANDLE),
+        message,
+        windowId,
+        devCacheConfig);
+
+    veil::vtl1::vtl0_functions::debug_print(L"Received authContextBlobAndSessionKeyPtr");
+
     auto& authContextBlob = authContextBlobAndSessionKeyPtr.authContextBlob;
+    veil::vtl1::vtl0_functions::debug_print(L"Received authContextBlob");
 
     // AUTH CONTEXT
     unique_auth_context_handle authContext;

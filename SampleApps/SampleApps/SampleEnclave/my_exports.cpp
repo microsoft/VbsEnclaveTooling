@@ -15,9 +15,6 @@
 
 #include <VbsEnclave\Enclave\Trusted.h>
 
-// Link the VTL1 system library that contains CloseUserBoundKeyAuthContextHandle
-#pragma comment(lib, "vengcdll.lib")
-
 BCRYPT_KEY_HANDLE g_encryptionKeyHandle;
 
 namespace RunTaskpoolExamples
@@ -304,11 +301,15 @@ HRESULT VbsEnclave::Trusted::Implementation::MyEnclaveCreateUserBoundKey(
 
     try
     {
+        debug_print(L"Start MyEnclaveCreateUserBoundKey");
+
         // Convert VbsEnclave::DeveloperTypes::keyCredentialCacheConfig to KEY_CREDENTIAL_CACHE_CONFIG
         KEY_CREDENTIAL_CACHE_CONFIG mutableKeyCredentialCacheConfig = {};
         mutableKeyCredentialCacheConfig.cacheType = keyCredentialCacheConfiguration.cacheOption;
         mutableKeyCredentialCacheConfig.cacheTimeout = keyCredentialCacheConfiguration.cacheTimeoutInSeconds;
         mutableKeyCredentialCacheConfig.cacheCallCount = keyCredentialCacheConfiguration.cacheUsageCount;
+
+        debug_print(L"Created mutableKeyCredentialCacheConfig");
 
         auto keyBytes = veil::vtl1::userboundkey::enclave_create_user_bound_key(
             helloKeyName,
@@ -317,10 +318,13 @@ HRESULT VbsEnclave::Trusted::Implementation::MyEnclaveCreateUserBoundKey(
             windowId,
             ENCLAVE_SEALING_IDENTITY_POLICY::ENCLAVE_IDENTITY_POLICY_SEAL_EXACT_CODE);
 
+        debug_print(L"enclave_create_user_bound_key returned");
+
         securedEncryptionKeyBytes.assign(keyBytes.begin(), keyBytes.end());
     }
     catch (const std::exception& e)
     {
+        debug_print(L"Exception caught in MyEnclaveCreateUserBoundKey: %hs", e.what());
         return E_FAIL;
     }
 

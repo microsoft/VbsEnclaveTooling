@@ -6,6 +6,15 @@
 #include <tuple>
 #include <vector>
 #include <memory>
+#include <iostream>
+
+// Include Windows headers first to define basic types
+#include <windows.h>
+#include <ntenclv.h>
+#include <enclaveium.h>
+#include <roapi.h>
+#include <winstring.h>
+
 #include <winrt/base.h>
 #include <winrt/Windows.Foundation.h>
 #include <winrt/Windows.Security.Credentials.h>
@@ -14,6 +23,8 @@
 #include <winrt/Windows.Storage.Streams.h>
 
 #include <VbsEnclave\HostApp\Stubs.h>
+#include "..\veil_enclave_lib\vengcdll.h"
+#include <VbsEnclave\HostApp\DeveloperTypes.h>
 
 using namespace winrt::Windows::Security::Credentials;
 
@@ -39,33 +50,90 @@ winrt::hstring GetAlgorithm(uintptr_t ecdhAlgorithm)
     THROW_HR(E_INVALIDARG);
 }
 
-authContextBlobAndSessionKeyPtr veil_abi::VTL0_Stubs::export_interface::userboundkey_establish_session_for_create_callback(
-    const std::wstring& key_name,
-    uintptr_t ecdhAlgorithm,
-    const std::wstring& message,
-    uintptr_t windowId)
+// Helper function to convert DeveloperTypes::keyCredentialCacheConfig to KeyCredentialCacheConfiguration
+KeyCredentialCacheConfiguration ConvertCacheConfig(const DeveloperTypes::keyCredentialCacheConfig& cacheConfig)
 {
-    auto algorithm = GetAlgorithm(ecdhAlgorithm);
+    // Map cacheOption to KeyCredentialCacheOption
+    KeyCredentialCacheOption cacheOption;
+    switch (cacheConfig.cacheOption)
+    {
+        case 1:
+            cacheOption = KeyCredentialCacheOption::NoCache;
+            break;
+        case 2:
+            cacheOption = KeyCredentialCacheOption::CacheWhenUnlocked;
+            break;
+        case 4:
+            cacheOption = KeyCredentialCacheOption::CacheUnderLock;
+            break;
+        default:
+            cacheOption = KeyCredentialCacheOption::NoCache; // Default fallback
+            break;
+    }
 
-    winrt::Windows::Foundation::TimeSpan timeout = winrt::Windows::Foundation::TimeSpan {3000000000};   // 5 mins
-    auto cacheConfiguration = KeyCredentialCacheConfiguration(
-        KeyCredentialCacheOption::NoCache,
-        timeout, // KeyCredentialCacheTimeout
-        5); // KeyCredentialCacheUsageCount
+    // Convert timeout from seconds to TimeSpan (100-nanosecond units)
+    winrt::Windows::Foundation::TimeSpan timeout{ static_cast<int64_t>(cacheConfig.cacheTimeoutInSeconds) * 10000000LL };
+
+    // Use RoGetActivationFactory to get the factory for KeyCredentialCacheConfiguration
+    winrt::com_ptr<winrt::Windows::Security::Credentials::IKeyCredentialCacheConfigurationFactory> factory;
+
+    // Create HSTRING for the runtime class name
+    winrt::hstring className = L"Windows.Security.Credentials.KeyCredentialCacheConfiguration";
+
+    // Get the activation factory using RoGetActivationFactory
+    HRESULT hr = RoGetActivationFactory(
+        reinterpret_cast<HSTRING>(winrt::get_abi(className)),
+        winrt::guid_of<winrt::Windows::Security::Credentials::IKeyCredentialCacheConfigurationFactory>(),
+        factory.put_void());
+
+    if (SUCCEEDED(hr))
+    {
+        winrt::com_ptr<winrt::Windows::Security::Credentials::IKeyCredentialCacheConfiguration> instance;
+        hr = factory->CreateInstance(
+            static_cast<int32_t>(cacheOption),
+            winrt::get_abi(timeout),
+            cacheConfig.cacheUsageCount,
+            reinterpret_cast<void**>(instance.put()));
+
+        return winrt::Windows::Security::Credentials::KeyCredentialCacheConfiguration {
+                    instance.detach(), winrt::take_ownership_from_abi
+        };
+    }
+
+    // If RoGetActivationFactory fails, throw an exception
+    THROW_HR(hr);
+
+}
+
+authContextBlobAndSessionKeyPtr veil_abi::VTL0_Stubs::export_interface::userboundkey_establish_session_for_create_callback(
+    uintptr_t enclave,
+    const std::wstring& key_name,
+    uintptr_t ecdh_protocol,
+    const std::wstring& message,
+    uintptr_t window_id,
+    const DeveloperTypes::keyCredentialCacheConfig& cache_config)
+{
+    std::wcout << L"Inside userboundkey_establish_session_for_create_callback"<< std::endl;
+    auto algorithm = GetAlgorithm(ecdh_protocol);
+
+    // Convert the cacheConfig parameter to KeyCredentialCacheConfiguration
+    auto cacheConfiguration = ConvertCacheConfig(cache_config);
 
     auto sessionKeyPtr = std::make_shared<uintptr_t>(0);
+    auto enclaveptr = (void*)enclave;
     
+    std::wcout << L"Calling RequestCreateAsync" << std::endl;
     auto credentialResult = KeyCredentialManager::RequestCreateAsync(
         key_name,
         KeyCredentialCreationOption::FailIfExists,
         algorithm,
         message,
         cacheConfiguration,
-        (winrt::Windows::UI::WindowId)windowId,
+        (winrt::Windows::UI::WindowId)window_id,
         ChallengeResponseKind::VirtualizationBasedSecurityEnclave,
-        [sessionKeyPtr] (const auto& challenge) mutable
-        {
-            auto enclaveInterface = veil_abi::VTL0_Stubs::export_interface(nullptr);
+        [sessionKeyPtr, enclaveptr] (const auto& challenge) mutable
+        {            
+            auto enclaveInterface = veil_abi::VTL0_Stubs::export_interface(enclaveptr);
             auto attestationReportAndSessionKeyPtr = enclaveInterface.userboundkey_get_attestation_report(
                 ConvertBufferToVector(challenge));  // !!! call into enclave !!!
             *sessionKeyPtr = attestationReportAndSessionKeyPtr.sessionKeyPtr;
@@ -74,6 +142,8 @@ authContextBlobAndSessionKeyPtr veil_abi::VTL0_Stubs::export_interface::userboun
             return winrt::Windows::Security::Cryptography::CryptographicBuffer::CreateFromByteArray(attestationReportAndSessionKeyPtr.attestationReport);
         }
     ).get();
+
+    std::wcout << L"RequestCreateAsync returned" << std::endl;
 
     // Check if the operation was successful
     auto status = credentialResult.Status();
@@ -95,9 +165,9 @@ authContextBlobAndSessionKeyPtr veil_abi::VTL0_Stubs::export_interface::userboun
 
 secretAndAuthorizationContextAndSessionKeyPtr veil_abi::VTL0_Stubs::export_interface::userboundkey_establish_session_for_load_callback(
     const std::wstring& key_name,
-    const std::vector<uint8_t>& publicKeyBytes,
+    const std::vector<uint8_t>& public_key,
     const std::wstring& message,
-    uintptr_t windowId)
+    uintptr_t window_id)
 {
     auto sessionKeyPtr = std::make_shared<uintptr_t>(0);
     auto credentialResult = KeyCredentialManager::OpenAsync(
@@ -126,10 +196,10 @@ secretAndAuthorizationContextAndSessionKeyPtr veil_abi::VTL0_Stubs::export_inter
 
     auto authorizationContext = credential.RetrieveAuthorizationContext();
     auto secret = credential.RequestDeriveSharedSecretAsync(
-        (winrt::Windows::UI::WindowId)windowId, 
+        (winrt::Windows::UI::WindowId)window_id, 
         message, 
-        winrt::Windows::Security::Cryptography::CryptographicBuffer::CreateFromByteArray(publicKeyBytes)).get();
-    
+        winrt::Windows::Security::Cryptography::CryptographicBuffer::CreateFromByteArray(public_key)).get();
+
     secretAndAuthorizationContextAndSessionKeyPtr result;
     result.secret = ConvertBufferToVector(secret.Result());
     result.authorizationContext = ConvertBufferToVector(authorizationContext);

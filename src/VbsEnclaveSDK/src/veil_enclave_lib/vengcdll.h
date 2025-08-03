@@ -1,5 +1,4 @@
 #pragma once
-#pragma once
 
 #ifndef VENGCDLL_H
 #define VENGCDLL_H
@@ -8,13 +7,45 @@
 #include <sal.h>
 #include <bcrypt.h>
 
+// Include necessary headers for enclave APIs
+#include <winenclaveapi.h>
+#include <ntenclv.h>
+#include <enclaveium.h>
+
+// Forward declare DeveloperTypes to avoid circular dependency
+namespace DeveloperTypes
+{
+    struct keyCredentialCacheConfig;
+}
+
+// NGC Trustlet Identity constant
+#ifndef TRUSTLETIDENTITY_NGC
+#define TRUSTLETIDENTITY_NGC 6
+#endif
+
+// AES-GCM constants
+#define AES_GCM_NONCE_SIZE 12
+#define AES_GCM_TAG_SIZE 16
+
+// Cryptographic constants
+#define ECDH_P384_KEY_SIZE_BITS 384         // ECDH P-384 key size in bits
+#define AES_256_KEY_SIZE_BYTES 32           // AES-256 session key size in bytes
+
+// Buffer size constants
+#define NGC_KEY_NAME_BUFFER_SIZE 256        // Buffer size for key names
+#define NGC_ATTESTATION_BUFFER_SIZE 256     // Buffer size for attestation data
+
+// NGC public key validation limits
+#define NGC_PUBLIC_KEY_MIN_SIZE 32          // Minimum allowed NGC public key size
+#define NGC_PUBLIC_KEY_MAX_SIZE 1024        // Maximum allowed NGC public key size
+
 //
 // Exports for vengcdll.dll (new OS DLL in VTL1)
 //
 
 // Attestation report generation API for user bound keys.
 // Generates a session key, passes session key and provided challenge to EnclaveGetAttestationReport,
-// encrypts the attestation report with EnclaveEncryptDataForTrustlet, returns the encrypted report. 
+// encrypts the attestation report with EnclaveEncryptDataForTrustlet, returns the encrypted report.
 HRESULT InitializeUserBoundKeySessionInfo(
     _In_reads_bytes_(challengeSize) const void* challenge,
     _In_ UINT32 challengeSize,
@@ -30,6 +61,7 @@ DECLARE_HANDLE(USER_BOUND_KEY_AUTH_CONTEXT_HANDLE);
 BOOL CloseUserBoundKeyAuthContextHandle(
     _In_ USER_BOUND_KEY_AUTH_CONTEXT_HANDLE handle);
 
+// Legacy structure for backward compatibility
 typedef struct _KEY_CREDENTIAL_CACHE_CONFIG {
     UINT32 cacheType;
     UINT32 cacheTimeout; // in seconds
