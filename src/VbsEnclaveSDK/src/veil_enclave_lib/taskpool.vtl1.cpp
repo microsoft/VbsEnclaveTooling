@@ -10,7 +10,8 @@
 #include <mutex>
 #include <vector>
 
-#include <VbsEnclave\Enclave\Implementations.h>
+#include <VbsEnclave\Enclave\Implementation\Trusted.h>
+#include <VbsEnclave\Enclave\Stubs\Untrusted.h>
 
 #include "taskpool.any.h"
 #include "taskpool.vtl1.h"
@@ -29,7 +30,7 @@ namespace veil::vtl1::implementation
 // call ins
 namespace veil_abi
 {
-    namespace VTL1_Declarations
+    namespace Trusted::Implementation
     {
         HRESULT taskpool_run_task(_In_ const std::uint64_t taskpool_instance_vtl1, _In_ const std::uint64_t task_id)
         {
@@ -59,10 +60,10 @@ namespace veil::vtl1::implementation::taskpool::callouts
 {
     namespace abi = veil::any::implementation::taskpool;
 
-    HRESULT taskpool_make_callback(_In_ const void* enclave, _In_ const std::uint64_t taskpool_instance_vtl1, _In_ const std::uint32_t thread_count, _In_ const bool must_finish_all_queued_tasks, _Out_  void** taskpool_instance_vtl0)
+    HRESULT taskpool_make(_In_ const void* enclave, _In_ const std::uint64_t taskpool_instance_vtl1, _In_ const std::uint32_t thread_count, _In_ const bool must_finish_all_queued_tasks, _Out_  void** taskpool_instance_vtl0)
     {
         auto taskpoolInstanceVtl0 = uintptr_t {};
-        RETURN_IF_FAILED(veil_abi::VTL0_Callbacks::taskpool_make_callback(
+        RETURN_IF_FAILED(veil_abi::Untrusted::Stubs::taskpool_make(
             abi::to_abi(enclave),
             taskpool_instance_vtl1,
             thread_count,
@@ -72,21 +73,21 @@ namespace veil::vtl1::implementation::taskpool::callouts
         return S_OK;
     }
 
-    HRESULT taskpool_delete_callback(_In_ const void* taskpool_instance_vtl0)
+    HRESULT taskpool_delete(_In_ const void* taskpool_instance_vtl0)
     {
-        RETURN_IF_FAILED(veil_abi::VTL0_Callbacks::taskpool_delete_callback(abi::to_abi(taskpool_instance_vtl0)));
+        RETURN_IF_FAILED(veil_abi::Untrusted::Stubs::taskpool_delete(abi::to_abi(taskpool_instance_vtl0)));
         return S_OK;
     }
 
-    HRESULT taskpool_schedule_task_callback(_In_ const void* taskpool_instance_vtl0, _In_ const std::uint64_t task_id)
+    HRESULT taskpool_schedule_task(_In_ const void* taskpool_instance_vtl0, _In_ const std::uint64_t task_id)
     {
-        RETURN_IF_FAILED(veil_abi::VTL0_Callbacks::taskpool_schedule_task_callback(abi::to_abi(taskpool_instance_vtl0), task_id));
+        RETURN_IF_FAILED(veil_abi::Untrusted::Stubs::taskpool_schedule_task(abi::to_abi(taskpool_instance_vtl0), task_id));
         return S_OK;
     }
 
-    HRESULT taskpool_cancel_queued_tasks_callback(_In_ const void* taskpool_instance_vtl0)
+    HRESULT taskpool_cancel_queued_tasks(_In_ const void* taskpool_instance_vtl0)
     {
-        RETURN_IF_FAILED(veil_abi::VTL0_Callbacks::taskpool_cancel_queued_tasks_callback(abi::to_abi(taskpool_instance_vtl0)));
+        RETURN_IF_FAILED(veil_abi::Untrusted::Stubs::taskpool_cancel_queued_tasks(abi::to_abi(taskpool_instance_vtl0)));
         return S_OK;
     }
 
