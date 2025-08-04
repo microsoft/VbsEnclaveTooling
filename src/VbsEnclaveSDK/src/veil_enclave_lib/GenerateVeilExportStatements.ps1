@@ -12,7 +12,12 @@ if (-not (Test-Path $InputFile))
     exit 1
 }
 
-@"
+# Extract pragma lines and append them to the output file.
+# example line: #pragma comment(linker, "/include:__AbiRegisterVtl0Callbacks_veil_abi__")
+$pragmaLines = Select-String -Path $InputFile -Pattern '#pragma comment\(linker,' | ForEach-Object { $_.Line }
+$joinedPragmaLines = $pragmaLines -join "`r`n"
+
+$fileHeader = @"
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
@@ -22,10 +27,6 @@ if (-not (Test-Path $InputFile))
 // Do not modify this file manually.
 #pragma once
 
-"@ | Out-File -FilePath $OutputFile
+"@
 
-# Extract pragma lines and append them to the output file.
-# example line: #pragma comment(linker, "/include:__AbiRegisterVtl0Callbacks_veil_abi__")
-Select-String -Path $InputFile -Pattern '#pragma comment\(linker,' |
-    ForEach-Object { $_.Line } |
-    Add-Content -Path $OutputFile
+"$fileHeader$joinedPragmaLines" | Out-File -FilePath $OutputFile -Encoding UTF8
