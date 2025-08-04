@@ -1,21 +1,31 @@
 #include "pch.h"
+
+#define VEIL_IMPLEMENTATION
+
 #include <VbsEnclave\Enclave\Implementations.h>
 #include "crypto.vtl1.h"
 #include "utils.vtl1.h"
 #include "vengcdll.h" // OS APIs
+#include "userboundkey.any.h"
 #include "userboundkey.vtl1.h" // Function declarations
 #include "vtl0_functions.vtl1.h"
 
 namespace veil_abi::VTL1_Declarations
 {
-attestationReportAndSessionKeyPtr userboundkey_get_attestation_report(_In_ const std::vector<std::uint8_t>& challenge)
+DeveloperTypes::attestationReportAndSessionKeyPtr userboundkey_get_attestation_report(_In_ const std::vector<std::uint8_t>& challenge)
 {
+    // DEBUG: Log that the enclave function has been called
+    veil::vtl1::vtl0_functions::debug_print(L"DEBUG: userboundkey_get_attestation_report called - enclave function started");
+    
     uint8_t* reportPtr = nullptr;
     void* tempReportPtr = nullptr; // Temporary variable of type void*
     size_t reportSize = 0;
 
     UINT_PTR sessionKeyPtr = 0;
     UINT32 sessionKeySize = 0;
+
+    // DEBUG: Log before calling InitializeUserBoundKeySessionInfo
+    veil::vtl1::vtl0_functions::debug_print(L"DEBUG: About to call InitializeUserBoundKeySessionInfo");
 
     THROW_IF_FAILED(InitializeUserBoundKeySessionInfo(
         const_cast<uint8_t*>(challenge.data()),
@@ -25,12 +35,51 @@ attestationReportAndSessionKeyPtr userboundkey_get_attestation_report(_In_ const
         &sessionKeyPtr,
         &sessionKeySize)); // OS CALL
 
+    // DEBUG: Log after InitializeUserBoundKeySessionInfo completes
+    veil::vtl1::vtl0_functions::debug_print(L"DEBUG: InitializeUserBoundKeySessionInfo completed successfully");
+
     reportPtr = static_cast<uint8_t*>(tempReportPtr); // Cast back to uint8_t*
     std::vector<uint8_t> report(reportPtr, reportPtr + reportSize);
     HeapFree(GetProcessHeap(), 0, reportPtr);
 
-    return attestationReportAndSessionKeyPtr {std::move(report), static_cast<std::uintptr_t>(sessionKeyPtr)};
+    // DEBUG: Log before returning
+    veil::vtl1::vtl0_functions::debug_print(L"DEBUG: userboundkey_get_attestation_report returning successfully");
+
+    return DeveloperTypes::attestationReportAndSessionKeyPtr {std::move(report), static_cast<std::uintptr_t>(sessionKeyPtr)};
 }
+}
+
+namespace veil::vtl1::implementation::userboundkey::callouts
+{
+    DeveloperTypes::authContextBlobAndSessionKeyPtr userboundkey_establish_session_for_create_callback(
+        _In_ const void* enclave, 
+        _In_ const std::wstring& key_name, 
+        _In_ const uintptr_t ecdh_protocol, 
+        _In_ const std::wstring& message, 
+        _In_ const uintptr_t window_id, 
+        _In_ const DeveloperTypes::keyCredentialCacheConfig& cache_config)
+    {
+        return veil_abi::VTL0_Callbacks::userboundkey_establish_session_for_create_callback(
+            reinterpret_cast<uintptr_t>(enclave),
+            key_name,
+            ecdh_protocol,
+            message,
+            window_id,
+            cache_config);
+    }
+
+    DeveloperTypes::secretAndAuthorizationContextAndSessionKeyPtr userboundkey_establish_session_for_load_callback(
+        _In_ const std::wstring& key_name, 
+        _In_ const std::vector<std::uint8_t>& public_key, 
+        _In_ const std::wstring& message, 
+        _In_ const uintptr_t window_id)
+    {
+        return veil_abi::VTL0_Callbacks::userboundkey_establish_session_for_load_callback(
+            key_name,
+            public_key,
+            message,
+            window_id);
+    }
 }
 
 namespace veil::vtl1::userboundkey

@@ -30,7 +30,7 @@
     <ClCompile Include="vtl0_functions.vtl0.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-	<ClCompile Include="hello_winrt_kcm.vtl0.cpp">
+    <ClCompile Include="hello_winrt_kcm.vtl0.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -50,7 +50,10 @@
     <ClInclude Include="logger.vtl0.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-	<ClInclude Include="keycredentialmanager.vtl0.h">
+    <ClInclude Include="keycredentialmanager.vtl0.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="userboundkey.vtl0.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
