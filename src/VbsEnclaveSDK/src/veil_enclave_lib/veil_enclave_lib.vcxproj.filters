@@ -39,6 +39,12 @@
     <ClInclude Include="logger.vtl1.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="vengcdll.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="userboundkey.vtl1.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp">
@@ -50,7 +56,13 @@
     <ClCompile Include="logger.vtl1.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="userboundkey.vtl1.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
     <ClCompile Include="vtl0_functions.vtl1.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="vengcdll.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

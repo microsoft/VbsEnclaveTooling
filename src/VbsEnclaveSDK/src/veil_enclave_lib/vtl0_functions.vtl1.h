@@ -5,6 +5,8 @@
 
 #include <string>
 
+#include <array>
+
 #include "wil/stl.h"
 
 #include "utils.vtl1.h"

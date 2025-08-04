@@ -9,9 +9,13 @@
 #include <veil\enclave\crypto.vtl1.h>
 #include <veil\enclave\logger.vtl1.h>
 #include <veil\enclave\taskpool.vtl1.h>
+#include <veil\enclave\userboundkey.vtl1.h>
+#include <veil\enclave\vengcdll.h>
 #include <veil\enclave\vtl0_functions.vtl1.h>
 
 #include <VbsEnclave\Enclave\Implementation\Trusted.h>
+
+BCRYPT_KEY_HANDLE g_encryptionKeyHandle;
 
 namespace RunTaskpoolExamples
 {
@@ -279,6 +283,53 @@ HRESULT VbsEnclave::Trusted::Implementation::RunTaskpoolExample(_In_ const std::
     debug_print(L"USAGE EXCEPTIONS");
     RunTaskpoolExamples::UsageExceptionExample(threadCount);
     debug_print(L"");
+
+    return S_OK;
+}
+
+//
+// User bound encryption key
+//
+HRESULT VbsEnclave::Trusted::Implementation::MyEnclaveCreateUserBoundKey(
+    _In_ const std::wstring& helloKeyName,
+    _In_ const std::wstring& pinMessage,
+    _In_ const uintptr_t windowId,
+    _In_ const VbsEnclave::DeveloperTypes::keyCredentialCacheConfig& keyCredentialCacheConfiguration,
+    _Out_ std::vector<std::uint8_t>& securedEncryptionKeyBytes)
+{
+    using namespace veil::vtl1::vtl0_functions;
+
+    try
+    {
+        debug_print(L"Start MyEnclaveCreateUserBoundKey");
+
+        // Convert VbsEnclave::DeveloperTypes::keyCredentialCacheConfig to KEY_CREDENTIAL_CACHE_CONFIG
+        KEY_CREDENTIAL_CACHE_CONFIG mutableKeyCredentialCacheConfig = {};
+        mutableKeyCredentialCacheConfig.cacheType = keyCredentialCacheConfiguration.cacheOption;
+        mutableKeyCredentialCacheConfig.cacheTimeout = keyCredentialCacheConfiguration.cacheTimeoutInSeconds;
+        mutableKeyCredentialCacheConfig.cacheCallCount = keyCredentialCacheConfiguration.cacheUsageCount;
+
+        debug_print(L"Created mutableKeyCredentialCacheConfig");
+
+        auto keyBytes = veil::vtl1::userboundkey::enclave_create_user_bound_key(
+            helloKeyName,
+            mutableKeyCredentialCacheConfig,
+            pinMessage,
+            windowId,
+            ENCLAVE_SEALING_IDENTITY_POLICY::ENCLAVE_IDENTITY_POLICY_SEAL_EXACT_CODE);
+
+        debug_print(L"enclave_create_user_bound_key returned");
+
+        securedEncryptionKeyBytes.assign(keyBytes.begin(), keyBytes.end());
+    }
+    catch (const std::exception& e)
+    {
+        debug_print(L"Exception caught in MyEnclaveCreateUserBoundKey: %hs", e.what());
+        return E_FAIL;
+    }
+
+    auto key = veil::vtl1::crypto::create_symmetric_key(securedEncryptionKeyBytes);
+    g_encryptionKeyHandle = key.get();
 
     return S_OK;
 }

@@ -3,6 +3,8 @@
 #include <string>
 #include <conio.h> // For getch()
 #include <filesystem> // For directory validation
+#include <chrono>
+#include <optional>
 
 #include <windows.h>
 #include <stdio.h>
@@ -12,6 +14,11 @@
 #include <sddl.h>
 #include <limits>
 
+#include <winrt/base.h>
+#include <winrt/Windows.Foundation.h>
+#include <winrt/Windows.Security.Credentials.h>
+#include <roapi.h>
+
 #include <veil\host\enclave_api.vtl0.h>
 #include <veil\host\logger.vtl0.h>
 
@@ -20,6 +27,122 @@
 #include <VbsEnclave\HostApp\Stubs\Trusted.h>
 
 namespace fs = std::filesystem;
+
+// Global variables (declared but not initialized, need to be encapsulated)
+std::wstring g_helloKeyName;
+std::wstring g_pinMessage;
+std::optional<winrt::Windows::Security::Credentials::KeyCredentialCacheConfiguration> g_keyCredentialCacheConfig;
+HWND g_hCurWnd;
+
+// Initialize function to set up global variables
+void Initialize()
+{
+    g_helloKeyName = L"MyEncryptionKey-001";
+    g_pinMessage = L"Please enter your PIN to access the encryption key.";
+    
+    // Initialize COM for WinRT
+    winrt::init_apartment();
+    
+    try 
+    {
+        // Use RoGetActivationFactory to get the factory for KeyCredentialCacheConfiguration
+        winrt::com_ptr<winrt::Windows::Security::Credentials::IKeyCredentialCacheConfigurationFactory> factory;
+        
+        // Create HSTRING for the runtime class name
+        winrt::hstring className = L"Windows.Security.Credentials.KeyCredentialCacheConfiguration";
+        
+        // Get the activation factory using RoGetActivationFactory
+        HRESULT hr = RoGetActivationFactory(
+            reinterpret_cast<HSTRING>(winrt::get_abi(className)),
+            winrt::guid_of<winrt::Windows::Security::Credentials::IKeyCredentialCacheConfigurationFactory>(),
+            factory.put_void()
+        );
+        
+        if (SUCCEEDED(hr))
+        {
+            // Create the KeyCredentialCacheConfiguration instance using the factory
+            auto cacheOption = winrt::Windows::Security::Credentials::KeyCredentialCacheOption::CacheWhenUnlocked;
+            winrt::Windows::Foundation::TimeSpan timeout{std::chrono::seconds(300)}; // 5 minutes
+            uint32_t usageCount = 5;
+            
+            // Use the factory ABI method with proper parameter types
+            winrt::com_ptr<winrt::Windows::Security::Credentials::IKeyCredentialCacheConfiguration> instance;
+            hr = factory->CreateInstance(
+                static_cast<int32_t>(cacheOption),
+                winrt::get_abi(timeout),
+                usageCount,
+                reinterpret_cast<void**>(instance.put())
+            );
+            
+            if (SUCCEEDED(hr))
+            {
+                g_keyCredentialCacheConfig = winrt::Windows::Security::Credentials::KeyCredentialCacheConfiguration{ 
+                    instance.detach(), winrt::take_ownership_from_abi 
+                };
+            }
+            else
+            {
+                std::wcout << L"Warning: Failed to create KeyCredentialCacheConfiguration instance (HRESULT: 0x"
+                           << std::hex << hr << L"). Using default cache configuration." << std::endl;
+                g_keyCredentialCacheConfig = std::nullopt;
+            }
+        }
+        else
+        {
+            std::wcout << L"Warning: Failed to get KeyCredentialCacheConfiguration factory (HRESULT: 0x"
+                       << std::hex << hr << L"). Using default cache configuration." << std::endl;
+            g_keyCredentialCacheConfig = std::nullopt;
+        }
+    }
+    catch (winrt::hresult_error const& ex)
+    {
+        // If KeyCredentialCacheConfiguration is not available (e.g., older Windows versions),
+        // leave g_keyCredentialCacheConfig as nullopt and handle gracefully
+        std::wcout << L"Warning: KeyCredentialCacheConfiguration not available (HRESULT: 0x" 
+                   << std::hex << ex.code() << L"). Using default cache configuration." << std::endl;
+        g_keyCredentialCacheConfig = std::nullopt;
+    }
+    
+    g_hCurWnd = GetForegroundWindow();
+}
+
+std::vector<uint8_t> OnFirstRun(void* enclave)
+{
+    Initialize();
+
+    // Initialize enclave interface
+    auto enclaveInterface = VbsEnclave::Trusted::Stubs::SampleEnclave(enclave);
+    THROW_IF_FAILED(enclaveInterface.RegisterVtl0Callbacks());
+
+    // Call into enclave
+    auto securedEncryptionKeyBytes = std::vector<uint8_t> {};
+    
+    // Convert g_keyCredentialCacheConfig (WinRT type) to enclave keyCredentialCacheConfig (struct)
+    VbsEnclave::DeveloperTypes::keyCredentialCacheConfig cacheConfig{};
+    if (g_keyCredentialCacheConfig.has_value())
+    {
+        cacheConfig.cacheOption = static_cast<uint32_t>(g_keyCredentialCacheConfig->CacheOption());
+        cacheConfig.cacheTimeoutInSeconds = static_cast<uint32_t>(g_keyCredentialCacheConfig->Timeout().count() / 10'000'000); // TimeSpan is in 100ns units
+        cacheConfig.cacheUsageCount = static_cast<uint32_t>(g_keyCredentialCacheConfig->UsageCount());
+    }
+    else
+    {
+        // Use default values when KeyCredentialCacheConfiguration is not available
+        cacheConfig.cacheOption = 1; // Default to CacheWhenUnlocked equivalent
+        cacheConfig.cacheTimeoutInSeconds = 300; // 5 minutes
+        cacheConfig.cacheUsageCount = 5;
+    }
+
+    THROW_IF_FAILED(enclaveInterface.MyEnclaveCreateUserBoundKey(
+        g_helloKeyName,
+        g_pinMessage,
+        reinterpret_cast<uintptr_t>(g_hCurWnd), // <-- Fix: cast HWND to uintptr_t
+        cacheConfig,
+        securedEncryptionKeyBytes));
+
+    return securedEncryptionKeyBytes;
+    // *** securedEncryptionKeyBytes persisted to disk
+}
 
 int EncryptFlow(
     void* enclave, 
@@ -331,7 +454,8 @@ int mainEncryptDecrpyt(uint32_t activityLevel)
                 std::cout << "Enter the string to encrypt: ";
                 std::cin.ignore();
                 std::getline(std::wcin, input);
-                EncryptFlow(enclave.get(), input, keyFilePath, encryptedInputFilePath, tagFilePath, veilLog);
+                // EncryptFlow(enclave.get(), input, keyFilePath, encryptedInputFilePath, tagFilePath, veilLog);
+                OnFirstRun(enclave.get()); // Ensure the key is created on first run
                 std::wcout << L"Encryption in Enclave completed. \n Encrypted bytes are saved to disk in " << encryptedInputFilePath << std::endl;
                 veilLog.AddTimestampedLog(
                     L"[Host] Encryption in Enclave completed. Encrypted bytes are saved to disk in " + encryptedInputFilePath,
