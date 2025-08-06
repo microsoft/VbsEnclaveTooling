@@ -17,6 +17,29 @@ DeveloperTypes::attestationReportAndSessionKeyPtr userboundkey_get_attestation_r
     // DEBUG: Log that the enclave function has been called
     veil::vtl1::vtl0_functions::debug_print(L"DEBUG: userboundkey_get_attestation_report called - enclave function started");
     
+    // DEBUG: Add hex dump of the challenge buffer for WinDbg analysis
+    std::wstring challengeHex = L"DEBUG: Challenge buffer (size=" + std::to_wstring(challenge.size()) + L"): ";
+    for (size_t i = 0; i < challenge.size() && i < 64; ++i) { // Limit to first 64 bytes to avoid excessive output
+        wchar_t hexByte[4];
+        swprintf_s(hexByte, L"%02X ", challenge[i]);
+        challengeHex += hexByte;
+    }
+    if (challenge.size() > 64) {
+        challengeHex += L"... (truncated)";
+    }
+    veil::vtl1::vtl0_functions::debug_print(challengeHex.c_str());
+    
+    // DEBUG: Show challenge as ASCII/Unicode text (if printable)
+    std::wstring challengeText = L"DEBUG: Challenge as text: ";
+    for (size_t i = 0; i < challenge.size() && i < 128; ++i) {
+        if (challenge[i] >= 32 && challenge[i] <= 126) { // Printable ASCII
+            challengeText += static_cast<wchar_t>(challenge[i]);
+        } else {
+            challengeText += L'.';
+        }
+    }
+    veil::vtl1::vtl0_functions::debug_print(challengeText.c_str());
+    
     uint8_t* reportPtr = nullptr;
     void* tempReportPtr = nullptr; // Temporary variable of type void*
     size_t reportSize = 0;

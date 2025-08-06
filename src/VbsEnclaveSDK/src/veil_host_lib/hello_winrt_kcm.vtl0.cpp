@@ -105,6 +105,90 @@ KeyCredentialCacheConfiguration ConvertCacheConfig(const DeveloperTypes::keyCred
 
 }
 
+// Helper function to call directly into enclave using CallEnclave API
+attestationReportAndSessionKeyPtr CallEnclaveDirectly(void* enclaveptr, const std::vector<uint8_t>& challengeVector)
+{
+    std::wcout << L"DEBUG: CallEnclaveDirectly - Starting direct enclave call..." << std::endl;
+    
+    // Step 1: Create flatbuffer parameters (same as generated code)
+    auto in_flatbufferT = userboundkey_get_attestation_report1_args::ToFlatBuffer(challengeVector);
+    auto flatbuffer_builder = PackFlatbuffer(*in_flatbufferT);
+    
+    // Step 2: Set up the function context
+    EnclaveFunctionContext function_context {};
+    function_context.m_forwarded_parameters.buffer = flatbuffer_builder.GetBufferPointer();
+    function_context.m_forwarded_parameters.buffer_size = flatbuffer_builder.GetSize();
+    function_context.m_returned_parameters.buffer = nullptr;
+    function_context.m_returned_parameters.buffer_size = 0;
+    
+    std::wcout << L"DEBUG: CallEnclaveDirectly - Set up function context, buffer size: " << function_context.m_forwarded_parameters.buffer_size << std::endl;
+    
+    // Step 3: Get the function address from the enclave module
+    auto module = reinterpret_cast<HMODULE>(enclaveptr);
+    std::wcout << L"DEBUG: CallEnclaveDirectly - Module handle: 0x" << std::hex << reinterpret_cast<uintptr_t>(module) << std::dec << std::endl;
+    
+    auto proc_address = GetProcAddress(module, "userboundkey_get_attestation_report1_Generated_Stub");
+    if (proc_address == nullptr) {
+        DWORD error = GetLastError();
+        std::wcout << L"DEBUG: CallEnclaveDirectly - GetProcAddress failed! GetLastError: " << error << std::endl;
+        THROW_HR(HRESULT_FROM_WIN32(error));
+    }
+    
+    std::wcout << L"DEBUG: CallEnclaveDirectly - Found function at address: 0x" << std::hex << reinterpret_cast<uintptr_t>(proc_address) << std::dec << std::endl;
+    
+    // Step 4: Cast to enclave routine and call the enclave
+    auto routine = reinterpret_cast<PENCLAVE_ROUTINE>(proc_address);
+    void* result_from_vtl1;
+    
+    std::wcout << L"DEBUG: CallEnclaveDirectly - About to call CallEnclave..." << std::endl;
+    BOOL callResult = CallEnclave(
+        routine,
+        reinterpret_cast<void*>(&function_context),
+        TRUE,  // fWaitForThread
+        &result_from_vtl1);
+    
+    if (!callResult) {
+        DWORD error = GetLastError();
+        std::wcout << L"DEBUG: CallEnclaveDirectly - CallEnclave failed! GetLastError: " << error << std::endl;
+        THROW_HR(HRESULT_FROM_WIN32(error));
+    }
+    
+    std::wcout << L"DEBUG: CallEnclaveDirectly - CallEnclave succeeded!" << std::endl;
+    
+    // Step 5: Check the HRESULT returned from VTL1
+    HRESULT vtl1_result = ABI_PVOID_TO_HRESULT(result_from_vtl1);
+    if (FAILED(vtl1_result)) {
+        std::wcout << L"DEBUG: CallEnclaveDirectly - VTL1 function failed with HRESULT: 0x" << std::hex << vtl1_result << std::endl;
+        THROW_HR(vtl1_result);
+    }
+    
+    std::wcout << L"DEBUG: CallEnclaveDirectly - VTL1 function succeeded!" << std::endl;
+    
+    // Step 6: Process the return data
+    auto return_buffer_size = function_context.m_returned_parameters.buffer_size;
+    auto return_buffer_ptr = reinterpret_cast<uint8_t*>(function_context.m_returned_parameters.buffer);
+    
+    std::wcout << L"DEBUG: CallEnclaveDirectly - Return buffer size: " << return_buffer_size << std::endl;
+    
+    if (return_buffer_size > 0 && return_buffer_ptr == nullptr) {
+        std::wcout << L"DEBUG: CallEnclaveDirectly - Invalid return buffer!" << std::endl;
+        THROW_HR(E_INVALIDARG);
+    }
+    
+    // Step 7: Unpack the flatbuffer result
+    auto function_result = UnpackFlatbufferWithSize<FlatbuffersDevTypes::userboundkey_get_attestation_report1_argsT>(return_buffer_ptr, return_buffer_size);
+    auto return_params = userboundkey_get_attestation_report1_args::ToDevType(function_result);
+    
+    std::wcout << L"DEBUG: CallEnclaveDirectly - Successfully unpacked result!" << std::endl;
+    
+    // Step 8: Clean up the return buffer (VTL1 allocated this for us)
+    if (return_buffer_ptr) {
+        HeapFree(GetProcessHeap(), 0, return_buffer_ptr);
+    }
+    
+    return std::move(return_params->m__return_value_);
+}
+
 authContextBlobAndSessionKeyPtr veil_abi::VTL0_Stubs::export_interface::userboundkey_establish_session_for_create_callback(
     uintptr_t enclave,
     const std::wstring& key_name,
@@ -121,6 +205,21 @@ authContextBlobAndSessionKeyPtr veil_abi::VTL0_Stubs::export_interface::userboun
 
     auto sessionKeyPtr = std::make_shared<uintptr_t>(0);
     auto enclaveptr = (void*)enclave;
+
+    
+    // Create the enclave interface directly with the VBS enclave handle
+    // The VBS Enclave framework will handle the module resolution internally
+    auto enclaveInterface = veil_abi::VTL0_Stubs::export_interface(enclaveptr);
+
+    std::wcout << L"DEBUG: Registering VTL0 callbacks..." << std::endl;
+    HRESULT hr = enclaveInterface.RegisterVtl0Callbacks();
+    if (FAILED(hr))
+    {
+        std::wcout << L"DEBUG: RegisterVtl0Callbacks failed with HRESULT: 0x" << std::hex << hr << std::endl;
+        THROW_HR(hr);
+    }
+    std::wcout << L"DEBUG: VTL0 callbacks registered successfully!" << std::endl;
+    
     
     std::wcout << L"Calling RequestCreateAsync" << std::endl;
     auto credentialResult = KeyCredentialManager::RequestCreateAsync(
@@ -136,35 +235,30 @@ authContextBlobAndSessionKeyPtr veil_abi::VTL0_Stubs::export_interface::userboun
             std::wcout << L"DEBUG: Challenge callback invoked! Challenge size: " << challenge.Length() << std::endl;
             
             try {
-                std::wcout << L"DEBUG: Creating enclave interface..." << std::endl;
-                std::wcout << L"DEBUG: Enclave pointer value: 0x" << std::hex << reinterpret_cast<uintptr_t>(enclaveptr) << std::dec << std::endl;
-                
-                // Validate the enclave pointer before using it
-                if (enclaveptr == nullptr) {
-                    std::wcout << L"DEBUG: ERROR - Enclave pointer is null!" << std::endl;
-                    THROW_HR(E_INVALIDARG);
-                }
-                                
-                // Create the enclave interface directly with the VBS enclave handle
-                // The VBS Enclave framework will handle the module resolution internally
                 auto enclaveInterface = veil_abi::VTL0_Stubs::export_interface(enclaveptr);
-                
-                std::wcout << L"DEBUG: Registering VTL0 callbacks..." << std::endl;
+
+                std::wcout << L"DEBUG: Registering VTL0 callbacks inside lambda..." << std::endl;
                 HRESULT hr = enclaveInterface.RegisterVtl0Callbacks();
                 if (FAILED(hr)) {
-                    std::wcout << L"DEBUG: RegisterVtl0Callbacks failed with HRESULT: 0x" << std::hex << hr << std::endl;
+                    std::wcout << L"DEBUG: RegisterVtl0Callbacks failed inside lambda with HRESULT: 0x" << std::hex << hr << std::endl;
                     THROW_HR(hr);
                 }
-                std::wcout << L"DEBUG: VTL0 callbacks registered successfully!" << std::endl;
-                
+                std::wcout << L"DEBUG: VTL0 callbacks registered successfully inside lambda!" << std::endl;
+
                 std::wcout << L"DEBUG: Converting challenge buffer..." << std::endl;
                 auto challengeVector = ConvertBufferToVector(challenge);
                 std::wcout << L"DEBUG: Challenge vector size: " << challengeVector.size() << std::endl;
-                
+
                 std::wcout << L"DEBUG: About to call userboundkey_get_attestation_report..." << std::endl;
                 auto attestationReportAndSessionKeyPtr = enclaveInterface.userboundkey_get_attestation_report(challengeVector);
                 std::wcout << L"DEBUG: userboundkey_get_attestation_report returned successfully!" << std::endl;
-                
+
+                /*
+                std::wcout << L"DEBUG: Calling enclave directly using CallEnclave API..." << std::endl;
+                auto attestationReportAndSessionKeyPtr = CallEnclaveDirectly(enclaveptr, challengeVector);
+                std::wcout << L"DEBUG: Direct enclave call returned successfully!" << std::endl;
+                */
+
                 *sessionKeyPtr = attestationReportAndSessionKeyPtr.sessionKeyPtr;
                 std::wcout << L"DEBUG: Session key stored: " << *sessionKeyPtr << std::endl;
             

@@ -424,7 +424,7 @@ int mainEncryptDecrpyt(uint32_t activityLevel)
 
     auto enclave = veil::vtl0::enclave::create(ENCLAVE_TYPE_VBS, ownerId, flags, veil::vtl0::enclave::megabytes(512));
     veil::vtl0::enclave::load_image(enclave.get(), L"sampleenclave.dll");
-    veil::vtl0::enclave::initialize(enclave.get(), 1);
+    veil::vtl0::enclave::initialize(enclave.get(), 2); // Note we need at 2 threads, otherwise we will have a reentrancy deadlock
 
     // Register framework callbacks
     veil::vtl0::enclave_api::register_callbacks(enclave.get());

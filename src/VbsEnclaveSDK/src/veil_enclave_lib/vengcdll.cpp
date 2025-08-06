@@ -118,26 +118,65 @@ HRESULT ParseNgcSessionChallenge(
 
     const uint8_t* challengePtr = (const uint8_t*)challenge;
 
-    // Extract session ID from first bytes if challenge is large enough
-    if (challengeSize >= sizeof(PS_TRUSTLET_TKSESSION_ID))
+    // Expected NGC SessionChallenge format:
+    // [10 bytes: "challenge" header] + [24 bytes: challenge data] + [32 bytes: session ID]
+    const UINT32 NGC_HEADER_SIZE = 10;      // "challenge" string + null terminator
+    const UINT32 NGC_CHALLENGE_SIZE = 24;   // Fixed challenge data size
+    const UINT32 NGC_SESSION_ID_SIZE = sizeof(PS_TRUSTLET_TKSESSION_ID); // 32 bytes (256 bits / 8)
+    const UINT32 EXPECTED_TOTAL_SIZE = NGC_HEADER_SIZE + NGC_CHALLENGE_SIZE + NGC_SESSION_ID_SIZE;
+
+    // Verify the buffer has the expected NGC SessionChallenge format
+    if (challengeSize >= EXPECTED_TOTAL_SIZE)
     {
-        memcpy(&result->sessionId, challengePtr, sizeof(PS_TRUSTLET_TKSESSION_ID));
-        // Remaining bytes are the actual challenge
-        UINT32 remainingSize = challengeSize - sizeof(PS_TRUSTLET_TKSESSION_ID);
-        if (remainingSize > 0)
+        // Verify the "challenge" header at the beginning
+        const char expectedHeader[] = "challenge";
+        if (memcmp(challengePtr, expectedHeader, strlen(expectedHeader)) == 0)
         {
-            result->challengeBytes = (uint8_t*)VengcAlloc(remainingSize);
+            // This is a properly formatted NGC SessionChallenge
+            // Extract the middle 24 bytes as challenge data
+            UINT32 challengeDataOffset = NGC_HEADER_SIZE;
+            result->challengeBytes = (uint8_t*)VengcAlloc(NGC_CHALLENGE_SIZE);
             if (result->challengeBytes == NULL)
             {
                 return E_OUTOFMEMORY;
             }
-            memcpy(result->challengeBytes, challengePtr + sizeof(PS_TRUSTLET_TKSESSION_ID), remainingSize);
-            result->challengeBytesSize = remainingSize;
+            memcpy(result->challengeBytes, challengePtr + challengeDataOffset, NGC_CHALLENGE_SIZE);
+            result->challengeBytesSize = NGC_CHALLENGE_SIZE;
+
+            // Extract session ID from the end of the buffer
+            UINT32 sessionIdOffset = NGC_HEADER_SIZE + NGC_CHALLENGE_SIZE;
+            memcpy(&result->sessionId, challengePtr + sessionIdOffset, NGC_SESSION_ID_SIZE);
+
+            return S_OK;
+        }
+    }
+
+    // Fallback: If not in NGC SessionChallenge format, check if session ID is at the end
+    if (challengeSize >= sizeof(PS_TRUSTLET_TKSESSION_ID))
+    {
+        // Session ID is at the end of the buffer
+        UINT32 challengeDataSize = challengeSize - sizeof(PS_TRUSTLET_TKSESSION_ID);
+        const uint8_t* sessionIdPtr = challengePtr + challengeDataSize;
+        
+        // Extract session ID from the end of the buffer
+        memcpy(&result->sessionId, sessionIdPtr, sizeof(PS_TRUSTLET_TKSESSION_ID));
+        
+        // The beginning contains the actual challenge data
+        if (challengeDataSize > 0)
+        {
+            result->challengeBytes = (uint8_t*)VengcAlloc(challengeDataSize);
+            if (result->challengeBytes == NULL)
+            {
+                return E_OUTOFMEMORY;
+            }
+            memcpy(result->challengeBytes, challengePtr, challengeDataSize);
+            result->challengeBytesSize = challengeDataSize;
         }
     }
     else
     {
-        // If challenge is too small, treat entire challenge as challenge bytes
+        // If challenge is too small to contain a session ID, treat entire buffer as challenge bytes
+        // This handles cases where there's no session ID embedded
         result->challengeBytes = (uint8_t*)VengcAlloc(challengeSize);
         if (result->challengeBytes == NULL)
         {
@@ -145,6 +184,7 @@ HRESULT ParseNgcSessionChallenge(
         }
         memcpy(result->challengeBytes, challengePtr, challengeSize);
         result->challengeBytesSize = challengeSize;
+        // sessionId remains zeroed
     }
 
     return S_OK;
