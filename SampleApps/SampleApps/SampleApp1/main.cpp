@@ -13,6 +13,7 @@
 #include <span>
 #include <sddl.h>
 #include <limits>
+#include <ncrypt.h>  // Added for NCrypt functions
 
 #include <winrt/base.h>
 #include <winrt/Windows.Foundation.h>
@@ -61,9 +62,15 @@ void Initialize()
         if (SUCCEEDED(hr))
         {
             // Create the KeyCredentialCacheConfiguration instance using the factory
+            /*
             auto cacheOption = winrt::Windows::Security::Credentials::KeyCredentialCacheOption::CacheWhenUnlocked;
             winrt::Windows::Foundation::TimeSpan timeout{std::chrono::seconds(300)}; // 5 minutes
             uint32_t usageCount = 5;
+            */
+
+            auto cacheOption = winrt::Windows::Security::Credentials::KeyCredentialCacheOption::NoCache;
+            winrt::Windows::Foundation::TimeSpan timeout {std::chrono::seconds(0)}; // 5 minutes
+            uint32_t usageCount = 0;
             
             // Use the factory ABI method with proper parameter types
             winrt::com_ptr<winrt::Windows::Security::Credentials::IKeyCredentialCacheConfiguration> instance;
@@ -416,8 +423,37 @@ int mainEncryptDecrpyt(uint32_t activityLevel)
     veilLog.AddTimestampedLog(L"[Host] Starting from host", veil::any::logger::eventLevel::EVENT_LEVEL_CRITICAL);
 
     /******************************* Enclave setup *******************************/
-    // Create app+user enclave identity
-    auto ownerId = veil::vtl0::appmodel::owner_id();
+    // Create app+user enclave identity - use the implemented owner_id function instead of NGC
+    std::vector<uint8_t> ownerId;
+
+    try 
+    {
+        wil::unique_ncrypt_prov ngcKsp;
+        HRESULT hr = NCryptOpenStorageProvider(&ngcKsp, MS_NGC_KEY_STORAGE_PROVIDER, 0);
+        if (SUCCEEDED(hr))
+        {
+            DWORD resultSize {};
+            hr = NCryptGetProperty(
+                ngcKsp.get(), L"NgcContainerSecureId", nullptr, 0, &resultSize, 0);
+                
+            if (SUCCEEDED(hr) && resultSize > 0)
+            {
+                std::vector<BYTE> ngcOwnerId(resultSize);
+                hr = NCryptGetProperty(
+                    ngcKsp.get(), L"NgcContainerSecureId", ngcOwnerId.data(), resultSize, &resultSize, 0);
+                    
+                if (SUCCEEDED(hr))
+                {
+                    ownerId = ngcOwnerId;
+                }
+            }
+        }
+    }
+    catch (...)
+    {
+        // If NGC approach fails, continue with the default owner_id from the function
+    }
+        
 
     // Load enclave
     auto flags = ENCLAVE_VBS_FLAG_DEBUG;

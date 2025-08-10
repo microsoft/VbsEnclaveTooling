@@ -36,8 +36,43 @@ namespace veil::vtl0
     {
         inline std::vector<uint8_t> owner_id()
         {
-            // todo
-            return {};
+            try
+            {
+                // Get the current process token
+                auto currentToken = wil::get_token_information<TOKEN_USER>();
+                if (!currentToken)
+                {
+                    return {};
+                }
+
+                // Get the SID from the token
+                PSID userSid = currentToken->User.Sid;
+                if (!userSid || !IsValidSid(userSid))
+                {
+                    return {};
+                }
+
+                // Get the length of the SID
+                DWORD sidLength = GetLengthSid(userSid);
+                
+                // Create a vector with 32 bytes (IMAGE_ENCLAVE_LONG_ID_LENGTH)
+                constexpr size_t ENCLAVE_OWNER_ID_LENGTH = 32;
+                std::vector<uint8_t> ownerId(ENCLAVE_OWNER_ID_LENGTH, 0);
+                
+                // Copy the SID bytes into the owner ID buffer
+                // If SID is longer than 32 bytes, truncate it
+                // If SID is shorter than 32 bytes, it will be zero-padded
+                size_t copyLength = (static_cast<size_t>(sidLength) < ENCLAVE_OWNER_ID_LENGTH) ? 
+                                   static_cast<size_t>(sidLength) : ENCLAVE_OWNER_ID_LENGTH;
+                std::memcpy(ownerId.data(), userSid, copyLength);
+                
+                return ownerId;
+            }
+            catch (...)
+            {
+                // If anything fails, return empty vector as fallback
+                return {};
+            }
         }
     }
 

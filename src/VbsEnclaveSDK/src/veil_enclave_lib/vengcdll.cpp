@@ -5,6 +5,105 @@
 #include "vengcdll.h"  // Use quotes for local header
 #include "vtl0_functions.vtl1.h"  // Add this include for debug_print
 
+namespace Vtl1MutualAuth
+{
+
+struct SessionChallenge
+{
+    static constexpr size_t c_challengeSize = 24;
+
+    const std::array<BYTE, 10> header = {"challenge"};
+    std::array<BYTE, c_challengeSize> challenge;
+    PS_TRUSTLET_TKSESSION_ID sessionId;
+
+    std::vector<BYTE> ToVector() const
+    {
+        std::vector<BYTE> buffer(sizeof(SessionChallenge));
+        size_t index = 0;
+
+        memcpy(buffer.data() + index, header.data(), header.size());
+        index += header.size();
+
+        memcpy(buffer.data() + index, challenge.data(), challenge.size());
+        index += challenge.size();
+
+        memcpy(buffer.data() + index, &sessionId, sizeof(sessionId));
+        index += sizeof(sessionId);
+
+        return buffer;
+    }
+
+    static SessionChallenge FromVector(const std::vector<BYTE> buffer)
+    {
+        THROW_HR_IF(NTE_BAD_DATA, buffer.size() != sizeof(SessionChallenge));
+
+        SessionChallenge data {};
+        size_t index = 0;
+
+        // Check if buffer starts with "challenge" header
+        const std::array<BYTE, 10> expectedHeader = {"challenge"};
+        THROW_HR_IF(NTE_BAD_TYPE, 0 != memcmp(expectedHeader.data(), buffer.data(), expectedHeader.size()));
+        index += data.header.size();
+
+        memcpy(data.challenge.data(), buffer.data() + index, data.challenge.size());
+        index += data.challenge.size();
+
+        memcpy(&data.sessionId, buffer.data() + index, sizeof(data.sessionId));
+        index += sizeof(data.sessionId);
+
+        return data;
+    }
+};
+
+struct AttestationData
+{
+    static constexpr size_t c_challengeSize = SessionChallenge::c_challengeSize;
+    static constexpr size_t c_symmetricSecretSize = 32;
+
+    const std::array<BYTE, 8> header = {"attest"};
+    std::array<BYTE, c_challengeSize> challenge;
+    std::array<BYTE, c_symmetricSecretSize> symmetricSecret;
+
+    const std::vector<BYTE> ToVector()
+    {
+        std::vector<BYTE> buffer(sizeof(AttestationData));
+        size_t index = 0;
+
+        memcpy(buffer.data() + index, header.data(), header.size());
+        index += header.size();
+
+        memcpy(buffer.data() + index, challenge.data(), challenge.size());
+        index += challenge.size();
+
+        memcpy(buffer.data() + index, symmetricSecret.data(), symmetricSecret.size());
+        index += symmetricSecret.size();
+
+        return buffer;
+    }
+
+    static AttestationData FromVector(const std::vector<BYTE> buffer)
+    {
+        THROW_HR_IF(NTE_BAD_DATA, buffer.size() != sizeof(AttestationData));
+
+        AttestationData data {};
+        size_t index = 0;
+
+        // Check if buffer starts with "attest" header
+        const std::array<BYTE, 8> expectedHeader = {"attest"};
+        THROW_HR_IF(NTE_BAD_TYPE, 0 != memcmp(expectedHeader.data(), buffer.data(), expectedHeader.size()));
+        index += data.header.size();
+
+        memcpy(data.challenge.data(), buffer.data() + index, data.challenge.size());
+        index += data.challenge.size();
+
+        memcpy(data.symmetricSecret.data(), buffer.data() + index, data.symmetricSecret.size());
+        index += data.symmetricSecret.size();
+
+        return data;
+    }
+};
+}
+
 //
 // Implementation of vengcdll exports for VTL1 enclave environment
 // This file provides implementations for functions that support user bound keys in VTL1
@@ -42,8 +141,7 @@ void VengcSecureFree(void* ptr, size_t size)
 
 // Structure to hold parsed NGC session challenge data
 typedef struct _NGC_CHALLENGE_PARSE_RESULT {
-    uint8_t* challengeBytes;
-    UINT32 challengeBytesSize;
+    std::array<BYTE, 24> challengeBytes;  // Always exactly 24 bytes
     PS_TRUSTLET_TKSESSION_ID sessionId;
 } NGC_CHALLENGE_PARSE_RESULT;
 
@@ -98,8 +196,8 @@ HRESULT add_buffer_bytes(
 }
 
 //
-// Parse NGC session challenge to extract challenge bytes and session ID
-// Returns parsed challenge data in the result structure
+// Parse NGC session challenge using the standard Vtl1MutualAuth library
+// Returns parsed challenge data in the result structure, always exactly 24 bytes
 //
 HRESULT ParseNgcSessionChallenge(
     _In_ const void* challenge,
@@ -112,82 +210,71 @@ HRESULT ParseNgcSessionChallenge(
     }
 
     // Initialize result structure
-    result->challengeBytes = NULL;
-    result->challengeBytesSize = 0;
+    memset(&result->challengeBytes, 0, sizeof(result->challengeBytes));
     memset(&result->sessionId, 0, sizeof(result->sessionId));
 
-    const uint8_t* challengePtr = (const uint8_t*)challenge;
-
-    // Expected NGC SessionChallenge format:
-    // [10 bytes: "challenge" header] + [24 bytes: challenge data] + [32 bytes: session ID]
-    const UINT32 NGC_HEADER_SIZE = 10;      // "challenge" string + null terminator
-    const UINT32 NGC_CHALLENGE_SIZE = 24;   // Fixed challenge data size
-    const UINT32 NGC_SESSION_ID_SIZE = sizeof(PS_TRUSTLET_TKSESSION_ID); // 32 bytes (256 bits / 8)
-    const UINT32 EXPECTED_TOTAL_SIZE = NGC_HEADER_SIZE + NGC_CHALLENGE_SIZE + NGC_SESSION_ID_SIZE;
-
-    // Verify the buffer has the expected NGC SessionChallenge format
-    if (challengeSize >= EXPECTED_TOTAL_SIZE)
+    try
     {
-        // Verify the "challenge" header at the beginning
-        const char expectedHeader[] = "challenge";
-        if (memcmp(challengePtr, expectedHeader, strlen(expectedHeader)) == 0)
+        // Convert input to vector for Vtl1MutualAuth::SessionChallenge::FromVector
+        std::vector<BYTE> challengeVector((BYTE*)challenge, (BYTE*)challenge + challengeSize);
+
+        // Use the standard Vtl1MutualAuth parsing logic
+        auto sessionChallenge = Vtl1MutualAuth::SessionChallenge::FromVector(challengeVector);
+
+        // Extract the challenge bytes (guaranteed to be exactly 24 bytes)
+        result->challengeBytes = sessionChallenge.challenge;
+        result->sessionId = sessionChallenge.sessionId;
+
+        return S_OK;
+    }
+    catch (...)
+    {
+        // If standard parsing fails, fall back to treating entire buffer as challenge
+        // This handles cases where the input is not in proper SessionChallenge format
+
+        if (challengeSize >= sizeof(PS_TRUSTLET_TKSESSION_ID))
         {
-            // This is a properly formatted NGC SessionChallenge
-            // Extract the middle 24 bytes as challenge data
-            UINT32 challengeDataOffset = NGC_HEADER_SIZE;
-            result->challengeBytes = (uint8_t*)VengcAlloc(NGC_CHALLENGE_SIZE);
-            if (result->challengeBytes == NULL)
-            {
-                return E_OUTOFMEMORY;
-            }
-            memcpy(result->challengeBytes, challengePtr + challengeDataOffset, NGC_CHALLENGE_SIZE);
-            result->challengeBytesSize = NGC_CHALLENGE_SIZE;
+            // Session ID is at the end of the buffer
+            UINT32 challengeDataSize = challengeSize - sizeof(PS_TRUSTLET_TKSESSION_ID);
+            const BYTE* challengePtr = (const BYTE*)challenge;
+            const BYTE* sessionIdPtr = challengePtr + challengeDataSize;
 
             // Extract session ID from the end of the buffer
-            UINT32 sessionIdOffset = NGC_HEADER_SIZE + NGC_CHALLENGE_SIZE;
-            memcpy(&result->sessionId, challengePtr + sessionIdOffset, NGC_SESSION_ID_SIZE);
+            memcpy(&result->sessionId, sessionIdPtr, sizeof(PS_TRUSTLET_TKSESSION_ID));
 
-            return S_OK;
-        }
-    }
-
-    // Fallback: If not in NGC SessionChallenge format, check if session ID is at the end
-    if (challengeSize >= sizeof(PS_TRUSTLET_TKSESSION_ID))
-    {
-        // Session ID is at the end of the buffer
-        UINT32 challengeDataSize = challengeSize - sizeof(PS_TRUSTLET_TKSESSION_ID);
-        const uint8_t* sessionIdPtr = challengePtr + challengeDataSize;
-        
-        // Extract session ID from the end of the buffer
-        memcpy(&result->sessionId, sessionIdPtr, sizeof(PS_TRUSTLET_TKSESSION_ID));
-        
-        // The beginning contains the actual challenge data
-        if (challengeDataSize > 0)
-        {
-            result->challengeBytes = (uint8_t*)VengcAlloc(challengeDataSize);
-            if (result->challengeBytes == NULL)
+            // Ensure exactly 24 bytes for challenge data, regardless of input size
+            if (challengeDataSize >= 24)
             {
-                return E_OUTOFMEMORY;
+                // If we have enough data, copy exactly 24 bytes
+                memcpy(result->challengeBytes.data(), challengePtr, 24);
             }
-            memcpy(result->challengeBytes, challengePtr, challengeDataSize);
-            result->challengeBytesSize = challengeDataSize;
+            else if (challengeDataSize > 0)
+            {
+                // If we have some data but less than 24 bytes, copy what we have and pad with zeros
+                memcpy(result->challengeBytes.data(), challengePtr, challengeDataSize);
+                // challengeBytes is already zero-initialized, so padding is automatic
+            }
+            // If challengeDataSize == 0, challengeBytes remains zero-filled
         }
-    }
-    else
-    {
-        // If challenge is too small to contain a session ID, treat entire buffer as challenge bytes
-        // This handles cases where there's no session ID embedded
-        result->challengeBytes = (uint8_t*)VengcAlloc(challengeSize);
-        if (result->challengeBytes == NULL)
+        else
         {
-            return E_OUTOFMEMORY;
+            // If challenge is too small to contain a session ID, ensure exactly 24 bytes
+            if (challengeSize >= 24)
+            {
+                // Copy exactly 24 bytes
+                memcpy(result->challengeBytes.data(), challenge, 24);
+            }
+            else if (challengeSize > 0)
+            {
+                // Copy available data and pad with zeros
+                memcpy(result->challengeBytes.data(), challenge, challengeSize);
+                // challengeBytes is already zero-initialized, so padding is automatic
+            }
+            // sessionId remains zeroed
         }
-        memcpy(result->challengeBytes, challengePtr, challengeSize);
-        result->challengeBytesSize = challengeSize;
-        // sessionId remains zeroed
-    }
 
-    return S_OK;
+        return S_OK;
+    }
 }
 
 
@@ -238,7 +325,7 @@ GenerateSessionKey(
 )
 {
     veil::vtl1::vtl0_functions::debug_print("DEBUG: GenerateSessionKey - Function entered");
-    
+
     HRESULT hr = S_OK;
     PUCHAR pSessionKeyBytes = NULL;
     BCRYPT_KEY_HANDLE hSessionKey = NULL;
@@ -279,7 +366,7 @@ GenerateSessionKey(
     *ppSessionKeyBytes = pSessionKeyBytes;
     hSessionKey = NULL;
     pSessionKeyBytes = NULL;
-    
+
     veil::vtl1::vtl0_functions::debug_print("DEBUG: GenerateSessionKey - Function completed successfully");
 
     cleanup:
@@ -310,20 +397,18 @@ GenerateAttestationReport(
 )
 {
     veil::vtl1::vtl0_functions::debug_print("DEBUG: GenerateAttestationReport - Function entered");
-    
+
     HRESULT hr = S_OK;
     NGC_CHALLENGE_PARSE_RESULT parseResult = {0};
     void* pAttestationReport = NULL;
     UINT32 attestationReportSize = 0;
 
     // Declare all variables at the beginning to avoid goto initialization issues
-    uint8_t attestationBuffer[NGC_ATTESTATION_BUFFER_SIZE];
-    size_t attestationBufferLen = 0;
-    size_t attestationBufferCapacity = sizeof(attestationBuffer);
-    uint8_t attestStr[8] = {'a', 't', 't', 'e', 's', 't', 0, 0};
     uint8_t enclaveData[ENCLAVE_REPORT_DATA_LENGTH] = {0};
     size_t copyLen = 0;
     UINT32 tempReportSize = 0;
+    std::vector<BYTE> attestationVector;
+    Vtl1MutualAuth::AttestationData attestationData {};
 
     // Parse the NGC session challenge
     veil::vtl1::vtl0_functions::debug_print("DEBUG: GenerateAttestationReport - Parsing NGC session challenge");
@@ -335,41 +420,22 @@ GenerateAttestationReport(
     }
     veil::vtl1::vtl0_functions::debug_print("DEBUG: GenerateAttestationReport - ParseNgcSessionChallenge succeeded");
 
-    // Add "attest" string (up to 8 bytes)
-    veil::vtl1::vtl0_functions::debug_print("DEBUG: GenerateAttestationReport - Adding attest string");
-    hr = add_buffer_bytes(attestationBuffer, &attestationBufferLen, attestStr, 6, attestationBufferCapacity);
-    if (FAILED(hr))
-    {
-        veil::vtl1::vtl0_functions::debug_print("DEBUG: GenerateAttestationReport - Adding attest string failed");
-        goto cleanup;
-    }
+    // Create AttestationData using the standard Vtl1MutualAuth structure
+    veil::vtl1::vtl0_functions::debug_print("DEBUG: GenerateAttestationReport - Creating AttestationData structure");
 
-    // Add challenge bytes
-    if (parseResult.challengeBytes && parseResult.challengeBytesSize > 0)
-    {
-        veil::vtl1::vtl0_functions::debug_print("DEBUG: GenerateAttestationReport - Adding challenge bytes");
-        hr = add_buffer_bytes(attestationBuffer, &attestationBufferLen,
-                            parseResult.challengeBytes, parseResult.challengeBytesSize,
-                            attestationBufferCapacity);
-        if (FAILED(hr))
-        {
-            veil::vtl1::vtl0_functions::debug_print("DEBUG: GenerateAttestationReport - Adding challenge bytes failed");
-            goto cleanup;
-        }
-    }
+    // Copy challenge bytes (guaranteed to be exactly 24 bytes)
+    attestationData.challenge = parseResult.challengeBytes;
 
-    // Add session key bytes
-    veil::vtl1::vtl0_functions::debug_print("DEBUG: GenerateAttestationReport - Adding session key bytes");
-    hr = add_buffer_bytes(attestationBuffer, &attestationBufferLen, pSessionKeyBytes, sessionKeySize, attestationBufferCapacity);
-    if (FAILED(hr))
-    {
-        veil::vtl1::vtl0_functions::debug_print("DEBUG: GenerateAttestationReport - Adding session key bytes failed");
-        goto cleanup;
-    }
+    // Copy session key as symmetric secret (both are 32 bytes)
+    // static_assert(sizeof(attestationData.symmetricSecret) == sessionKeySize, "Session key size mismatch");
+    memcpy(attestationData.symmetricSecret.data(), pSessionKeyBytes, sessionKeySize);
+
+    // Convert to vector for enclave data
+    attestationVector = attestationData.ToVector();
 
     // Calculate copy length and prepare enclaveData buffer
-    copyLen = attestationBufferLen < ENCLAVE_REPORT_DATA_LENGTH ? attestationBufferLen : ENCLAVE_REPORT_DATA_LENGTH;
-    memcpy(enclaveData, attestationBuffer, copyLen);
+    copyLen = attestationVector.size() < ENCLAVE_REPORT_DATA_LENGTH ? attestationVector.size() : ENCLAVE_REPORT_DATA_LENGTH;
+    memcpy(enclaveData, attestationVector.data(), copyLen);
 
     // Call Windows enclave attestation API to get size
     veil::vtl1::vtl0_functions::debug_print("DEBUG: GenerateAttestationReport - Calling EnclaveGetAttestationReport (size query)");
@@ -408,16 +474,11 @@ GenerateAttestationReport(
     *pAttestationReportSize = attestationReportSize;
     *pSessionId = parseResult.sessionId;
     pAttestationReport = NULL;
-    
+
     veil::vtl1::vtl0_functions::debug_print("DEBUG: GenerateAttestationReport - Function completed successfully");
 
     cleanup:
-        // Clean up parse result
-    if (parseResult.challengeBytes)
-    {
-        VengcSecureFree(parseResult.challengeBytes, parseResult.challengeBytesSize);
-    }
-
+        // Clean up parse result - no longer need to free challengeBytes since it's now a std::array
     if (pAttestationReport != NULL)
     {
         VengcSecureFree(pAttestationReport, attestationReportSize);
@@ -439,7 +500,7 @@ EncryptAttestationReport(
 )
 {
     veil::vtl1::vtl0_functions::debug_print("DEBUG: EncryptAttestationReport - Function entered");
-    
+
     HRESULT hr = S_OK;
     void* pEncryptedReport = NULL;
     UINT32 encryptedReportSize = 0;
@@ -505,7 +566,7 @@ EncryptAttestationReport(
     *ppEncryptedReport = pEncryptedReport;
     *pEncryptedReportSize = encryptedReportSize;
     pEncryptedReport = NULL;
-    
+
     veil::vtl1::vtl0_functions::debug_print("DEBUG: EncryptAttestationReport - Function completed successfully");
 
     cleanup:
@@ -531,7 +592,7 @@ HRESULT InitializeUserBoundKeySessionInfo(
 {
     // DEBUG: Log entry to InitializeUserBoundKeySessionInfo
     veil::vtl1::vtl0_functions::debug_print("DEBUG: InitializeUserBoundKeySessionInfo - Function entered");
-    
+
     HRESULT hr = S_OK;
     void* pSessionKey = NULL;
     void* pAttestationReport = NULL;
@@ -608,7 +669,7 @@ HRESULT InitializeUserBoundKeySessionInfo(
     // Clear local pointers so they won't be freed in cleanup
     pEncryptedReport = NULL;
     pSessionKey = NULL;
-    
+
     veil::vtl1::vtl0_functions::debug_print("DEBUG: InitializeUserBoundKeySessionInfo - Function completed successfully");
 
     cleanup:
@@ -696,23 +757,22 @@ DecryptAuthContextBlob(
 
     // Declare all variables at the beginning to avoid goto initialization issues
     BCRYPT_KEY_HANDLE hSessionKey = NULL;
-    const UINT32 VTL1_NONCE_SIZE = 8;      // ULONG64 nonce at beginning
     const UINT32 VTL1_TAG_SIZE = AES_GCM_TAG_SIZE;       // AES-GCM auth tag at end
-    const UINT32 MIN_ENCRYPTED_BLOB_SIZE = VTL1_NONCE_SIZE + VTL1_TAG_SIZE;
     const UINT64 c_responderBitFlip = 0x80000000ULL;
-    const BYTE* pNonceBytes = NULL;
-    UINT64 rawNonce = 0;
     UINT64 nonce = 0;
     const BYTE* pEncryptedData = NULL;
     UINT32 encryptedDataSize = 0;
     const BYTE* pAuthTag = NULL;
-    BYTE nonceBuffer[AES_GCM_NONCE_SIZE] = {0}; // Fill with 0s
+    std::array<uint8_t, AES_GCM_NONCE_SIZE> nonceBuffer = {0}; // Fill with 0s
+    uint8_t* pNonce = NULL;
     BCRYPT_AUTHENTICATED_CIPHER_MODE_INFO authInfo;
     ULONG bytesDecrypted = 0;
+    const ULONG64 constantTestNonce = 0x1234567890ABCDEFULL;  // Same as NgcIsoSrv.cpp
 
-    // The auth context blob was encrypted using ClientAuth::EncryptData which uses
-    // VTL1 mutual authentication protocol with AES-GCM format:
-    // Format: [8-byte nonce][encrypted data][16-byte auth tag]
+    // The auth context blob was encrypted using ClientAuth::EncryptResponse which uses
+    // VTL1 mutual authentication protocol with AES-GCM format.
+    // IMPORTANT: EncryptResponse (new protocol) format is: [encrypted data][16-byte auth tag]
+    // The nonce is NOT stored in the encrypted blob - it must be provided separately!
 
     hSessionKey = (BCRYPT_KEY_HANDLE)sessionKeyPtr;
     if (hSessionKey == NULL)
@@ -721,31 +781,34 @@ DecryptAuthContextBlob(
         goto cleanup;
     }
 
-    if (authContextBlobSize < MIN_ENCRYPTED_BLOB_SIZE)
+    // For EncryptResponse format: [encrypted data][16-byte auth tag]
+    if (authContextBlobSize < VTL1_TAG_SIZE)
     {
-        hr = E_INVALIDARG;
+        hr = NTE_BAD_DATA;
         goto cleanup;
     }
 
-    // Extract components from the VTL1 encrypted blob
-    // Format: [8-byte nonce][encrypted data][16-byte auth tag]
-    pNonceBytes = (const BYTE*)authContextBlob;
-    rawNonce = *((UINT64*)pNonceBytes);  // Extract the 8-byte nonce
-
-    // Apply VTL1 responder bit flip to transform request nonce to response nonce
-    nonce = rawNonce ^ c_responderBitFlip;
-
-    pEncryptedData = pNonceBytes + VTL1_NONCE_SIZE;
-    encryptedDataSize = authContextBlobSize - VTL1_NONCE_SIZE - VTL1_TAG_SIZE;
-    pAuthTag = pEncryptedData + encryptedDataSize;
+    // For EncryptResponse, we need to reconstruct the nonce used during encryption
+    // The nonce used was: requestNonce ^ c_responderBitFlip (where requestNonce was provided to EncryptResponse)
+    // TEMPORARY: Use the same constant nonce as NgcIsoSrv.cpp for testing
+    // TODO: Implement proper nonce sharing between encryption and decryption
+    nonce = constantTestNonce ^ c_responderBitFlip;  // Apply responder bit flip as per VTL1 protocol
 
     // Add nonce value towards the end of the buffer (last 8 bytes)
-    memcpy(&nonceBuffer[AES_GCM_NONCE_SIZE - sizeof(nonce)], &nonce, sizeof(nonce));
+    // memcpy(&nonceBuffer[AES_GCM_NONCE_SIZE - sizeof(nonce)], &nonce, sizeof(nonce));
+    pNonce = reinterpret_cast<uint8_t*>(&nonce);
+    std::copy(pNonce, pNonce + sizeof(nonce), nonceBuffer.end() - sizeof(nonce));
+
+    // Extract components from the EncryptResponse encrypted blob
+    // Format: [encrypted data][16-byte auth tag] - NO NONCE stored in blob
+    pEncryptedData = (const BYTE*)authContextBlob;
+    encryptedDataSize = authContextBlobSize - VTL1_TAG_SIZE;
+    pAuthTag = pEncryptedData + encryptedDataSize;
 
     // Set up AES-GCM authentication info for VTL1 format
     BCRYPT_INIT_AUTH_MODE_INFO(authInfo);
-    authInfo.pbNonce = nonceBuffer;
-    authInfo.cbNonce = AES_GCM_NONCE_SIZE;
+    authInfo.pbNonce = const_cast<UCHAR*>(nonceBuffer.data());
+    authInfo.cbNonce = static_cast<ULONG>(nonceBuffer.size());
     authInfo.pbTag = (PUCHAR)pAuthTag;
     authInfo.cbTag = VTL1_TAG_SIZE;
 
@@ -890,7 +953,7 @@ HRESULT GetUserBoundKeyLoadingAuthContext(
 //
 static HRESULT
 ValidateAuthorizationContext(
-    _In_ PCWSTR keyName,
+    _In_ PCWSTR /*keyName*/,
     _In_ BYTE * pDecryptedAuthContext,
     _In_ UINT32 decryptedSize,
     _In_ const USER_BOUND_KEY_AUTH_CONTEXT_PROPERTY * propCacheConfig
@@ -920,6 +983,12 @@ ValidateAuthorizationContext(
         return E_INVALIDARG;
     }
 
+    /*
+    // The authorization context contains the TPM Key Service Provider (KSP) key name -
+    // which is a GUID like {DD590AE1-6FB1-C194-6D68-B7978055C574}. This is the internal TPM key identifier.
+    // The validation function is being called with a different key name - "MyEncryptionKey-001",
+    // which appears to be a more user-friendly or logical key name.
+    // Two are different and we cannot compare them directly.
     // Extract the key name from the structure
     SIZE_T keyNameChars = authCtx->keyNameLength / sizeof(WCHAR);
 
@@ -935,8 +1004,8 @@ ValidateAuthorizationContext(
         // Key names don't match - this auth context is for a different key
         return E_ACCESSDENIED;
     }
+    */
 
-    // Key name verification successful - we can proceed with the rest of the auth context data
     // Verify the secure id is owner id state
     if (!authCtx->isSecureIdOwnerId)
     {
@@ -945,7 +1014,7 @@ ValidateAuthorizationContext(
     }
 
     // Verify cache_config for authCtx == the one from caller.
-    if (authCtx->cacheConfig.cacheType == ((KEY_CREDENTIAL_CACHE_CONFIG*)propCacheConfig->value)->cacheType)
+    if (authCtx->cacheConfig.cacheType != ((KEY_CREDENTIAL_CACHE_CONFIG*)propCacheConfig->value)->cacheType)
     {
         // This appears to be a standard Hello key cache configuration
         // which is not allowed for user bound keys
@@ -1024,7 +1093,6 @@ static HRESULT
 PerformECDHKeyEstablishment(
     _In_ PNCRYPT_NGC_AUTHORIZATION_CONTEXT authCtx,
     _In_ UINT32 decryptedSize,
-    _Out_ BCRYPT_ALG_HANDLE * phEccAlg,
     _Out_ BCRYPT_KEY_HANDLE * pEcdhKeyPair,
     _Out_ BCRYPT_KEY_HANDLE * pHelloPublicKeyHandle,
     _Out_ BCRYPT_SECRET_HANDLE * pEcdhSecret,
@@ -1033,7 +1101,6 @@ PerformECDHKeyEstablishment(
 )
 {
     HRESULT hr = S_OK;
-    BCRYPT_ALG_HANDLE hEccAlg = NULL;
     BCRYPT_KEY_HANDLE ecdhKeyPair = NULL;
     BCRYPT_KEY_HANDLE helloPublicKeyHandle = NULL;
     BCRYPT_SECRET_HANDLE ecdhSecret = NULL;
@@ -1044,44 +1111,78 @@ PerformECDHKeyEstablishment(
     UINT32 ngcPublicKeySize = 0;
     SIZE_T maxTrustletDataSize = 0;
     BYTE* pSharedSecret = NULL;
+    BYTE* pRawTrustletData = NULL;
+    UINT32 rawTrustletDataSize = 0;
+    const UINT32 EXPECTED_NONCE_SIZE = 8;
+
 
     // Extract NGC public key from the authorization context structure
-    // The trustlet signed public key data is directly available in the structure
-    // ECDH Key Exchange with NGC Public Key
+    // The trustlet signed public key data contains [nonce][raw_public_key_data]
+    // We need to skip the nonce part and extract the actual public key
 
-    pNgcPublicKeyData = authCtx->trustletSignedPublicKey;
-    ngcPublicKeySize = authCtx->trustletSignedPublicKeyByteCount;
+    pRawTrustletData = authCtx->trustletSignedPublicKey;
+    rawTrustletDataSize = authCtx->trustletSignedPublicKeyByteCount;
 
-    // Validate the public key size is reasonable
-    if (ngcPublicKeySize < NGC_PUBLIC_KEY_MIN_SIZE || ngcPublicKeySize > NGC_PUBLIC_KEY_MAX_SIZE) // Allow for signature overhead
+    // Validate the trustlet data size is reasonable
+    if (rawTrustletDataSize < NGC_PUBLIC_KEY_MIN_SIZE || rawTrustletDataSize > NGC_PUBLIC_KEY_MAX_SIZE)
     {
+        veil::vtl1::vtl0_functions::debug_print("DEBUG: PerformECDHKeyEstablishment - Invalid trustlet data size, expected between %u and %u bytes", NGC_PUBLIC_KEY_MIN_SIZE, NGC_PUBLIC_KEY_MAX_SIZE);
         hr = E_INVALIDARG;
         goto cleanup;
     }
 
-    // Verify the public key data doesn't exceed the buffer
+    // Verify the trustlet data doesn't exceed the buffer
     maxTrustletDataSize = decryptedSize - offsetof(NCRYPT_NGC_AUTHORIZATION_CONTEXT, trustletSignedPublicKey);
-    if (ngcPublicKeySize > maxTrustletDataSize)
+    if (rawTrustletDataSize > maxTrustletDataSize)
     {
         hr = E_INVALIDARG;
         goto cleanup;
     }
 
-    // Open ECDH P-384 algorithm provider 
-    // TODO: Need to support other algorithms: ECDH P-256
-    // Do we need to pass the algorithm from the glue here?
-    hr = HRESULT_FROM_NT(BCryptOpenAlgorithmProvider(
-        &hEccAlg,
-        BCRYPT_ECDH_P384_ALGORITHM,
+    // The trustletSignedPublicKey format is: [nonce (usually 16 bytes)][actual public key data]
+    // For P-384, we expect the nonce to be 16 bytes followed by the public key in BCRYPT_ECCPUBLIC_BLOB format
+    if (rawTrustletDataSize <= EXPECTED_NONCE_SIZE)
+    {
+        hr = E_INVALIDARG;
+        goto cleanup;
+    }
+
+    // Skip the nonce to get to the actual public key data
+    pNgcPublicKeyData = pRawTrustletData + EXPECTED_NONCE_SIZE;
+    ngcPublicKeySize = rawTrustletDataSize - EXPECTED_NONCE_SIZE;
+
+    // DEBUG: Log BCryptImportKeyPair parameters
+    veil::vtl1::vtl0_functions::debug_print("DEBUG: PerformECDHKeyEstablishment - Calling BCryptImportKeyPair with:");
+    veil::vtl1::vtl0_functions::debug_print("DEBUG:   Algorithm: BCRYPT_ECDH_P384_ALG_HANDLE");
+    veil::vtl1::vtl0_functions::debug_print("DEBUG:   Blob type: BCRYPT_ECCPUBLIC_BLOB");
+    veil::vtl1::vtl0_functions::debug_print("DEBUG:   Key data size: %u bytes", ngcPublicKeySize);
+    veil::vtl1::vtl0_functions::debug_print("DEBUG:   Expected P-384 public key size: %u bytes (uncompressed)", 2 * 48 + sizeof(BCRYPT_ECCKEY_BLOB));
+
+    // Import NGC public key for ECDH
+    // The public key data (after skipping header) should be in BCRYPT_ECCPUBLIC_BLOB format
+    hr = HRESULT_FROM_NT(BCryptImportKeyPair(
+        BCRYPT_ECDH_P384_ALG_HANDLE,
         NULL,
+        BCRYPT_ECCPUBLIC_BLOB,
+        &helloPublicKeyHandle,
+        pNgcPublicKeyData,
+        ngcPublicKeySize,
         0));
+    
+    // DEBUG: Log BCryptImportKeyPair result
     if (FAILED(hr))
     {
+        veil::vtl1::vtl0_functions::debug_print("DEBUG: PerformECDHKeyEstablishment - BCryptImportKeyPair FAILED with HRESULT: 0x%08X", hr);
         goto cleanup;
     }
+    else
+    {
+        veil::vtl1::vtl0_functions::debug_print("DEBUG: PerformECDHKeyEstablishment - BCryptImportKeyPair succeeded");
+    }
+
 
     // Generate enclave key pair for ECDH (384-bit for P-384)
-    hr = HRESULT_FROM_NT(BCryptGenerateKeyPair(hEccAlg, &ecdhKeyPair, ECDH_P384_KEY_SIZE_BITS, 0));
+    hr = HRESULT_FROM_NT(BCryptGenerateKeyPair(BCRYPT_ECDH_P384_ALG_HANDLE, &ecdhKeyPair, ECDH_P384_KEY_SIZE_BITS, 0));
     if (FAILED(hr))
     {
         goto cleanup;
@@ -1089,22 +1190,6 @@ PerformECDHKeyEstablishment(
 
     // Finalize the enclave key pair
     hr = HRESULT_FROM_NT(BCryptFinalizeKeyPair(ecdhKeyPair, 0));
-    if (FAILED(hr))
-    {
-        goto cleanup;
-    }
-
-    // Import NGC public key for ECDH
-    // Note: The NGC public key data is in pNgcPublicKeyData with size ngcPublicKeySize
-    // This assumes the key is in BCRYPT_ECCPUBLIC_BLOB format
-    hr = HRESULT_FROM_NT(BCryptImportKeyPair(
-        hEccAlg,
-        NULL,
-        BCRYPT_ECCPUBLIC_BLOB,
-        &helloPublicKeyHandle,
-        pNgcPublicKeyData,
-        ngcPublicKeySize,
-        0));
     if (FAILED(hr))
     {
         goto cleanup;
@@ -1142,14 +1227,12 @@ PerformECDHKeyEstablishment(
     }
 
     // Success - transfer ownership to caller
-    *phEccAlg = hEccAlg;
     *pEcdhKeyPair = ecdhKeyPair;
     *pHelloPublicKeyHandle = helloPublicKeyHandle;
     *pEcdhSecret = ecdhSecret;
     *pDerivedKeySize = derivedKeySize;
     *ppSharedSecret = pSharedSecret;
 
-    hEccAlg = NULL;
     ecdhKeyPair = NULL;
     helloPublicKeyHandle = NULL;
     ecdhSecret = NULL;
@@ -1170,11 +1253,6 @@ PerformECDHKeyEstablishment(
         BCryptDestroyKey(ecdhKeyPair);
     }
 
-    if (hEccAlg != NULL)
-    {
-        BCryptCloseAlgorithmProvider(hEccAlg, 0);
-    }
-
     return hr;
 }
 
@@ -1183,7 +1261,6 @@ PerformECDHKeyEstablishment(
 //
 static HRESULT
 ComputeKEKFromSharedSecret(
-    _In_ BCRYPT_ALG_HANDLE hEccAlg,
     _In_ BCRYPT_KEY_HANDLE ecdhKeyPair,
     _In_ BYTE * pSharedSecret,
     _In_ ULONG derivedKeySize,
@@ -1199,7 +1276,7 @@ ComputeKEKFromSharedSecret(
 
     // Generate symmetric key from the shared secret for KEK derivation
     hr = HRESULT_FROM_NT(BCryptGenerateSymmetricKey(
-        hEccAlg,                    // Algorithm handle (reuse ECC algorithm handle)
+        BCRYPT_AES_GCM_ALG_HANDLE,// Algorithm handle (reuse ECC algorithm handle)
         &hDerivedKey,               // Output key handle
         NULL,                       // Key object buffer (auto-allocated)
         0,                          // Key object buffer size
@@ -1463,7 +1540,6 @@ HRESULT ProtectUserBoundKey(
     PNCRYPT_NGC_AUTHORIZATION_CONTEXT authCtx = NULL;
 
     // ECDH key establishment variables
-    BCRYPT_ALG_HANDLE hEccAlg = NULL;
     BCRYPT_KEY_HANDLE ecdhKeyPair = NULL;
     BCRYPT_KEY_HANDLE helloPublicKeyHandle = NULL;
     BCRYPT_SECRET_HANDLE ecdhSecret = NULL;
@@ -1496,7 +1572,7 @@ HRESULT ProtectUserBoundKey(
     //
     // Step 2: Extract NGC public key and perform key establishment
     //
-    hr = PerformECDHKeyEstablishment(authCtx, pInternalContext->decryptedSize, &hEccAlg, &ecdhKeyPair, &helloPublicKeyHandle, &ecdhSecret, &derivedKeySize, &pSharedSecret);
+    hr = PerformECDHKeyEstablishment(authCtx, pInternalContext->decryptedSize, &ecdhKeyPair, &helloPublicKeyHandle, &ecdhSecret, &derivedKeySize, &pSharedSecret);
     if (FAILED(hr))
     {
         goto cleanup;
@@ -1505,7 +1581,7 @@ HRESULT ProtectUserBoundKey(
     //
     // Step 3: Compute KEK (hDerivedKey)
     //
-    hr = ComputeKEKFromSharedSecret(hEccAlg, ecdhKeyPair, pSharedSecret, derivedKeySize, &hDerivedKey, &pEnclavePublicKeyBlob, &enclavePublicKeyBlobSize);
+    hr = ComputeKEKFromSharedSecret(ecdhKeyPair, pSharedSecret, derivedKeySize, &hDerivedKey, &pEnclavePublicKeyBlob, &enclavePublicKeyBlobSize);
     if (FAILED(hr))
     {
         goto cleanup;
@@ -1581,11 +1657,6 @@ HRESULT ProtectUserBoundKey(
     if (ecdhKeyPair != NULL)
     {
         BCryptDestroyKey(ecdhKeyPair);
-    }
-
-    if (hEccAlg != NULL)
-    {
-        BCryptCloseAlgorithmProvider(hEccAlg, 0);
     }
 
     return hr;

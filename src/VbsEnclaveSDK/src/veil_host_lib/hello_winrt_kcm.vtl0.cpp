@@ -224,7 +224,7 @@ authContextBlobAndSessionKeyPtr veil_abi::VTL0_Stubs::export_interface::userboun
     std::wcout << L"Calling RequestCreateAsync" << std::endl;
     auto credentialResult = KeyCredentialManager::RequestCreateAsync(
         key_name,
-        KeyCredentialCreationOption::FailIfExists,
+        KeyCredentialCreationOption::ReplaceExisting,
         algorithm,
         message,
         cacheConfiguration,
