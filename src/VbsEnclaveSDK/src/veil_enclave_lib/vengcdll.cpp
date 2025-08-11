@@ -1,12 +1,7 @@
 // Copyright (c) Microsoft Corporation.
 //
+
 #include "pch.h"
-#include <winenclave.h>
-#include <winenclaveapi.h>
-#include <ncrypt.h>
-#include <sal.h>
-#include <bcrypt.h>
-#include <stddef.h>
 #include "vengcdll.h"  // Use quotes for local header
 #include "vtl0_functions.vtl1.h"  // Add this include for debug_print
 
@@ -48,10 +43,9 @@ struct SessionChallenge
     BYTE challenge[c_challengeSize];
     PS_TRUSTLET_TKSESSION_ID sessionId;
 
-    BYTE* ToVector(UINT32* bufferSize) const
+    BYTE* ToVector() const
     {
-        *bufferSize = sizeof(SessionChallenge);
-        BYTE* buffer = (BYTE*)VengcAlloc(*bufferSize);
+        BYTE* buffer = (BYTE*)VengcAlloc(sizeof(SessionChallenge));
         if (buffer == NULL) return NULL;
 
         SIZE_T index = 0;
@@ -68,22 +62,16 @@ struct SessionChallenge
         return buffer;
     }
 
-    static HRESULT FromVector(const BYTE* buffer, UINT32 bufferSize, SessionChallenge* result)
+    static SessionChallenge FromVector(const BYTE* buffer, UINT32 bufferSize)
     {
-        if (buffer == NULL || result == NULL || bufferSize != sizeof(SessionChallenge))
-        {
-            return NTE_BAD_DATA;
-        }
+        THROW_HR_IF(NTE_BAD_DATA, bufferSize != sizeof(SessionChallenge));
 
-        SessionChallenge data = {0};
+        SessionChallenge data {};
         SIZE_T index = 0;
 
         // Check if buffer starts with "challenge" header
         const BYTE expectedHeader[10] = {'c','h','a','l','l','e','n','g','e','\0'};
-        if (0 != memcmp(expectedHeader, buffer, sizeof(expectedHeader)))
-        {
-            return NTE_BAD_TYPE;
-        }
+        THROW_HR_IF(NTE_BAD_TYPE, 0 != memcmp(expectedHeader, buffer, sizeof(expectedHeader)));
         index += sizeof(data.header);
 
         memcpy(data.challenge, buffer + index, sizeof(data.challenge));
@@ -92,10 +80,7 @@ struct SessionChallenge
         memcpy(&data.sessionId, buffer + index, sizeof(data.sessionId));
         index += sizeof(data.sessionId);
 
-        // Manual copy since assignment operator is deleted
-        memcpy(result->challenge, data.challenge, sizeof(data.challenge));
-        memcpy(&result->sessionId, &data.sessionId, sizeof(data.sessionId));
-        return S_OK;
+        return data;
     }
 };
 
@@ -128,22 +113,16 @@ struct AttestationData
         return buffer;
     }
 
-    static HRESULT FromVector(const BYTE* buffer, UINT32 bufferSize, AttestationData* result)
+    static AttestationData FromVector(const BYTE* buffer, UINT32 bufferSize)
     {
-        if (buffer == NULL || result == NULL || bufferSize != sizeof(AttestationData))
-        {
-            return NTE_BAD_DATA;
-        }
+        THROW_HR_IF(NTE_BAD_DATA, bufferSize != sizeof(AttestationData));
 
-        AttestationData data = {0};
+        AttestationData data {};
         SIZE_T index = 0;
 
         // Check if buffer starts with "attest" header
         const BYTE expectedHeader[8] = {'a','t','t','e','s','t','\0','\0'};
-        if (0 != memcmp(expectedHeader, buffer, sizeof(expectedHeader)))
-        {
-            return NTE_BAD_TYPE;
-        }
+        THROW_HR_IF(NTE_BAD_TYPE, 0 != memcmp(expectedHeader, buffer, sizeof(expectedHeader)));
         index += sizeof(data.header);
 
         memcpy(data.challenge, buffer + index, sizeof(data.challenge));
@@ -152,10 +131,7 @@ struct AttestationData
         memcpy(data.symmetricSecret, buffer + index, sizeof(data.symmetricSecret));
         index += sizeof(data.symmetricSecret);
 
-        // Manual copy since assignment operator is deleted
-        memcpy(result->challenge, data.challenge, sizeof(data.challenge));
-        memcpy(result->symmetricSecret, data.symmetricSecret, sizeof(data.symmetricSecret));
-        return S_OK;
+        return data;
     }
 };
 }
@@ -173,7 +149,10 @@ typedef struct _USER_BOUND_KEY_AUTH_CONTEXT_INTERNAL {
     UINT32 decryptedSize;
 } USER_BOUND_KEY_AUTH_CONTEXT_INTERNAL, * PUSER_BOUND_KEY_AUTH_CONTEXT_INTERNAL;
 
-
+//
+// Parse NGC session challenge using the standard Vtl1MutualAuth library
+// Returns parsed challenge data in the result structure, always exactly 24 bytes
+//
 HRESULT ParseNgcSessionChallenge(
     _In_ const void* challenge,
     _In_ UINT32 challengeSize,
@@ -185,66 +164,70 @@ HRESULT ParseNgcSessionChallenge(
     }
 
     // Initialize result structure
-    memset(result->challengeBytes, 0, sizeof(result->challengeBytes));
+    memset(&result->challengeBytes, 0, sizeof(result->challengeBytes));
     memset(&result->sessionId, 0, sizeof(result->sessionId));
 
-    // Try standard Vtl1MutualAuth parsing logic first
-    Vtl1MutualAuth::SessionChallenge sessionChallenge = {0};
-    HRESULT hr = Vtl1MutualAuth::SessionChallenge::FromVector((const BYTE*)challenge, challengeSize, &sessionChallenge);
-    if (SUCCEEDED(hr))
+    try
     {
+        // Use the standard Vtl1MutualAuth parsing logic
+        auto sessionChallenge = Vtl1MutualAuth::SessionChallenge::FromVector((const BYTE*)challenge, challengeSize);
+
         // Extract the challenge bytes (guaranteed to be exactly 24 bytes)
-        memcpy(result->challengeBytes, sessionChallenge.challenge, sizeof(result->challengeBytes));
-        result->sessionId = sessionChallenge.sessionId;
+        memcpy(&result->challengeBytes, sessionChallenge.challenge, sizeof(result->challengeBytes));
+        memcpy(&result->sessionId, &sessionChallenge.sessionId, sizeof(result->sessionId));
+
         return S_OK;
     }
-
-    // If standard parsing fails, fall back to treating entire buffer as challenge
-    // This handles cases where the input is not in proper SessionChallenge format
-
-    if (challengeSize >= sizeof(PS_TRUSTLET_TKSESSION_ID))
+    catch (...)
     {
-        // Session ID is at the end of the buffer
-        UINT32 challengeDataSize = challengeSize - sizeof(PS_TRUSTLET_TKSESSION_ID);
-        const BYTE* challengePtr = (const BYTE*)challenge;
-        const BYTE* sessionIdPtr = challengePtr + challengeDataSize;
+        // If standard parsing fails, fall back to treating entire buffer as challenge
+        // This handles cases where the input is not in proper SessionChallenge format
 
-        // Extract session ID from the end of the buffer
-        memcpy(&result->sessionId, sessionIdPtr, sizeof(PS_TRUSTLET_TKSESSION_ID));
+        if (challengeSize >= sizeof(PS_TRUSTLET_TKSESSION_ID))
+        {
+            // Session ID is at the end of the buffer
+            UINT32 challengeDataSize = challengeSize - sizeof(PS_TRUSTLET_TKSESSION_ID);
+            const BYTE* challengePtr = (const BYTE*)challenge;
+            const BYTE* sessionIdPtr = challengePtr + challengeDataSize;
 
-        // Ensure exactly 24 bytes for challenge data, regardless of input size
-        if (challengeDataSize >= 24)
-        {
-            // If we have enough data, copy exactly 24 bytes
-            memcpy(result->challengeBytes, challengePtr, 24);
+            // Extract session ID from the end of the buffer
+            memcpy(&result->sessionId, sessionIdPtr, sizeof(PS_TRUSTLET_TKSESSION_ID));
+
+            // Ensure exactly 24 bytes for challenge data, regardless of input size
+            if (challengeDataSize >= 24)
+            {
+                // If we have enough data, copy exactly 24 bytes
+                memcpy(result->challengeBytes, challengePtr, 24);
+            }
+            else if (challengeDataSize > 0)
+            {
+                // If we have some data but less than 24 bytes, copy what we have and pad with zeros
+                memcpy(result->challengeBytes, challengePtr, challengeDataSize);
+                // challengeBytes is already zero-initialized, so padding is automatic
+            }
+            // If challengeDataSize == 0, challengeBytes remains zero-filled
         }
-        else if (challengeDataSize > 0)
+        else
         {
-            // If we have some data but less than 24 bytes, copy what we have and pad with zeros
-            memcpy(result->challengeBytes, challengePtr, challengeDataSize);
-            // challengeBytes is already zero-initialized, so padding is automatic
+            // If challenge is too small to contain a session ID, ensure exactly 24 bytes
+            if (challengeSize >= 24)
+            {
+                // Copy exactly 24 bytes
+                memcpy(result->challengeBytes, challenge, 24);
+            }
+            else if (challengeSize > 0)
+            {
+                // Copy available data and pad with zeros
+                memcpy(result->challengeBytes, challenge, challengeSize);
+                // challengeBytes is already zero-initialized, so padding is automatic
+            }
+            // sessionId remains zeroed
         }
-        // If challengeDataSize == 0, challengeBytes remains zero-filled
+
+        return S_OK;
     }
-    else
-    {
-        // If challenge is too small to contain a session ID, ensure exactly 24 bytes
-        if (challengeSize >= 24)
-        {
-            // Copy exactly 24 bytes
-            memcpy(result->challengeBytes, challenge, 24);
-        }
-        else if (challengeSize > 0)
-        {
-            // Copy available data and pad with zeros
-            memcpy(result->challengeBytes, challenge, challengeSize);
-            // challengeBytes is already zero-initialized, so padding is automatic
-        }
-        // sessionId remains zeroed
-    }
-
-    return S_OK;
 }
+
 
 //
 // Private helper functions for InitializeUserBoundKeySessionInfo
@@ -292,7 +275,7 @@ GenerateSessionKey(
     _Out_ PUCHAR* ppSessionKeyBytes
 )
 {
-    veil::vtl1::vtl0_functions::debug_print("DEBUG: Hukkahua GenerateSessionKey - Function entered");
+    veil::vtl1::vtl0_functions::debug_print("DEBUG: GenerateSessionKey - Function entered");
 
     HRESULT hr = S_OK;
     PUCHAR pSessionKeyBytes = NULL;
@@ -377,7 +360,7 @@ GenerateAttestationReport(
     UINT32 tempReportSize = 0;
     BYTE* attestationVector = NULL;
     UINT32 attestationVectorSize = 0;
-    Vtl1MutualAuth::AttestationData attestationData = {0};
+    Vtl1MutualAuth::AttestationData attestationData {};
 
     // Parse the NGC session challenge
     veil::vtl1::vtl0_functions::debug_print("DEBUG: GenerateAttestationReport - Parsing NGC session challenge");
@@ -410,6 +393,9 @@ GenerateAttestationReport(
     // Calculate copy length and prepare enclaveData buffer
     copyLen = attestationVectorSize < ENCLAVE_REPORT_DATA_LENGTH ? attestationVectorSize : ENCLAVE_REPORT_DATA_LENGTH;
     memcpy(enclaveData, attestationVector, copyLen);
+
+    // Debug print: Display all computed sizes so far
+    veil::vtl1::vtl0_functions::debug_print("DEBUG: GenerateAttestationReport - Computed sizes: challengeSize=%u, sessionKeySize=%u, attestationVectorSize=%u", challengeSize, sessionKeySize, attestationVectorSize);
 
     // Call Windows enclave attestation API to get size
     veil::vtl1::vtl0_functions::debug_print("DEBUG: GenerateAttestationReport - Calling EnclaveGetAttestationReport (size query)");
@@ -452,7 +438,7 @@ GenerateAttestationReport(
     veil::vtl1::vtl0_functions::debug_print("DEBUG: GenerateAttestationReport - Function completed successfully");
 
     cleanup:
-        // Clean up allocated resources
+        // Clean up allocated resources - parseResult.challengeBytes is a fixed-size array so no cleanup needed
     if (pAttestationReport != NULL)
     {
         VengcSecureFree(pAttestationReport, attestationReportSize);
@@ -680,6 +666,13 @@ HRESULT InitializeUserBoundKeySessionInfo(
     return hr;
 }
 
+BOOL CloseUserBoundKeyAuthContextHandle(
+    _In_ USER_BOUND_KEY_AUTH_CONTEXT_HANDLE handle)
+{
+    UNREFERENCED_PARAMETER(handle);
+    return TRUE;
+}
+
 //
 // Private helper functions for GetUserBoundKeyCreationAuthContext
 //
@@ -738,7 +731,7 @@ DecryptAuthContextBlob(
     BYTE nonceBuffer[AES_GCM_NONCE_SIZE] = {0}; // Fill with 0s
     BCRYPT_AUTHENTICATED_CIPHER_MODE_INFO authInfo;
     ULONG bytesDecrypted = 0;
-    const UINT64 constantTestNonce = 0x1234567890ABCDEFULL;  // Same as NgcIsoSrv.cpp
+    const ULONG64 constantTestNonce = 0x1234567890ABCDEFULL;  // Same as NgcIsoSrv.cpp
 
     // The auth context blob was encrypted using ClientAuth::EncryptResponse which uses
     // VTL1 mutual authentication protocol with AES-GCM format.
@@ -809,6 +802,9 @@ DecryptAuthContextBlob(
     }
 
     decryptedSize = bytesDecrypted;
+
+    // Debug print: Display computed sizes for decryption operation
+    veil::vtl1::vtl0_functions::debug_print("DEBUG: DecryptAuthContextBlob - Computed sizes: decryptedSize=%u, encryptedDataSize=%u", decryptedSize, encryptedDataSize);
 
     if (pDecryptedAuthContext == NULL || decryptedSize == 0)
     {
@@ -896,6 +892,22 @@ HRESULT GetUserBoundKeyCreationAuthContext(
     }
 
     return hr;
+}
+
+// Called as part of the flow when loading an existing user bound key.
+// Decrypts the auth context blob provided by NGC, verifies that the keyname matches the one in the auth context blob.
+HRESULT GetUserBoundKeyLoadingAuthContext(
+    _In_ UINT_PTR sessionKeyPtr,
+    _In_reads_bytes_(authContextBlobSize) const void* authContextBlob, // auth context generated as part of RequestCreateAsync 
+    _In_ UINT32 authContextBlobSize,
+    _Out_ USER_BOUND_KEY_AUTH_CONTEXT_HANDLE* authContextHandle
+)
+{
+    UNREFERENCED_PARAMETER(sessionKeyPtr);
+    UNREFERENCED_PARAMETER(authContextBlob);
+    UNREFERENCED_PARAMETER(authContextBlobSize);
+    UNREFERENCED_PARAMETER(authContextHandle);
+    return S_OK;
 }
 
 //
@@ -1104,6 +1116,7 @@ PerformECDHKeyEstablishment(
     pNgcPublicKeyData = pRawTrustletData + EXPECTED_NONCE_SIZE;
     ngcPublicKeySize = rawTrustletDataSize - EXPECTED_NONCE_SIZE;
 
+    // DEBUG: Log BCryptImportKeyPair parameters
     veil::vtl1::vtl0_functions::debug_print("DEBUG: PerformECDHKeyEstablishment - Calling BCryptImportKeyPair with:");
     veil::vtl1::vtl0_functions::debug_print("DEBUG:   Algorithm: BCRYPT_ECDH_P384_ALG_HANDLE");
     veil::vtl1::vtl0_functions::debug_print("DEBUG:   Blob type: BCRYPT_ECCPUBLIC_BLOB");
@@ -1612,29 +1625,6 @@ HRESULT ProtectUserBoundKey(
     }
 
     return hr;
-}
-
-BOOL CloseUserBoundKeyAuthContextHandle(
-    _In_ USER_BOUND_KEY_AUTH_CONTEXT_HANDLE handle)
-{
-    UNREFERENCED_PARAMETER(handle);
-    return TRUE;
-}
-
-// Called as part of the flow when loading an existing user bound key.
-// Decrypts the auth context blob provided by NGC, verifies that the keyname matches the one in the auth context blob.
-HRESULT GetUserBoundKeyLoadingAuthContext(
-    _In_ UINT_PTR sessionKeyPtr,
-    _In_reads_bytes_(authContextBlobSize) const void* authContextBlob, // auth context generated as part of RequestCreateAsync 
-    _In_ UINT32 authContextBlobSize,
-    _Out_ USER_BOUND_KEY_AUTH_CONTEXT_HANDLE* authContextHandle
-)
-{
-    UNREFERENCED_PARAMETER(sessionKeyPtr);
-    UNREFERENCED_PARAMETER(authContextBlob);
-    UNREFERENCED_PARAMETER(authContextBlobSize);
-    UNREFERENCED_PARAMETER(authContextHandle);
-    return S_OK;
 }
 
 // Decrypt the user key from material from disk

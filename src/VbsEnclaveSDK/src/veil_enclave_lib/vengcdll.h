@@ -15,7 +15,7 @@
 // Forward declare DeveloperTypes to avoid circular dependency
 namespace DeveloperTypes
 {
-    struct keyCredentialCacheConfig;
+struct keyCredentialCacheConfig;
 }
 
 // NGC Trustlet Identity constant
