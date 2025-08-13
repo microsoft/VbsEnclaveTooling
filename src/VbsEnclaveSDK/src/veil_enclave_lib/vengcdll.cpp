@@ -34,7 +34,6 @@ void VengcSecureFree(void* ptr, SIZE_T size)
 
 namespace Vtl1MutualAuth
 {
-
 struct SessionChallenge
 {
     static constexpr SIZE_T c_challengeSize = 24;
@@ -160,50 +159,11 @@ struct AttestationData
 };
 }
 
-// Structure to hold parsed NGC session challenge data
-typedef struct _NGC_CHALLENGE_PARSE_RESULT {
-    BYTE challengeBytes[24]; // Always exactly 24 bytes
-    UINT32 challengeBytesSize;
-    PS_TRUSTLET_TKSESSION_ID sessionId;
-} NGC_CHALLENGE_PARSE_RESULT;
-
 // Internal structure to hold decrypted auth context data
 typedef struct _USER_BOUND_KEY_AUTH_CONTEXT_INTERNAL {
     BYTE* pDecryptedAuthContext;
     UINT32 decryptedSize;
 } USER_BOUND_KEY_AUTH_CONTEXT_INTERNAL, * PUSER_BOUND_KEY_AUTH_CONTEXT_INTERNAL;
-
-//
-// Parse NGC session challenge using the standard Vtl1MutualAuth library
-// Returns parsed challenge data in the result structure, always exactly 24 bytes
-//
-HRESULT ParseNgcSessionChallenge(
-    _In_ const void* challenge,
-    _In_ UINT32 challengeSize,
-    _Out_ NGC_CHALLENGE_PARSE_RESULT* result)
-{
-    if (challenge == NULL || result == NULL)
-    {
-        return E_INVALIDARG;
-    }
-
-    // Initialize result structure
-    memset(&result->challengeBytes, 0, sizeof(result->challengeBytes));
-    memset(&result->sessionId, 0, sizeof(result->sessionId));
-
-    // Try to use the standard Vtl1MutualAuth parsing logic
-    Vtl1MutualAuth::SessionChallenge sessionChallenge;
-    HRESULT hr = Vtl1MutualAuth::SessionChallenge::FromVector((const BYTE*)challenge, challengeSize, &sessionChallenge);
-    
-    if (SUCCEEDED(hr))
-    {
-        // Standard parsing succeeded - extract the challenge bytes and session ID
-        memcpy(&result->challengeBytes, sessionChallenge.challenge, sizeof(result->challengeBytes));
-        memcpy(&result->sessionId, &sessionChallenge.sessionId, sizeof(result->sessionId));
-    }
-
-    return hr;
-}
 
 //
 // Private helper functions for InitializeUserBoundKeySessionInfo
@@ -218,8 +178,7 @@ ValidateSessionInputParameters(
     _In_ UINT32 challengeSize,
     _In_ void** report,
     _In_ UINT32* reportSize,
-    _In_ UINT_PTR* sessionKeyPtr,
-    _In_ UINT32* sessionKeySize
+    _In_ UINT_PTR* sessionKeyPtr
 )
 {
     if (challenge == NULL || challengeSize == 0)
@@ -227,7 +186,7 @@ ValidateSessionInputParameters(
         return E_INVALIDARG;
     }
 
-    if (report == NULL || reportSize == NULL || sessionKeyPtr == NULL || sessionKeySize == NULL)
+    if (report == NULL || reportSize == NULL || sessionKeyPtr == NULL)
     {
         return E_POINTER;
     }
@@ -236,7 +195,6 @@ ValidateSessionInputParameters(
     *report = NULL;
     *reportSize = 0;
     *sessionKeyPtr = 0;
-    *sessionKeySize = 0;
 
     return S_OK;
 }
@@ -326,7 +284,6 @@ GenerateAttestationReport(
     veil::vtl1::vtl0_functions::debug_print("DEBUG: GenerateAttestationReport - Function entered");
 
     HRESULT hr = S_OK;
-    NGC_CHALLENGE_PARSE_RESULT parseResult = {0};
     void* pAttestationReport = NULL;
     UINT32 attestationReportSize = 0;
 
@@ -337,22 +294,23 @@ GenerateAttestationReport(
     BYTE* attestationVector = NULL;
     UINT32 attestationVectorSize = 0;
     Vtl1MutualAuth::AttestationData attestationData {};
+    Vtl1MutualAuth::SessionChallenge sessionChallenge {};
 
-    // Parse the NGC session challenge
+    // Parse the NGC session challenge using SessionChallenge directly
     veil::vtl1::vtl0_functions::debug_print("DEBUG: GenerateAttestationReport - Parsing NGC session challenge");
-    hr = ParseNgcSessionChallenge(challenge, challengeSize, &parseResult);
+    hr = Vtl1MutualAuth::SessionChallenge::FromVector((const BYTE*)challenge, challengeSize, &sessionChallenge);
     if (FAILED(hr))
     {
-        veil::vtl1::vtl0_functions::debug_print("DEBUG: GenerateAttestationReport - ParseNgcSessionChallenge failed");
+        veil::vtl1::vtl0_functions::debug_print("DEBUG: GenerateAttestationReport - SessionChallenge::FromVector failed");
         goto cleanup;
     }
-    veil::vtl1::vtl0_functions::debug_print("DEBUG: GenerateAttestationReport - ParseNgcSessionChallenge succeeded");
+    veil::vtl1::vtl0_functions::debug_print("DEBUG: GenerateAttestationReport - SessionChallenge::FromVector succeeded");
 
     // Create AttestationData using the standard Vtl1MutualAuth structure
     veil::vtl1::vtl0_functions::debug_print("DEBUG: GenerateAttestationReport - Creating AttestationData structure");
 
     // Copy challenge bytes (guaranteed to be exactly 24 bytes)
-    memcpy(attestationData.challenge, parseResult.challengeBytes, sizeof(attestationData.challenge));
+    memcpy(attestationData.challenge, sessionChallenge.challenge, sizeof(attestationData.challenge));
 
     // Copy session key as symmetric secret (both are 32 bytes)
     // static_assert(sizeof(attestationData.symmetricSecret) == sessionKeySize, "Session key size mismatch");
@@ -408,13 +366,13 @@ GenerateAttestationReport(
     // Success - transfer ownership to caller
     *ppAttestationReport = pAttestationReport;
     *pAttestationReportSize = attestationReportSize;
-    *pSessionId = parseResult.sessionId;
+    *pSessionId = sessionChallenge.sessionId;
     pAttestationReport = NULL;
 
     veil::vtl1::vtl0_functions::debug_print("DEBUG: GenerateAttestationReport - Function completed successfully");
 
     cleanup:
-        // Clean up allocated resources - parseResult.challengeBytes is a fixed-size array so no cleanup needed
+        // Clean up allocated resources
     if (pAttestationReport != NULL)
     {
         VengcSecureFree(pAttestationReport, attestationReportSize);
@@ -527,8 +485,7 @@ HRESULT InitializeUserBoundKeySessionInfo(
     _In_ UINT32 challengeSize,
     _Outptr_result_buffer_(*reportSize) void** report,
     _Out_ UINT32* reportSize,
-    _Out_ UINT_PTR* sessionKey,
-    _Out_ UINT32* sessionKeySize
+    _Out_ UINT_PTR* sessionKey
 )
 {
     // DEBUG: Log entry to InitializeUserBoundKeySessionInfo
@@ -549,7 +506,7 @@ HRESULT InitializeUserBoundKeySessionInfo(
     // Step 1: Validate input parameters
     //
     veil::vtl1::vtl0_functions::debug_print("DEBUG: Step 1 - Validating input parameters");
-    hr = ValidateSessionInputParameters(challenge, challengeSize, report, reportSize, sessionKey, sessionKeySize);
+    hr = ValidateSessionInputParameters(challenge, challengeSize, report, reportSize, sessionKey);
     if (FAILED(hr))
     {
         veil::vtl1::vtl0_functions::debug_print("DEBUG: Step 1 - Input parameter validation failed");
@@ -605,7 +562,6 @@ HRESULT InitializeUserBoundKeySessionInfo(
     *report = pEncryptedReport;
     *reportSize = encryptedReportSize;
     *sessionKey = (UINT_PTR)pSessionKey;
-    *sessionKeySize = SESSION_KEY_SIZE;
 
     // Clear local pointers so they won't be freed in cleanup
     pEncryptedReport = NULL;
@@ -645,7 +601,14 @@ HRESULT InitializeUserBoundKeySessionInfo(
 BOOL CloseUserBoundKeyAuthContextHandle(
     _In_ USER_BOUND_KEY_AUTH_CONTEXT_HANDLE handle)
 {
-    UNREFERENCED_PARAMETER(handle);
+    if (handle == NULL)
+    {
+        return FALSE;
+    }
+
+    // Free the handle memory
+    VengcFree(handle);
+
     return TRUE;
 }
 
@@ -923,29 +886,6 @@ ValidateAuthorizationContext(
     {
         return E_INVALIDARG;
     }
-
-    /*
-    // The authorization context contains the TPM Key Service Provider (KSP) key name -
-    // which is a GUID like {DD590AE1-6FB1-C194-6D68-B7978055C574}. This is the internal TPM key identifier.
-    // The validation function is being called with a different key name - "MyEncryptionKey-001",
-    // which appears to be a more user-friendly or logical key name.
-    // Two are different and we cannot compare them directly.
-    // Extract the key name from the structure
-    SIZE_T keyNameChars = authCtx->keyNameLength / sizeof(WCHAR);
-
-    // Ensure the key name is null-terminated within the allocated space
-    WCHAR tempKeyName[NGC_KEY_NAME_BUFFER_SIZE + 1] = {0}; // +1 for safety
-    SIZE_T charsToCopy = min(keyNameChars, NGC_KEY_NAME_BUFFER_SIZE);
-    memcpy(tempKeyName, authCtx->keyName, charsToCopy * sizeof(WCHAR));
-    tempKeyName[charsToCopy] = L'\0'; // Ensure null termination
-
-    // Compare the extracted key name with the provided key name
-    if (wcscmp(keyName, tempKeyName) != 0)
-    {
-        // Key names don't match - this auth context is for a different key
-        return E_ACCESSDENIED;
-    }
-    */
 
     // Verify the secure id is owner id state
     if (!authCtx->isSecureIdOwnerId)

@@ -51,8 +51,7 @@ HRESULT InitializeUserBoundKeySessionInfo(
     _In_ UINT32 challengeSize,
     _Outptr_result_buffer_(*reportSize) void** report,
     _Out_ UINT32* reportSize,
-    _Out_ UINT_PTR* sessionKeyPtr,
-    _Out_ UINT32* sessionKeySize
+    _Out_ UINT_PTR* sessionKeyPtr
 );
 
 // Auth Context APIs

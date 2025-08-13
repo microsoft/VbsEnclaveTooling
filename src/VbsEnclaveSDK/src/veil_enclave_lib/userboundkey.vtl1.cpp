@@ -34,7 +34,6 @@ DeveloperTypes::attestationReportAndSessionKeyPtr userboundkey_get_attestation_r
     size_t reportSize = 0;
 
     UINT_PTR sessionKeyPtr = 0;
-    UINT32 sessionKeySize = 0;
 
     // DEBUG: Log before calling InitializeUserBoundKeySessionInfo
     veil::vtl1::vtl0_functions::debug_print(L"DEBUG: About to call InitializeUserBoundKeySessionInfo");
@@ -44,8 +43,7 @@ DeveloperTypes::attestationReportAndSessionKeyPtr userboundkey_get_attestation_r
         static_cast<UINT32>(challenge.size()),
         &tempReportPtr,
         reinterpret_cast<UINT32*>(&reportSize),
-        &sessionKeyPtr,
-        &sessionKeySize)); // OS CALL
+        &sessionKeyPtr)); // OS CALL
 
     // DEBUG: Log after InitializeUserBoundKeySessionInfo completes
     veil::vtl1::vtl0_functions::debug_print(L"DEBUG: InitializeUserBoundKeySessionInfo completed successfully");

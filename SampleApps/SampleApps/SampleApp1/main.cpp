@@ -113,7 +113,7 @@ void Initialize()
     g_hCurWnd = GetForegroundWindow();
 }
 
-std::vector<uint8_t> OnFirstRun(void* enclave)
+std::vector<uint8_t> OnFirstRun(void* enclave, const std::filesystem::path& keyFilePath)
 {
     Initialize();
 
@@ -147,8 +147,10 @@ std::vector<uint8_t> OnFirstRun(void* enclave)
         cacheConfig,
         securedEncryptionKeyBytes));
 
-    return securedEncryptionKeyBytes;
     // *** securedEncryptionKeyBytes persisted to disk
+    SaveBinaryData(keyFilePath.string(), securedEncryptionKeyBytes);
+
+    return securedEncryptionKeyBytes;
 }
 
 int EncryptFlow(
@@ -491,7 +493,7 @@ int mainEncryptDecrpyt(uint32_t activityLevel)
                 std::cin.ignore();
                 std::getline(std::wcin, input);
                 // EncryptFlow(enclave.get(), input, keyFilePath, encryptedInputFilePath, tagFilePath, veilLog);
-                OnFirstRun(enclave.get()); // Ensure the key is created on first run
+                OnFirstRun(enclave.get(), keyFilePath); // Ensure the key is created on first run
                 std::wcout << L"Encryption in Enclave completed. \n Encrypted bytes are saved to disk in " << encryptedInputFilePath << std::endl;
                 veilLog.AddTimestampedLog(
                     L"[Host] Encryption in Enclave completed. Encrypted bytes are saved to disk in " + encryptedInputFilePath,
