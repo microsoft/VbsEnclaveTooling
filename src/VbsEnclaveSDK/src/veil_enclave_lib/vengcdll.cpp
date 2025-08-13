@@ -62,25 +62,37 @@ struct SessionChallenge
         return buffer;
     }
 
-    static SessionChallenge FromVector(const BYTE* buffer, UINT32 bufferSize)
+    static HRESULT FromVector(const BYTE* buffer, UINT32 bufferSize, _Out_ SessionChallenge* result)
     {
-        THROW_HR_IF(NTE_BAD_DATA, bufferSize != sizeof(SessionChallenge));
+        if (buffer == NULL || result == NULL)
+        {
+            return E_INVALIDARG;
+        }
 
-        SessionChallenge data {};
+        if (bufferSize != sizeof(SessionChallenge))
+        {
+            return NTE_BAD_DATA;
+        }
+
         SIZE_T index = 0;
 
         // Check if buffer starts with "challenge" header
         const BYTE expectedHeader[10] = {'c','h','a','l','l','e','n','g','e','\0'};
-        THROW_HR_IF(NTE_BAD_TYPE, 0 != memcmp(expectedHeader, buffer, sizeof(expectedHeader)));
-        index += sizeof(data.header);
+        if (0 != memcmp(expectedHeader, buffer, sizeof(expectedHeader)))
+        {
+            return NTE_BAD_TYPE;
+        }
+        index += sizeof(result->header);
 
-        memcpy(data.challenge, buffer + index, sizeof(data.challenge));
-        index += sizeof(data.challenge);
+        // Copy challenge data
+        memcpy(result->challenge, buffer + index, sizeof(result->challenge));
+        index += sizeof(result->challenge);
 
-        memcpy(&data.sessionId, buffer + index, sizeof(data.sessionId));
-        index += sizeof(data.sessionId);
+        // Copy session ID
+        memcpy(&result->sessionId, buffer + index, sizeof(result->sessionId));
+        index += sizeof(result->sessionId);
 
-        return data;
+        return S_OK;
     }
 };
 
@@ -113,25 +125,37 @@ struct AttestationData
         return buffer;
     }
 
-    static AttestationData FromVector(const BYTE* buffer, UINT32 bufferSize)
+    static HRESULT FromVector(const BYTE* buffer, UINT32 bufferSize, _Out_ AttestationData* result)
     {
-        THROW_HR_IF(NTE_BAD_DATA, bufferSize != sizeof(AttestationData));
+        if (buffer == NULL || result == NULL)
+        {
+            return E_INVALIDARG;
+        }
 
-        AttestationData data {};
+        if (bufferSize != sizeof(AttestationData))
+        {
+            return NTE_BAD_DATA;
+        }
+
         SIZE_T index = 0;
 
         // Check if buffer starts with "attest" header
         const BYTE expectedHeader[8] = {'a','t','t','e','s','t','\0','\0'};
-        THROW_HR_IF(NTE_BAD_TYPE, 0 != memcmp(expectedHeader, buffer, sizeof(expectedHeader)));
-        index += sizeof(data.header);
+        if (0 != memcmp(expectedHeader, buffer, sizeof(expectedHeader)))
+        {
+            return NTE_BAD_TYPE;
+        }
+        index += sizeof(result->header);
 
-        memcpy(data.challenge, buffer + index, sizeof(data.challenge));
-        index += sizeof(data.challenge);
+        // Copy challenge data
+        memcpy(result->challenge, buffer + index, sizeof(result->challenge));
+        index += sizeof(result->challenge);
 
-        memcpy(data.symmetricSecret, buffer + index, sizeof(data.symmetricSecret));
-        index += sizeof(data.symmetricSecret);
+        // Copy symmetric secret
+        memcpy(result->symmetricSecret, buffer + index, sizeof(result->symmetricSecret));
+        index += sizeof(result->symmetricSecret);
 
-        return data;
+        return S_OK;
     }
 };
 }
@@ -167,67 +191,19 @@ HRESULT ParseNgcSessionChallenge(
     memset(&result->challengeBytes, 0, sizeof(result->challengeBytes));
     memset(&result->sessionId, 0, sizeof(result->sessionId));
 
-    try
+    // Try to use the standard Vtl1MutualAuth parsing logic
+    Vtl1MutualAuth::SessionChallenge sessionChallenge;
+    HRESULT hr = Vtl1MutualAuth::SessionChallenge::FromVector((const BYTE*)challenge, challengeSize, &sessionChallenge);
+    
+    if (SUCCEEDED(hr))
     {
-        // Use the standard Vtl1MutualAuth parsing logic
-        auto sessionChallenge = Vtl1MutualAuth::SessionChallenge::FromVector((const BYTE*)challenge, challengeSize);
-
-        // Extract the challenge bytes (guaranteed to be exactly 24 bytes)
+        // Standard parsing succeeded - extract the challenge bytes and session ID
         memcpy(&result->challengeBytes, sessionChallenge.challenge, sizeof(result->challengeBytes));
         memcpy(&result->sessionId, &sessionChallenge.sessionId, sizeof(result->sessionId));
-
-        return S_OK;
     }
-    catch (...)
-    {
-        // If standard parsing fails, fall back to treating entire buffer as challenge
-        // This handles cases where the input is not in proper SessionChallenge format
 
-        if (challengeSize >= sizeof(PS_TRUSTLET_TKSESSION_ID))
-        {
-            // Session ID is at the end of the buffer
-            UINT32 challengeDataSize = challengeSize - sizeof(PS_TRUSTLET_TKSESSION_ID);
-            const BYTE* challengePtr = (const BYTE*)challenge;
-            const BYTE* sessionIdPtr = challengePtr + challengeDataSize;
-
-            // Extract session ID from the end of the buffer
-            memcpy(&result->sessionId, sessionIdPtr, sizeof(PS_TRUSTLET_TKSESSION_ID));
-
-            // Ensure exactly 24 bytes for challenge data, regardless of input size
-            if (challengeDataSize >= 24)
-            {
-                // If we have enough data, copy exactly 24 bytes
-                memcpy(result->challengeBytes, challengePtr, 24);
-            }
-            else if (challengeDataSize > 0)
-            {
-                // If we have some data but less than 24 bytes, copy what we have and pad with zeros
-                memcpy(result->challengeBytes, challengePtr, challengeDataSize);
-                // challengeBytes is already zero-initialized, so padding is automatic
-            }
-            // If challengeDataSize == 0, challengeBytes remains zero-filled
-        }
-        else
-        {
-            // If challenge is too small to contain a session ID, ensure exactly 24 bytes
-            if (challengeSize >= 24)
-            {
-                // Copy exactly 24 bytes
-                memcpy(result->challengeBytes, challenge, 24);
-            }
-            else if (challengeSize > 0)
-            {
-                // Copy available data and pad with zeros
-                memcpy(result->challengeBytes, challenge, challengeSize);
-                // challengeBytes is already zero-initialized, so padding is automatic
-            }
-            // sessionId remains zeroed
-        }
-
-        return S_OK;
-    }
+    return hr;
 }
-
 
 //
 // Private helper functions for InitializeUserBoundKeySessionInfo
@@ -1051,6 +1027,9 @@ HRESULT ValidateUserBoundKeyAuthContext(
     return hr;
 }
 
+//
+// Private helper functions for ProtectUserBoundKey
+//
 //
 // Step 2: Extract NGC public key and perform key establishment
 //
