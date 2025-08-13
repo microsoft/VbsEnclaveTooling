@@ -34,23 +34,27 @@ void VengcSecureFree(void* ptr, SIZE_T size)
 
 namespace Vtl1MutualAuth
 {
+// Header constants used throughout the namespace - defined once to eliminate duplication
+static constexpr BYTE CHALLENGE_HEADER[10] = {'c','h','a','l','l','e','n','g','e','\0'};
+static constexpr BYTE ATTESTATION_HEADER[8] = {'a','t','t','e','s','t','\0','\0'};
+
 struct SessionChallenge
 {
     static constexpr SIZE_T c_challengeSize = 24;
 
-    const BYTE header[10] = {'c','h','a','l','l','e','n','g','e','\0'};
     BYTE challenge[c_challengeSize];
     PS_TRUSTLET_TKSESSION_ID sessionId;
 
     BYTE* ToVector() const
     {
-        BYTE* buffer = (BYTE*)VengcAlloc(sizeof(SessionChallenge));
+        SIZE_T totalSize = sizeof(CHALLENGE_HEADER) + sizeof(challenge) + sizeof(sessionId);
+        BYTE* buffer = (BYTE*)VengcAlloc(totalSize);
         if (buffer == NULL) return NULL;
 
         SIZE_T index = 0;
 
-        memcpy(buffer + index, header, sizeof(header));
-        index += sizeof(header);
+        memcpy(buffer + index, CHALLENGE_HEADER, sizeof(CHALLENGE_HEADER));
+        index += sizeof(CHALLENGE_HEADER);
 
         memcpy(buffer + index, challenge, sizeof(challenge));
         index += sizeof(challenge);
@@ -68,20 +72,20 @@ struct SessionChallenge
             return E_INVALIDARG;
         }
 
-        if (bufferSize != sizeof(SessionChallenge))
+        SIZE_T expectedSize = sizeof(CHALLENGE_HEADER) + sizeof(result->challenge) + sizeof(result->sessionId);
+        if (bufferSize < expectedSize)
         {
             return NTE_BAD_DATA;
         }
 
         SIZE_T index = 0;
 
-        // Check if buffer starts with "challenge" header
-        const BYTE expectedHeader[10] = {'c','h','a','l','l','e','n','g','e','\0'};
-        if (0 != memcmp(expectedHeader, buffer, sizeof(expectedHeader)))
+        // Check if buffer starts with the expected challenge header
+        if (0 != memcmp(CHALLENGE_HEADER, buffer, sizeof(CHALLENGE_HEADER)))
         {
             return NTE_BAD_TYPE;
         }
-        index += sizeof(result->header);
+        index += sizeof(CHALLENGE_HEADER);
 
         // Copy challenge data
         memcpy(result->challenge, buffer + index, sizeof(result->challenge));
@@ -100,20 +104,19 @@ struct AttestationData
     static constexpr SIZE_T c_challengeSize = SessionChallenge::c_challengeSize;
     static constexpr SIZE_T c_symmetricSecretSize = 32;
 
-    const BYTE header[8] = {'a','t','t','e','s','t','\0','\0'};
     BYTE challenge[c_challengeSize];
     BYTE symmetricSecret[c_symmetricSecretSize];
 
     BYTE* ToVector(UINT32* bufferSize)
     {
-        *bufferSize = sizeof(AttestationData);
+        *bufferSize = sizeof(ATTESTATION_HEADER) + sizeof(challenge) + sizeof(symmetricSecret);
         BYTE* buffer = (BYTE*)VengcAlloc(*bufferSize);
         if (buffer == NULL) return NULL;
 
         SIZE_T index = 0;
 
-        memcpy(buffer + index, header, sizeof(header));
-        index += sizeof(header);
+        memcpy(buffer + index, ATTESTATION_HEADER, sizeof(ATTESTATION_HEADER));
+        index += sizeof(ATTESTATION_HEADER);
 
         memcpy(buffer + index, challenge, sizeof(challenge));
         index += sizeof(challenge);
@@ -131,20 +134,20 @@ struct AttestationData
             return E_INVALIDARG;
         }
 
-        if (bufferSize != sizeof(AttestationData))
+        SIZE_T expectedSize = sizeof(ATTESTATION_HEADER) + sizeof(result->challenge) + sizeof(result->symmetricSecret);
+        if (bufferSize < expectedSize)
         {
             return NTE_BAD_DATA;
         }
 
         SIZE_T index = 0;
 
-        // Check if buffer starts with "attest" header
-        const BYTE expectedHeader[8] = {'a','t','t','e','s','t','\0','\0'};
-        if (0 != memcmp(expectedHeader, buffer, sizeof(expectedHeader)))
+        // Check if buffer starts with the expected attestation header
+        if (0 != memcmp(ATTESTATION_HEADER, buffer, sizeof(ATTESTATION_HEADER)))
         {
             return NTE_BAD_TYPE;
         }
-        index += sizeof(result->header);
+        index += sizeof(ATTESTATION_HEADER);
 
         // Copy challenge data
         memcpy(result->challenge, buffer + index, sizeof(result->challenge));
