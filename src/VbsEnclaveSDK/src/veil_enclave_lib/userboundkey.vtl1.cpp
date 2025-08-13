@@ -218,7 +218,7 @@ wil::secure_vector<uint8_t> enclave_create_user_bound_key(
     propCacheConfig.size = sizeof(cacheConfig);
     propCacheConfig.value = &cacheConfig;
 
-    THROW_IF_FAILED(ValidateUserBoundKeyAuthContext(keyName.c_str(), authContext.get(), 1, &propCacheConfig)); // OS CALL
+    THROW_IF_FAILED(ValidateUserBoundKeyAuthContext(authContext.get(), 1, &propCacheConfig)); // OS CALL
 
     // USERKEY
     auto userkeyBytes = veil::vtl1::crypto::generate_symmetric_key_bytes();
@@ -265,7 +265,7 @@ std::vector<uint8_t> enclave_load_user_bound_key(
     propCacheConfig.name = UserBoundKeyAuthContextPropertyCacheConfig;
     propCacheConfig.size = sizeof(cacheConfig);
     propCacheConfig.value = &cacheConfig;
-    THROW_IF_FAILED(ValidateUserBoundKeyAuthContext(keyName.c_str(), authContext.get(), 1, &propCacheConfig)); // OS CALL
+    THROW_IF_FAILED(ValidateUserBoundKeyAuthContext(authContext.get(), 1, &propCacheConfig)); // OS CALL
 
     // DECRYPT USERKEY
     UINT32 cbUserkeyBytes = 0;
