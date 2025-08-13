@@ -136,6 +136,10 @@ namespace CodeGeneration
         std::string BuildVtl1ExportedFunctionsSourcefile(
             std::string_view generated_namespace_name,
             const OrderedMap<std::string, Function>& trusted_functions);
+
+        std::string BuildVtl1PragmaStatementsSourcefile(
+            std::string_view generated_namespace_name,
+            const OrderedMap<std::string, Function>& trusted_functions);
     };
 
     struct CppCodeGenerator
@@ -181,7 +185,7 @@ namespace CodeGeneration
         std::vector<std::string> m_sdk_trusted_function_abi_names {};
         ErrorHandlingKind m_error_handling {};
         std::string_view m_generated_namespace_name{};
-        std::string_view m_generated_vtl0_class_name {};
+        std::string m_generated_vtl0_class_name {};
         VirtualTrustLayerKind m_virtual_trust_layer_kind{};
         std::filesystem::path m_output_folder_path {};
         std::filesystem::path m_flatbuffer_compiler_path {};

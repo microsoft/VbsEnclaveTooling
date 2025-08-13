@@ -3,6 +3,10 @@
 
 namespace CodeGenTest.FlatbufferTypes;
 
+enum TestEnum : uint32 {
+    Value1 = 1,
+}
+
 table TestStruct1 {
     int64_val : int64;
     uint64_val : uint64;

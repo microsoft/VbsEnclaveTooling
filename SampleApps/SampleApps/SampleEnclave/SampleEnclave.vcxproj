@@ -104,7 +104,7 @@
   </PropertyGroup>
   <PropertyGroup>
     <VbsEnclaveVirtualTrustLayer>Enclave</VbsEnclaveVirtualTrustLayer>
-    <VbsEnclaveSkipCodegen>false</VbsEnclaveSkipCodegen>
+    <VbsEnclaveCodeGenConsumeCppSupportLib>true</VbsEnclaveCodeGenConsumeCppSupportLib>
   </PropertyGroup>
   <PropertyGroup Label="UserMacros" />
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|ARM64'">

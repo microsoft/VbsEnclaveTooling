@@ -18,7 +18,9 @@ namespace CodeGeneration
 
     static inline constexpr std::string_view c_trusted_vtl1_impl_header = "Implementations.h";
 
-    static inline constexpr std::string_view c_enclave_exports_source = "Exports.cpp";
+    static inline constexpr std::string_view c_enclave_exports_source = "Exports.{}.cpp";
+
+    static inline constexpr std::string_view c_enclave_linker_statements_file = "LinkerPragmas.{}.cpp";
 
     static inline constexpr std::string_view c_output_folder_for_generated_trusted_functions = R"(VbsEnclave\Enclave)";
 
@@ -125,9 +127,15 @@ R"({}
 #include <wil/enclave/wil_for_enclaves.h>
 #include <VbsEnclave\Enclave\Abi\Definitions.h>
 
-// Explicitly add linker statements so the generated export functions created by the code generator 
-// can be exported when used to create a static lib.
-{}{}
+{}
+)";
+
+    static inline constexpr std::string_view c_vtl1_pragma_statements_source_file =
+R"({}
+
+// This file should be included in the developer's enclave project to ensure
+// the enclave export symbols are properly exposed by the enclave DLL.
+{}
 )";
 
     static inline constexpr std::string_view c_enclave_export_func_definition = R"(

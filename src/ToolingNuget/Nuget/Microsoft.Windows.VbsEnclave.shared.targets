@@ -1,0 +1,38 @@
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+    <PropertyGroup>
+        <VbsEnclavePackageDir>$([System.IO.Path]::GetFullPath($(MSBuildThisFileDirectory)))..\..\</VbsEnclavePackageDir>
+        <VbsEnclaveAbiCppSupportLib>$(VbsEnclavePackageDir)lib\native\$(Platform)\veil_enclave_cpp_support_$(Platform)_$(Configuration)_lib.lib</VbsEnclaveAbiCppSupportLib>
+        <VbsEnclaveGeneratedFilesDir>$(ProjectDir)Generated Files</VbsEnclaveGeneratedFilesDir>
+        
+        <!-- Make sure the cpp support lib only gets linked once if both the codegen and the sdk are consumed via nuget. -->
+        <AddVbsEnclaveCppSupportLib>false</AddVbsEnclaveCppSupportLib>
+        <AddVbsEnclaveCppSupportLib Condition="'$(VbsEnclaveCodeGenConsumeCppSupportLib)' == 'true' AND '$(VbsEnclaveSDKConsumeCppSupportLib)' != 'true'">true</AddVbsEnclaveCppSupportLib>
+        <AddVbsEnclaveCppSupportLib Condition="'$(VbsEnclaveSDKConsumeCppSupportLib)' == 'true' AND '$(VbsEnclaveCodeGenConsumeCppSupportLib)' != 'true'">true</AddVbsEnclaveCppSupportLib>
+        
+    </PropertyGroup>
+
+    <ItemDefinitionGroup>
+        
+        <Link Condition="'$(VbsEnclaveVirtualTrustLayer)' == 'Enclave'">
+            <AdditionalDependencies Condition="'$(AddVbsEnclaveCppSupportLib)' == 'true'">$(VbsEnclaveAbiCppSupportLib);%(AdditionalDependencies)</AdditionalDependencies>
+        </Link>
+
+    </ItemDefinitionGroup>
+    
+    <Target Name="AddGeneratedFilesToBuild"
+            BeforeTargets="ClCompile;ClInclude">
+        <!-- Make sure the generated cpp files are added to build without the developer needing to explicitly add them to their project. -->
+        <ItemGroup>
+            <_WildCardClCompileFor_Cpp Include="$(VbsEnclaveGeneratedFilesDir)\VbsEnclave\**\*.cpp" />
+            <_WildCardClCompileFor_Cpp_h Include="$(VbsEnclaveGeneratedFilesDir)\VbsEnclave\**\*.h" />
+            <!-- 
+                Don't use precompiled headers for generated cpp files so projects that support precompiled
+                headers can be built with our generated code.
+            -->
+            <ClCompile Include="@(_WildCardClCompileFor_Cpp)">
+                <PrecompiledHeader>NotUsing</PrecompiledHeader>
+            </ClCompile>
+            <ClInclude Include="@(_WildCardClCompileFor_Cpp_h)"  />
+        </ItemGroup>
+    </Target>
+</Project>

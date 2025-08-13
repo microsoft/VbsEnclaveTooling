@@ -10,12 +10,14 @@
         <VbsEnclaveExeFilePath>$(VbsEnclaveCodegenPackageDir)bin\edlcodegen.exe</VbsEnclaveExeFilePath>
         <VbsEnclavePackageEnclaveAbiPath>$(VbsEnclaveCodegenPackageDir)src\VbsEnclaveABI</VbsEnclavePackageEnclaveAbiPath>
         <VbsEnclaveDeveloperEdlFileName>$([System.IO.Path]::GetFileName('$(VbsEnclaveEdlPath)'))</VbsEnclaveDeveloperEdlFileName>
-        <VbsEnclaveCodeGenAbiCppSupportLib>$(VbsEnclaveCodegenPackageDir)lib\native\$(Platform)\veil_enclave_cpp_support_$(Platform)_$(Configuration)_lib.lib</VbsEnclaveCodeGenAbiCppSupportLib>
         <VbsEnclaveGeneratedFilesDir>$(ProjectDir)Generated Files</VbsEnclaveGeneratedFilesDir>
         <VcpkgSupportDir>$(VbsEnclaveCodegenPackageDir)vcpkg</VcpkgSupportDir>
         <FlatbuffersCompiler>$(VcpkgSupportDir)\tools\flatbuffers\flatc.exe</FlatbuffersCompiler>
         <VcpkgIncludesDir>$(VcpkgSupportDir)\include</VcpkgIncludesDir>
     </PropertyGroup>
+
+    <!-- Add shared target only if it exists in the nuget package. -->
+    <Import Project="$(VbsEnclaveCodegenPackageDir)build\native\Microsoft.Windows.VbsEnclave.shared.targets" Condition="Exists('$(VbsEnclaveCodegenPackageDir)build\native\Microsoft.Windows.VbsEnclave.shared.targets')"/>
 
     <!-- The below targets/Items are ran at build time for any project that consumes the VbsEnclaveTooling nuget package. -->
 
@@ -36,8 +38,9 @@
             </VbsEnclaveToolingExecutionCommand>
         </PropertyGroup>
 
-        <Exec Condition="'$(VbsEnclaveSkipCodegen)' != 'true'" Command="$(VbsEnclaveToolingExecutionCommand)" />
+        <Exec Command="$(VbsEnclaveToolingExecutionCommand)" />
         <Message Text="Generated '$(VbsEnclaveCodeGenLanguage)' code in output directory: '$(VbsEnclaveGeneratedFilesDir)'" Importance="high" />
+
     </Target>
 
     <ItemDefinitionGroup>
@@ -45,10 +48,6 @@
         <ClCompile>
             <AdditionalIncludeDirectories>$(VcpkgIncludesDir);$(VbsEnclaveCodegenPackageDir)src\;$(VbsEnclaveGeneratedFilesDir);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
         </ClCompile>
-
-        <Link Condition="'$(VbsEnclaveVirtualTrustLayer)' == 'Enclave'">
-            <AdditionalDependencies>$(VbsEnclaveCodeGenAbiCppSupportLib);%(AdditionalDependencies)</AdditionalDependencies>
-        </Link>
 
         <!-- define the __ENCLAVE_PROJECT__ macro in the enclave project so the enclave related ABI code lights up in the project.-->
         <ClCompile Condition="'$(VbsEnclaveVirtualTrustLayer)' == 'Enclave'">
@@ -71,21 +70,4 @@
         <VC_LibraryPath_Enclave>$(VC_LibraryPath_VC_arm64_Desktop)\..\$(Platform)\enclave</VC_LibraryPath_Enclave>
         <VBS_Enclave_Dependencies Condition="'$(VBS_Enclave_Dependencies)' == ''">$(VC_LibraryPath_Enclave)\libcmt.lib;$(VC_LibraryPath_Enclave)\libvcruntime.lib;$(winsdk_cpp_arm64_root)\um\arm64\vertdll.lib;$(winsdk_cpp_arm64_root)\um\arm64\bcrypt.lib;$(winsdk_cpp_arm64_root)\ucrt_enclave\arm64\ucrt.lib</VBS_Enclave_Dependencies>
     </PropertyGroup>
-    
-    <Target Name="AddGeneratedFilesToBuild"
-            BeforeTargets="ClCompile;ClInclude">
-        <!-- Make sure the generated cpp files are added to build without the developer needing to explicitly add them to their project. -->
-        <ItemGroup>
-            <_WildCardClCompileFor_Cpp Include="$(VbsEnclaveGeneratedFilesDir)\VbsEnclave\**\*.cpp" />
-            <_WildCardClCompileFor_Cpp_h Include="$(VbsEnclaveGeneratedFilesDir)\VbsEnclave\**\*.h" />
-            <!-- 
-                    Don't use precompiled headers for generated cpp files so projects that support precompiled
-                    headers can be built with our generated code.
-            -->
-            <ClCompile Include="@(_WildCardClCompileFor_Cpp)">
-                <PrecompiledHeader>NotUsing</PrecompiledHeader>
-            </ClCompile>
-            <ClInclude Include="@(_WildCardClCompileFor_Cpp_h)"  />
-        </ItemGroup>
-    </Target>    
 </Project>

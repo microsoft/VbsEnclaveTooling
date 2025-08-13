@@ -1,5 +1,15 @@
 enclave
 {
+    enum
+    {
+        Value1 = 1,
+    };
+
+    enum TestEnum
+    {
+        Value1 = 1,
+    };
+
     struct TestStruct1
     {
         int64_t int64_val;

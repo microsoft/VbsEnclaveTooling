@@ -30,6 +30,7 @@
       
     <!-- Make sure the VirtualTrustLayer is set to Enclave so the enclave generated files get added at compile time -->
     <VbsEnclaveVirtualTrustLayer>Enclave</VbsEnclaveVirtualTrustLayer>
+    <VbsEnclaveCodeGenConsumeCppSupportLib>true</VbsEnclaveCodeGenConsumeCppSupportLib>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|ARM64'" Label="Configuration">

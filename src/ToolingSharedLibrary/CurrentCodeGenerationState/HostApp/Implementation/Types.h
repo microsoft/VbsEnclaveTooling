@@ -9,6 +9,16 @@ namespace CodeGenTest::Types
     struct TestStruct1;
     struct TestStruct2;
 
+    enum : std::uint32_t
+    {
+        Value1 = 1,
+    };
+
+    enum class TestEnum : std::uint32_t
+    {
+        Value1 = 1,
+    };
+
     struct TestStruct1
     {
         std::int64_t int64_val {};

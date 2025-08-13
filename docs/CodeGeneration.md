@@ -21,9 +21,10 @@ Generated `enclave` project artifacts:
             |--- Abi
                   |--- AbiTypes.h
                   |--- Definitions.h
-                  |--- Exports.cpp
+                  |--- Exports.<Edl-Filename>.cpp
                   |--- FlatbufferTypes.fbs
                   |--- FlatbufferTypes.h
+                  |--- LinkerPragmas.<Edl-Filename>.cpp
                   |--- TypeMetadata.h
             |--- Implementation
                   |--- Trusted.h
