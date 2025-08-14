@@ -3,18 +3,12 @@
         <VbsEnclavePackageDir>$([System.IO.Path]::GetFullPath($(MSBuildThisFileDirectory)))..\..\</VbsEnclavePackageDir>
         <VbsEnclaveAbiCppSupportLib>$(VbsEnclavePackageDir)lib\native\$(Platform)\veil_enclave_cpp_support_$(Platform)_$(Configuration)_lib.lib</VbsEnclaveAbiCppSupportLib>
         <VbsEnclaveGeneratedFilesDir>$(ProjectDir)Generated Files</VbsEnclaveGeneratedFilesDir>
-        
-        <!-- Make sure the cpp support lib only gets linked once if both the codegen and the sdk are consumed via nuget. -->
-        <AddVbsEnclaveCppSupportLib>false</AddVbsEnclaveCppSupportLib>
-        <AddVbsEnclaveCppSupportLib Condition="'$(VbsEnclaveCodeGenConsumeCppSupportLib)' == 'true' AND '$(VbsEnclaveSDKConsumeCppSupportLib)' != 'true'">true</AddVbsEnclaveCppSupportLib>
-        <AddVbsEnclaveCppSupportLib Condition="'$(VbsEnclaveSDKConsumeCppSupportLib)' == 'true' AND '$(VbsEnclaveCodeGenConsumeCppSupportLib)' != 'true'">true</AddVbsEnclaveCppSupportLib>
-        
     </PropertyGroup>
 
     <ItemDefinitionGroup>
         
         <Link Condition="'$(VbsEnclaveVirtualTrustLayer)' == 'Enclave'">
-            <AdditionalDependencies Condition="'$(AddVbsEnclaveCppSupportLib)' == 'true'">$(VbsEnclaveAbiCppSupportLib);%(AdditionalDependencies)</AdditionalDependencies>
+            <AdditionalDependencies Condition="'$(VbsEnclaveConsumeCppSupportLib)' == 'true'">$(VbsEnclaveAbiCppSupportLib);%(AdditionalDependencies)</AdditionalDependencies>
         </Link>
 
     </ItemDefinitionGroup>
