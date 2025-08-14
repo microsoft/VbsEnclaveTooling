@@ -16,6 +16,6 @@
         <!-- End -->
         
         <!-- Additional infrastructure props -->
-        <VbsEnclaveCodeGenConsumeCppSupportLib>false</VbsEnclaveCodeGenConsumeCppSupportLib>
+        <VbsEnclaveConsumeCppSupportLib>false</VbsEnclaveConsumeCppSupportLib>
     </PropertyGroup>
 </Project>

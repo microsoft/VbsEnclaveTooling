@@ -263,7 +263,7 @@ uint32_t VbsEnclave::Trusted::Implementation::DoSecretMath(_In_  std::uint32_t v
 * Right-Click on the project and choose `Build`, it should succeed. 
 
 > [!Note]
->  To view generated files in the HostApp select `Show all files` in solution explorer. You should see the `Generated Files\VbsEnclave\HostApp` folder. The files of interest are in the `Implementation` and `Stubs` folder. For more information on code generation, view [CodeGeneration.md](./CodeGeneration.md).
+>  To view generated files in the HostApp select `Show all files` in solution explorer. You should see the `Generated Files\VbsEnclave\HostApp` folder. The files of interest are in the `Implementation` and `Stubs` folders. For more information on code generation, view [CodeGeneration.md](./CodeGeneration.md).
 
 * In your `main` method, initialize the enclave and call its methods
     * Add the host side include file from the SDK nuget package and the new `Stubs\Trusted.h` code generated header.

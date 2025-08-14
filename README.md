@@ -70,7 +70,7 @@ In your **enclave** projects .vcxproj or .props file add the following:
     <VbsEnclaveImportDirectories>paths-to-directories-containing-.edl-files</VbsEnclaveImportDirectories>
 
     <!-- Optional, only needed if you want to consume the Veil C++ support library in your enclave. -->
-    <VbsEnclaveCodeGenConsumeCppSupportLib>true</VbsEnclaveCodeGenConsumeCppSupportLib>
+    <VbsEnclaveConsumeCppSupportLib>true</VbsEnclaveConsumeCppSupportLib>
 </PropertyGroup>
 ```
 
