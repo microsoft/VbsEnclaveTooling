@@ -101,12 +101,42 @@ Also see the docs on the `.edl` format and `CodeGeneration` [here](./docs/Edl.md
 ### Strict memory access
 Strict memory access (see [EnclaveRestrictContainingProcessAccess](https://learn.microsoft.com/windows/win32/api/winenclaveapi/nf-winenclaveapi-enclaverestrictcontainingprocessaccess)), when enabled, is a security feature that prevents the enclave from referencing VTL0 memory.
 
-It must be enabled for 'release' builds.
+> [!Important]
+> - Strict memory access is enabled by default for `release` builds to ensure that the enclave cannot reference VTL0 memory.
+> - Strict memory access is currently disabled for `debug` builds to work around a vertdll.dll memory access issue.
+> - To disable strict memory access for development purposes, you can define a the preprocessor directive ```ENABLE_ENCLAVE_RESTRICT_CONTAINING_PROCESS_ACCESS=false``` in your project file.
 
-*Note* : Strict memory access is currently disabled for `debug` builds to work around a vertdll.dll memory access issue.
+### Consuming CodeGen/SDK in static libs for enclave DLLs
 
-*Note* : To disable strict memory access for development purposes, you can define a the preprocessor directive ```ENABLE_ENCLAVE_RESTRICT_CONTAINING_PROCESS_ACCESS=false``` in your project file.
+This is for those developers who don't want to put their business logic into the enclave dll project directly, but instead want to put it into a static library that will be consumed by the enclave dll project.
 
+#### SDK consumption
+
+- Add the `<VbsEnclaveVirtualTrustLayer>Enclave</VbsEnclaveVirtualTrustLayer>` property to your enclave dll project if not already set. This will make sure the `LinkerPragmas.veil_abi.cpp` file from the SDK package is added to your dll project at build time.
+- Note: adding this property will also add the `veil_enclave_lib` static library to your enclave dll project which contains the functions to be exported by the dll.
+- You should be able to build your enclave dll project without issue after this. In a VS developer powershell window you can confirm the exports are present by using the `dumpbin /exports <path-to-enclave-dll>` command.
+
+#### Codegen consumption
+
+- Your enclave dll will need to consume the `LinkerPragmas.<name-of-your-.edl-file>.cpp` file at build time that was generated in your static library projects `Generated Files\VbsEnclave\Enclave\Abi` folder.
+- This is so that generated export functions that live in the static lib can be exported from your enclave dll.
+- You should be able to build your enclave dll project without issue after this. In a VS developer powershell window you can confirm the exports are present by using the `dumpbin /exports <path-to-enclave-dll>` command.
+
+> [!Tip]
+> - Include the `LinkerPragmas.<edl-file-name>.cpp` in your enclave dll build via a `.targets` file that adds it before the `ClCompile` runs
+> - Doing it this will ensure that the generated file is always included in the build without you having to explicitly add it to your dll project.
+
+Here is an example target that you can add to a `.targets` file that is consumed by your enclave dll project:
+```xml
+<Target Name="AddVbsEnclaveCodegenExportToBuild" BeforeTargets="ClCompile">
+    <ItemGroup>
+        <ClCompile Include="Some\Path\To\Your\LinkerPragmas.<name-of-your-.edl-file>.cpp">
+            <!-- Example incase you use precompiled headers. This file does not contain any #include statements. -->
+            <PrecompiledHeader>NotUsing</PrecompiledHeader>
+        </ClCompile>
+    </ItemGroup>
+</Target>
+```
 
 Vbs enclave implementation library (veil) usage
 ------------
