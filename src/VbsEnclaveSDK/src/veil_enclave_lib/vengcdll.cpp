@@ -606,10 +606,20 @@ BOOL CloseUserBoundKeyAuthContextHandle(
 {
     if (handle == NULL)
     {
+        SetLastError(ERROR_INVALID_HANDLE);
         return FALSE;
     }
 
-    // Free the handle memory
+    // Cast to internal context to access internal data
+    PUSER_BOUND_KEY_AUTH_CONTEXT_INTERNAL pInternalContext = (PUSER_BOUND_KEY_AUTH_CONTEXT_INTERNAL)handle;
+    
+    // Free the internal decrypted auth context data if it exists
+    if (pInternalContext->pDecryptedAuthContext != NULL && pInternalContext->decryptedSize > 0)
+    {
+        VengcSecureFree(pInternalContext->pDecryptedAuthContext, pInternalContext->decryptedSize);
+    }
+
+    // Free the handle memory itself
     VengcFree(handle);
 
     return TRUE;
@@ -772,7 +782,7 @@ DecryptAuthContextBlob(
 // Decrypts the auth context blob provided by NGC and returns a handle to the decrypted blob
 HRESULT GetUserBoundKeyCreationAuthContext(
     _In_ UINT_PTR sessionKeyPtr,
-    _In_reads_bytes_(authContextBlobSize) const void* authContextBlob, // auth context generated as part of RequestCreateAsync
+    _In_reads_bytes_(authContextBlobSize) const void* authContextBlob,
     _In_ UINT32 authContextBlobSize,
     _Out_ USER_BOUND_KEY_AUTH_CONTEXT_HANDLE* authContextHandle
 )
@@ -840,7 +850,7 @@ HRESULT GetUserBoundKeyCreationAuthContext(
 // Decrypts the auth context blob provided by NGC, verifies that the keyname matches the one in the auth context blob.
 HRESULT GetUserBoundKeyLoadingAuthContext(
     _In_ UINT_PTR sessionKeyPtr,
-    _In_reads_bytes_(authContextBlobSize) const void* authContextBlob, // auth context generated as part of RequestCreateAsync 
+    _In_reads_bytes_(authContextBlobSize) const void* authContextBlob, 
     _In_ UINT32 authContextBlobSize,
     _Out_ USER_BOUND_KEY_AUTH_CONTEXT_HANDLE* authContextHandle
 )
@@ -862,14 +872,10 @@ static HRESULT
 ValidateAuthorizationContext(
     _In_ BYTE* pDecryptedAuthContext,
     _In_ UINT32 decryptedSize,
-    _In_ const USER_BOUND_KEY_AUTH_CONTEXT_PROPERTY* authctxproperty
+    _In_ UINT32 count,
+    _In_ const USER_BOUND_KEY_AUTH_CONTEXT_PROPERTY* authctxproperties
 )
 {
-    if (authctxproperty->name != UserBoundKeyAuthContextPropertyCacheConfig)
-    {
-        return E_INVALIDARG;
-    }
-
     // The decrypted auth context is a NCRYPT_NGC_AUTHORIZATION_CONTEXT structure
     // that contains structured data
 
@@ -894,22 +900,14 @@ ValidateAuthorizationContext(
         return E_INVALIDARG;
     }
 
-    // Verify the secure id is owner id state
+    // Always verify the secure ID owner ID state
     if (!authCtx->isSecureIdOwnerId)
     {
         // This authorization context is not for the secure ID owner
         return E_ACCESSDENIED;
     }
 
-    // Verify cache_config for authCtx == the one from caller.
-    if (authCtx->cacheConfig.cacheType != ((KEY_CREDENTIAL_CACHE_CONFIG*)authctxproperty->value)->cacheType)
-    {
-        // This appears to be a standard Hello key cache configuration
-        // which is not allowed for user bound keys
-        return E_INVALIDARG;
-    }
-
-    // Validate public key bytes
+    // Always validate public key bytes size
     UINT32 ngcPublicKeySize = authCtx->publicKeyByteCount;
 
     // Validate the public key size is reasonable
@@ -919,10 +917,41 @@ ValidateAuthorizationContext(
     }
 
     // Verify the public key data doesn't exceed the buffer
-    SIZE_T maxTrustletDataSize = decryptedSize - offsetof(NCRYPT_NGC_AUTHORIZATION_CONTEXT, publicKey);
-    if (ngcPublicKeySize > maxTrustletDataSize)
+    SIZE_T maxPublicKeySize = decryptedSize - offsetof(NCRYPT_NGC_AUTHORIZATION_CONTEXT, publicKey);
+    if (ngcPublicKeySize > maxPublicKeySize)
     {
         return E_INVALIDARG;
+    }
+
+    // Loop through all provided properties and validate each one
+    for (UINT32 i = 0; i < count; i++)
+    {
+        const USER_BOUND_KEY_AUTH_CONTEXT_PROPERTY* currentProperty = &authctxproperties[i];
+        
+        switch (currentProperty->name)
+        {
+            case UserBoundKeyAuthContextPropertyCacheConfig:
+            {
+                // Verify cache_config for authCtx == the one from caller
+                if (currentProperty->size != sizeof(KEY_CREDENTIAL_CACHE_CONFIG) || currentProperty->value == NULL)
+                {
+                    return E_INVALIDARG;
+                }
+                
+                KEY_CREDENTIAL_CACHE_CONFIG* callerCacheConfig = (KEY_CREDENTIAL_CACHE_CONFIG*)currentProperty->value;
+                if (authCtx->cacheConfig.cacheType != callerCacheConfig->cacheType)
+                {
+                    return E_INVALIDARG;
+                }
+                break;
+            }
+            
+            default:
+            {
+                // Unknown property type
+                return E_INVALIDARG;
+            }
+        }
     }
 
     return S_OK;
@@ -942,8 +971,7 @@ HRESULT ValidateUserBoundKeyAuthContext(
     //
     // Step 1: Validate input parameters
     //
-    if (authContextHandle == NULL || (count > 0 && values == NULL) || 
-        count > 1) // currently we only support one property check for the cache config
+    if (authContextHandle == NULL || (count > 0 && values == NULL))
     {
         return E_INVALIDARG;
     }
@@ -955,16 +983,10 @@ HRESULT ValidateUserBoundKeyAuthContext(
         return E_INVALIDARG;
     }
 
-    // If count is 0, nothing to validate
-    if (count == 0)
-    {
-        return S_OK;
-    }
-
     //
-    // Step 2: Verify isSecureIdOwnerId and cacheConfig
+    // Step 2: Verify properties against authorization context
     //
-    hr = ValidateAuthorizationContext(pInternalContext->pDecryptedAuthContext, pInternalContext->decryptedSize, values);
+    hr = ValidateAuthorizationContext(pInternalContext->pDecryptedAuthContext, pInternalContext->decryptedSize, count, values);
     if (FAILED(hr))
     {
         goto cleanup;
