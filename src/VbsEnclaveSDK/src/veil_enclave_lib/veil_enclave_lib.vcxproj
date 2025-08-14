@@ -62,7 +62,7 @@
   </PropertyGroup>
   <PropertyGroup>
     <VbsEnclaveVirtualTrustLayer>Enclave</VbsEnclaveVirtualTrustLayer>
-    <VbsEnclaveCodeGenConsumeCppSupportLib>true</VbsEnclaveCodeGenConsumeCppSupportLib>
+    <VbsEnclaveConsumeCppSupportLib>true</VbsEnclaveConsumeCppSupportLib>
   </PropertyGroup>
   <!-- Undocked UCRT configuration. -->
   <PropertyGroup>

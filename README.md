@@ -113,18 +113,18 @@ This is for those developers who don't want to put their business logic into the
 #### SDK consumption
 
 - Add the `<VbsEnclaveVirtualTrustLayer>Enclave</VbsEnclaveVirtualTrustLayer>` property to your enclave dll project if not already set. This will make sure the `LinkerPragmas.veil_abi.cpp` file from the SDK package is added to your dll project at build time.
-- Note: adding this property will also add the `veil_enclave_lib` static library to your enclave dll project which contains the functions to be exported by the dll.
+- Note: adding this property will also add the `veil_enclave_lib.lib` static library to your enclave dll project which contains the functions to be exported by the dll.
 - You should be able to build your enclave dll project without issue after this. In a VS developer powershell window you can confirm the exports are present by using the `dumpbin /exports <path-to-enclave-dll>` command.
 
 #### Codegen consumption
 
-- Your enclave dll will need to consume the `LinkerPragmas.<name-of-your-.edl-file>.cpp` file at build time that was generated in your static library projects `Generated Files\VbsEnclave\Enclave\Abi` folder.
+- At build time, your enclave dll will need to consume the `LinkerPragmas.<name-of-your-.edl-file>.cpp` file that was generated in your static library projects `Generated Files\VbsEnclave\Enclave\Abi` folder.
 - This is so that generated export functions that live in the static lib can be exported from your enclave dll.
 - You should be able to build your enclave dll project without issue after this. In a VS developer powershell window you can confirm the exports are present by using the `dumpbin /exports <path-to-enclave-dll>` command.
 
 > [!Tip]
-> - Include the `LinkerPragmas.<edl-file-name>.cpp` in your enclave dll build via a `.targets` file that adds it before the `ClCompile` runs
-> - Doing it this will ensure that the generated file is always included in the build without you having to explicitly add it to your dll project.
+> - Include the `LinkerPragmas.<edl-file-name>.cpp` file in your enclave dll build via a `.targets` file that adds it before the `ClCompile` target runs.
+> - Doing it this way will ensure that the generated file is always included in the build without you having to explicitly add it to your dll project.
 
 Here is an example target that you can add to a `.targets` file that is consumed by your enclave dll project:
 ```xml
