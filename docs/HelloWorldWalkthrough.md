@@ -222,9 +222,14 @@ enclave
 * Right click the dll project and choose `Build`. This will generate the projection layer for the enclave dll. You should have a couple initial error messages after code generation due to lack of implementation. We will fix this in the next step.
 
 > [!Note]
->  To view the generated files, choose `Show All Files` in solution explorer and navigate to `Generated Files\VbsEnclave\Enclave`. Functions in the trusted scope of the .edl file will have a function declaration generated in `Generated Files\VbsEnclave\Enclave\Implementations.h`. For more information on code generation, view [CodeGeneration.md](./CodeGeneration.md).
+> To view the generated files, choose `Show All Files` in solution explorer and navigate to 
+> `Generated Files\VbsEnclave\Enclave`. Functions in the trusted scope of the .edl file will have a function
+> declaration generated in `Generated Files\VbsEnclave\Enclave\Implementation\Trusted.h`. For more information on
+> code generation, view [CodeGeneration.md](./CodeGeneration.md).
 
-* Add a cpp file to the dll project and name it `MySecretEnclaveExports.cpp`. This is where we will define the `DoSecretMath` function that we declared in the `MySecretEnclave.edl` file. You need to include the `Implementations.h` file, and then define the function:
+* Add a cpp file to the dll project and name it `MySecretEnclaveExports.cpp`. 
+  * This is where we will define the `DoSecretMath` function that we declared in the `MySecretEnclave.edl` file.
+* You need to include the `Generated Files\VbsEnclave\Enclave\Implementation\Trusted.h` file, and then define the function:
 ```cpp
 #include "pch.h"
 #include <VbsEnclave\Enclave\Implementation\Trusted.h>
