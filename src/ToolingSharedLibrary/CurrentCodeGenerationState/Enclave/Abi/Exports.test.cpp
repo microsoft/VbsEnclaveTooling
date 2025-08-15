@@ -5,10 +5,6 @@
 #include <wil/enclave/wil_for_enclaves.h>
 #include <VbsEnclave\Enclave\Abi\Definitions.h>
 
-// Explicitly add linker statements so the generated export functions created by the code generator 
-// can be exported when used to create a static lib.
-#pragma comment(linker, "/include:FuncWithAllArgs_0_Generated_Stub")
-#pragma comment(linker, "/include:__AbiRegisterVtl0Callbacks_CodeGenTest__")
 
 extern "C" __declspec(dllexport) void* FuncWithAllArgs_0_Generated_Stub(void* function_context) 
 {

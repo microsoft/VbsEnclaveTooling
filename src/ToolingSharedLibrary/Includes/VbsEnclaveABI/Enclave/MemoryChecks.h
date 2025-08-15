@@ -64,7 +64,7 @@ namespace VbsEnclaveABI::Enclave::MemoryChecks
         return S_OK;
     }
 
-    inline HRESULT CheckForVTL0Buffer(_In_ const void* buffer, _In_ const size_t length)
+    inline HRESULT AbiCheckForVTL0Buffer(_In_ const void* buffer, _In_ const size_t length)
     {
         // If there are no bytes in the buffer, then it doesn't matter where the pointer points.
         // The empty set is a subset of every set.
@@ -87,7 +87,7 @@ namespace VbsEnclaveABI::Enclave::MemoryChecks
         return E_FAIL; // TODO: Add our own Hresult
     }
 
-    inline HRESULT CheckForVTL1Buffer(
+    inline HRESULT AbiCheckForVTL1Buffer(
         _In_ const void* buffer,
         _In_ const size_t length)
     {
@@ -115,12 +115,12 @@ namespace VbsEnclaveABI::Enclave::MemoryChecks
     }
 
     // Returns S_OK if the function pointer is entirely outside the VTL1 address space.
-    inline HRESULT CheckForVTL0Function(_In_ void* (*fn)(void*))
+    inline HRESULT AbiCheckForVTL0Function(_In_ void* (*fn)(void*))
     {
-        return CheckForVTL0Buffer(fn, sizeof(fn));
+        return AbiCheckForVTL0Buffer(fn, sizeof(fn));
     }
 
-    namespace details
+    namespace Details
     {
         namespace RestrictContainingProcessAccess
         {
@@ -184,7 +184,7 @@ namespace VbsEnclaveABI::Enclave::MemoryChecks
 
     inline HRESULT EnableEnclaveRestrictContainingProcessAccess() noexcept try
     {
-        using namespace details::RestrictContainingProcessAccess;
+        using namespace Details::RestrictContainingProcessAccess;
         SetRestrictionSetting(RestrictionSetting::Restrict);
         return S_OK;
     }

@@ -153,13 +153,27 @@ namespace CodeGeneration
         }
 
         auto is_named_enum = (developer_types.m_type_kind == EdlTypeKind::Enum);
-        std::string enum_name = (is_named_enum) ? developer_types.m_name : "";
+        std::string enum_name{};
+        std::string enum_keyword{};
+        if (is_named_enum)
+        {
+            // Scoped enum
+            enum_name = developer_types.m_name;
+            enum_keyword = "enum class";
+        }
+        else
+        {
+            // Anonymous enum
+            enum_name = "";
+            enum_keyword = "enum";
+        }
 
         auto [enum_header, enum_body, enum_footer] = BuildStartOfDefinition(
-            EDL_ENUM_KEYWORD,
-            enum_name, 
+            enum_keyword,
+            enum_name,
             c_type_definition_tab_count);
 
+        enum_header << " : std::uint32_t"; // Use uint32_t for enum types
         auto body_tab_count = GenerateTabs(2);
 
         for (auto& enum_value : developer_types.m_items.values())
@@ -610,7 +624,6 @@ namespace CodeGeneration
         const OrderedMap<std::string, Function>& trusted_functions)
     {
         std::ostringstream exported_definitions {};
-        std::ostringstream pragma_link_statements {};
 
         for (const auto& function : trusted_functions.values())
         {
@@ -620,8 +633,6 @@ namespace CodeGeneration
                 generated_func_name,
                 generated_namespace_name,
                 generated_func_name);
-
-            pragma_link_statements << std::format(c_vtl1_sdk_pragma_statement, generated_func_name);
         }
 
         auto register_callbacks_name = std::format(c_vtl1_register_callbacks_abi_export_name, generated_namespace_name);
@@ -632,12 +643,31 @@ namespace CodeGeneration
                 generated_namespace_name,
                 register_callbacks_name);
 
-        pragma_link_statements << std::format(c_vtl1_sdk_pragma_statement, register_callbacks_name);
-
         return std::format(
             c_vtl1_export_functions_source_file,
             c_autogen_header_string,
-            pragma_link_statements.str(),
             exported_definitions.str());
+    }
+
+    std::string CppCodeBuilder::BuildVtl1PragmaStatementsSourcefile(
+        std::string_view generated_namespace_name,
+        const OrderedMap<std::string, Function>& trusted_functions)
+    {
+        std::ostringstream pragma_link_statements {};
+
+        for (const auto& function : trusted_functions.values())
+        {
+            auto generated_func_name = std::format(c_generated_stub_name_no_quotes, function.abi_m_name);
+            pragma_link_statements << std::format(c_vtl1_sdk_pragma_statement, generated_func_name);
+        }
+
+        auto register_callbacks_name = std::format(c_vtl1_register_callbacks_abi_export_name, generated_namespace_name);
+
+        pragma_link_statements << std::format(c_vtl1_sdk_pragma_statement, register_callbacks_name);
+
+        return std::format(
+            c_vtl1_pragma_statements_source_file,
+            c_autogen_header_string,
+            pragma_link_statements.str());
     }
 }

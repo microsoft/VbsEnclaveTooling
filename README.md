@@ -67,7 +67,10 @@ In your **enclave** projects .vcxproj or .props file add the following:
     <VbsEnclaveNamespace>Namespace-for-the-generated-code</VbsEnclaveNamespace>
     
     <!-- Optional, only needed if you are importing other .edl files -->
-    <VbsEnclaveImportDirectories>paths-to-directories-containing-.edl-files<VbsEnclaveImportDirectories>
+    <VbsEnclaveImportDirectories>paths-to-directories-containing-.edl-files</VbsEnclaveImportDirectories>
+
+    <!-- Optional, only needed if you want to consume the Veil C++ support library in your enclave. -->
+    <VbsEnclaveConsumeCppSupportLib>true</VbsEnclaveConsumeCppSupportLib>
 </PropertyGroup>
 ```
 
@@ -82,7 +85,7 @@ In your **hostApp** projects .vcxproj or .props file add the following:
     <VbsEnclaveVtl0ClassName>Encapsulated-classname-for-your-enclave</VbsEnclaveVtl0ClassName>
 
     <!-- Optional, only needed if you are importing other .edl files -->
-    <VbsEnclaveImportDirectories>paths-to-directories-containing-.edl-files<VbsEnclaveImportDirectories>
+    <VbsEnclaveImportDirectories>paths-to-directories-containing-.edl-files</VbsEnclaveImportDirectories>
 </PropertyGroup>
 ```
 

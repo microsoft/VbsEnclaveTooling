@@ -21,5 +21,6 @@
     <None Include="Nuget\Microsoft.Windows.VbsEnclave.CodeGenerator.nuspec" />
     <None Include="Nuget\Microsoft.Windows.VbsEnclave.CodeGenerator.props" />
     <None Include="Nuget\Microsoft.Windows.VbsEnclave.CodeGenerator.targets" />
+    <None Include="Nuget\Microsoft.Windows.VbsEnclave.shared.targets" />
   </ItemGroup>
 </Project>

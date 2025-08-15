@@ -14,5 +14,8 @@
         <VbsEnclaveNamespace></VbsEnclaveNamespace>
         <VbsEnclaveImportDirectories></VbsEnclaveImportDirectories>
         <!-- End -->
+        
+        <!-- Additional infrastructure props -->
+        <VbsEnclaveConsumeCppSupportLib>false</VbsEnclaveConsumeCppSupportLib>
     </PropertyGroup>
 </Project>

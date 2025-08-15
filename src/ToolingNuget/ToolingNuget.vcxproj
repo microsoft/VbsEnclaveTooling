@@ -159,6 +159,7 @@
     <None Include="Nuget\Microsoft.Windows.VbsEnclave.CodeGenerator.nuspec" />
     <None Include="Nuget\Microsoft.Windows.VbsEnclave.CodeGenerator.props" />
     <None Include="Nuget\Microsoft.Windows.VbsEnclave.CodeGenerator.targets" />
+    <None Include="Nuget\Microsoft.Windows.VbsEnclave.shared.targets" />
     <None Include="Nuget\Microsoft.Windows.VbsEnclaveTooling.nuspec" />
     <None Include="Nuget\VisualStudioUiBuild.targets" />
     <None Include="README.md" />

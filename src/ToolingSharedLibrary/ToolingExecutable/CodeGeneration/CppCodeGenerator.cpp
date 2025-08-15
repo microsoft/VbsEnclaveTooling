@@ -39,12 +39,12 @@ namespace CodeGeneration
 
         if (m_generated_namespace_name.empty())
         {
-            m_generated_namespace_name = edl.m_name;
+            m_generated_namespace_name = m_edl.m_name;
         }
 
         if (m_generated_vtl0_class_name.empty())
         {
-            m_generated_vtl0_class_name = std::move(std::format(c_vtl0_enclave_class_name, edl.m_name));
+            m_generated_vtl0_class_name = std::format(c_vtl0_enclave_class_name, m_edl.m_name);
         }
 
         if (m_flatbuffer_compiler_path.empty())
@@ -105,9 +105,18 @@ namespace CodeGeneration
                 m_edl.m_trusted_functions);
 
             SaveFileToOutputFolder(
-                c_enclave_exports_source,
+                std::format(c_enclave_exports_source, m_edl.m_name),
                 save_location / "Abi",
                 exported_definitions_source);
+
+            std::string pragma_statements = BuildVtl1PragmaStatementsSourcefile(
+                m_generated_namespace_name,
+                m_edl.m_trusted_functions);
+
+            SaveFileToOutputFolder(
+                std::format(c_enclave_linker_statements_file, m_edl.m_name),
+                save_location / "Abi",
+                pragma_statements);
         }
         else if (m_virtual_trust_layer_kind == VirtualTrustLayerKind::HostApp)
         {

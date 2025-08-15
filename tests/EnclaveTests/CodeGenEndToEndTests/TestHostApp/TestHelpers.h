@@ -87,8 +87,8 @@ inline StructWithNoPointers CreateStructWithNoPointers()
         std::numeric_limits<uint16_t>::max(),      // uint16_val
         std::numeric_limits<uint32_t>::max(),      // uint32_val
         std::numeric_limits<uint64_t>::max(),      // uint64_val
-        Hex_val3,                                  // hex_val (0x03)
-        Deci_val2,                                 // deci_val (1)
+        HexEnum::Hex_val3,                         // hex_val (0x03)
+        DecimalEnum::Deci_val2,                    // deci_val (1)
         { std::numeric_limits<int64_t>::max() },   // nested_struct_val.value_in_nested_struct
 
         S_OK                                       // result (HRESULT)
@@ -167,8 +167,8 @@ inline TestStruct1 CreateTestStruct1()
         std::numeric_limits<uint16_t>::max(),      // uint16_val
         std::numeric_limits<uint32_t>::max(),      // uint32_val
         std::numeric_limits<uint64_t>::max(),      // uint64_val
-        Hex_val3,                                  // hex_val (0x03)
-        Deci_val2,                                 // deci_val (1)
+        HexEnum::Hex_val3,                         // hex_val (0x03)
+        DecimalEnum::Deci_val2,                    // deci_val (1)
         {1, 2, 3, 4, 5},
         S_OK                                       // result (HRESULT)
     };
