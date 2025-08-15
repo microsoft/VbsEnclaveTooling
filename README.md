@@ -17,12 +17,14 @@ features that interact with a VBS enclave easier. To learn more about VBS enclav
 |---------------------|-----------------------|
 | Windows 11 24H2     | `26100.3916 or later` |
 
-Developers will need to make sure they have `Windows SDK version 26100.3916` or later installed on their system or integrated into their Visual Studio projects.
+Developers will need to make sure they have `Windows SDK version 26100.3916` or later installed on their system or
+integrated into their Visual Studio projects.
 
 The Windows SDK can be installed in one of the following ways:
 1. via installing the `Windows 11 SDK (10.0.26100.0)` individual component in the `Visual Studio v17.14` installer
 1. via using the `Windows 11 SDK (10.0.26100.0)` installer through the [Windows SDK installer website](https://developer.microsoft.com/windows/downloads/windows-sdk/)
-1. via adding the [Microsoft.Windows.SDK.CPP](https://www.nuget.org/packages/Microsoft.Windows.SDK.CPP/) packages to your Visual Studio project via Nuget.
+1. via adding the [Microsoft.Windows.SDK.CPP](https://www.nuget.org/packages/Microsoft.Windows.SDK.CPP/) 
+packages to your Visual Studio project via Nuget.
 
 Building locally
 ------------
@@ -38,8 +40,9 @@ Building locally
 
 *The code generator uses Google Flatbuffers to facilite marshaling data into and out of the enclave.
 This means we take Flatbuffers as a dependency, specifically in our `ToolingSharedLibrary` project.
-We use [vcpkg](https://learn.microsoft.com/vcpkg/get_started/overview) to add the flatbuffer compiler and header files into our nuget package. To build the
-repository you will need to install/integrate `vcpkg` into your visual studio application.*
+We use [vcpkg](https://learn.microsoft.com/vcpkg/get_started/overview) to add the flatbuffer compiler 
+and header files into our nuget package. To build the repository you will need to install/integrate 
+`vcpkg` into your visual studio application.*
 
 Here are the instructions to integrate vcpkg into your visual studio application:
 
@@ -56,7 +59,8 @@ Once this is complete the `CodeGenerator` and `SDK` nuget packages can be found 
 
 CodeGenerator and SDK consumption via nuget
 ------------
-1. packages: [Microsoft.Windows.VbsEnclave.CodeGenerator](https://www.nuget.org/packages/Microsoft.Windows.VbsEnclave.CodeGenerator) and [Microsoft.Windows.VbsEnclave.SDK](https://www.nuget.org/packages/Microsoft.Windows.VBSEnclave.SDK).
+1. packages: [Microsoft.Windows.VbsEnclave.CodeGenerator](https://www.nuget.org/packages/Microsoft.Windows.VbsEnclave.CodeGenerator) 
+and [Microsoft.Windows.VbsEnclave.SDK](https://www.nuget.org/packages/Microsoft.Windows.VBSEnclave.SDK).
 1. Install them both your into **enclave** project and your **hostApp** project. 
    
 In your **enclave** projects .vcxproj or .props file add the following:
@@ -91,40 +95,54 @@ In your **hostApp** projects .vcxproj or .props file add the following:
 
 This will kick off the code generation and ingest the SDK inside your **hostApp** project at build time.
 
-*Note* : Be sure to update the `<VbsEnclaveEdlPath>`, `<VbsEnclaveNamespace>`, `<VbsEnclaveVtl0ClassName>` and `<VbsEnclaveImportDirectories>` properties with valid values.
+*Note* : Be sure to update the `<VbsEnclaveEdlPath>`, `<VbsEnclaveNamespace>`, `<VbsEnclaveVtl0ClassName>`
+and `<VbsEnclaveImportDirectories>` properties with valid values.
 
-Also see the docs on the `.edl` format and `CodeGeneration` [here](./docs/Edl.md) and [here](./docs/CodeGeneration.md) for more information on them.
+Also see the docs on the `.edl` format and `CodeGeneration` [here](./docs/Edl.md) and [here](./docs/CodeGeneration.md)
+for more information on them.
 
 *Note* : The `CodeGenerator` nuget package can be used without the `SDK` nuget package
    and the `SDK` nuget package can also be used without the `CodeGenerator` nuget package. They do not rely on each other.
 
 ### Strict memory access
-Strict memory access (see [EnclaveRestrictContainingProcessAccess](https://learn.microsoft.com/windows/win32/api/winenclaveapi/nf-winenclaveapi-enclaverestrictcontainingprocessaccess)), when enabled, is a security feature that prevents the enclave from referencing VTL0 memory.
+Strict memory access (see [EnclaveRestrictContainingProcessAccess](https://learn.microsoft.com/windows/win32/api/winenclaveapi/nf-winenclaveapi-enclaverestrictcontainingprocessaccess)),
+when enabled, is a security feature that prevents the enclave from referencing VTL0 memory.
 
 > [!Important]
-> - Strict memory access is enabled by default for `release` builds to ensure that the enclave cannot reference VTL0 memory.
+> - Strict memory access is enabled by default for `release` builds to ensure that the enclave cannot reference VTL0 
+memory.
 > - Strict memory access is currently disabled for `debug` builds to work around a vertdll.dll memory access issue.
-> - To disable strict memory access for development purposes, you can define a the preprocessor directive ```ENABLE_ENCLAVE_RESTRICT_CONTAINING_PROCESS_ACCESS=false``` in your project file.
+> - To disable strict memory access for development purposes, you can define a the preprocessor directive
+> ```ENABLE_ENCLAVE_RESTRICT_CONTAINING_PROCESS_ACCESS=false``` in your project file.
 
 ### Consuming CodeGen/SDK in static libs for enclave DLLs
 
-This is for those developers who don't want to put their business logic into the enclave dll project directly, but instead want to put it into a static library that will be consumed by the enclave dll project.
+This is for those developers who don't want to put their business logic into the enclave dll project directly,
+but instead want to put it into a static library that will be consumed by the enclave dll project.
 
 #### SDK consumption
 
-- Add the `<VbsEnclaveVirtualTrustLayer>Enclave</VbsEnclaveVirtualTrustLayer>` property to your enclave dll project if not already set. This will make sure the `LinkerPragmas.veil_abi.cpp` file from the SDK package is added to your dll project at build time.
-- Note: adding this property will also add the `veil_enclave_lib.lib` static library to your enclave dll project which contains the functions to be exported by the dll.
-- You should be able to build your enclave dll project without issue after this. In a VS developer powershell window you can confirm the exports are present by using the `dumpbin /exports <path-to-enclave-dll>` command.
+- Add the `<VbsEnclaveVirtualTrustLayer>Enclave</VbsEnclaveVirtualTrustLayer>` property to your enclave dll project if 
+not already set. This will make sure the `LinkerPragmas.veil_abi.cpp` file from the SDK package is added to your dll
+project at build time.
+- Note: adding this property will also add the `veil_enclave_lib.lib` static library to your enclave dll project which 
+contains the functions to be exported by the dll.
+- You should be able to build your enclave dll project without issue after this. In a VS developer powershell window
+you can confirm the exports are present by using the `dumpbin /exports <path-to-enclave-dll>` command.
 
 #### Codegen consumption
 
-- At build time, your enclave dll will need to consume the `LinkerPragmas.<name-of-your-.edl-file>.cpp` file that was generated in your static library projects `Generated Files\VbsEnclave\Enclave\Abi` folder.
+- At build time, your enclave dll will need to consume the `LinkerPragmas.<name-of-your-.edl-file>.cpp` file that was 
+generated in your static library projects `Generated Files\VbsEnclave\Enclave\Abi` folder.
 - This is so that generated export functions that live in the static lib can be exported from your enclave dll.
-- You should be able to build your enclave dll project without issue after this. In a VS developer powershell window you can confirm the exports are present by using the `dumpbin /exports <path-to-enclave-dll>` command.
+- You should be able to build your enclave dll project without issue after this. In a VS developer powershell 
+window you can confirm the exports are present by using the `dumpbin /exports <path-to-enclave-dll>` command.
 
 > [!Tip]
-> - Include the `LinkerPragmas.<edl-file-name>.cpp` file in your enclave dll build via a `.targets` file that adds it before the `ClCompile` target runs.
-> - Doing it this way will ensure that the generated file is always included in the build without you having to explicitly add it to your dll project.
+> - Include the `LinkerPragmas.<edl-file-name>.cpp` file in your enclave dll build via a `.targets` file that adds it 
+before the `ClCompile` target runs.
+> - Doing it this way will ensure that the generated file is always included in the build without you having to 
+explicitly add it to your dll project.
 
 Here is an example target that you can add to a `.targets` file that is consumed by your enclave dll project:
 ```xml

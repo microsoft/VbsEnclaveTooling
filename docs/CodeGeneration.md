@@ -68,7 +68,7 @@ Generated `hostApp` project artifacts:
 | `Abi\Exports.<Edl-Filename>.cpp` | Contains the generated functions that are exported by the enclave. These functions call into a sibling functions generated in `Abi\Definitions.h`. |
 | `Abi\FlatbufferTypes.h` | Defines a `Flatbuffer` type for each type defined in `Abi\AbiType.h` and `Implementation\Types.h`.  |
 | `Abi\FlatbufferTypes.fbs` | Defines a `Flatbuffer` schema that generates the types found in `Abi\FlatbufferTypes.h`.  |
-| `Abi\LinkerPragmas.<Edl-Filename>.cpp` | Contains a `#pragma comment(linker, /include)` for each generated function in `Abi\Exports.<Edl-Filename>.cpp`. This ensures that functions generated in a developer’s static library are exported from the enclave dll.  |
+| `Abi\LinkerPragmas.<Edl-Filename>.cpp` | Contains a `#pragma comment(linker, /include)` for each generated function in `Abi\Exports.<Edl-Filename>.cpp`. This ensures that functions generated in a developer's static library are exported from the enclave dll.  |
 | `Abi\TypeMetadata.h` | Contains data needed to perform the conversion between `Flatbuffer types` and the types found in `Abi\AbiType.h` and `Implementation\Types.h`. |
 
 ### Enclave files
