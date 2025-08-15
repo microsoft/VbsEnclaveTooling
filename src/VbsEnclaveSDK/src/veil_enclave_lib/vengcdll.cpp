@@ -37,32 +37,33 @@ namespace Vtl1MutualAuth
 // Header constants used throughout the namespace - defined once to eliminate duplication
 static constexpr BYTE CHALLENGE_HEADER[10] = {'c','h','a','l','l','e','n','g','e','\0'};
 static constexpr BYTE ATTESTATION_HEADER[8] = {'a','t','t','e','s','t','\0','\0'};
+static constexpr SIZE_T c_challengeSize = 24;
 
 struct SessionChallenge
 {
-    static constexpr SIZE_T c_challengeSize = 24;
-
+    static constexpr SIZE_T c_sessionChallengeVectorSize = sizeof(CHALLENGE_HEADER) + c_challengeSize + sizeof(PS_TRUSTLET_TKSESSION_ID);
     BYTE challenge[c_challengeSize];
     PS_TRUSTLET_TKSESSION_ID sessionId;
 
-    BYTE* ToVector() const
+    HRESULT ToVector(_Out_writes_bytes_(c_sessionChallengeVectorSize) BYTE* buffer) const
     {
-        SIZE_T totalSize = sizeof(CHALLENGE_HEADER) + sizeof(challenge) + sizeof(sessionId);
-        BYTE* buffer = (BYTE*)VengcAlloc(totalSize);
-        if (buffer == NULL) return NULL;
+        if (buffer == NULL)
+        {
+            return E_INVALIDARG;
+        }
 
         SIZE_T index = 0;
 
         memcpy(buffer + index, CHALLENGE_HEADER, sizeof(CHALLENGE_HEADER));
         index += sizeof(CHALLENGE_HEADER);
 
-        memcpy(buffer + index, challenge, sizeof(challenge));
-        index += sizeof(challenge);
+        memcpy(buffer + index, challenge, c_challengeSize);
+        index += c_challengeSize;
 
         memcpy(buffer + index, &sessionId, sizeof(sessionId));
         index += sizeof(sessionId);
 
-        return buffer;
+        return S_OK;
     }
 
     static HRESULT FromVector(const BYTE* buffer, UINT32 bufferSize, _Out_ SessionChallenge* result)
@@ -72,7 +73,7 @@ struct SessionChallenge
             return E_INVALIDARG;
         }
 
-        SIZE_T expectedSize = sizeof(CHALLENGE_HEADER) + sizeof(result->challenge) + sizeof(result->sessionId);
+        SIZE_T expectedSize = sizeof(CHALLENGE_HEADER) + c_challengeSize + sizeof(result->sessionId);
         if (bufferSize < expectedSize)
         {
             return NTE_BAD_DATA;
@@ -88,8 +89,8 @@ struct SessionChallenge
         index += sizeof(CHALLENGE_HEADER);
 
         // Copy challenge data
-        memcpy(result->challenge, buffer + index, sizeof(result->challenge));
-        index += sizeof(result->challenge);
+        memcpy(result->challenge, buffer + index, c_challengeSize);
+        index += c_challengeSize;
 
         // Copy session ID
         memcpy(&result->sessionId, buffer + index, sizeof(result->sessionId));
@@ -101,30 +102,30 @@ struct SessionChallenge
 
 struct AttestationData
 {
-    static constexpr SIZE_T c_challengeSize = SessionChallenge::c_challengeSize;
     static constexpr SIZE_T c_symmetricSecretSize = 32;
-
+    static constexpr SIZE_T c_attestationDataVectorSize = sizeof(ATTESTATION_HEADER) + c_challengeSize + c_symmetricSecretSize;
     BYTE challenge[c_challengeSize];
     BYTE symmetricSecret[c_symmetricSecretSize];
 
-    BYTE* ToVector(UINT32* bufferSize)
+    HRESULT ToVector(_Out_writes_bytes_(c_attestationDataVectorSize) BYTE* buffer) const
     {
-        *bufferSize = sizeof(ATTESTATION_HEADER) + sizeof(challenge) + sizeof(symmetricSecret);
-        BYTE* buffer = (BYTE*)VengcAlloc(*bufferSize);
-        if (buffer == NULL) return NULL;
+        if (buffer == NULL)
+        {
+            return E_INVALIDARG;
+        }
 
         SIZE_T index = 0;
 
         memcpy(buffer + index, ATTESTATION_HEADER, sizeof(ATTESTATION_HEADER));
         index += sizeof(ATTESTATION_HEADER);
 
-        memcpy(buffer + index, challenge, sizeof(challenge));
-        index += sizeof(challenge);
+        memcpy(buffer + index, challenge, c_challengeSize);
+        index += c_challengeSize;
 
-        memcpy(buffer + index, symmetricSecret, sizeof(symmetricSecret));
-        index += sizeof(symmetricSecret);
+        memcpy(buffer + index, symmetricSecret, c_symmetricSecretSize);
+        index += c_symmetricSecretSize;
 
-        return buffer;
+        return S_OK;
     }
 
     static HRESULT FromVector(const BYTE* buffer, UINT32 bufferSize, _Out_ AttestationData* result)
@@ -134,7 +135,7 @@ struct AttestationData
             return E_INVALIDARG;
         }
 
-        SIZE_T expectedSize = sizeof(ATTESTATION_HEADER) + sizeof(result->challenge) + sizeof(result->symmetricSecret);
+        SIZE_T expectedSize = sizeof(ATTESTATION_HEADER) + c_challengeSize + c_symmetricSecretSize;
         if (bufferSize < expectedSize)
         {
             return NTE_BAD_DATA;
@@ -150,12 +151,12 @@ struct AttestationData
         index += sizeof(ATTESTATION_HEADER);
 
         // Copy challenge data
-        memcpy(result->challenge, buffer + index, sizeof(result->challenge));
-        index += sizeof(result->challenge);
+        memcpy(result->challenge, buffer + index, c_challengeSize);
+        index += c_challengeSize;
 
         // Copy symmetric secret
-        memcpy(result->symmetricSecret, buffer + index, sizeof(result->symmetricSecret));
-        index += sizeof(result->symmetricSecret);
+        memcpy(result->symmetricSecret, buffer + index, c_symmetricSecretSize);
+        index += c_symmetricSecretSize;
 
         return S_OK;
     }
@@ -294,8 +295,7 @@ GenerateAttestationReport(
     BYTE enclaveData[ENCLAVE_REPORT_DATA_LENGTH] = {0};
     SIZE_T copyLen = 0;
     UINT32 tempReportSize = 0;
-    BYTE* attestationVector = NULL;
-    UINT32 attestationVectorSize = 0;
+    BYTE attestationVector[Vtl1MutualAuth::AttestationData::c_attestationDataVectorSize];
     Vtl1MutualAuth::AttestationData attestationData {};
     Vtl1MutualAuth::SessionChallenge sessionChallenge {};
 
@@ -319,20 +319,23 @@ GenerateAttestationReport(
     // static_assert(sizeof(attestationData.symmetricSecret) == sessionKeySize, "Session key size mismatch");
     memcpy(attestationData.symmetricSecret, pSessionKeyBytes, sessionKeySize);
 
-    // Convert to vector for enclave data
-    attestationVector = attestationData.ToVector(&attestationVectorSize);
-    if (attestationVector == NULL)
+    veil::vtl1::vtl0_functions::debug_print("DEBUG: GenerateAttestationReport - Converting AttestationData to vector");
+    hr = attestationData.ToVector(attestationVector);
+    if (FAILED(hr))
     {
-        hr = E_OUTOFMEMORY;
+        veil::vtl1::vtl0_functions::debug_print("DEBUG: GenerateAttestationReport - AttestationData::ToVector failed");
         goto cleanup;
     }
+    veil::vtl1::vtl0_functions::debug_print("DEBUG: GenerateAttestationReport - AttestationData::ToVector succeeded");
 
     // Calculate copy length and prepare enclaveData buffer
-    copyLen = attestationVectorSize < ENCLAVE_REPORT_DATA_LENGTH ? attestationVectorSize : ENCLAVE_REPORT_DATA_LENGTH;
+    copyLen = Vtl1MutualAuth::AttestationData::c_attestationDataVectorSize < ENCLAVE_REPORT_DATA_LENGTH ? 
+              Vtl1MutualAuth::AttestationData::c_attestationDataVectorSize : ENCLAVE_REPORT_DATA_LENGTH;
     memcpy(enclaveData, attestationVector, copyLen);
 
     // Debug print: Display all computed sizes so far
-    veil::vtl1::vtl0_functions::debug_print("DEBUG: GenerateAttestationReport - Computed sizes: challengeSize=%u, sessionKeySize=%u, attestationVectorSize=%u", challengeSize, sessionKeySize, attestationVectorSize);
+    veil::vtl1::vtl0_functions::debug_print("DEBUG: GenerateAttestationReport - Computed sizes: challengeSize=%u, sessionKeySize=%u, attestationVectorSize=%u", 
+                                            challengeSize, sessionKeySize, (UINT32)Vtl1MutualAuth::AttestationData::c_attestationDataVectorSize);
 
     // Call Windows enclave attestation API to get size
     veil::vtl1::vtl0_functions::debug_print("DEBUG: GenerateAttestationReport - Calling EnclaveGetAttestationReport (size query)");
@@ -379,11 +382,6 @@ GenerateAttestationReport(
     if (pAttestationReport != NULL)
     {
         VengcSecureFree(pAttestationReport, attestationReportSize);
-    }
-
-    if (attestationVector != NULL)
-    {
-        VengcFree(attestationVector);
     }
 
     return hr;
@@ -612,7 +610,7 @@ BOOL CloseUserBoundKeyAuthContextHandle(
 
     // Cast to internal context to access internal data
     PUSER_BOUND_KEY_AUTH_CONTEXT_INTERNAL pInternalContext = (PUSER_BOUND_KEY_AUTH_CONTEXT_INTERNAL)handle;
-    
+
     // Free the internal decrypted auth context data if it exists
     if (pInternalContext->pDecryptedAuthContext != NULL && pInternalContext->decryptedSize > 0)
     {
