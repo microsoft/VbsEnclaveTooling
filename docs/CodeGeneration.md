@@ -65,9 +65,10 @@ Generated `hostApp` project artifacts:
 |-------------------|-------------------------------------------------------------|
 | `Abi\Abitypes.h` | Defines data structures for packaging function parameters for use with the VBS enclave codegen ABI. |
 | `Abi\Definitions.h` | Contains methods used to forward and return parameters to and from the vbs enclave codegen ABI. This is the glue code between the `hostApp` and the `enclave`.  |
-| `Abi\Exports.cpp` | Contains the generated functions that are exported by the enclave. These functions call into a sibling functions generated in `Abi\Definitions.h`. |
+| `Abi\Exports.<Edl-Filename>.cpp` | Contains the generated functions that are exported by the enclave. These functions call into a sibling functions generated in `Abi\Definitions.h`. |
 | `Abi\FlatbufferTypes.h` | Defines a `Flatbuffer` type for each type defined in `Abi\AbiType.h` and `Implementation\Types.h`.  |
 | `Abi\FlatbufferTypes.fbs` | Defines a `Flatbuffer` schema that generates the types found in `Abi\FlatbufferTypes.h`.  |
+| `Abi\LinkerPragmas.<Edl-Filename>.cpp` | Contains a `#pragma comment(linker, /include)` for each generated function in `Abi\Exports.<Edl-Filename>.cpp`. This ensures that functions generated in a developer’s static library are exported from the enclave dll.  |
 | `Abi\TypeMetadata.h` | Contains data needed to perform the conversion between `Flatbuffer types` and the types found in `Abi\AbiType.h` and `Implementation\Types.h`. |
 
 ### Enclave files
