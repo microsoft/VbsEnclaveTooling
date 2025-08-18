@@ -14,5 +14,3 @@ namespace veil::vtl1::logger::implementation::callouts
         THROW_IF_FAILED(veil_abi::Untrusted::Stubs::add_log({log.data()}, {logFilePath.data()}));
     }
 }
-
-
