@@ -56,5 +56,27 @@ enclave
             keyCredentialCacheConfig keyCredentialCacheConfiguration,
             [out] vector<uint8_t> securedEncryptionKeyBytes
             );
+
+        HRESULT MyEnclaveLoadUserBoundKeyAndEncryptData(
+            wstring helloKeyName,
+            wstring pinMessage,
+            uintptr_t windowId,
+            keyCredentialCacheConfig keyCredentialCacheConfiguration,
+            vector<uint8_t> secured_encryption_key_bytes,
+            wstring inputData,
+            [out] vector<uint8_t> encryptedInputBytes,
+            [out] vector<uint8_t> tag
+            );
+
+        HRESULT MyEnclaveLoadUserBoundKeyAndDecryptData(
+            wstring helloKeyName,
+            wstring pinMessage,
+            uintptr_t windowId,
+            keyCredentialCacheConfig keyCredentialCacheConfiguration,
+            vector<uint8_t> secured_encryption_key_bytes,
+            vector<uint8_t> encryptedInputBytes,
+            vector<uint8_t> tag,
+            [out] wstring decryptedData
+            );
     };
 };

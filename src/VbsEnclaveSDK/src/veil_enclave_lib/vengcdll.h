@@ -73,7 +73,7 @@ typedef enum _USER_BOUND_KEY_AUTH_CONTEXT_PROPERTIES {
 
 // Called as part of the flow when creating a new user bound key.
 // Decrypts the auth context blob provided by NGC and returns a handle to the decrypted blob
-HRESULT GetUserBoundKeyCreationAuthContext(
+HRESULT GetUserBoundKeyAuthContext(
     _In_ UINT_PTR sessionKeyPtr,
     _In_reads_bytes_(authContextBlobSize) const void* authContextBlob, // auth context generated as part of RequestCreateAsync
     _In_ UINT32 authContextBlobSize,

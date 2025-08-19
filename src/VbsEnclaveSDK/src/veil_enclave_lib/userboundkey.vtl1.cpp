@@ -168,10 +168,48 @@ class unique_auth_context_handle
     USER_BOUND_KEY_AUTH_CONTEXT_HANDLE m_handle;
 };
 
-std::vector<uint8_t> GetEphemeralPublicKeyBytesFromBoundKeyBytes(wil::secure_vector<uint8_t> /*boundKeyBytes*/)
+std::vector<uint8_t> GetEphemeralPublicKeyBytesFromBoundKeyBytes(wil::secure_vector<uint8_t> boundKeyBytes)
 {
-    // TODO: implemententation
-    return {};
+    // The bound key structure is created in CreateBoundKeyStructure() in vengcdll.cpp:
+    // [enclave public key blob size (4 bytes)]
+    // [enclave public key blob]  
+    // [nonce (12 bytes)]
+    // [encrypted user key size (4 bytes)]
+    // [encrypted user key data]
+    // [authentication tag (16 bytes)]
+    
+    // We need to extract the enclave public key blob (the "ephemeral public key")
+
+    if (boundKeyBytes.size() < sizeof(uint32_t))
+    {
+        // Not enough data for even the size field
+        throw std::invalid_argument("Bound key bytes too small - missing size field");
+    }
+
+    const uint8_t* pCurrentPos = boundKeyBytes.data();
+    
+    // Read the enclave public key blob size (first 4 bytes)
+    uint32_t enclavePublicKeyBlobSize = *reinterpret_cast<const uint32_t*>(pCurrentPos);
+    pCurrentPos += sizeof(uint32_t);
+    
+    // Validate that we have enough data for the full public key blob
+    size_t remainingBytes = boundKeyBytes.size() - sizeof(uint32_t);
+    if (remainingBytes < enclavePublicKeyBlobSize)
+    {
+        // Not enough data for the public key blob
+        throw std::runtime_error("Bound key bytes corrupted - insufficient data for public key blob");
+    }
+    
+    // Additional validation: check for unreasonably large public key size
+    if (enclavePublicKeyBlobSize > remainingBytes || enclavePublicKeyBlobSize == 0)
+    {
+        throw std::runtime_error("Bound key bytes corrupted - invalid public key blob size");
+    }
+    
+    // Extract the enclave public key blob
+    std::vector<uint8_t> ephemeralPublicKey(pCurrentPos, pCurrentPos + enclavePublicKeyBlobSize);
+    
+    return ephemeralPublicKey;
 }
 
 wil::secure_vector<uint8_t> enclave_create_user_bound_key(
@@ -205,7 +243,7 @@ wil::secure_vector<uint8_t> enclave_create_user_bound_key(
 
     // AUTH CONTEXT
     unique_auth_context_handle authContext;
-    THROW_IF_FAILED(GetUserBoundKeyCreationAuthContext(
+    THROW_IF_FAILED(GetUserBoundKeyAuthContext(
         authContextBlobAndSessionKeyPtr.sessionKeyPtr,
         authContextBlob.data(),
         static_cast<UINT32>(authContextBlob.size()),
@@ -254,7 +292,13 @@ std::vector<uint8_t> enclave_load_user_bound_key(
 
     // AUTH CONTEXT
     unique_auth_context_handle authContext;
+    /*
     THROW_IF_FAILED(GetUserBoundKeyLoadingAuthContext(
+        sessionKeyPtr,
+        authContextBlob.data(),
+        static_cast<UINT32>(authContextBlob.size()),
+        authContext.put())); // OS CALL */
+    THROW_IF_FAILED(GetUserBoundKeyAuthContext(
         sessionKeyPtr,
         authContextBlob.data(),
         static_cast<UINT32>(authContextBlob.size()),

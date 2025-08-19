@@ -624,7 +624,7 @@ BOOL CloseUserBoundKeyAuthContextHandle(
 }
 
 //
-// Private helper functions for GetUserBoundKeyCreationAuthContext
+// Private helper functions for GetUserBoundKeyAuthContext
 //
 
 //
@@ -778,7 +778,7 @@ DecryptAuthContextBlob(
 
 // Called as part of the flow when creating a new user bound key.
 // Decrypts the auth context blob provided by NGC and returns a handle to the decrypted blob
-HRESULT GetUserBoundKeyCreationAuthContext(
+HRESULT GetUserBoundKeyAuthContext(
     _In_ UINT_PTR sessionKeyPtr,
     _In_reads_bytes_(authContextBlobSize) const void* authContextBlob,
     _In_ UINT32 authContextBlobSize,
@@ -844,11 +844,11 @@ HRESULT GetUserBoundKeyCreationAuthContext(
     return hr;
 }
 
-// Called as part of the flow when loading an existing user bound key.
-// Decrypts the auth context blob provided by NGC, verifies that the keyname matches the one in the auth context blob.
+// Called as part of the flow when creating a new user bound key.
+// Decrypts the auth context blob provided by NGC and returns a handle to the decrypted blob
 HRESULT GetUserBoundKeyLoadingAuthContext(
     _In_ UINT_PTR sessionKeyPtr,
-    _In_reads_bytes_(authContextBlobSize) const void* authContextBlob, 
+    _In_reads_bytes_(authContextBlobSize) const void* authContextBlob,
     _In_ UINT32 authContextBlobSize,
     _Out_ USER_BOUND_KEY_AUTH_CONTEXT_HANDLE* authContextHandle
 )
