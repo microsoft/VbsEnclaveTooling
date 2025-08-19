@@ -140,13 +140,13 @@ window you can confirm the exports are present by using the `dumpbin /exports <p
 
 > [!Tip]
 > - Include the `LinkerPragmas.<edl-file-name>.cpp` file in your enclave dll build via a `.targets` file that adds it 
-before the `ClCompile` target runs.
+before the `AddGeneratedFilesToBuild` target runs.
 > - Doing it this way will ensure that the generated file is always included in the build without you having to 
 explicitly add it to your dll project.
 
 Here is an example target that you can add to a `.targets` file that is consumed by your enclave dll project:
 ```xml
-<Target Name="AddVbsEnclaveCodegenExportToBuild" BeforeTargets="ClCompile">
+<Target Name="AddVbsEnclaveCodegenExportToBuild" BeforeTargets="AddGeneratedFilesToBuild">
     <ItemGroup>
         <ClCompile Include="Some\Path\To\Your\LinkerPragmas.<name-of-your-.edl-file>.cpp">
             <!-- Example incase you use precompiled headers. This file does not contain any #include statements. -->
