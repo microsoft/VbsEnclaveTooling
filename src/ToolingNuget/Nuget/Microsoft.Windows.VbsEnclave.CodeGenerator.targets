@@ -10,7 +10,6 @@
         <VbsEnclaveExeFilePath>$(VbsEnclaveCodegenPackageDir)bin\edlcodegen.exe</VbsEnclaveExeFilePath>
         <VbsEnclavePackageEnclaveAbiPath>$(VbsEnclaveCodegenPackageDir)src\VbsEnclaveABI</VbsEnclavePackageEnclaveAbiPath>
         <VbsEnclaveDeveloperEdlFileName>$([System.IO.Path]::GetFileName('$(VbsEnclaveEdlPath)'))</VbsEnclaveDeveloperEdlFileName>
-        <VbsEnclaveGeneratedFilesDir>$(ProjectDir)Generated Files</VbsEnclaveGeneratedFilesDir>
         <VcpkgSupportDir>$(VbsEnclaveCodegenPackageDir)vcpkg</VcpkgSupportDir>
         <FlatbuffersCompiler>$(VcpkgSupportDir)\tools\flatbuffers\flatc.exe</FlatbuffersCompiler>
         <VcpkgIncludesDir>$(VcpkgSupportDir)\include</VcpkgIncludesDir>
@@ -24,12 +23,15 @@
     <!-- Only run the VbsEnclaveCodeGeneration target if the developer passed in a value for <VbsEnclaveEdlPath> -->
     <Target
         Name="VbsEnclaveCodeGeneration"
-        BeforeTargets="ClCompile;ClInclude"
+        BeforeTargets="ClCompile;ClInclude;AddGeneratedFilesToBuild"
         Condition="'$(VbsEnclaveEdlPath)' != ''">
         <Message Text="Generating enclave code using '$(VbsEnclaveCodeGenLanguage)'" Importance="high" />
         <!-- Ensure that the Edl file exists -->
         <Error Condition="!Exists('$(VbsEnclaveEdlPath)')" Text="The specified .edl file '$(VbsEnclaveEdlPath)' does not exist. Make sure the path to the .edl file is valid and inside the 'VbsEnclaveEdlPath' attribute in the packages .targets file." />
         <Error Condition="!Exists('$(VbsEnclaveExeFilePath)')" Text="Couldn't find tooling executable file '$(VbsEnclaveExeFilePath)'. Make sure the path to the executable file is valid and inside the 'VbsEnclaveExeFilePath' attribute in the packages .targets file." />
+
+        <!-- Remove old generated files  -->
+        <RemoveDir Directories="$(VbsEnclaveGeneratedFilesDir)\VbsEnclave" />
         
         <!-- Generate the codegen files using the vbsenclavetooling-->
         <PropertyGroup>

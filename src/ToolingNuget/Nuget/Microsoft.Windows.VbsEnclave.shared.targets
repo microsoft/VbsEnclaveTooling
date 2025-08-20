@@ -2,7 +2,7 @@
     <PropertyGroup>
         <VbsEnclavePackageDir>$([System.IO.Path]::GetFullPath($(MSBuildThisFileDirectory)))..\..\</VbsEnclavePackageDir>
         <VbsEnclaveAbiCppSupportLib>$(VbsEnclavePackageDir)lib\native\$(Platform)\veil_enclave_cpp_support_$(Platform)_$(Configuration)_lib.lib</VbsEnclaveAbiCppSupportLib>
-        <VbsEnclaveGeneratedFilesDir>$(ProjectDir)Generated Files</VbsEnclaveGeneratedFilesDir>
+        <VbsEnclaveGeneratedFilesDir Condition="$(VbsEnclaveGeneratedFilesDir) == ''">$(ProjectDir)Generated Files</VbsEnclaveGeneratedFilesDir>
     </PropertyGroup>
 
     <ItemDefinitionGroup>
