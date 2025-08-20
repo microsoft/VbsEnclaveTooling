@@ -10,7 +10,7 @@ variables:
 - name: CodeGenMinorVersion
   value: "1"
 - name: CodeGenPatchVersion
-  value: "1"
+  value: "2"
 
 
 # SDK versioning info
