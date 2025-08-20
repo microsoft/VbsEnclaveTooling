@@ -10,7 +10,6 @@
         <VbsEnclaveExeFilePath>$(VbsEnclaveCodegenPackageDir)bin\edlcodegen.exe</VbsEnclaveExeFilePath>
         <VbsEnclavePackageEnclaveAbiPath>$(VbsEnclaveCodegenPackageDir)src\VbsEnclaveABI</VbsEnclavePackageEnclaveAbiPath>
         <VbsEnclaveDeveloperEdlFileName>$([System.IO.Path]::GetFileName('$(VbsEnclaveEdlPath)'))</VbsEnclaveDeveloperEdlFileName>
-        <VbsEnclaveGeneratedFilesDir>$(ProjectDir)Generated Files</VbsEnclaveGeneratedFilesDir>
         <VcpkgSupportDir>$(VbsEnclaveCodegenPackageDir)vcpkg</VcpkgSupportDir>
         <FlatbuffersCompiler>$(VcpkgSupportDir)\tools\flatbuffers\flatc.exe</FlatbuffersCompiler>
         <VcpkgIncludesDir>$(VcpkgSupportDir)\include</VcpkgIncludesDir>
@@ -24,7 +23,7 @@
     <!-- Only run the VbsEnclaveCodeGeneration target if the developer passed in a value for <VbsEnclaveEdlPath> -->
     <Target
         Name="VbsEnclaveCodeGeneration"
-        BeforeTargets="ClCompile;ClInclude"
+        BeforeTargets="ClCompile;ClInclude;AddGeneratedFilesToBuild"
         Condition="'$(VbsEnclaveEdlPath)' != ''">
         <Message Text="Generating enclave code using '$(VbsEnclaveCodeGenLanguage)'" Importance="high" />
         <!-- Ensure that the Edl file exists -->
