@@ -15,17 +15,13 @@
 
 #include <VbsEnclave\Enclave\Trusted.h>
 
-BCRYPT_KEY_HANDLE g_encryptionKeyHandle;
+// Store the actual key object, not just the handle
+wil::unique_bcrypt_key g_encryptionKey;
 
 bool IsUBKLoaded()
 {
-    // Check if the key handle is valid
-    if (g_encryptionKeyHandle == nullptr)
-    {
-        return false;
-    }
-
-    return true;
+    // Check if the key object is valid
+    return static_cast<bool>(g_encryptionKey);
 }
 
 namespace RunTaskpoolExamples
@@ -327,20 +323,21 @@ HRESULT VbsEnclave::Trusted::Implementation::MyEnclaveCreateUserBoundKey(
             mutableKeyCredentialCacheConfig,
             pinMessage,
             windowId,
-            ENCLAVE_SEALING_IDENTITY_POLICY::ENCLAVE_IDENTITY_POLICY_SEAL_EXACT_CODE);
+            ENCLAVE_SEALING_IDENTITY_POLICY::ENCLAVE_IDENTITY_POLICY_SEAL_SAME_IMAGE);
 
         debug_print(L"enclave_create_user_bound_key returned");
 
+        // Store the user-bound key bytes directly - do NOT try to create a symmetric key from them
         securedEncryptionKeyBytes.assign(keyBytes.begin(), keyBytes.end());
+        
+        // Do NOT try to create a symmetric key here - user-bound keys must be loaded properly
+        // g_encryptionKey will be set in the load functions
     }
     catch (const std::exception& e)
     {
         debug_print(L"Exception caught in MyEnclaveCreateUserBoundKey: %hs", e.what());
         return E_FAIL;
     }
-
-    auto key = veil::vtl1::crypto::create_symmetric_key(securedEncryptionKeyBytes);
-    g_encryptionKeyHandle = key.get();
 
     return S_OK;
 }
@@ -378,6 +375,7 @@ HRESULT VbsEnclave::Trusted::Implementation::MyEnclaveLoadUserBoundKeyAndEncrypt
             debug_print(L"Created mutableKeyCredentialCacheConfig");
 
             // Load the user-bound key from secured encryption key bytes
+            // Note: securedEncryptionKeyBytes contains the user-bound key data, not raw key material
             auto loadedKeyBytes = veil::vtl1::userboundkey::enclave_load_user_bound_key(
                 helloKeyName,
                 mutableKeyCredentialCacheConfig,
@@ -387,19 +385,19 @@ HRESULT VbsEnclave::Trusted::Implementation::MyEnclaveLoadUserBoundKeyAndEncrypt
 
             debug_print(L"enclave_load_user_bound_key returned, key size: %d", loadedKeyBytes.size());
 
-            // Create symmetric key for encryption and store the handle
-            auto encryptionKey = veil::vtl1::crypto::create_symmetric_key(loadedKeyBytes);
-            g_encryptionKeyHandle = encryptionKey.get();
+            // NOW we can create a symmetric key from the loaded raw key material
+            g_encryptionKey = veil::vtl1::crypto::create_symmetric_key(loadedKeyBytes);
+            debug_print(L"Created symmetric key from loaded user-bound key material");
         }
         else
         {
-            debug_print(L"UBK already loaded, using cached key handle");
+            debug_print(L"UBK already loaded, using cached key");
         }
 
-        // Use the global key handle for encryption
+        // Use the global key for encryption
         debug_print(L"Encrypting input data");
         auto [encryptedText, encryptionTag] = veil::vtl1::crypto::encrypt(
-            g_encryptionKeyHandle, 
+            g_encryptionKey.get(), 
             veil::vtl1::as_data_span(inputData.c_str()), 
             veil::vtl1::crypto::zero_nonce);
 
@@ -450,8 +448,10 @@ HRESULT VbsEnclave::Trusted::Implementation::MyEnclaveLoadUserBoundKeyAndDecrypt
             mutableKeyCredentialCacheConfig.cacheCallCount = keyCredentialCacheConfiguration.cacheUsageCount;
 
             debug_print(L"Created mutableKeyCredentialCacheConfig");
+            debug_print(L"securedEncryptionKeyBytes size: %d", securedEncryptionKeyBytes.size());
 
             // Load the user-bound key from secured encryption key bytes
+            // Note: securedEncryptionKeyBytes contains the user-bound key data, not raw key material
             auto loadedKeyBytes = veil::vtl1::userboundkey::enclave_load_user_bound_key(
                 helloKeyName,
                 mutableKeyCredentialCacheConfig,
@@ -461,20 +461,20 @@ HRESULT VbsEnclave::Trusted::Implementation::MyEnclaveLoadUserBoundKeyAndDecrypt
 
             debug_print(L"enclave_load_user_bound_key returned, key size: %d", loadedKeyBytes.size());
 
-            // Create symmetric key for decryption and store the handle
-            auto encryptionKey = veil::vtl1::crypto::create_symmetric_key(loadedKeyBytes);
-            g_encryptionKeyHandle = encryptionKey.get();
+            // NOW we can create a symmetric key from the loaded raw key material
+            g_encryptionKey = veil::vtl1::crypto::create_symmetric_key(loadedKeyBytes);
+            debug_print(L"Created symmetric key from loaded user-bound key material");
         }
         else
         {
-            debug_print(L"UBK already loaded, using cached key handle");
+            debug_print(L"UBK already loaded, using cached key");
         }
 
-        // Use the global key handle for decryption
+        // Use the global key for decryption
         debug_print(L"Decrypting input data, encrypted size: %d, tag size: %d", 
                    encryptedInputBytes.size(), tag.size());
         auto decryptedBytes = veil::vtl1::crypto::decrypt(
-            g_encryptionKeyHandle, 
+            g_encryptionKey.get(), 
             encryptedInputBytes, 
             veil::vtl1::crypto::zero_nonce, 
             tag);

@@ -177,7 +177,7 @@ std::vector<uint8_t> GetEphemeralPublicKeyBytesFromBoundKeyBytes(wil::secure_vec
     // [encrypted user key size (4 bytes)]
     // [encrypted user key data]
     // [authentication tag (16 bytes)]
-    
+
     // We need to extract the enclave public key blob (the "ephemeral public key")
 
     if (boundKeyBytes.size() < sizeof(uint32_t))
@@ -187,11 +187,11 @@ std::vector<uint8_t> GetEphemeralPublicKeyBytesFromBoundKeyBytes(wil::secure_vec
     }
 
     const uint8_t* pCurrentPos = boundKeyBytes.data();
-    
+
     // Read the enclave public key blob size (first 4 bytes)
     uint32_t enclavePublicKeyBlobSize = *reinterpret_cast<const uint32_t*>(pCurrentPos);
     pCurrentPos += sizeof(uint32_t);
-    
+
     // Validate that we have enough data for the full public key blob
     size_t remainingBytes = boundKeyBytes.size() - sizeof(uint32_t);
     if (remainingBytes < enclavePublicKeyBlobSize)
@@ -199,16 +199,16 @@ std::vector<uint8_t> GetEphemeralPublicKeyBytesFromBoundKeyBytes(wil::secure_vec
         // Not enough data for the public key blob
         throw std::runtime_error("Bound key bytes corrupted - insufficient data for public key blob");
     }
-    
+
     // Additional validation: check for unreasonably large public key size
     if (enclavePublicKeyBlobSize > remainingBytes || enclavePublicKeyBlobSize == 0)
     {
         throw std::runtime_error("Bound key bytes corrupted - invalid public key blob size");
     }
-    
+
     // Extract the enclave public key blob
     std::vector<uint8_t> ephemeralPublicKey(pCurrentPos, pCurrentPos + enclavePublicKeyBlobSize);
-    
+
     return ephemeralPublicKey;
 }
 
@@ -278,54 +278,88 @@ std::vector<uint8_t> enclave_load_user_bound_key(
     uintptr_t windowId,
     std::vector<uint8_t>& sealedBoundKeyBytes)
 {
-    // UNSEAL
-    auto boundKeyBytesMaterial = veil::vtl1::crypto::unseal_data(sealedBoundKeyBytes);
-    auto& boundKeyBytes = boundKeyBytesMaterial.first;
-    std::vector<uint8_t> ephemeralPublicKeyBytes = GetEphemeralPublicKeyBytesFromBoundKeyBytes(boundKeyBytes);
+    veil::vtl1::vtl0_functions::debug_print(L"DEBUG: enclave_load_user_bound_key - Function entered");
 
-    // SESSION
-    auto secretAndAuthorizationContextAndSessionKeyPtr = veil_abi::VTL0_Callbacks::userboundkey_establish_session_for_load_callback(keyName, ephemeralPublicKeyBytes, message, windowId);
+    try
+    {
+        // UNSEAL
+        veil::vtl1::vtl0_functions::debug_print(L"DEBUG: enclave_load_user_bound_key - About to call unseal_data");
+        veil::vtl1::vtl0_functions::debug_print((L"DEBUG: enclave_load_user_bound_key - sealedBoundKeyBytes size: " + std::to_wstring(sealedBoundKeyBytes.size())).c_str());
 
-    auto& secret = secretAndAuthorizationContextAndSessionKeyPtr.secret;
-    auto& authContextBlob = secretAndAuthorizationContextAndSessionKeyPtr.authorizationContext;
-    auto sessionKeyPtr = secretAndAuthorizationContextAndSessionKeyPtr.sessionKeyPtr;
+        auto boundKeyBytesMaterial = veil::vtl1::crypto::unseal_data(sealedBoundKeyBytes);
 
-    // AUTH CONTEXT
-    unique_auth_context_handle authContext;
-    /*
-    THROW_IF_FAILED(GetUserBoundKeyLoadingAuthContext(
-        sessionKeyPtr,
-        authContextBlob.data(),
-        static_cast<UINT32>(authContextBlob.size()),
-        authContext.put())); // OS CALL */
-    THROW_IF_FAILED(GetUserBoundKeyAuthContext(
-        sessionKeyPtr,
-        authContextBlob.data(),
-        static_cast<UINT32>(authContextBlob.size()),
-        authContext.put())); // OS CALL
+        veil::vtl1::vtl0_functions::debug_print(L"DEBUG: enclave_load_user_bound_key - unseal_data completed successfully");
 
-    // Validate
-    USER_BOUND_KEY_AUTH_CONTEXT_PROPERTY propCacheConfig;
-    propCacheConfig.name = UserBoundKeyAuthContextPropertyCacheConfig;
-    propCacheConfig.size = sizeof(cacheConfig);
-    propCacheConfig.value = &cacheConfig;
-    THROW_IF_FAILED(ValidateUserBoundKeyAuthContext(authContext.get(), 1, &propCacheConfig)); // OS CALL
+        auto& boundKeyBytes = boundKeyBytesMaterial.first;
+        veil::vtl1::vtl0_functions::debug_print((L"DEBUG: enclave_load_user_bound_key - boundKeyBytes size: " + std::to_wstring(boundKeyBytes.size())).c_str());
 
-    // DECRYPT USERKEY
-    UINT32 cbUserkeyBytes = 0;
-    void* pUserkeyBytes = nullptr;
-    THROW_IF_FAILED(UnprotectUserBoundKey(
-        authContext.get(),
-        secret.data(),
-        static_cast<UINT32>(secret.size()),
-        boundKeyBytes.data(),
-        static_cast<UINT32>(boundKeyBytes.size()),
-        &pUserkeyBytes,
-        &cbUserkeyBytes)); // OS CALL
+        std::vector<uint8_t> ephemeralPublicKeyBytes = GetEphemeralPublicKeyBytesFromBoundKeyBytes(boundKeyBytes);
+        veil::vtl1::vtl0_functions::debug_print((L"DEBUG: enclave_load_user_bound_key - ephemeralPublicKeyBytes size: " + std::to_wstring(ephemeralPublicKeyBytes.size())).c_str());
 
-    std::vector<uint8_t> userkeyBytes(static_cast<uint8_t*>(pUserkeyBytes), static_cast<uint8_t*>(pUserkeyBytes) + cbUserkeyBytes);
-    HeapFree(GetProcessHeap(), 0, pUserkeyBytes);
+        // SESSION
+        veil::vtl1::vtl0_functions::debug_print(L"DEBUG: enclave_load_user_bound_key - About to call establish_session_for_load_callback");
+        auto secretAndAuthorizationContextAndSessionKeyPtr = veil_abi::VTL0_Callbacks::userboundkey_establish_session_for_load_callback(keyName, ephemeralPublicKeyBytes, message, windowId);
+        veil::vtl1::vtl0_functions::debug_print(L"DEBUG: enclave_load_user_bound_key - establish_session_for_load_callback completed");
 
-    return userkeyBytes;
+        auto& secret = secretAndAuthorizationContextAndSessionKeyPtr.secret;
+        auto& authContextBlob = secretAndAuthorizationContextAndSessionKeyPtr.authorizationContext;
+        auto sessionKeyPtr = secretAndAuthorizationContextAndSessionKeyPtr.sessionKeyPtr;
+
+        veil::vtl1::vtl0_functions::debug_print((L"DEBUG: enclave_load_user_bound_key - secret size: " + std::to_wstring(secret.size())).c_str());
+        veil::vtl1::vtl0_functions::debug_print((L"DEBUG: enclave_load_user_bound_key - authContextBlob size: " + std::to_wstring(authContextBlob.size())).c_str());
+        veil::vtl1::vtl0_functions::debug_print((L"DEBUG: enclave_load_user_bound_key - sessionKeyPtr: 0x" + std::to_wstring(sessionKeyPtr)).c_str());
+
+        // AUTH CONTEXT
+        veil::vtl1::vtl0_functions::debug_print(L"DEBUG: enclave_load_user_bound_key - About to call GetUserBoundKeyAuthContext");
+        unique_auth_context_handle authContext;
+        THROW_IF_FAILED(GetUserBoundKeyAuthContext(
+            sessionKeyPtr,
+            authContextBlob.data(),
+            static_cast<UINT32>(authContextBlob.size()),
+            authContext.put())); // OS CALL
+        veil::vtl1::vtl0_functions::debug_print(L"DEBUG: enclave_load_user_bound_key - GetUserBoundKeyAuthContext completed");
+
+        // Validate
+        veil::vtl1::vtl0_functions::debug_print(L"DEBUG: enclave_load_user_bound_key - About to validate auth context");
+        USER_BOUND_KEY_AUTH_CONTEXT_PROPERTY propCacheConfig;
+        propCacheConfig.name = UserBoundKeyAuthContextPropertyCacheConfig;
+        propCacheConfig.size = sizeof(cacheConfig);
+        propCacheConfig.value = &cacheConfig;
+        THROW_IF_FAILED(ValidateUserBoundKeyAuthContext(authContext.get(), 1, &propCacheConfig)); // OS CALL
+        veil::vtl1::vtl0_functions::debug_print(L"DEBUG: enclave_load_user_bound_key - Auth context validation completed");
+
+        // DECRYPT USERKEY
+        veil::vtl1::vtl0_functions::debug_print(L"DEBUG: enclave_load_user_bound_key - About to call UnprotectUserBoundKey");
+        UINT32 cbUserkeyBytes = 0;
+        void* pUserkeyBytes = nullptr;
+        THROW_IF_FAILED(UnprotectUserBoundKey(
+            authContext.get(),
+            secret.data(),
+            static_cast<UINT32>(secret.size()),
+            boundKeyBytes.data(),
+            static_cast<UINT32>(boundKeyBytes.size()),
+            &pUserkeyBytes,
+            &cbUserkeyBytes)); // OS CALL
+        veil::vtl1::vtl0_functions::debug_print(L"DEBUG: enclave_load_user_bound_key - UnprotectUserBoundKey completed");
+
+        std::vector<uint8_t> userkeyBytes(static_cast<uint8_t*>(pUserkeyBytes), static_cast<uint8_t*>(pUserkeyBytes) + cbUserkeyBytes);
+        HeapFree(GetProcessHeap(), 0, pUserkeyBytes);
+
+        veil::vtl1::vtl0_functions::debug_print(L"DEBUG: enclave_load_user_bound_key - Function completed successfully");
+        return userkeyBytes;
+    }
+    catch (const std::exception& e)
+    {
+        // Convert exception message to wide string for debug printing
+        std::string error_msg = e.what();
+        std::wstring werror_msg(error_msg.begin(), error_msg.end());
+        veil::vtl1::vtl0_functions::debug_print((L"ERROR: enclave_load_user_bound_key - Exception caught: " + werror_msg).c_str());
+        throw; // Re-throw the exception
+    }
+    catch (...)
+    {
+        veil::vtl1::vtl0_functions::debug_print(L"ERROR: enclave_load_user_bound_key - Unknown exception caught");
+        throw; // Re-throw the exception
+    }
 }
 }

@@ -1247,11 +1247,6 @@ ComputeKEKFromSharedSecret(
         BCryptDestroyKey(hDerivedKey);
     }
 
-    if (pEnclavePublicKeyBlob != NULL)
-    {
-        VengcFree(pEnclavePublicKeyBlob);
-    }
-
     return hr;
 }
 
@@ -1515,11 +1510,6 @@ HRESULT ProtectUserBoundKey(
         ecdhSecret = NULL;
     }
 
-    if (helloPublicKeyHandle != NULL)
-    {
-        BCryptDestroyKey(helloPublicKeyHandle);
-    }
-
     //
     // Step 4: Encrypt the user key using the KEK
     //
@@ -1573,9 +1563,154 @@ HRESULT ProtectUserBoundKey(
     return hr;
 }
 
+//
+// Private helper functions for UnprotectUserBoundKey
+//
+
+//
+// Structure to hold parsed bound key components
+//
+typedef struct _PARSED_BOUND_KEY_COMPONENTS {
+    PUCHAR pEnclavePublicKeyBlob;
+    UINT32 enclavePublicKeyBlobSize;
+    BYTE nonce[AES_GCM_NONCE_SIZE];
+    const BYTE* pEncryptedUserKey;
+    UINT32 encryptedUserKeySize;
+    const BYTE* pAuthTag;
+} PARSED_BOUND_KEY_COMPONENTS, *PPARSED_BOUND_KEY_COMPONENTS;
+
+//
+// Parse the bound key structure and extract all components
+//
+static HRESULT
+ParseBoundKeyStructure(
+    _In_reads_bytes_(boundKeySize) const void* boundKey,
+    _In_ UINT32 boundKeySize,
+    _Out_ PPARSED_BOUND_KEY_COMPONENTS pComponents
+)
+{
+    HRESULT hr = S_OK;
+    const BYTE* pCurrentPos = NULL;
+    UINT32 minBoundKeySize = 0;
+    UINT32 enclavePublicKeyBlobSize = 0;
+
+    // Initialize output structure
+    ZeroMemory(pComponents, sizeof(PARSED_BOUND_KEY_COMPONENTS));
+
+    // Validate minimum bound key size
+    minBoundKeySize = sizeof(UINT32) + sizeof(UINT32) + AES_GCM_NONCE_SIZE + AES_GCM_TAG_SIZE;
+    if (boundKeySize < minBoundKeySize)
+    {
+        veil::vtl1::vtl0_functions::debug_print("DEBUG: ParseBoundKeyStructure - Bound key too small");
+        hr = NTE_BAD_DATA;
+        goto cleanup;
+    }
+
+    pCurrentPos = (const BYTE*)boundKey;
+
+    // Read enclave public key blob size
+    enclavePublicKeyBlobSize = *((const UINT32*)pCurrentPos);
+    pCurrentPos += sizeof(UINT32);
+
+    // Validate enclave public key blob size
+    if (enclavePublicKeyBlobSize == 0 || enclavePublicKeyBlobSize > NGC_PUBLIC_KEY_MAX_SIZE)
+    {
+        veil::vtl1::vtl0_functions::debug_print("DEBUG: ParseBoundKeyStructure - Invalid enclave public key blob size: %u", enclavePublicKeyBlobSize);
+        hr = NTE_BAD_DATA;
+        goto cleanup;
+    }
+
+    // Verify we have enough data for the public key blob
+    if ((pCurrentPos - (const BYTE*)boundKey) + enclavePublicKeyBlobSize > boundKeySize)
+    {
+        veil::vtl1::vtl0_functions::debug_print("DEBUG: ParseBoundKeyStructure - Insufficient data for enclave public key blob");
+        hr = NTE_BAD_DATA;
+        goto cleanup;
+    }
+
+    // Extract and allocate enclave public key blob
+    pComponents->pEnclavePublicKeyBlob = (PUCHAR)VengcAlloc(enclavePublicKeyBlobSize);
+    if (pComponents->pEnclavePublicKeyBlob == NULL)
+    {
+        hr = E_OUTOFMEMORY;
+        goto cleanup;
+    }
+    memcpy(pComponents->pEnclavePublicKeyBlob, pCurrentPos, enclavePublicKeyBlobSize);
+    pComponents->enclavePublicKeyBlobSize = enclavePublicKeyBlobSize;
+    pCurrentPos += enclavePublicKeyBlobSize;
+
+    // Extract nonce
+    if ((pCurrentPos - (const BYTE*)boundKey) + AES_GCM_NONCE_SIZE > boundKeySize)
+    {
+        veil::vtl1::vtl0_functions::debug_print("DEBUG: ParseBoundKeyStructure - Insufficient data for nonce");
+        hr = NTE_BAD_DATA;
+        goto cleanup;
+    }
+    memcpy(pComponents->nonce, pCurrentPos, AES_GCM_NONCE_SIZE);
+    pCurrentPos += AES_GCM_NONCE_SIZE;
+
+    // Read encrypted user key size
+    if ((pCurrentPos - (const BYTE*)boundKey) + sizeof(UINT32) > boundKeySize)
+    {
+        veil::vtl1::vtl0_functions::debug_print("DEBUG: ParseBoundKeyStructure - Insufficient data for encrypted user key size");
+        hr = NTE_BAD_DATA;
+        goto cleanup;
+    }
+    pComponents->encryptedUserKeySize = *((const UINT32*)pCurrentPos);
+    pCurrentPos += sizeof(UINT32);
+
+    // Validate encrypted user key size
+    if (pComponents->encryptedUserKeySize == 0 || pComponents->encryptedUserKeySize > 1024) // Reasonable upper limit
+    {
+        veil::vtl1::vtl0_functions::debug_print("DEBUG: ParseBoundKeyStructure - Invalid encrypted user key size: %u", pComponents->encryptedUserKeySize);
+        hr = NTE_BAD_DATA;
+        goto cleanup;
+    }
+
+    // Extract encrypted user key data
+    if ((pCurrentPos - (const BYTE*)boundKey) + pComponents->encryptedUserKeySize + AES_GCM_TAG_SIZE > boundKeySize)
+    {
+        veil::vtl1::vtl0_functions::debug_print("DEBUG: ParseBoundKeyStructure - Insufficient data for encrypted user key and auth tag");
+        hr = NTE_BAD_DATA;
+        goto cleanup;
+    }
+    pComponents->pEncryptedUserKey = pCurrentPos;
+    pCurrentPos += pComponents->encryptedUserKeySize;
+
+    // Extract authentication tag
+    pComponents->pAuthTag = pCurrentPos;
+
+    veil::vtl1::vtl0_functions::debug_print("DEBUG: ParseBoundKeyStructure - Bound key parsed successfully: enclave key size=%u, encrypted user key size=%u", 
+                                            pComponents->enclavePublicKeyBlobSize, pComponents->encryptedUserKeySize);
+
+cleanup:
+    if (FAILED(hr) && pComponents->pEnclavePublicKeyBlob != NULL)
+    {
+        VengcFree(pComponents->pEnclavePublicKeyBlob);
+        pComponents->pEnclavePublicKeyBlob = NULL;
+    }
+
+    return hr;
+}
+
+//
+// Cleanup function for parsed bound key components
+//
+static void
+CleanupParsedBoundKeyComponents(
+    _Inout_ PPARSED_BOUND_KEY_COMPONENTS pComponents
+)
+{
+    if (pComponents != NULL && pComponents->pEnclavePublicKeyBlob != NULL)
+    {
+        VengcFree(pComponents->pEnclavePublicKeyBlob);
+        pComponents->pEnclavePublicKeyBlob = NULL;
+    }
+}
+
 // Decrypt the user key from material from disk
 HRESULT UnprotectUserBoundKey(
-    _In_ USER_BOUND_KEY_AUTH_CONTEXT_HANDLE authContext,
+    _In_ USER_BOUND_KEY_AUTH_CONTEXT_HANDLE /*authContext*/,
     _In_reads_bytes_(secretSize) const void* secret,
     _In_ UINT32 secretSize,
     _In_reads_bytes_(boundKeySize) const void* boundKey,
@@ -1584,12 +1719,174 @@ HRESULT UnprotectUserBoundKey(
     _Inout_ UINT32* userKeySize
 )
 {
-    UNREFERENCED_PARAMETER(authContext);
-    UNREFERENCED_PARAMETER(secret);
-    UNREFERENCED_PARAMETER(secretSize);
-    UNREFERENCED_PARAMETER(boundKey);
-    UNREFERENCED_PARAMETER(boundKeySize);
-    UNREFERENCED_PARAMETER(userKey);
-    UNREFERENCED_PARAMETER(userKeySize);
-    return S_OK;
+    veil::vtl1::vtl0_functions::debug_print("DEBUG: UnprotectUserBoundKey - Function entered");
+
+    HRESULT hr = S_OK;
+
+    // Declare all variables at the beginning to avoid goto initialization issues
+    PARSED_BOUND_KEY_COMPONENTS boundKeyComponents = {0};
+    BCRYPT_KEY_HANDLE ecdhKeyPair = NULL;
+    BCRYPT_SECRET_HANDLE ecdhSecret = NULL;
+    ULONG derivedKeySize = 0;
+    BYTE* pSharedSecret = NULL;
+    BCRYPT_KEY_HANDLE hDerivedKey = NULL;
+    BYTE* pDecryptedUserKey = NULL;
+    ULONG bytesDecrypted = 0;
+    void* pOutputUserKey = NULL;
+    BCRYPT_AUTHENTICATED_CIPHER_MODE_INFO authInfo;
+
+    //
+    // Step 1: Validate input parameters
+    //
+    veil::vtl1::vtl0_functions::debug_print("DEBUG: UnprotectUserBoundKey - Step 1: Validating input parameters");
+    if (secret == NULL || secretSize == 0 || boundKey == NULL || boundKeySize == 0 || userKey == NULL || userKeySize == NULL)
+    {
+        hr = E_INVALIDARG;
+        goto cleanup;
+    }
+
+    //
+    // Step 2: Parse the bound key structure
+    //
+    veil::vtl1::vtl0_functions::debug_print("DEBUG: UnprotectUserBoundKey - Step 2: Parsing bound key structure");
+    hr = ParseBoundKeyStructure(boundKey, boundKeySize, &boundKeyComponents);
+    if (FAILED(hr))
+    {
+        goto cleanup;
+    }
+
+    //
+    // Step 3: Use the provided shared secret to recreate the KEK
+    //
+    veil::vtl1::vtl0_functions::debug_print("DEBUG: UnprotectUserBoundKey - Step 3: Using provided shared secret to recreate KEK");
+
+    // The secret parameter contains the shared secret that was derived during key creation
+    // We use this directly to create the KEK, bypassing the ECDH computation
+    derivedKeySize = secretSize;
+    pSharedSecret = (BYTE*)VengcAlloc(derivedKeySize);
+    if (pSharedSecret == NULL)
+    {
+        hr = E_OUTOFMEMORY;
+        goto cleanup;
+    }
+    memcpy(pSharedSecret, secret, secretSize);
+
+    //
+    // Step 4: Generate KEK using the shared secret as key material
+    //
+    veil::vtl1::vtl0_functions::debug_print("DEBUG: UnprotectUserBoundKey - Step 4: Generating KEK from shared secret");
+    hr = HRESULT_FROM_NT(BCryptGenerateSymmetricKey(
+        BCRYPT_AES_GCM_ALG_HANDLE,
+        &hDerivedKey,
+        NULL,
+        0,
+        pSharedSecret,
+        derivedKeySize,
+        0));
+    if (FAILED(hr))
+    {
+        veil::vtl1::vtl0_functions::debug_print("DEBUG: UnprotectUserBoundKey - BCryptGenerateSymmetricKey failed: 0x%08X", hr);
+        goto cleanup;
+    }
+
+    //
+    // Step 5: Decrypt the user key using AES-GCM
+    //
+    veil::vtl1::vtl0_functions::debug_print("DEBUG: UnprotectUserBoundKey - Step 5: Decrypting user key");
+    
+    // Allocate buffer for decrypted user key
+    pDecryptedUserKey = (BYTE*)VengcAlloc(boundKeyComponents.encryptedUserKeySize);
+    if (pDecryptedUserKey == NULL)
+    {
+        hr = E_OUTOFMEMORY;
+        goto cleanup;
+    }
+
+    // Set up AES-GCM authentication info
+    BCRYPT_INIT_AUTH_MODE_INFO(authInfo);
+    authInfo.pbNonce = boundKeyComponents.nonce;
+    authInfo.cbNonce = AES_GCM_NONCE_SIZE;
+    authInfo.pbTag = (PUCHAR)boundKeyComponents.pAuthTag;
+    authInfo.cbTag = AES_GCM_TAG_SIZE;
+
+    // Perform AES-GCM decryption
+    hr = HRESULT_FROM_NT(BCryptDecrypt(
+        hDerivedKey,
+        (PUCHAR)boundKeyComponents.pEncryptedUserKey,
+        boundKeyComponents.encryptedUserKeySize,
+        &authInfo,
+        NULL,  // No IV for GCM (nonce is in authInfo)
+        0,
+        pDecryptedUserKey,
+        boundKeyComponents.encryptedUserKeySize,
+        &bytesDecrypted,
+        0
+    ));
+
+    if (FAILED(hr))
+    {
+        veil::vtl1::vtl0_functions::debug_print("DEBUG: UnprotectUserBoundKey - BCryptDecrypt failed: 0x%08X", hr);
+        goto cleanup;
+    }
+
+    veil::vtl1::vtl0_functions::debug_print("DEBUG: UnprotectUserBoundKey - Decryption successful, decrypted %u bytes", bytesDecrypted);
+
+    //
+    // Step 6: Return the decrypted user key
+    //
+    veil::vtl1::vtl0_functions::debug_print("DEBUG: UnprotectUserBoundKey - Step 6: Returning decrypted user key");
+    
+    // Allocate output buffer using HeapAlloc (caller will free with HeapFree)
+    pOutputUserKey = VengcAlloc(bytesDecrypted);
+    if (pOutputUserKey == NULL)
+    {
+        hr = E_OUTOFMEMORY;
+        goto cleanup;
+    }
+
+    memcpy(pOutputUserKey, pDecryptedUserKey, bytesDecrypted);
+
+    // Success - transfer ownership to caller
+    *userKey = pOutputUserKey;
+    *userKeySize = bytesDecrypted;
+    pOutputUserKey = NULL; // Transfer ownership
+
+    veil::vtl1::vtl0_functions::debug_print("DEBUG: UnprotectUserBoundKey - Function completed successfully");
+
+cleanup:
+    // Clean up parsed bound key components
+    CleanupParsedBoundKeyComponents(&boundKeyComponents);
+
+    // Clean up allocated resources
+    if (pSharedSecret != NULL)
+    {
+        VengcSecureFree(pSharedSecret, derivedKeySize);
+    }
+
+    if (hDerivedKey != NULL)
+    {
+        BCryptDestroyKey(hDerivedKey);
+    }
+
+    if (ecdhKeyPair != NULL)
+    {
+        BCryptDestroyKey(ecdhKeyPair);
+    }
+
+    if (ecdhSecret != NULL)
+    {
+        BCryptDestroySecret(ecdhSecret);
+    }
+
+    if (pDecryptedUserKey != NULL)
+    {
+        VengcSecureFree(pDecryptedUserKey, boundKeyComponents.encryptedUserKeySize);
+    }
+
+    if (pOutputUserKey != NULL)
+    {
+        VengcFree(pOutputUserKey);
+    }
+
+    return hr;
 }
