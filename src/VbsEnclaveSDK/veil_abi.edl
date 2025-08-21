@@ -86,6 +86,7 @@ enclave
             );
 
         secretAndAuthorizationContextAndSessionKeyPtr userboundkey_establish_session_for_load(
+            uintptr_t enclave,
             wstring key_name,
             vector<uint8_t> public_key,
             wstring message,

@@ -80,12 +80,14 @@ namespace veil::vtl1::implementation::userboundkey::callouts
     }
 
     DeveloperTypes::secretAndAuthorizationContextAndSessionKeyPtr userboundkey_establish_session_for_load_callback(
+        _In_ const void* enclave,
         _In_ const std::wstring& key_name, 
         _In_ const std::vector<std::uint8_t>& public_key, 
         _In_ const std::wstring& message, 
         _In_ const uintptr_t window_id)
     {
         return veil_abi::VTL0_Callbacks::userboundkey_establish_session_for_load_callback(
+            reinterpret_cast<uintptr_t>(enclave),
             key_name,
             public_key,
             message,
@@ -180,9 +182,11 @@ std::vector<uint8_t> GetEphemeralPublicKeyBytesFromBoundKeyBytes(wil::secure_vec
 
     // We need to extract the enclave public key blob (the "ephemeral public key")
 
+    veil::vtl1::vtl0_functions::debug_print((L"DEBUG: GetEphemeralPublicKeyBytesFromBoundKeyBytes - Starting with boundKeyBytes.size(): " + std::to_wstring(boundKeyBytes.size())).c_str());
+
     if (boundKeyBytes.size() < sizeof(uint32_t))
     {
-        // Not enough data for even the size field
+        veil::vtl1::vtl0_functions::debug_print(L"ERROR: GetEphemeralPublicKeyBytesFromBoundKeyBytes - Bound key bytes too small - missing size field");
         throw std::invalid_argument("Bound key bytes too small - missing size field");
     }
 
@@ -192,22 +196,40 @@ std::vector<uint8_t> GetEphemeralPublicKeyBytesFromBoundKeyBytes(wil::secure_vec
     uint32_t enclavePublicKeyBlobSize = *reinterpret_cast<const uint32_t*>(pCurrentPos);
     pCurrentPos += sizeof(uint32_t);
 
+    veil::vtl1::vtl0_functions::debug_print((L"DEBUG: GetEphemeralPublicKeyBytesFromBoundKeyBytes - enclavePublicKeyBlobSize: " + std::to_wstring(enclavePublicKeyBlobSize)).c_str());
+
     // Validate that we have enough data for the full public key blob
     size_t remainingBytes = boundKeyBytes.size() - sizeof(uint32_t);
+    veil::vtl1::vtl0_functions::debug_print((L"DEBUG: GetEphemeralPublicKeyBytesFromBoundKeyBytes - remainingBytes: " + std::to_wstring(remainingBytes)).c_str());
+
     if (remainingBytes < enclavePublicKeyBlobSize)
     {
-        // Not enough data for the public key blob
+        veil::vtl1::vtl0_functions::debug_print((L"ERROR: GetEphemeralPublicKeyBytesFromBoundKeyBytes - Insufficient data for public key blob. Need: " + std::to_wstring(enclavePublicKeyBlobSize) + L", Have: " + std::to_wstring(remainingBytes)).c_str());
         throw std::runtime_error("Bound key bytes corrupted - insufficient data for public key blob");
     }
 
     // Additional validation: check for unreasonably large public key size
     if (enclavePublicKeyBlobSize > remainingBytes || enclavePublicKeyBlobSize == 0)
     {
+        veil::vtl1::vtl0_functions::debug_print((L"ERROR: GetEphemeralPublicKeyBytesFromBoundKeyBytes - Invalid public key blob size: " + std::to_wstring(enclavePublicKeyBlobSize) + L" (remainingBytes: " + std::to_wstring(remainingBytes) + L")").c_str());
+        
+        // Add hex dump of first 16 bytes for debugging
+        std::wstring hexDump = L"First 16 bytes of boundKeyBytes: ";
+        size_t maxBytes = boundKeyBytes.size() < 16 ? boundKeyBytes.size() : 16;
+        for (size_t i = 0; i < maxBytes; ++i) {
+            wchar_t hexByte[4];
+            swprintf_s(hexByte, L"%02X ", boundKeyBytes[i]);
+            hexDump += hexByte;
+        }
+        veil::vtl1::vtl0_functions::debug_print(hexDump.c_str());
+
         throw std::runtime_error("Bound key bytes corrupted - invalid public key blob size");
     }
 
     // Extract the enclave public key blob
     std::vector<uint8_t> ephemeralPublicKey(pCurrentPos, pCurrentPos + enclavePublicKeyBlobSize);
+
+    veil::vtl1::vtl0_functions::debug_print((L"DEBUG: GetEphemeralPublicKeyBytesFromBoundKeyBytes - Successfully extracted ephemeral public key, size: " + std::to_wstring(ephemeralPublicKey.size())).c_str());
 
     return ephemeralPublicKey;
 }
@@ -261,10 +283,29 @@ wil::secure_vector<uint8_t> enclave_create_user_bound_key(
     // USERKEY
     auto userkeyBytes = veil::vtl1::crypto::generate_symmetric_key_bytes();
 
-    // ENCRYPT USERKEY
-    std::vector<uint8_t> boundKeyBytes(256);
-    UINT32 cbBoundKeyBytes = static_cast<UINT32>(boundKeyBytes.size());
-    THROW_IF_FAILED(ProtectUserBoundKey(authContext.get(), userkeyBytes.data(), static_cast<UINT32>(userkeyBytes.size()), (void**)boundKeyBytes.data(), &cbBoundKeyBytes)); // OS CALL
+    // ENCRYPT USERKEY - CORRECTED VERSION
+    void* pBoundKey = nullptr;
+    UINT32 cbBoundKeyBytes = 0;
+    veil::vtl1::vtl0_functions::debug_print(L"DEBUG: About to call ProtectUserBoundKey");
+    THROW_IF_FAILED(ProtectUserBoundKey(
+        authContext.get(), 
+        userkeyBytes.data(), 
+        static_cast<UINT32>(userkeyBytes.size()), 
+        &pBoundKey,        // ? CORRECT: address of pointer for dynamic allocation
+        &cbBoundKeyBytes   // ? Will be set to actual size by ProtectUserBoundKey
+    )); // OS CALL
+    veil::vtl1::vtl0_functions::debug_print((L"DEBUG: ProtectUserBoundKey returned boundKey size: " + std::to_wstring(cbBoundKeyBytes)).c_str());
+
+    // Convert dynamically allocated buffer to vector for sealing
+    std::vector<uint8_t> boundKeyBytes(
+        static_cast<uint8_t*>(pBoundKey), 
+        static_cast<uint8_t*>(pBoundKey) + cbBoundKeyBytes
+    );
+
+    // Free the dynamically allocated memory
+    HeapFree(GetProcessHeap(), 0, pBoundKey);
+
+    veil::vtl1::vtl0_functions::debug_print((L"DEBUG: Created boundKeyBytes vector with size: " + std::to_wstring(boundKeyBytes.size())).c_str());
 
     // SEAL
     auto sealedKeyMaterial = veil::vtl1::crypto::seal_data(boundKeyBytes, sealingPolicy, ENCLAVE_RUNTIME_POLICY_ALLOW_FULL_DEBUG);
@@ -298,7 +339,15 @@ std::vector<uint8_t> enclave_load_user_bound_key(
 
         // SESSION
         veil::vtl1::vtl0_functions::debug_print(L"DEBUG: enclave_load_user_bound_key - About to call establish_session_for_load_callback");
-        auto secretAndAuthorizationContextAndSessionKeyPtr = veil_abi::VTL0_Callbacks::userboundkey_establish_session_for_load_callback(keyName, ephemeralPublicKeyBytes, message, windowId);
+
+        void* enclave = veil::vtl1::enclave_information().BaseAddress;
+        auto secretAndAuthorizationContextAndSessionKeyPtr = veil_abi::VTL0_Callbacks::userboundkey_establish_session_for_load_callback(
+            reinterpret_cast<uint64_t>(enclave), 
+            keyName, 
+            ephemeralPublicKeyBytes, 
+            message, 
+            windowId);
+
         veil::vtl1::vtl0_functions::debug_print(L"DEBUG: enclave_load_user_bound_key - establish_session_for_load_callback completed");
 
         auto& secret = secretAndAuthorizationContextAndSessionKeyPtr.secret;
@@ -362,4 +411,4 @@ std::vector<uint8_t> enclave_load_user_bound_key(
         throw; // Re-throw the exception
     }
 }
-}
+} // namespace veil::vtl1::userboundkey

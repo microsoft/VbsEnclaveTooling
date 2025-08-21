@@ -27,6 +27,7 @@ namespace veil::vtl1::implementation::userboundkey::callouts
         _In_ const DeveloperTypes::keyCredentialCacheConfig& cache_config);
 
     DeveloperTypes::secretAndAuthorizationContextAndSessionKeyPtr userboundkey_establish_session_for_load_callback(
+        _In_ const void* enclave,
         _In_ const std::wstring& key_name,
         _In_ const std::vector<std::uint8_t>& public_key,
         _In_ const std::wstring& message,

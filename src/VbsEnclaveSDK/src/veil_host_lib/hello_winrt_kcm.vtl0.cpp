@@ -300,27 +300,44 @@ authContextBlobAndSessionKeyPtr veil_abi::VTL0_Stubs::export_interface::userboun
 }
 
 secretAndAuthorizationContextAndSessionKeyPtr veil_abi::VTL0_Stubs::export_interface::userboundkey_establish_session_for_load_callback(
+    uintptr_t enclave,
     const std::wstring& key_name,
     const std::vector<uint8_t>& public_key,
     const std::wstring& message,
     uintptr_t window_id)
 {
     auto sessionKeyPtr = std::make_shared<uintptr_t>(0);
+
+    auto enclaveptr = (void*)enclave;
+    auto enclaveInterface = veil_abi::VTL0_Stubs::export_interface(enclaveptr);
+    HRESULT hr = enclaveInterface.RegisterVtl0Callbacks();
+    if (FAILED(hr))
+    {
+        std::wcout << L"DEBUG: RegisterVtl0Callbacks failed inside lambda with HRESULT: 0x" << std::hex << hr << std::endl;
+        THROW_HR(hr);
+    }
+    std::wcout << L"DEBUG: VTL0 callbacks registered successfully inside lambda!" << std::endl;
+
     auto credentialResult = KeyCredentialManager::OpenAsync(
         key_name.c_str(),
         ChallengeResponseKind::VirtualizationBasedSecurityEnclave,
-        [sessionKeyPtr] (const auto& challenge) mutable -> winrt::Windows::Storage::Streams::IBuffer
+        [sessionKeyPtr, enclaveptr] (const auto& challenge) mutable -> winrt::Windows::Storage::Streams::IBuffer
     {
         std::wcout << L"DEBUG: Load callback challenge invoked! Challenge size: " << challenge.Length() << std::endl;
         
         try {
-            auto enclaveInterface = veil_abi::VTL0_Stubs::export_interface(nullptr);
-            
-            std::wcout << L"DEBUG: WARNING - Using nullptr for enclave in load callback!" << std::endl;
-            std::wcout << L"DEBUG: Skipping RegisterVtl0Callbacks for load callback due to null enclave..." << std::endl;
-            
+            auto enclaveInterface = veil_abi::VTL0_Stubs::export_interface(enclaveptr);
+            HRESULT hr = enclaveInterface.RegisterVtl0Callbacks();
+            if (FAILED(hr)) {
+                std::wcout << L"DEBUG: RegisterVtl0Callbacks failed inside lambda with HRESULT: 0x" << std::hex << hr << std::endl;
+                THROW_HR(hr);
+            }
+            std::wcout << L"DEBUG: VTL0 callbacks registered successfully inside lambda!" << std::endl;
+
+            std::wcout << L"DEBUG: Converting challenge buffer..." << std::endl;
             auto challengeVector = ConvertBufferToVector(challenge);
-            
+            std::wcout << L"DEBUG: Challenge vector size: " << challengeVector.size() << std::endl;
+
             std::wcout << L"DEBUG: About to call userboundkey_get_attestation_report (load callback)..." << std::endl;
             auto attestationReportAndSessionKeyPtr = enclaveInterface.userboundkey_get_attestation_report(challengeVector);
             std::wcout << L"DEBUG: userboundkey_get_attestation_report returned successfully (load callback)!" << std::endl;
@@ -340,6 +357,9 @@ secretAndAuthorizationContextAndSessionKeyPtr veil_abi::VTL0_Stubs::export_inter
         }
     }
     ).get();
+
+    // Callback into vtl1 to encrypt the public key with sessionKey
+    // We need to have a new function in vengc to encrypt this.
 
     // Check if the operation was successful
     auto status = credentialResult.Status();
