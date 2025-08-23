@@ -19,7 +19,7 @@ variables:
 - name: SdkMinorVersion
   value: "1"
 - name: SdkPatchVersion
-  value: "1"
+  value: "2"
 
 
 # Conditionally set values if branch name starts with 'prerelease'
