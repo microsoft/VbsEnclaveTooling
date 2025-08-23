@@ -379,6 +379,7 @@ std::vector<uint8_t> enclave_load_user_bound_key(
         const void* keyNamePtr = keyName.c_str();
         UINT32 keyNameSizeBytes = static_cast<UINT32>((keyName.length() + 1) * sizeof(wchar_t)); // Include null terminator
         
+        ULONG64 nonceNumber = 0;
         THROW_IF_FAILED(CreateEncryptedNgcRequestForDeriveSharedSecret(
             sessionKeyPtr,
             keyNamePtr,
@@ -386,7 +387,8 @@ std::vector<uint8_t> enclave_load_user_bound_key(
             ephemeralPublicKeyBytes.data(),
             static_cast<UINT32>(ephemeralPublicKeyBytes.size()),
             &encryptedNgcRequest,
-            &encryptedNgcRequestSize)); // OS CALL
+            &encryptedNgcRequestSize,
+            &nonceNumber)); // OS CALL
 
         // Convert the result to vector for the callback
         std::vector<uint8_t> encryptedNgcRequestForDeriveSharedSecret;
@@ -447,7 +449,8 @@ std::vector<uint8_t> enclave_load_user_bound_key(
             boundKeyBytes.data(),
             static_cast<UINT32>(boundKeyBytes.size()),
             &pUserkeyBytes,
-            &cbUserkeyBytes)); // OS CALL
+            &cbUserkeyBytes,
+            nonceNumber)); // OS CALL
         veil::vtl1::vtl0_functions::debug_print(L"DEBUG: enclave_load_user_bound_key - UnprotectUserBoundKey completed");
 
         std::vector<uint8_t> userkeyBytes(static_cast<uint8_t*>(pUserkeyBytes), static_cast<uint8_t*>(pUserkeyBytes) + cbUserkeyBytes);

@@ -124,7 +124,8 @@ HRESULT CreateEncryptedNgcRequestForDeriveSharedSecret(
     _In_reads_bytes_(publicKeyBytesSize) const void* publicKeyBytes,
     _In_ UINT32 publicKeyBytesSize,
     _Outptr_result_buffer_(*encryptedRequestSize) void** encryptedRequest,
-    _Out_ UINT32* encryptedRequestSize
+    _Out_ UINT32* encryptedRequestSize,
+    _Out_ ULONG64* nonceNumber
 );
 
 // Decrypt the user key from material from disk
@@ -136,7 +137,8 @@ HRESULT UnprotectUserBoundKey(
     _In_reads_bytes_(boundKeySize) const void* boundKey,
     _In_ UINT32 boundKeySize,
     _Outptr_result_buffer_(*userKeySize) void** userKey,
-    _Inout_ UINT32* userKeySize
+    _Inout_ UINT32* userKeySize,
+    _In_ ULONG64 nonceNumber
 );
 
 #endif // VENGCDLL_H
