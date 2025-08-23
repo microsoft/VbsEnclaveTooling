@@ -14,6 +14,7 @@
 #include <enclaveium.h>
 #include <roapi.h>
 #include <winstring.h>
+#include <unknwn.h>  // For IUnknown interface
 
 #include <winrt/base.h>
 #include <winrt/Windows.Foundation.h>
@@ -299,7 +300,82 @@ authContextBlobAndSessionKeyPtr veil_abi::VTL0_Stubs::export_interface::userboun
     return result;
 }
 
-secretAndAuthorizationContextAndSessionKeyPtr veil_abi::VTL0_Stubs::export_interface::userboundkey_establish_session_for_load_callback(
+// Helper function to validate that a COM object is still valid
+bool IsValidCOMObject(void* abi)
+{
+    if (abi == nullptr)
+        return false;
+    
+    try
+    {
+        // Try to QueryInterface for IUnknown - this will fail if the object is invalid
+        IUnknown* unknown = nullptr;
+        HRESULT hr = static_cast<IUnknown*>(abi)->QueryInterface(IID_IUnknown, reinterpret_cast<void**>(&unknown));
+        if (SUCCEEDED(hr) && unknown != nullptr)
+        {
+            unknown->Release(); // Release the extra reference from QueryInterface
+            return true;
+        }
+    }
+    catch (...)
+    {
+        // Any exception means the object is invalid
+        return false;
+    }
+    
+    return false;
+}
+
+// Helper function to convert a KeyCredential to vector<uint8_t> for transmission to VTL1
+std::vector<uint8_t> ConvertCredentialToVector(const KeyCredential& credential)
+{
+    // Get the ABI pointer and AddRef to keep the COM object alive
+    auto abi = winrt::get_abi(credential);
+    
+    // Validate the COM object before proceeding
+    if (!IsValidCOMObject(abi))
+    {
+        std::wcout << L"ERROR: ConvertCredentialToVector - Invalid COM object" << std::endl;
+        THROW_HR(E_INVALIDARG);
+    }
+    
+    static_cast<IUnknown*>(abi)->AddRef(); // Increment reference count to keep object alive
+    
+    std::wcout << L"DEBUG: ConvertCredentialToVector - AddRef called on credential ABI: 0x" << std::hex << reinterpret_cast<uintptr_t>(abi) << std::dec << std::endl;
+    
+    uintptr_t credentialPtr = reinterpret_cast<uintptr_t>(abi);
+    std::vector<uint8_t> credentialVector(sizeof(uintptr_t));
+    memcpy(credentialVector.data(), &credentialPtr, sizeof(uintptr_t));
+    return credentialVector;
+}
+
+// Helper function to convert vector<uint8_t> back to KeyCredential
+KeyCredential ConvertVectorToCredential(const std::vector<uint8_t>& credentialVector)
+{
+    if (credentialVector.size() != sizeof(uintptr_t))
+    {
+        THROW_HR(E_INVALIDARG);
+    }
+    
+    uintptr_t credentialPtr;
+    memcpy(&credentialPtr, credentialVector.data(), sizeof(uintptr_t));
+    void* abi = reinterpret_cast<void*>(credentialPtr);
+    
+    std::wcout << L"DEBUG: ConvertVectorToCredential - Retrieved credential ABI: 0x" << std::hex << credentialPtr << std::dec << std::endl;
+    
+    // Validate the COM object before creating the KeyCredential
+    if (!IsValidCOMObject(abi))
+    {
+        std::wcout << L"ERROR: ConvertVectorToCredential - Invalid COM object, likely destroyed" << std::endl;
+        THROW_HR(E_INVALIDARG);
+    }
+    
+    // Create KeyCredential and transfer ownership (this will handle the Release)
+    // The take_ownership_from_abi will NOT AddRef, so our earlier AddRef is consumed
+    return KeyCredential{ abi, winrt::take_ownership_from_abi };
+}
+
+credentialAndSessionKeyPtr veil_abi::VTL0_Stubs::export_interface::userboundkey_establish_session_for_load_callback(
     uintptr_t enclave,
     const std::wstring& key_name,
     const std::vector<uint8_t>& public_key,
@@ -358,9 +434,6 @@ secretAndAuthorizationContextAndSessionKeyPtr veil_abi::VTL0_Stubs::export_inter
     }
     ).get();
 
-    // Callback into vtl1 to encrypt the public key with sessionKey
-    // We need to have a new function in vengc to encrypt this.
-
     // Check if the operation was successful
     auto status = credentialResult.Status();
     if (status != KeyCredentialStatus::Success)
@@ -370,15 +443,63 @@ secretAndAuthorizationContextAndSessionKeyPtr veil_abi::VTL0_Stubs::export_inter
 
     const auto& credential = credentialResult.Credential();
 
-    auto authorizationContext = credential.RetrieveAuthorizationContext();
-    auto secret = credential.RequestDeriveSharedSecretAsync(
-        (winrt::Windows::UI::WindowId)window_id, 
-        message, 
-        winrt::Windows::Security::Cryptography::CryptographicBuffer::CreateFromByteArray(public_key)).get();
-
-    secretAndAuthorizationContextAndSessionKeyPtr result;
-    result.secret = ConvertBufferToVector(secret.Result());
-    result.authorizationContext = ConvertBufferToVector(authorizationContext);
+    // Return the credential as a vector along with sessionKeyPtr for VTL1 to use later
+    credentialAndSessionKeyPtr result;
+    result.credential = ConvertCredentialToVector(credential);
     result.sessionKeyPtr = *sessionKeyPtr;
     return result;
+}
+
+// New VTL0 function to extract secret and authorization context from credential
+secretAndAuthorizationContext veil_abi::VTL0_Stubs::export_interface::userboundkey_get_secret_and_authorizationcontext_from_credential_callback(
+    const std::vector<uint8_t>& credential_vector,
+    const std::vector<uint8_t>& encrypted_ngc_request_for_derive_shared_secret,
+    const std::wstring& message,
+    uintptr_t window_id)
+{
+    std::wcout << L"DEBUG: userboundkey_get_secret_and_authorizationcontext_from_credential_callback called" << std::endl;
+    
+    KeyCredential credential{ nullptr };
+    bool credentialValid = false;
+    
+    try
+    {
+        // Convert the credential vector back to KeyCredential
+        credential = ConvertVectorToCredential(credential_vector);
+        credentialValid = true;
+        
+        std::wcout << L"DEBUG: Converting credential vector back to KeyCredential" << std::endl;
+
+        // Extract authorization context and derive shared secret
+        auto authorizationContext = credential.RetrieveAuthorizationContext();
+        auto secret = credential.RequestDeriveSharedSecretAsync(
+            (winrt::Windows::UI::WindowId)window_id, 
+            message, 
+            winrt::Windows::Security::Cryptography::CryptographicBuffer::CreateFromByteArray(encrypted_ngc_request_for_derive_shared_secret)).get();
+
+        secretAndAuthorizationContext result;
+        result.secret = ConvertBufferToVector(secret.Result());
+        result.authorizationContext = ConvertBufferToVector(authorizationContext);
+
+        std::wcout << L"DEBUG: userboundkey_get_secret_and_authorizationcontext_from_credential_callback completed successfully" << std::endl;
+        
+        // The KeyCredential destructor will automatically handle the Release when it goes out of scope
+        return result;
+    }
+    catch (const std::exception& e)
+    {
+        std::wcout << L"DEBUG: Exception in userboundkey_get_secret_and_authorizationcontext_from_credential_callback: " << e.what() << std::endl;
+        
+        // If we successfully created the credential but failed later, the destructor will clean up
+        // If we failed to create the credential, there's nothing extra to clean up
+        throw;
+    }
+    catch (...)
+    {
+        std::wcout << L"DEBUG: Unknown exception in userboundkey_get_secret_and_authorizationcontext_from_credential_callback" << std::endl;
+        
+        // If we successfully created the credential but failed later, the destructor will clean up
+        // If we failed to create the credential, there's nothing extra to clean up
+        throw;
+    }
 }

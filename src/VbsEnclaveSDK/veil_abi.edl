@@ -10,11 +10,10 @@ enclave
         uint32_t cacheUsageCount;
     };
 
-    struct secretAndAuthorizationContextAndSessionKeyPtr
+    struct secretAndAuthorizationContext
     {
         vector<uint8_t> secret;
         vector<uint8_t> authorizationContext;
-        uintptr_t sessionKeyPtr;
     };
 
     struct attestationReportAndSessionKeyPtr
@@ -26,6 +25,12 @@ enclave
     struct authContextBlobAndSessionKeyPtr
     {
         vector<uint8_t> authContextBlob;
+        uintptr_t sessionKeyPtr;
+    };
+
+    struct credentialAndSessionKeyPtr
+    {
+        vector<uint8_t> credential;
         uintptr_t sessionKeyPtr;
     };
 
@@ -85,12 +90,17 @@ enclave
             keyCredentialCacheConfig cache_config
             );
 
-        secretAndAuthorizationContextAndSessionKeyPtr userboundkey_establish_session_for_load(
+        credentialAndSessionKeyPtr userboundkey_establish_session_for_load(
             uintptr_t enclave,
             wstring key_name,
             vector<uint8_t> public_key,
             wstring message,
             uintptr_t window_id);
-    };
 
+        secretAndAuthorizationContext userboundkey_get_secret_and_authorizationcontext_from_credential(
+            vector<uint8_t> credential_vector,
+            vector<uint8_t> encrypted_ngc_request_for_derive_shared_secret,
+            wstring message,
+            uintptr_t window_id);
+    };
 };

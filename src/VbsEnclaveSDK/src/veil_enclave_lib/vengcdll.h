@@ -116,8 +116,20 @@ HRESULT ProtectUserBoundKey(
     _Inout_ UINT32* boundKeySize
 );
 
+// Creates an encrypted NGC request for DeriveSharedSecret using the session key and ephemeral public key bytes
+HRESULT CreateEncryptedNgcRequestForDeriveSharedSecret(
+    _In_ UINT_PTR sessionKeyPtr,
+    _In_reads_bytes_(keyNameSize) const void* keyName,
+    _In_ UINT32 keyNameSize,
+    _In_reads_bytes_(publicKeyBytesSize) const void* publicKeyBytes,
+    _In_ UINT32 publicKeyBytesSize,
+    _Outptr_result_buffer_(*encryptedRequestSize) void** encryptedRequest,
+    _Out_ UINT32* encryptedRequestSize
+);
+
 // Decrypt the user key from material from disk
 HRESULT UnprotectUserBoundKey(
+    _In_ UINT_PTR sessionKeyPtr,
     _In_ USER_BOUND_KEY_AUTH_CONTEXT_HANDLE authContext,
     _In_reads_bytes_(secretSize) const void* secret,
     _In_ UINT32 secretSize,

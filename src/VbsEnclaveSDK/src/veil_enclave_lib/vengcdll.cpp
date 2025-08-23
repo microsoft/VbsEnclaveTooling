@@ -1708,8 +1708,164 @@ CleanupParsedBoundKeyComponents(
     }
 }
 
+//
+// Step 2: Decrypt the auth context blob using BCrypt APIs
+//
+static HRESULT
+DecryptAndUntagSecret(
+    _In_ UINT_PTR sessionKeyPtr,
+    _In_ const void* authContextBlob,
+    _In_ UINT32 authContextBlobSize,
+    _Out_ BYTE** ppDecryptedAuthContext,
+    _Out_ UINT32* pDecryptedSize
+)
+{
+    HRESULT hr = S_OK;
+    BYTE* pDecryptedAuthContext = NULL;
+    UINT32 decryptedSize = 0;
+
+    // Declare all variables at the beginning to avoid goto initialization issues
+    BCRYPT_KEY_HANDLE hSessionKey = NULL;
+    const UINT32 VTL1_TAG_SIZE = AES_GCM_TAG_SIZE;       // AES-GCM auth tag at end
+    // const UINT64 c_responderBitFlip = 0x80000000ULL;
+    // UINT64 nonce = 0;
+    const BYTE* pEncryptedData = NULL;
+    UINT32 encryptedDataSize = 0;
+    const BYTE* pAuthTag = NULL;
+    BYTE nonceBuffer[AES_GCM_NONCE_SIZE] = {0}; // Fill with 0s
+    BCRYPT_AUTHENTICATED_CIPHER_MODE_INFO authInfo;
+    ULONG bytesDecrypted = 0;
+    ULONG64 constantTestNonce = 0;
+    ULONG64 nonceNumber = 0;
+
+    // The auth context blob was encrypted using ClientAuth::EncryptResponse which uses
+    // VTL1 mutual authentication protocol with AES-GCM format.
+    // IMPORTANT: EncryptResponse (new protocol) format is: [encrypted data][16-byte auth tag]
+    // The nonce is NOT stored in the encrypted blob - it must be provided separately!
+
+    hSessionKey = (BCRYPT_KEY_HANDLE)sessionKeyPtr;
+    if (hSessionKey == NULL)
+    {
+        hr = E_INVALIDARG;
+        goto cleanup;
+    }
+
+    // For EncryptResponse format: [encrypted data][16-byte auth tag]
+    if (authContextBlobSize < VTL1_TAG_SIZE)
+    {
+        hr = NTE_BAD_DATA;
+        goto cleanup;
+    }
+
+    /*
+    // For EncryptResponse, we need to reconstruct the nonce used during encryption
+    // The nonce used was: requestNonce ^ c_responderBitFlip (where requestNonce was provided to EncryptResponse)
+    // TEMPORARY: Use the same constant nonce as NgcIsoSrv.cpp for testing
+    // TODO: Implement proper nonce sharing between encryption and decryption
+    nonce = constantTestNonce ^ c_responderBitFlip;  // Apply responder bit flip as per VTL1 protocol
+
+    // Add nonce value towards the end of the buffer (last 8 bytes)
+    memcpy(&nonceBuffer[AES_GCM_NONCE_SIZE - sizeof(nonce)], &nonce, sizeof(nonce));
+    */
+    nonceNumber = InterlockedIncrement64(reinterpret_cast<LONG64*>(&constantTestNonce));
+    if (nonceNumber >= 100000 /*c_maxRequestNonce*/)
+    {
+        hr = HRESULT_FROM_WIN32(ERROR_TOO_MANY_SECRETS);
+        goto cleanup;
+    }
+
+    // Create nonce buffer manually (instead of using crypto utility)
+    memcpy(&nonceBuffer[AES_GCM_NONCE_SIZE - sizeof(nonceNumber)], &nonceNumber, sizeof(nonceNumber));
+
+    // Extract components from the EncryptResponse encrypted blob
+    // Format: [encrypted data][16-byte auth tag] - NO NONCE stored in blob
+    pEncryptedData = (const BYTE*)authContextBlob;
+    encryptedDataSize = authContextBlobSize - VTL1_TAG_SIZE;
+    pAuthTag = pEncryptedData + encryptedDataSize;
+
+    // DEBUG: Print nonce and tag in hex string format
+    {
+        char nonceHexStr[AES_GCM_NONCE_SIZE * 2 + 1] = {0};
+        char tagHexStr[AES_GCM_TAG_SIZE * 2 + 1] = {0};
+
+        // Convert nonce to hex string
+        for (UINT32 i = 0; i < AES_GCM_NONCE_SIZE; i++)
+        {
+            sprintf_s(&nonceHexStr[i * 2], 3, "%02X", nonceBuffer[i]);
+        }
+
+        // Convert tag to hex string
+        for (UINT32 i = 0; i < AES_GCM_TAG_SIZE; i++)
+        {
+            sprintf_s(&tagHexStr[i * 2], 3, "%02X", pAuthTag[i]);
+        }
+
+        veil::vtl1::vtl0_functions::debug_print("DEBUG: DecryptAndUntagSecret - Nonce (hex): %s", nonceHexStr);
+        veil::vtl1::vtl0_functions::debug_print("DEBUG: DecryptAndUntagSecret - Auth Tag (hex): %s", tagHexStr);
+    }
+
+    // Set up AES-GCM authentication info for VTL1 format
+    BCRYPT_INIT_AUTH_MODE_INFO(authInfo);
+    authInfo.pbNonce = nonceBuffer;
+    authInfo.cbNonce = AES_GCM_NONCE_SIZE;
+    authInfo.pbTag = (PUCHAR)pAuthTag;
+    authInfo.cbTag = VTL1_TAG_SIZE;
+
+    // Allocate buffer for decrypted data
+    pDecryptedAuthContext = (BYTE*)VengcAlloc(encryptedDataSize);
+    if (pDecryptedAuthContext == NULL)
+    {
+        hr = E_OUTOFMEMORY;
+        goto cleanup;
+    }
+
+    // Perform AES-GCM decryption using VTL1 format
+    hr = HRESULT_FROM_NT(BCryptDecrypt(
+        hSessionKey,
+        (PUCHAR)pEncryptedData,
+        encryptedDataSize,
+        &authInfo,
+        NULL,  // No IV for GCM (nonce is in authInfo)
+        0,
+        pDecryptedAuthContext,
+        encryptedDataSize,
+        &bytesDecrypted,
+        0
+    ));
+
+    if (FAILED(hr))
+    {
+        goto cleanup;
+    }
+
+    decryptedSize = bytesDecrypted;
+
+    // Debug print: Display computed sizes for decryption operation
+    veil::vtl1::vtl0_functions::debug_print("DEBUG: DecryptAndUntagSecret - Computed sizes: decryptedSize=%u, encryptedDataSize=%u", decryptedSize, encryptedDataSize);
+
+    if (pDecryptedAuthContext == NULL || decryptedSize == 0)
+    {
+        hr = E_UNEXPECTED;
+        goto cleanup;
+    }
+
+    // Success - transfer ownership to caller
+    *ppDecryptedAuthContext = pDecryptedAuthContext;
+    *pDecryptedSize = decryptedSize;
+    pDecryptedAuthContext = NULL;
+
+    cleanup:
+    if (pDecryptedAuthContext != NULL)
+    {
+        VengcSecureFree(pDecryptedAuthContext, decryptedSize);
+    }
+
+    return hr;
+}
+
 // Decrypt the user key from material from disk
 HRESULT UnprotectUserBoundKey(
+    _In_ UINT_PTR sessionKeyPtr,
     _In_ USER_BOUND_KEY_AUTH_CONTEXT_HANDLE /*authContext*/,
     _In_reads_bytes_(secretSize) const void* secret,
     _In_ UINT32 secretSize,
@@ -1734,6 +1890,8 @@ HRESULT UnprotectUserBoundKey(
     ULONG bytesDecrypted = 0;
     void* pOutputUserKey = NULL;
     BCRYPT_AUTHENTICATED_CIPHER_MODE_INFO authInfo;
+    BYTE* pDecryptedSecret = NULL;
+    UINT32 decryptedSecretSize = 0;
 
     //
     // Step 1: Validate input parameters
@@ -1756,20 +1914,32 @@ HRESULT UnprotectUserBoundKey(
     }
 
     //
-    // Step 3: Use the provided shared secret to recreate the KEK
+    // Step 2.5: Decrypt the secret using session key and nonce
     //
-    veil::vtl1::vtl0_functions::debug_print("DEBUG: UnprotectUserBoundKey - Step 3: Using provided shared secret to recreate KEK");
+    veil::vtl1::vtl0_functions::debug_print("DEBUG: UnprotectUserBoundKey - Step 2.5: Decrypting secret using DecryptAndUntagSecret");
+    hr = DecryptAndUntagSecret(sessionKeyPtr, secret, secretSize, &pDecryptedSecret, &decryptedSecretSize);
+    if (FAILED(hr))
+    {
+        veil::vtl1::vtl0_functions::debug_print("DEBUG: UnprotectUserBoundKey - DecryptAuthContextBlob failed: 0x%08X", hr);
+        goto cleanup;
+    }
+    veil::vtl1::vtl0_functions::debug_print("DEBUG: UnprotectUserBoundKey - DecryptAuthContextBlob succeeded, decrypted secret size: %u", decryptedSecretSize);
 
-    // The secret parameter contains the shared secret that was derived during key creation
+    //
+    // Step 3: Use the decrypted secret to recreate the KEK
+    //
+    veil::vtl1::vtl0_functions::debug_print("DEBUG: UnprotectUserBoundKey - Step 3: Using decrypted secret to recreate KEK");
+
+    // The decrypted secret parameter contains the shared secret that was derived during key creation
     // We use this directly to create the KEK, bypassing the ECDH computation
-    derivedKeySize = secretSize;
+    derivedKeySize = decryptedSecretSize;
     pSharedSecret = (BYTE*)VengcAlloc(derivedKeySize);
     if (pSharedSecret == NULL)
     {
         hr = E_OUTOFMEMORY;
         goto cleanup;
     }
-    memcpy(pSharedSecret, secret, secretSize);
+    memcpy(pSharedSecret, pDecryptedSecret, decryptedSecretSize);
 
     //
     // Step 4: Generate KEK using the shared secret as key material
@@ -1790,7 +1960,7 @@ HRESULT UnprotectUserBoundKey(
     }
 
     //
-    // Step 5: Decrypt the user key using AES-GCM
+ // Step 5: Decrypt the user key using AES-GCM
     //
     veil::vtl1::vtl0_functions::debug_print("DEBUG: UnprotectUserBoundKey - Step 5: Decrypting user key");
     
@@ -1858,6 +2028,11 @@ cleanup:
     CleanupParsedBoundKeyComponents(&boundKeyComponents);
 
     // Clean up allocated resources
+    if (pDecryptedSecret != NULL)
+    {
+        VengcSecureFree(pDecryptedSecret, decryptedSecretSize);
+    }
+
     if (pSharedSecret != NULL)
     {
         VengcSecureFree(pSharedSecret, derivedKeySize);
@@ -1888,5 +2063,282 @@ cleanup:
         VengcFree(pOutputUserKey);
     }
 
+    return hr;
+}
+
+//
+// Creates an encrypted NGC request for DeriveSharedSecret using the session key and ephemeral public key bytes
+HRESULT CreateEncryptedNgcRequestForDeriveSharedSecret(
+    _In_ UINT_PTR sessionKeyPtr,
+    _In_reads_bytes_(keyNameSize) const void* keyName,
+    _In_ UINT32 keyNameSize,
+    _In_reads_bytes_(publicKeyBytesSize) const void* publicKeyBytes,
+    _In_ UINT32 publicKeyBytesSize,
+    _Outptr_result_buffer_(*encryptedRequestSize) void** encryptedRequest,
+    _Out_ UINT32* encryptedRequestSize
+)
+{
+    veil::vtl1::vtl0_functions::debug_print("DEBUG: CreateEncryptedNgcRequestForDeriveSharedSecret - Function entered");
+    
+    HRESULT hr = S_OK;
+    void* pEncryptedRequest = NULL;
+    UINT32 totalEncryptedSize = 0;
+    std::vector<uint8_t> plaintext;
+    std::vector<uint8_t> ciphertext;
+    BYTE* pEncryptedData = NULL;
+    ULONG bytesEncrypted = 0;
+    
+    //
+    // Step 1: Validate input parameters
+    //
+    veil::vtl1::vtl0_functions::debug_print("DEBUG: CreateEncryptedNgcRequestForDeriveSharedSecret - Step 1: Validating input parameters");
+    if (sessionKeyPtr == 0 || keyName == NULL || keyNameSize == 0 || publicKeyBytes == NULL || publicKeyBytesSize == 0 || 
+        encryptedRequest == NULL || encryptedRequestSize == NULL)
+    {
+        veil::vtl1::vtl0_functions::debug_print("DEBUG: CreateEncryptedNgcRequestForDeriveSharedSecret - Invalid input parameters");
+        hr = E_INVALIDARG;
+        goto cleanup;
+    }
+
+    // Initialize output parameters
+    *encryptedRequest = NULL;
+    *encryptedRequestSize = 0;
+
+    veil::vtl1::vtl0_functions::debug_print("DEBUG: CreateEncryptedNgcRequestForDeriveSharedSecret - Input validation completed");
+    veil::vtl1::vtl0_functions::debug_print("DEBUG: CreateEncryptedNgcRequestForDeriveSharedSecret - sessionKeyPtr: 0x%p", (void*)sessionKeyPtr);
+    veil::vtl1::vtl0_functions::debug_print("DEBUG: CreateEncryptedNgcRequestForDeriveSharedSecret - keyNameSize: %u", keyNameSize);
+    veil::vtl1::vtl0_functions::debug_print("DEBUG: CreateEncryptedNgcRequestForDeriveSharedSecret - publicKeyBytesSize: %u", publicKeyBytesSize);
+    
+    try
+    {
+        //
+        // Step 2: Construct NGC request structure
+        //
+        veil::vtl1::vtl0_functions::debug_print("DEBUG: CreateEncryptedNgcRequestForDeriveSharedSecret - Step 2: Constructing NGC request");
+        
+        // NGC request format with 7-byte header:
+        // [7 bytes: header "NgcReq" including null terminator]
+        // [4 bytes: operation type (DeriveSharedSecret = 2)]
+        // [4 bytes: key name size]
+        // [key name data]
+        // [4 bytes: public key size]
+        // [public key data]
+        
+        const char header[] = "NgcReq"; // 7 bytes including null terminator
+        const UINT32 OPERATION_DERIVE_SHARED_SECRET = 2;
+        
+        // Calculate total plaintext size
+        UINT32 plaintextSize = sizeof(header) +   // 7-byte header including null terminator
+                              sizeof(UINT32) +    // operation type
+                              sizeof(UINT32) +    // key name size
+                              keyNameSize +       // key name data
+                              sizeof(UINT32) +    // public key size
+                              publicKeyBytesSize; // public key data
+        
+        plaintext.reserve(plaintextSize);
+        
+        // Add 7-byte header first
+        const uint8_t* headerBytes = reinterpret_cast<const uint8_t*>(header);
+        plaintext.insert(plaintext.end(), headerBytes, headerBytes + sizeof(header));
+        
+        // Add operation type
+        const uint8_t* opTypeBytes = reinterpret_cast<const uint8_t*>(&OPERATION_DERIVE_SHARED_SECRET);
+        plaintext.insert(plaintext.end(), opTypeBytes, opTypeBytes + sizeof(UINT32));
+        
+        // Add key name size
+        const uint8_t* keyNameSizeBytes = reinterpret_cast<const uint8_t*>(&keyNameSize);
+        plaintext.insert(plaintext.end(), keyNameSizeBytes, keyNameSizeBytes + sizeof(UINT32));
+        
+        // Add key name data
+        const uint8_t* keyNameBytes = reinterpret_cast<const uint8_t*>(keyName);
+        plaintext.insert(plaintext.end(), keyNameBytes, keyNameBytes + keyNameSize);
+        
+        // Add public key size
+        const uint8_t* publicKeySizeBytes = reinterpret_cast<const uint8_t*>(&publicKeyBytesSize);
+        plaintext.insert(plaintext.end(), publicKeySizeBytes, publicKeySizeBytes + sizeof(UINT32));
+        
+        // Add public key data
+        const uint8_t* publicKeyBytesPtr = reinterpret_cast<const uint8_t*>(publicKeyBytes);
+        plaintext.insert(plaintext.end(), publicKeyBytesPtr, publicKeyBytesPtr + publicKeyBytesSize);
+        
+        veil::vtl1::vtl0_functions::debug_print("DEBUG: CreateEncryptedNgcRequestForDeriveSharedSecret - Constructed plaintext, size: %u", static_cast<UINT32>(plaintext.size()));
+
+        //
+        // Step 3: Generate nonce for encryption
+        //
+        veil::vtl1::vtl0_functions::debug_print("DEBUG: CreateEncryptedNgcRequestForDeriveSharedSecret - Step 3: Generating nonce");
+        
+        // Generate a random nonce number
+        // TODO: Is this correct?
+        ULONG64 requestNonce = 0;
+        ULONG64 nonceNumber = InterlockedIncrement64(reinterpret_cast<LONG64*>(&requestNonce));
+        if (nonceNumber >= 100000 /*c_maxRequestNonce*/)
+        {
+            hr = HRESULT_FROM_WIN32(ERROR_TOO_MANY_SECRETS);
+            goto cleanup;
+        }
+
+        // Create nonce buffer manually (instead of using crypto utility)
+        BYTE nonceBuffer[AES_GCM_NONCE_SIZE] = {0};
+        memcpy(&nonceBuffer[AES_GCM_NONCE_SIZE - sizeof(nonceNumber)], &nonceNumber, sizeof(nonceNumber));
+        
+        //
+        // Step 4: Encrypt the NGC request using BCrypt directly
+        //
+        veil::vtl1::vtl0_functions::debug_print("DEBUG: CreateEncryptedNgcRequestForDeriveSharedSecret - Step 4: Encrypting NGC request");
+        
+        // Create tag buffer for AES-GCM
+        BYTE authTag[AES_GCM_TAG_SIZE] = {0};
+        
+        // Set up AES-GCM authentication info
+        BCRYPT_AUTHENTICATED_CIPHER_MODE_INFO authInfo;
+        BCRYPT_INIT_AUTH_MODE_INFO(authInfo);
+        authInfo.pbNonce = nonceBuffer;
+        authInfo.cbNonce = AES_GCM_NONCE_SIZE;
+        authInfo.pbTag = authTag;
+        authInfo.cbTag = AES_GCM_TAG_SIZE;
+        
+        // Get session key handle
+        BCRYPT_KEY_HANDLE sessionKey = reinterpret_cast<BCRYPT_KEY_HANDLE>(sessionKeyPtr);
+        
+        // Allocate buffer for encrypted data
+        pEncryptedData = (BYTE*)VengcAlloc(plaintext.size());
+        if (pEncryptedData == NULL)
+        {
+            hr = E_OUTOFMEMORY;
+            goto cleanup;
+        }
+        
+        // DEBUG: Print nonce and tag before BCryptEncrypt
+        {
+            char nonceHexStr[AES_GCM_NONCE_SIZE * 2 + 1] = {0};
+            char tagHexStr[AES_GCM_TAG_SIZE * 2 + 1] = {0};
+            
+            // Convert nonce to hex string
+            for (UINT32 i = 0; i < AES_GCM_NONCE_SIZE; i++)
+            {
+                sprintf_s(&nonceHexStr[i * 2], 3, "%02X", nonceBuffer[i]);
+            }
+            
+            // Convert tag to hex string (should be zeros before encryption)
+            for (UINT32 i = 0; i < AES_GCM_TAG_SIZE; i++)
+            {
+                sprintf_s(&tagHexStr[i * 2], 3, "%02X", authTag[i]);
+            }
+            
+            veil::vtl1::vtl0_functions::debug_print("DEBUG: CreateEncryptedNgcRequestForDeriveSharedSecret - BEFORE BCryptEncrypt - Nonce (hex): %s", nonceHexStr);
+            veil::vtl1::vtl0_functions::debug_print("DEBUG: CreateEncryptedNgcRequestForDeriveSharedSecret - BEFORE BCryptEncrypt - Auth Tag (hex): %s", tagHexStr);
+        }
+        
+        // Encrypt the plaintext using BCrypt
+        // In AES-GCM ciphertext and plaintext lengths are the same
+        hr = HRESULT_FROM_NT(BCryptEncrypt(
+            sessionKey,
+            plaintext.data(),
+            static_cast<ULONG>(plaintext.size()),
+            &authInfo,
+            NULL,  // No IV for GCM (nonce is in authInfo)
+            0,
+            pEncryptedData,
+            static_cast<ULONG>(plaintext.size()),
+            &bytesEncrypted,
+            0
+        ));
+        
+        // DEBUG: Print nonce and tag after BCryptEncrypt
+        {
+            char nonceHexStr[AES_GCM_NONCE_SIZE * 2 + 1] = {0};
+            char tagHexStr[AES_GCM_TAG_SIZE * 2 + 1] = {0};
+            
+            // Convert nonce to hex string
+            for (UINT32 i = 0; i < AES_GCM_NONCE_SIZE; i++)
+            {
+                sprintf_s(&nonceHexStr[i * 2], 3, "%02X", nonceBuffer[i]);
+            }
+            
+            // Convert tag to hex string (should contain auth tag after encryption)
+            for (UINT32 i = 0; i < AES_GCM_TAG_SIZE; i++)
+            {
+                sprintf_s(&tagHexStr[i * 2], 3, "%02X", authTag[i]);
+            }
+            
+            veil::vtl1::vtl0_functions::debug_print("DEBUG: CreateEncryptedNgcRequestForDeriveSharedSecret - AFTER BCryptEncrypt - Nonce (hex): %s", nonceHexStr);
+            veil::vtl1::vtl0_functions::debug_print("DEBUG: CreateEncryptedNgcRequestForDeriveSharedSecret - AFTER BCryptEncrypt - Auth Tag (hex): %s", tagHexStr);
+        }
+        
+        if (FAILED(hr))
+        {
+            veil::vtl1::vtl0_functions::debug_print("DEBUG: CreateEncryptedNgcRequestForDeriveSharedSecret - BCryptEncrypt failed");
+            goto cleanup;
+        }
+        
+        //
+        // Step 5: Construct final encrypted request format
+        //
+        veil::vtl1::vtl0_functions::debug_print("DEBUG: CreateEncryptedNgcRequestForDeriveSharedSecret - Step 5: Constructing final encrypted request");
+        
+        // Final format: [8 bytes: nonce number][encrypted data][16 bytes: auth tag]
+        totalEncryptedSize = sizeof(requestNonce) + bytesEncrypted + AES_GCM_TAG_SIZE;
+        
+        ciphertext.reserve(totalEncryptedSize);
+        
+        // Add nonce number
+        const uint8_t* nonceNumberBytes = reinterpret_cast<const uint8_t*>(&requestNonce);
+        ciphertext.insert(ciphertext.end(), nonceNumberBytes, nonceNumberBytes + sizeof(requestNonce));
+        
+        // Add encrypted data
+        ciphertext.insert(ciphertext.end(), pEncryptedData, pEncryptedData + bytesEncrypted);
+        
+        // Add authentication tag
+        ciphertext.insert(ciphertext.end(), authTag, authTag + AES_GCM_TAG_SIZE);
+        
+        veil::vtl1::vtl0_functions::debug_print("DEBUG: CreateEncryptedNgcRequestForDeriveSharedSecret - Final encrypted request size: %u", totalEncryptedSize);
+
+        //
+        // Step 6: Allocate and return encrypted request
+        //
+        veil::vtl1::vtl0_functions::debug_print("DEBUG: CreateEncryptedNgcRequestForDeriveSharedSecret - Step 6: Allocating output buffer");
+        
+        pEncryptedRequest = VengcAlloc(totalEncryptedSize);
+        if (pEncryptedRequest == NULL)
+        {
+            hr = E_OUTOFMEMORY;
+            goto cleanup;
+        }
+        
+        memcpy(pEncryptedRequest, ciphertext.data(), totalEncryptedSize);
+        
+        // Success - transfer ownership to caller
+        *encryptedRequest = pEncryptedRequest;
+        *encryptedRequestSize = totalEncryptedSize;
+        pEncryptedRequest = NULL; // Transfer ownership
+        
+        veil::vtl1::vtl0_functions::debug_print("DEBUG: CreateEncryptedNgcRequestForDeriveSharedSecret - Function completed successfully");
+    }
+    catch (const std::exception& e)
+    {
+        veil::vtl1::vtl0_functions::debug_print("DEBUG: CreateEncryptedNgcRequestForDeriveSharedSecret - Exception caught: %s", e.what());
+        hr = E_FAIL;
+        goto cleanup;
+    }
+    catch (...)
+    {
+        veil::vtl1::vtl0_functions::debug_print("DEBUG: CreateEncryptedNgcRequestForDeriveSharedSecret - Unknown exception caught");
+        hr = E_UNEXPECTED;
+        goto cleanup;
+    }
+
+cleanup:
+    if (pEncryptedRequest != NULL)
+    {
+        VengcFree(pEncryptedRequest);
+    }
+    
+    if (pEncryptedData != NULL)
+    {
+        VengcSecureFree(pEncryptedData, plaintext.size());
+    }
+    
+    veil::vtl1::vtl0_functions::debug_print("DEBUG: CreateEncryptedNgcRequestForDeriveSharedSecret - Function exiting with hr: 0x%08X", hr);
     return hr;
 }
