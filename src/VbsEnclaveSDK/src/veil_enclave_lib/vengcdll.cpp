@@ -1702,6 +1702,7 @@ HRESULT CreateEncryptedNgcRequestForDeriveSharedSecret(
     BCRYPT_INIT_AUTH_MODE_INFO(authInfo);
     authInfo.pbNonce = nonceBuffer;
     authInfo.cbNonce = AES_GCM_NONCE_SIZE;
+    authInfo.pbTag = authTag;
     authInfo.cbTag = AES_GCM_TAG_SIZE;
 
     // Get session key handle
@@ -2063,7 +2064,7 @@ DecryptAndUntagSecret(
     nonce = nonceNumber ^ c_responderBitFlip;  // Apply responder bit flip as per VTL1 protocol
 
     // Create nonce buffer manually (instead of using crypto utility)
-    memcpy(&nonceBuffer[AES_GCM_NONCE_SIZE - sizeof(nonce)], reinterpret_cast<const uint8_t*>(&nonce), sizeof(nonce));
+    memcpy(&nonceBuffer[AES_GCM_NONCE_SIZE - sizeof(nonce)], &nonce, sizeof(nonce));
 
     // Hex-dump the secret blob for debugging
     {
