@@ -26,6 +26,7 @@
 #include <VbsEnclave\HostApp\Stubs.h>
 #include "..\veil_enclave_lib\vengcdll.h"
 #include <VbsEnclave\HostApp\DeveloperTypes.h>
+#include <sddl.h>
 
 using namespace winrt::Windows::Security::Credentials;
 
@@ -35,6 +36,53 @@ std::vector<uint8_t> ConvertBufferToVector(winrt::Windows::Storage::Streams::IBu
     winrt::com_array<uint8_t> byteArray;
     winrt::Windows::Security::Cryptography::CryptographicBuffer::CopyToByteArray(buffer, byteArray);
     return std::vector<uint8_t>(byteArray.begin(), byteArray.end());
+}
+
+std::wstring FormatUserHelloKeyName(PCWSTR name)
+{
+    static constexpr wchar_t c_formatString[] = L"{}//{}//{}";
+    HANDLE tokenHandle = nullptr;
+
+    if (!OpenProcessToken(GetCurrentProcess(), TOKEN_QUERY, &tokenHandle))
+    {
+        // Handle error
+        return {};
+    }
+
+    DWORD tokenInfoLength = 0;
+    GetTokenInformation(tokenHandle, TokenUser, nullptr, 0, &tokenInfoLength);
+    std::vector<BYTE> tokenInfoBuffer(tokenInfoLength);
+
+    if (!GetTokenInformation(tokenHandle, TokenUser, tokenInfoBuffer.data(), tokenInfoLength, &tokenInfoLength))
+    {
+        // Handle error
+        CloseHandle(tokenHandle);
+        return {};
+    }
+
+    PTOKEN_USER tokenUser = reinterpret_cast<PTOKEN_USER>(tokenInfoBuffer.data());
+
+    // Extract the SID from the TOKEN_USER structure
+    PSID userSid = tokenUser->User.Sid;  // This is how you get the SID
+
+    // Convert SID to string
+    LPWSTR userSidString = nullptr;
+    if (!ConvertSidToStringSidW(userSid, &userSidString))
+    {
+        // Handle error
+        CloseHandle(tokenHandle);
+        return {};
+    }
+
+    CloseHandle(tokenHandle);
+
+    // Create the formatted key name
+    std::wstring result = std::format(c_formatString, userSidString, userSidString, name);
+
+    // Free the SID string allocated by ConvertSidToStringSidW
+    LocalFree(userSidString);
+
+    return result;
 }
 
 winrt::hstring GetAlgorithm(uintptr_t ecdhAlgorithm)
@@ -375,7 +423,7 @@ KeyCredential ConvertVectorToCredential(const std::vector<uint8_t>& credentialVe
     return KeyCredential{ abi, winrt::take_ownership_from_abi };
 }
 
-credentialAndSessionKeyPtr veil_abi::VTL0_Stubs::export_interface::userboundkey_establish_session_for_load_callback(
+credentialAndFormattedKeyNameAndSessionKeyPtr veil_abi::VTL0_Stubs::export_interface::userboundkey_establish_session_for_load_callback(
     uintptr_t enclave,
     const std::wstring& key_name,
     const std::vector<uint8_t>& public_key,
@@ -442,10 +490,12 @@ credentialAndSessionKeyPtr veil_abi::VTL0_Stubs::export_interface::userboundkey_
     }
 
     const auto& credential = credentialResult.Credential();
+    std::wstring formattedKeyName = FormatUserHelloKeyName(key_name.c_str());
 
     // Return the credential as a vector along with sessionKeyPtr for VTL1 to use later
-    credentialAndSessionKeyPtr result;
+    credentialAndFormattedKeyNameAndSessionKeyPtr result;
     result.credential = ConvertCredentialToVector(credential);
+    result.formattedKeyName = formattedKeyName;
     result.sessionKeyPtr = *sessionKeyPtr;
     return result;
 }

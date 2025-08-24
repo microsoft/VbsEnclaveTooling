@@ -28,9 +28,10 @@ enclave
         uintptr_t sessionKeyPtr;
     };
 
-    struct credentialAndSessionKeyPtr
+    struct credentialAndFormattedKeyNameAndSessionKeyPtr
     {
         vector<uint8_t> credential;
+        wstring formattedKeyName;
         uintptr_t sessionKeyPtr;
     };
 
@@ -90,7 +91,7 @@ enclave
             keyCredentialCacheConfig cache_config
             );
 
-        credentialAndSessionKeyPtr userboundkey_establish_session_for_load(
+        credentialAndFormattedKeyNameAndSessionKeyPtr userboundkey_establish_session_for_load(
             uintptr_t enclave,
             wstring key_name,
             vector<uint8_t> public_key,

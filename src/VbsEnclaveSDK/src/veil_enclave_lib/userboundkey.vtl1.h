@@ -14,7 +14,7 @@ namespace DeveloperTypes
     struct authContextBlobAndSessionKeyPtr;
     struct secretAndAuthorizationContextAndSessionKeyPtr;
     struct keyCredentialCacheConfig;
-    struct credentialAndSessionKeyPtr;
+    struct credentialAndFormattedKeyNameAndSessionKeyPtr;
     struct secretAndAuthorizationContext;
 }
 
@@ -28,7 +28,7 @@ namespace veil::vtl1::implementation::userboundkey::callouts
         _In_ const uintptr_t window_id,
         _In_ const DeveloperTypes::keyCredentialCacheConfig& cache_config);
 
-    DeveloperTypes::credentialAndSessionKeyPtr userboundkey_establish_session_for_load_callback(
+    DeveloperTypes::credentialAndFormattedKeyNameAndSessionKeyPtr userboundkey_establish_session_for_load_callback(
         _In_ const void* enclave,
         _In_ const std::wstring& key_name,
         _In_ const std::vector<std::uint8_t>& public_key,
