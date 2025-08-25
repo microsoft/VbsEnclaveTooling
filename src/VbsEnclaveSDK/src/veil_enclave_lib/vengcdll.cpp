@@ -12,7 +12,7 @@ typedef struct _NCRYPT_NGC_AUTHORIZATION_CONTEXT{
     BOOL isSecureIdOwnerId;
     KEY_CREDENTIAL_CACHE_CONFIG cacheConfig;
     DWORD keyNameLength;
-    WCHAR keyName[NGC_KEY_NAME_BUFFER_SIZE];
+    WCHAR keyName[KCM_KEY_NAME_BUFFER_SIZE];
     DWORD publicKeyByteCount;
     BYTE publicKey[1];
 } NCRYPT_NGC_AUTHORIZATION_CONTEXT, * PNCRYPT_NGC_AUTHORIZATION_CONTEXT;
@@ -34,133 +34,135 @@ void VengcSecureFree(void* ptr, SIZE_T size)
 
 namespace Vtl1MutualAuth
 {
-// Header constants used throughout the namespace - defined once to eliminate duplication
-static constexpr BYTE CHALLENGE_HEADER[10] = {'c','h','a','l','l','e','n','g','e','\0'};
-static constexpr BYTE ATTESTATION_HEADER[8] = {'a','t','t','e','s','t','\0','\0'};
-static constexpr SIZE_T c_challengeSize = 24;
+    // Header constants used throughout the namespace - defined once to eliminate duplication
+    static constexpr BYTE CHALLENGE_HEADER[10] = {'c','h','a','l','l','e','n','g','e','\0'};
+    static constexpr BYTE ATTESTATION_HEADER[8] = {'a','t','t','e','s','t','\0','\0'};
+    static constexpr SIZE_T c_challengeSize = 24;
+    static constexpr ULONG64 c_maxRequestNonce = 100000;  // Maximum allowed nonce value for request generation
+    static constexpr UINT32 c_maxEncryptedUserKeySize = 1024;  // Maximum allowed encrypted user key size
 
-struct SessionChallenge
-{
-    static constexpr SIZE_T c_sessionChallengeVectorSize = sizeof(CHALLENGE_HEADER) + c_challengeSize + sizeof(PS_TRUSTLET_TKSESSION_ID);
-    BYTE challenge[c_challengeSize];
-    PS_TRUSTLET_TKSESSION_ID sessionId;
-
-    HRESULT ToVector(_Out_writes_bytes_(c_sessionChallengeVectorSize) BYTE* buffer) const
+    struct SessionChallenge
     {
-        if (buffer == NULL)
+        static constexpr SIZE_T c_sessionChallengeVectorSize = sizeof(CHALLENGE_HEADER) + c_challengeSize + sizeof(PS_TRUSTLET_TKSESSION_ID);
+        BYTE challenge[c_challengeSize];
+        PS_TRUSTLET_TKSESSION_ID sessionId;
+
+        HRESULT ToVector(_Out_writes_bytes_(c_sessionChallengeVectorSize) BYTE* buffer) const
         {
-            return E_INVALIDARG;
+            if (buffer == NULL)
+            {
+                return E_INVALIDARG;
+            }
+
+            SIZE_T index = 0;
+
+            memcpy(buffer + index, CHALLENGE_HEADER, sizeof(CHALLENGE_HEADER));
+            index += sizeof(CHALLENGE_HEADER);
+
+            memcpy(buffer + index, challenge, c_challengeSize);
+            index += c_challengeSize;
+
+            memcpy(buffer + index, &sessionId, sizeof(sessionId));
+            index += sizeof(sessionId);
+
+            return S_OK;
         }
 
-        SIZE_T index = 0;
+        static HRESULT FromVector(const BYTE* buffer, UINT32 bufferSize, _Out_ SessionChallenge* result)
+        {
+            if (buffer == NULL || result == NULL)
+            {
+                return E_INVALIDARG;
+            }
 
-        memcpy(buffer + index, CHALLENGE_HEADER, sizeof(CHALLENGE_HEADER));
-        index += sizeof(CHALLENGE_HEADER);
+            SIZE_T expectedSize = sizeof(CHALLENGE_HEADER) + c_challengeSize + sizeof(result->sessionId);
+            if (bufferSize < expectedSize)
+            {
+                return NTE_BAD_DATA;
+            }
 
-        memcpy(buffer + index, challenge, c_challengeSize);
-        index += c_challengeSize;
+            SIZE_T index = 0;
 
-        memcpy(buffer + index, &sessionId, sizeof(sessionId));
-        index += sizeof(sessionId);
+            // Check if buffer starts with the expected challenge header
+            if (0 != memcmp(CHALLENGE_HEADER, buffer, sizeof(CHALLENGE_HEADER)))
+            {
+                return NTE_BAD_TYPE;
+            }
+            index += sizeof(CHALLENGE_HEADER);
 
-        return S_OK;
-    }
+            // Copy challenge data
+            memcpy(result->challenge, buffer + index, c_challengeSize);
+            index += c_challengeSize;
 
-    static HRESULT FromVector(const BYTE* buffer, UINT32 bufferSize, _Out_ SessionChallenge* result)
+            // Copy session ID
+            memcpy(&result->sessionId, buffer + index, sizeof(result->sessionId));
+            index += sizeof(result->sessionId);
+
+            return S_OK;
+        }
+    };
+
+    struct AttestationData
     {
-        if (buffer == NULL || result == NULL)
+        static constexpr SIZE_T c_symmetricSecretSize = 32;
+        static constexpr SIZE_T c_attestationDataVectorSize = sizeof(ATTESTATION_HEADER) + c_challengeSize + c_symmetricSecretSize;
+        BYTE challenge[c_challengeSize];
+        BYTE symmetricSecret[c_symmetricSecretSize];
+
+        HRESULT ToVector(_Out_writes_bytes_(c_attestationDataVectorSize) BYTE* buffer) const
         {
-            return E_INVALIDARG;
+            if (buffer == NULL)
+            {
+                return E_INVALIDARG;
+            }
+
+            SIZE_T index = 0;
+
+            memcpy(buffer + index, ATTESTATION_HEADER, sizeof(ATTESTATION_HEADER));
+            index += sizeof(ATTESTATION_HEADER);
+
+            memcpy(buffer + index, challenge, c_challengeSize);
+            index += c_challengeSize;
+
+            memcpy(buffer + index, symmetricSecret, c_symmetricSecretSize);
+            index += c_symmetricSecretSize;
+
+            return S_OK;
         }
 
-        SIZE_T expectedSize = sizeof(CHALLENGE_HEADER) + c_challengeSize + sizeof(result->sessionId);
-        if (bufferSize < expectedSize)
+        static HRESULT FromVector(const BYTE* buffer, UINT32 bufferSize, _Out_ AttestationData* result)
         {
-            return NTE_BAD_DATA;
+            if (buffer == NULL || result == NULL)
+            {
+                return E_INVALIDARG;
+            }
+
+            SIZE_T expectedSize = sizeof(ATTESTATION_HEADER) + c_challengeSize + c_symmetricSecretSize;
+            if (bufferSize < expectedSize)
+            {
+                return NTE_BAD_DATA;
+            }
+
+            SIZE_T index = 0;
+
+            // Check if buffer starts with the expected attestation header
+            if (0 != memcmp(ATTESTATION_HEADER, buffer, sizeof(ATTESTATION_HEADER)))
+            {
+                return NTE_BAD_TYPE;
+            }
+            index += sizeof(ATTESTATION_HEADER);
+
+            // Copy challenge data
+            memcpy(result->challenge, buffer + index, c_challengeSize);
+            index += c_challengeSize;
+
+            // Copy symmetric secret
+            memcpy(result->symmetricSecret, buffer + index, c_symmetricSecretSize);
+            index += c_symmetricSecretSize;
+
+            return S_OK;
         }
-
-        SIZE_T index = 0;
-
-        // Check if buffer starts with the expected challenge header
-        if (0 != memcmp(CHALLENGE_HEADER, buffer, sizeof(CHALLENGE_HEADER)))
-        {
-            return NTE_BAD_TYPE;
-        }
-        index += sizeof(CHALLENGE_HEADER);
-
-        // Copy challenge data
-        memcpy(result->challenge, buffer + index, c_challengeSize);
-        index += c_challengeSize;
-
-        // Copy session ID
-        memcpy(&result->sessionId, buffer + index, sizeof(result->sessionId));
-        index += sizeof(result->sessionId);
-
-        return S_OK;
-    }
-};
-
-struct AttestationData
-{
-    static constexpr SIZE_T c_symmetricSecretSize = 32;
-    static constexpr SIZE_T c_attestationDataVectorSize = sizeof(ATTESTATION_HEADER) + c_challengeSize + c_symmetricSecretSize;
-    BYTE challenge[c_challengeSize];
-    BYTE symmetricSecret[c_symmetricSecretSize];
-
-    HRESULT ToVector(_Out_writes_bytes_(c_attestationDataVectorSize) BYTE* buffer) const
-    {
-        if (buffer == NULL)
-        {
-            return E_INVALIDARG;
-        }
-
-        SIZE_T index = 0;
-
-        memcpy(buffer + index, ATTESTATION_HEADER, sizeof(ATTESTATION_HEADER));
-        index += sizeof(ATTESTATION_HEADER);
-
-        memcpy(buffer + index, challenge, c_challengeSize);
-        index += c_challengeSize;
-
-        memcpy(buffer + index, symmetricSecret, c_symmetricSecretSize);
-        index += c_symmetricSecretSize;
-
-        return S_OK;
-    }
-
-    static HRESULT FromVector(const BYTE* buffer, UINT32 bufferSize, _Out_ AttestationData* result)
-    {
-        if (buffer == NULL || result == NULL)
-        {
-            return E_INVALIDARG;
-        }
-
-        SIZE_T expectedSize = sizeof(ATTESTATION_HEADER) + c_challengeSize + c_symmetricSecretSize;
-        if (bufferSize < expectedSize)
-        {
-            return NTE_BAD_DATA;
-        }
-
-        SIZE_T index = 0;
-
-        // Check if buffer starts with the expected attestation header
-        if (0 != memcmp(ATTESTATION_HEADER, buffer, sizeof(ATTESTATION_HEADER)))
-        {
-            return NTE_BAD_TYPE;
-        }
-        index += sizeof(ATTESTATION_HEADER);
-
-        // Copy challenge data
-        memcpy(result->challenge, buffer + index, c_challengeSize);
-        index += c_challengeSize;
-
-        // Copy symmetric secret
-        memcpy(result->symmetricSecret, buffer + index, c_symmetricSecretSize);
-        index += c_symmetricSecretSize;
-
-        return S_OK;
-    }
-};
+    };
 }
 
 // Internal structure to hold decrypted auth context data
@@ -408,7 +410,7 @@ EncryptAttestationReport(
     // Set up trustlet binding data
     veil::vtl1::vtl0_functions::debug_print("DEBUG: EncryptAttestationReport - Setting up trustlet binding data");
     TRUSTLET_BINDING_DATA trustletData;
-    trustletData.TrustletIdentity = TRUSTLETIDENTITY_NGC;
+    trustletData.TrustletIdentity = TRUSTLETIDENTITY_KCM;
     trustletData.TrustletSessionId = sessionId;
     trustletData.TrustletSvn = 0;
     trustletData.Reserved1 = 0;
@@ -909,7 +911,7 @@ ValidateAuthorizationContext(
     UINT32 ngcPublicKeySize = authCtx->publicKeyByteCount;
 
     // Validate the public key size is reasonable
-    if (ngcPublicKeySize < NGC_PUBLIC_KEY_MIN_SIZE)
+    if (ngcPublicKeySize < KCM_PUBLIC_KEY_MIN_SIZE)
     {
         return E_INVALIDARG;
     }
@@ -1035,9 +1037,9 @@ PerformECDHKeyEstablishment(
     rawTrustletDataSize = authCtx->publicKeyByteCount;
 
     // Validate the trustlet data size is reasonable
-    if (rawTrustletDataSize < NGC_PUBLIC_KEY_MIN_SIZE || rawTrustletDataSize > NGC_PUBLIC_KEY_MAX_SIZE)
+    if (rawTrustletDataSize < KCM_PUBLIC_KEY_MIN_SIZE || rawTrustletDataSize > KCM_PUBLIC_KEY_MAX_SIZE)
     {
-        veil::vtl1::vtl0_functions::debug_print("DEBUG: PerformECDHKeyEstablishment - Invalid trustlet data size, expected between %u and %u bytes", NGC_PUBLIC_KEY_MIN_SIZE, NGC_PUBLIC_KEY_MAX_SIZE);
+        veil::vtl1::vtl0_functions::debug_print("DEBUG: PerformECDHKeyEstablishment - Invalid trustlet data size, expected between %u and %u bytes", KCM_PUBLIC_KEY_MIN_SIZE, KCM_PUBLIC_KEY_MAX_SIZE);
         hr = E_INVALIDARG;
         goto cleanup;
     }
@@ -1245,6 +1247,11 @@ ComputeKEKFromSharedSecret(
     if (hDerivedKey != NULL)
     {
         BCryptDestroyKey(hDerivedKey);
+    }
+
+    if (pEnclavePublicKeyBlob != NULL)
+    {
+        VengcFree(pEnclavePublicKeyBlob);
     }
 
     return hr;
@@ -1460,7 +1467,11 @@ HRESULT ProtectUserBoundKey(
     //
     // Step 1: Validate input parameters
     //
-    if (authContext == NULL || userKey == NULL || userKeySize == 0 || boundKey == NULL || boundKeySize == NULL)
+    if (authContext == NULL || 
+        userKey == NULL || 
+        userKeySize == 0 || 
+        boundKey == NULL || 
+        boundKeySize == NULL)
     {
         return E_INVALIDARG;
     }
@@ -1565,7 +1576,7 @@ HRESULT ProtectUserBoundKey(
 
 //
 // Creates an encrypted NGC request for DeriveSharedSecret using the session key and ephemeral public key bytes
-HRESULT CreateEncryptedNgcRequestForDeriveSharedSecret(
+HRESULT CreateEncryptedRequestForDeriveSharedSecret(
     _In_ UINT_PTR sessionKeyPtr,
     _In_reads_bytes_(keyNameSize) const void* keyName,
     _In_ UINT32 keyNameSize,
@@ -1576,7 +1587,7 @@ HRESULT CreateEncryptedNgcRequestForDeriveSharedSecret(
     _Out_ ULONG64* nonceNumber
 )
 {
-    veil::vtl1::vtl0_functions::debug_print("DEBUG: CreateEncryptedNgcRequestForDeriveSharedSecret - Function entered");
+    veil::vtl1::vtl0_functions::debug_print("DEBUG: CreateEncryptedRequestForDeriveSharedSecret - Function entered");
 
     HRESULT hr = S_OK;
     void* pEncryptedRequest = NULL;
@@ -1601,11 +1612,17 @@ HRESULT CreateEncryptedNgcRequestForDeriveSharedSecret(
     //
     // Step 1: Validate input parameters
     //
-    veil::vtl1::vtl0_functions::debug_print("DEBUG: CreateEncryptedNgcRequestForDeriveSharedSecret - Step 1: Validating input parameters");
-    if (sessionKeyPtr == 0 || keyName == NULL || keyNameSize == 0 || publicKeyBytes == NULL || publicKeyBytesSize == 0 ||
-        encryptedRequest == NULL || encryptedRequestSize == NULL || nonceNumber == NULL)
+    veil::vtl1::vtl0_functions::debug_print("DEBUG: CreateEncryptedRequestForDeriveSharedSecret - Step 1: Validating input parameters");
+    if (sessionKeyPtr == 0 || 
+        keyName == NULL || 
+        keyNameSize == 0 || 
+        publicKeyBytes == NULL || 
+        publicKeyBytesSize == 0 ||
+        encryptedRequest == NULL || 
+        encryptedRequestSize == NULL || 
+        nonceNumber == NULL)
     {
-        veil::vtl1::vtl0_functions::debug_print("DEBUG: CreateEncryptedNgcRequestForDeriveSharedSecret - Invalid input parameters");
+        veil::vtl1::vtl0_functions::debug_print("DEBUG: CreateEncryptedRequestForDeriveSharedSecret - Invalid input parameters");
         hr = E_INVALIDARG;
         goto cleanup;
     }
@@ -1615,15 +1632,15 @@ HRESULT CreateEncryptedNgcRequestForDeriveSharedSecret(
     *encryptedRequestSize = 0;
     *nonceNumber = 0;
 
-    veil::vtl1::vtl0_functions::debug_print("DEBUG: CreateEncryptedNgcRequestForDeriveSharedSecret - Input validation completed");
-    veil::vtl1::vtl0_functions::debug_print("DEBUG: CreateEncryptedNgcRequestForDeriveSharedSecret - sessionKeyPtr: 0x%p", (void*)sessionKeyPtr);
-    veil::vtl1::vtl0_functions::debug_print("DEBUG: CreateEncryptedNgcRequestForDeriveSharedSecret - keyNameSize: %u", keyNameSize);
-    veil::vtl1::vtl0_functions::debug_print("DEBUG: CreateEncryptedNgcRequestForDeriveSharedSecret - publicKeyBytesSize: %u", publicKeyBytesSize);
+    veil::vtl1::vtl0_functions::debug_print("DEBUG: CreateEncryptedRequestForDeriveSharedSecret - Input validation completed");
+    veil::vtl1::vtl0_functions::debug_print("DEBUG: CreateEncryptedRequestForDeriveSharedSecret - sessionKeyPtr: 0x%p", (void*)sessionKeyPtr);
+    veil::vtl1::vtl0_functions::debug_print("DEBUG: CreateEncryptedRequestForDeriveSharedSecret - keyNameSize: %u", keyNameSize);
+    veil::vtl1::vtl0_functions::debug_print("DEBUG: CreateEncryptedRequestForDeriveSharedSecret - publicKeyBytesSize: %u", publicKeyBytesSize);
 
     //
     // Step 2: Construct NGC request structure
     //
-    veil::vtl1::vtl0_functions::debug_print("DEBUG: CreateEncryptedNgcRequestForDeriveSharedSecret - Step 2: Constructing NGC request");
+    veil::vtl1::vtl0_functions::debug_print("DEBUG: CreateEncryptedRequestForDeriveSharedSecret - Step 2: Constructing NGC request");
 
     // NGC request format with 7-byte header:
     // [7 bytes: header "NgcReq" including null terminator]
@@ -1675,16 +1692,15 @@ HRESULT CreateEncryptedNgcRequestForDeriveSharedSecret(
     // Add public key data
     memcpy(pCurrentPos, publicKeyBytes, publicKeyBytesSize);
 
-    veil::vtl1::vtl0_functions::debug_print("DEBUG: CreateEncryptedNgcRequestForDeriveSharedSecret - Constructed plaintext, size: %u", plaintextSize);
+    veil::vtl1::vtl0_functions::debug_print("DEBUG: CreateEncryptedRequestForDeriveSharedSecret - Constructed plaintext, size: %u", plaintextSize);
 
     //
     // Step 3: Generate nonce for encryption
     //
-    veil::vtl1::vtl0_functions::debug_print("DEBUG: CreateEncryptedNgcRequestForDeriveSharedSecret - Step 3: Generating nonce");
+    veil::vtl1::vtl0_functions::debug_print("DEBUG: CreateEncryptedRequestForDeriveSharedSecret - Step 3: Generating nonce");
 
-    // Generate a random nonce number
     nonce = InterlockedIncrement64(reinterpret_cast<LONG64*>(&requestNonce));
-    if (nonce >= 100000 /*c_maxRequestNonce*/)
+    if (nonce >= Vtl1MutualAuth::c_maxRequestNonce)
     {
         hr = HRESULT_FROM_WIN32(ERROR_TOO_MANY_SECRETS);
         goto cleanup;
@@ -1696,7 +1712,7 @@ HRESULT CreateEncryptedNgcRequestForDeriveSharedSecret(
     //
     // Step 4: Encrypt the NGC request using BCrypt directly
     //
-    veil::vtl1::vtl0_functions::debug_print("DEBUG: CreateEncryptedNgcRequestForDeriveSharedSecret - Step 4: Encrypting NGC request");
+    veil::vtl1::vtl0_functions::debug_print("DEBUG: CreateEncryptedRequestForDeriveSharedSecret - Step 4: Encrypting NGC request");
 
     // Set up AES-GCM authentication info
     BCRYPT_INIT_AUTH_MODE_INFO(authInfo);
@@ -1733,8 +1749,8 @@ HRESULT CreateEncryptedNgcRequestForDeriveSharedSecret(
             sprintf_s(&tagHexStr[i * 2], 3, "%02X", authTag[i]);
         }
 
-        veil::vtl1::vtl0_functions::debug_print("DEBUG: CreateEncryptedNgcRequestForDeriveSharedSecret - BEFORE BCryptEncrypt - Nonce (hex): %s", nonceHexStr);
-        veil::vtl1::vtl0_functions::debug_print("DEBUG: CreateEncryptedNgcRequestForDeriveSharedSecret - BEFORE BCryptEncrypt - Auth Tag (hex): %s", tagHexStr);
+        veil::vtl1::vtl0_functions::debug_print("DEBUG: CreateEncryptedRequestForDeriveSharedSecret - BEFORE BCryptEncrypt - Nonce (hex): %s", nonceHexStr);
+        veil::vtl1::vtl0_functions::debug_print("DEBUG: CreateEncryptedRequestForDeriveSharedSecret - BEFORE BCryptEncrypt - Auth Tag (hex): %s", tagHexStr);
     }
 
     // Encrypt the plaintext using BCrypt
@@ -1769,20 +1785,20 @@ HRESULT CreateEncryptedNgcRequestForDeriveSharedSecret(
             sprintf_s(&tagHexStr[i * 2], 3, "%02X", authTag[i]);
         }
 
-        veil::vtl1::vtl0_functions::debug_print("DEBUG: CreateEncryptedNgcRequestForDeriveSharedSecret - AFTER BCryptEncrypt - Nonce (hex): %s", nonceHexStr);
-        veil::vtl1::vtl0_functions::debug_print("DEBUG: CreateEncryptedNgcRequestForDeriveSharedSecret - AFTER BCryptEncrypt - Auth Tag (hex): %s", tagHexStr);
+        veil::vtl1::vtl0_functions::debug_print("DEBUG: CreateEncryptedRequestForDeriveSharedSecret - AFTER BCryptEncrypt - Nonce (hex): %s", nonceHexStr);
+        veil::vtl1::vtl0_functions::debug_print("DEBUG: CreateEncryptedRequestForDeriveSharedSecret - AFTER BCryptEncrypt - Auth Tag (hex): %s", tagHexStr);
     }
 
     if (FAILED(hr))
     {
-        veil::vtl1::vtl0_functions::debug_print("DEBUG: CreateEncryptedNgcRequestForDeriveSharedSecret - BCryptEncrypt failed");
+        veil::vtl1::vtl0_functions::debug_print("DEBUG: CreateEncryptedRequestForDeriveSharedSecret - BCryptEncrypt failed");
         goto cleanup;
     }
 
     //
     // Step 5: Construct final encrypted request format
     //
-    veil::vtl1::vtl0_functions::debug_print("DEBUG: CreateEncryptedNgcRequestForDeriveSharedSecret - Step 5: Constructing final encrypted request");
+    veil::vtl1::vtl0_functions::debug_print("DEBUG: CreateEncryptedRequestForDeriveSharedSecret - Step 5: Constructing final encrypted request");
 
     // Final format: [8 bytes: nonce number][encrypted data][16 bytes: auth tag]
     totalEncryptedSize = sizeof(nonce) + bytesEncrypted + AES_GCM_TAG_SIZE;
@@ -1809,12 +1825,12 @@ HRESULT CreateEncryptedNgcRequestForDeriveSharedSecret(
     // Add authentication tag
     memcpy(pCurrentPos, authTag, AES_GCM_TAG_SIZE);
 
-    veil::vtl1::vtl0_functions::debug_print("DEBUG: CreateEncryptedNgcRequestForDeriveSharedSecret - Final encrypted request size: %u", totalEncryptedSize);
+    veil::vtl1::vtl0_functions::debug_print("DEBUG: CreateEncryptedRequestForDeriveSharedSecret - Final encrypted request size: %u", totalEncryptedSize);
 
     //
     // Step 6: Allocate and return encrypted request
     //
-    veil::vtl1::vtl0_functions::debug_print("DEBUG: CreateEncryptedNgcRequestForDeriveSharedSecret - Step 6: Allocating output buffer");
+    veil::vtl1::vtl0_functions::debug_print("DEBUG: CreateEncryptedRequestForDeriveSharedSecret - Step 6: Allocating output buffer");
 
     pEncryptedRequest = VengcAlloc(totalEncryptedSize);
     if (pEncryptedRequest == NULL)
@@ -1831,7 +1847,7 @@ HRESULT CreateEncryptedNgcRequestForDeriveSharedSecret(
     *nonceNumber = nonce;
     pEncryptedRequest = NULL; // Transfer ownership
 
-    veil::vtl1::vtl0_functions::debug_print("DEBUG: CreateEncryptedNgcRequestForDeriveSharedSecret - Function completed successfully");
+    veil::vtl1::vtl0_functions::debug_print("DEBUG: CreateEncryptedRequestForDeriveSharedSecret - Function completed successfully");
 
 cleanup:
     if (pEncryptedRequest != NULL)
@@ -1854,7 +1870,7 @@ cleanup:
         VengcFree(pCiphertextBuffer);
     }
 
-    veil::vtl1::vtl0_functions::debug_print("DEBUG: CreateEncryptedNgcRequestForDeriveSharedSecret - Function exiting with hr: 0x%08X", hr);
+    veil::vtl1::vtl0_functions::debug_print("DEBUG: CreateEncryptedRequestForDeriveSharedSecret - Function exiting with hr: 0x%08X", hr);
     return hr;
 }
 
@@ -1888,9 +1904,10 @@ ParseBoundKeyStructure(
     const BYTE* pCurrentPos = NULL;
     UINT32 minBoundKeySize = 0;
     UINT32 enclavePublicKeyBlobSize = 0;
+    UINT32 remainingBytes = 0;
 
     // Initialize output structure
-    ZeroMemory(pComponents, sizeof(PARSED_BOUND_KEY_COMPONENTS));
+    RtlSecureZeroMemory(pComponents, sizeof(PARSED_BOUND_KEY_COMPONENTS));
 
     // Validate minimum bound key size
     minBoundKeySize = sizeof(UINT32) + sizeof(UINT32) + AES_GCM_NONCE_SIZE + AES_GCM_TAG_SIZE;
@@ -1908,7 +1925,7 @@ ParseBoundKeyStructure(
     pCurrentPos += sizeof(UINT32);
 
     // Validate enclave public key blob size
-    if (enclavePublicKeyBlobSize == 0 || enclavePublicKeyBlobSize > NGC_PUBLIC_KEY_MAX_SIZE)
+    if (enclavePublicKeyBlobSize == 0 || enclavePublicKeyBlobSize > KCM_PUBLIC_KEY_MAX_SIZE)
     {
         veil::vtl1::vtl0_functions::debug_print("DEBUG: ParseBoundKeyStructure - Invalid enclave public key blob size: %u", enclavePublicKeyBlobSize);
         hr = NTE_BAD_DATA;
@@ -1935,7 +1952,7 @@ ParseBoundKeyStructure(
     pCurrentPos += enclavePublicKeyBlobSize;
 
     // Extract nonce
-    if ((pCurrentPos - (const BYTE*)boundKey) + AES_GCM_NONCE_SIZE > boundKeySize)
+    if (static_cast<UINT32>(pCurrentPos - (const BYTE*)boundKey) + AES_GCM_NONCE_SIZE > boundKeySize)
     {
         veil::vtl1::vtl0_functions::debug_print("DEBUG: ParseBoundKeyStructure - Insufficient data for nonce");
         hr = NTE_BAD_DATA;
@@ -1955,7 +1972,8 @@ ParseBoundKeyStructure(
     pCurrentPos += sizeof(UINT32);
 
     // Validate encrypted user key size
-    if (pComponents->encryptedUserKeySize == 0 || pComponents->encryptedUserKeySize > 1024) // Reasonable upper limit
+    if (pComponents->encryptedUserKeySize == 0 || 
+        pComponents->encryptedUserKeySize > Vtl1MutualAuth::c_maxEncryptedUserKeySize) // Reasonable upper limit
     {
         veil::vtl1::vtl0_functions::debug_print("DEBUG: ParseBoundKeyStructure - Invalid encrypted user key size: %u", pComponents->encryptedUserKeySize);
         hr = NTE_BAD_DATA;
@@ -1972,7 +1990,15 @@ ParseBoundKeyStructure(
     pComponents->pEncryptedUserKey = pCurrentPos;
     pCurrentPos += pComponents->encryptedUserKeySize;
 
-    // Extract authentication tag
+    // Validate that we have exactly AES_GCM_TAG_SIZE bytes remaining for the authentication tag
+    remainingBytes = boundKeySize - static_cast<UINT32>(pCurrentPos - (const BYTE*)boundKey);
+    if (remainingBytes != AES_GCM_TAG_SIZE)
+    {
+        hr = NTE_BAD_DATA;
+        goto cleanup;
+    }
+
+    // Extract authentication tag - now we know we have exactly the right amount of data
     pComponents->pAuthTag = pCurrentPos;
 
     veil::vtl1::vtl0_functions::debug_print("DEBUG: ParseBoundKeyStructure - Bound key parsed successfully: enclave key size=%u, encrypted user key size=%u", 
@@ -2051,16 +2077,6 @@ DecryptAndUntagSecret(
         goto cleanup;
     }
 
-    /*
-    // For EncryptResponse, we need to reconstruct the nonce used during encryption
-    // The nonce used was: requestNonce ^ c_responderBitFlip (where requestNonce was provided to EncryptResponse)
-    // TEMPORARY: Use the same constant nonce as NgcIsoSrv.cpp for testing
-    // TODO: Implement proper nonce sharing between encryption and decryption
-    nonce = constantTestNonce ^ c_responderBitFlip;  // Apply responder bit flip as per VTL1 protocol
-
-    // Add nonce value towards the end of the buffer (last 8 bytes)
-    memcpy(&nonceBuffer[AES_GCM_NONCE_SIZE - sizeof(nonce)], &nonce, sizeof(nonce));
-    */
     nonce = nonceNumber ^ c_responderBitFlip;  // Apply responder bit flip as per VTL1 protocol
 
     // Create nonce buffer manually (instead of using crypto utility)
@@ -2170,13 +2186,13 @@ DecryptAndUntagSecret(
 HRESULT UnprotectUserBoundKey(
     _In_ UINT_PTR sessionKeyPtr,
     _In_ USER_BOUND_KEY_AUTH_CONTEXT_HANDLE /*authContext*/,
-    _In_reads_bytes_(secretSize) const void* secret,
-    _In_ UINT32 secretSize,
-    _In_reads_bytes_(boundKeySize) const void* boundKey,
-    _In_ UINT32 boundKeySize,
+    _In_ ULONG64 nonceNumber,
+    _In_reads_bytes_(sessionEncryptedDerivedSecretSize) const void* sessionEncryptedDerivedSecret,
+    _In_ UINT32 sessionEncryptedDerivedSecretSize,
+    _In_reads_bytes_(encryptedUserBoundKeySize) const void* encryptedUserBoundKey,
+    _In_ UINT32 encryptedUserBoundKeySize,
     _Outptr_result_buffer_(*userKeySize) void** userKey,
-    _Inout_ UINT32* userKeySize,
-    _In_ ULONG64 nonceNumber
+    _Inout_ UINT32* userKeySize
 )
 {
     veil::vtl1::vtl0_functions::debug_print("DEBUG: UnprotectUserBoundKey - Function entered");
@@ -2201,7 +2217,12 @@ HRESULT UnprotectUserBoundKey(
     // Step 1: Validate input parameters
     //
     veil::vtl1::vtl0_functions::debug_print("DEBUG: UnprotectUserBoundKey - Step 1: Validating input parameters");
-    if (secret == NULL || secretSize == 0 || boundKey == NULL || boundKeySize == 0 || userKey == NULL || userKeySize == NULL)
+    if (sessionEncryptedDerivedSecret == NULL ||
+        sessionEncryptedDerivedSecretSize == 0 ||
+        encryptedUserBoundKey == NULL || 
+        encryptedUserBoundKeySize == 0 || 
+        userKey == NULL || 
+        userKeySize == NULL)
     {
         hr = E_INVALIDARG;
         goto cleanup;
@@ -2211,7 +2232,7 @@ HRESULT UnprotectUserBoundKey(
     // Step 2: Parse the bound key structure
     //
     veil::vtl1::vtl0_functions::debug_print("DEBUG: UnprotectUserBoundKey - Step 2: Parsing bound key structure");
-    hr = ParseBoundKeyStructure(boundKey, boundKeySize, &boundKeyComponents);
+    hr = ParseBoundKeyStructure(encryptedUserBoundKey, encryptedUserBoundKeySize, &boundKeyComponents);
     if (FAILED(hr))
     {
         goto cleanup;
@@ -2221,7 +2242,7 @@ HRESULT UnprotectUserBoundKey(
     // Step 2.5: Decrypt the secret using session key and nonce
     //
     veil::vtl1::vtl0_functions::debug_print("DEBUG: UnprotectUserBoundKey - Step 2.5: Decrypting secret using DecryptAndUntagSecret");
-    hr = DecryptAndUntagSecret(sessionKeyPtr, secret, secretSize, &pDecryptedSecret, &decryptedSecretSize, nonceNumber);
+    hr = DecryptAndUntagSecret(sessionKeyPtr, sessionEncryptedDerivedSecret, sessionEncryptedDerivedSecretSize, &pDecryptedSecret, &decryptedSecretSize, nonceNumber);
     if (FAILED(hr))
     {
         veil::vtl1::vtl0_functions::debug_print("DEBUG: UnprotectUserBoundKey - DecryptAuthContextBlob failed: 0x%08X", hr);

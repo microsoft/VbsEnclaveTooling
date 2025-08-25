@@ -279,12 +279,18 @@ wil::secure_vector<uint8_t> enclave_create_user_bound_key(
 
     // AUTH CONTEXT
     unique_auth_context_handle authContext;
+    auto sessionKeyPtr = authContextBlobAndSessionKeyPtr.sessionKeyPtr;
     THROW_IF_FAILED(GetUserBoundKeyAuthContext(
-        authContextBlobAndSessionKeyPtr.sessionKeyPtr,
+        sessionKeyPtr,
         authContextBlob.data(),
         static_cast<UINT32>(authContextBlob.size()),
         authContext.put()
     )); // OS CALL
+
+    if (sessionKeyPtr != 0)
+    {
+        BCryptDestroyKey(reinterpret_cast<BCRYPT_KEY_HANDLE>(sessionKeyPtr));
+    }
 
     // Validate
     USER_BOUND_KEY_AUTH_CONTEXT_PROPERTY propCacheConfig;
@@ -390,7 +396,10 @@ std::vector<uint8_t> enclave_load_user_bound_key(
         veil::vtl1::vtl0_functions::debug_print((L"DEBUG: enclave_load_user_bound_key - keyNameSizeBytes (without null terminator): " + std::to_wstring(keyNameSizeBytes)).c_str());
         
         ULONG64 nonceNumber = 0;
-        THROW_IF_FAILED(CreateEncryptedNgcRequestForDeriveSharedSecret(
+        // NOTE OF CAUTION: We should prevent nonce reuse under any circumstances.
+        // If the same nonce is passed to CreateEncryptedRequestForDeriveSharedSecret for the same session key,
+        // it will catastrophically break the security.
+        THROW_IF_FAILED(CreateEncryptedRequestForDeriveSharedSecret(
             sessionKeyPtr,
             keyNamePtr,
             keyNameSizeBytes,
@@ -454,14 +463,19 @@ std::vector<uint8_t> enclave_load_user_bound_key(
         THROW_IF_FAILED(UnprotectUserBoundKey(
             sessionKeyPtr,
             authContext.get(),
+            nonceNumber,
             secret.data(),
             static_cast<UINT32>(secret.size()),
             boundKeyBytes.data(),
             static_cast<UINT32>(boundKeyBytes.size()),
             &pUserkeyBytes,
-            &cbUserkeyBytes,
-            nonceNumber)); // OS CALL
+            &cbUserkeyBytes)); // OS CALL
         veil::vtl1::vtl0_functions::debug_print(L"DEBUG: enclave_load_user_bound_key - UnprotectUserBoundKey completed");
+
+        if (sessionKeyPtr != 0)
+        {
+            BCryptDestroyKey(reinterpret_cast<BCRYPT_KEY_HANDLE>(sessionKeyPtr));
+        }
 
         std::vector<uint8_t> userkeyBytes(static_cast<uint8_t*>(pUserkeyBytes), static_cast<uint8_t*>(pUserkeyBytes) + cbUserkeyBytes);
         HeapFree(GetProcessHeap(), 0, pUserkeyBytes);

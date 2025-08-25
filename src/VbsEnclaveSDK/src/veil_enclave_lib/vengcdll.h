@@ -18,9 +18,9 @@ namespace DeveloperTypes
 struct keyCredentialCacheConfig;
 }
 
-// NGC Trustlet Identity constant
-#ifndef TRUSTLETIDENTITY_NGC
-#define TRUSTLETIDENTITY_NGC 6
+// KCM Trustlet Identity constant
+#ifndef TRUSTLETIDENTITY_KCM
+#define TRUSTLETIDENTITY_KCM 6
 #endif
 
 // AES-GCM constants
@@ -32,12 +32,12 @@ struct keyCredentialCacheConfig;
 #define AES_256_KEY_SIZE_BYTES 32           // AES-256 session key size in bytes
 
 // Buffer size constants
-#define NGC_KEY_NAME_BUFFER_SIZE 256        // Buffer size for key names
-#define NGC_ATTESTATION_BUFFER_SIZE 256     // Buffer size for attestation data
+#define KCM_KEY_NAME_BUFFER_SIZE 256        // Buffer size for key names
+#define KCM_ATTESTATION_BUFFER_SIZE 256     // Buffer size for attestation data
 
-// NGC public key validation limits
-#define NGC_PUBLIC_KEY_MIN_SIZE 32          // Minimum allowed NGC public key size
-#define NGC_PUBLIC_KEY_MAX_SIZE 1024        // Maximum allowed NGC public key size
+// KCM public key validation limits
+#define KCM_PUBLIC_KEY_MIN_SIZE 32          // Minimum allowed KCM public key size
+#define KCM_PUBLIC_KEY_MAX_SIZE 1024        // Maximum allowed KCM public key size
 
 //
 // Exports for vengcdll.dll (new OS DLL in VTL1)
@@ -72,7 +72,7 @@ typedef enum _USER_BOUND_KEY_AUTH_CONTEXT_PROPERTIES {
 } USER_BOUND_KEY_AUTH_CONTEXT_PROPERTIES;
 
 // Called as part of the flow when creating a new user bound key.
-// Decrypts the auth context blob provided by NGC and returns a handle to the decrypted blob
+// Decrypts the auth context blob provided by KCM and returns a handle to the decrypted blob
 HRESULT GetUserBoundKeyAuthContext(
     _In_ UINT_PTR sessionKeyPtr,
     _In_reads_bytes_(authContextBlobSize) const void* authContextBlob, // auth context generated as part of RequestCreateAsync
@@ -81,7 +81,7 @@ HRESULT GetUserBoundKeyAuthContext(
 );
 
 // Called as part of the flow when loading an existing user bound key.
-// Decrypts the auth context blob provided by NGC, verifies that the keyname matches the one in the auth context blob.
+// Decrypts the auth context blob provided by KCM, verifies that the keyname matches the one in the auth context blob.
 HRESULT GetUserBoundKeyLoadingAuthContext(
     _In_ UINT_PTR sessionKeyPtr,
     _In_reads_bytes_(authContextBlobSize) const void* authContextBlob, // auth context generated as part of RequestCreateAsync 
@@ -105,7 +105,7 @@ HRESULT ValidateUserBoundKeyAuthContext(
 );
 
 // Performs key establishment using the enclave key handle provided, along with the
-// corresponding key from the NGC side (present in the auth context blob).
+// corresponding key from the KCM side (present in the auth context blob).
 // Computes the key encryption key (KEK) for the user bound key.
 // Encrypt the user key and produce material to save to disk
 HRESULT ProtectUserBoundKey(
@@ -116,8 +116,11 @@ HRESULT ProtectUserBoundKey(
     _Inout_ UINT32* boundKeySize
 );
 
-// Creates an encrypted NGC request for DeriveSharedSecret using the session key and ephemeral public key bytes
-HRESULT CreateEncryptedNgcRequestForDeriveSharedSecret(
+// Creates an encrypted KCM request for DeriveSharedSecret using the session key and ephemeral public key bytes
+// NOTE OF CAUTION: We should prevent nonce reuse under any circumstances.
+// If the same nonce is passed to CreateEncryptedRequestForDeriveSharedSecret for the same session key,
+// it will catastrophically break the security.
+HRESULT CreateEncryptedRequestForDeriveSharedSecret(
     _In_ UINT_PTR sessionKeyPtr,
     _In_reads_bytes_(keyNameSize) const void* keyName,
     _In_ UINT32 keyNameSize,
@@ -132,13 +135,13 @@ HRESULT CreateEncryptedNgcRequestForDeriveSharedSecret(
 HRESULT UnprotectUserBoundKey(
     _In_ UINT_PTR sessionKeyPtr,
     _In_ USER_BOUND_KEY_AUTH_CONTEXT_HANDLE authContext,
-    _In_reads_bytes_(secretSize) const void* secret,
-    _In_ UINT32 secretSize,
-    _In_reads_bytes_(boundKeySize) const void* boundKey,
-    _In_ UINT32 boundKeySize,
+    _In_ ULONG64 nonceNumber,
+    _In_reads_bytes_(sessionEncryptedDerivedSecretSize) const void* sessionEncryptedDerivedSecret,
+    _In_ UINT32 sessionEncryptedDerivedSecretSize,
+    _In_reads_bytes_(encryptedUserBoundKeySize) const void* encryptedUserBoundKey,
+    _In_ UINT32 encryptedUserBoundKeySize,
     _Outptr_result_buffer_(*userKeySize) void** userKey,
-    _Inout_ UINT32* userKeySize,
-    _In_ ULONG64 nonceNumber
+    _Inout_ UINT32* userKeySize
 );
 
 #endif // VENGCDLL_H
