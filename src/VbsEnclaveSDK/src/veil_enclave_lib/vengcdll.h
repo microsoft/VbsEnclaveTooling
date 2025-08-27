@@ -15,8 +15,8 @@
 
 // Local session info structure to avoid dependency on DeveloperTypes
 typedef struct _VEINTEROP_SESSION_INFO {
-    std::uintptr_t sessionKeyPtr;
-    std::uint64_t sessionNonce;
+    UINT_PTR sessionKeyPtr;
+    ULONG64 sessionNonce;
 } VEINTEROP_SESSION_INFO;
 
 // KCM Trustlet Identity constant
