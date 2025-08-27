@@ -11,16 +11,17 @@
 // Forward declarations for the auto-generated types
 namespace DeveloperTypes
 {
-    struct authContextBlobAndSessionKeyPtr;
+    struct authContextBlobAndSessionInfo;
     struct secretAndAuthorizationContextAndSessionKeyPtr;
     struct keyCredentialCacheConfig;
-    struct credentialAndFormattedKeyNameAndSessionKeyPtr;
+    struct credentialAndFormattedKeyNameAndSessionInfo;
     struct secretAndAuthorizationContext;
+    struct sessionInfo; // This is auto-generated, don't redefine it
 }
 
 namespace veil::vtl1::implementation::userboundkey::callouts
 {
-    DeveloperTypes::authContextBlobAndSessionKeyPtr userboundkey_establish_session_for_create_callback(
+    DeveloperTypes::authContextBlobAndSessionInfo userboundkey_establish_session_for_create_callback(
         _In_ const void* enclave,
         _In_ const std::wstring& key_name,
         _In_ const uintptr_t ecdh_protocol,
@@ -28,7 +29,7 @@ namespace veil::vtl1::implementation::userboundkey::callouts
         _In_ const uintptr_t window_id,
         _In_ const DeveloperTypes::keyCredentialCacheConfig& cache_config);
 
-    DeveloperTypes::credentialAndFormattedKeyNameAndSessionKeyPtr userboundkey_establish_session_for_load_callback(
+    DeveloperTypes::credentialAndFormattedKeyNameAndSessionInfo userboundkey_establish_session_for_load_callback(
         _In_ const void* enclave,
         _In_ const std::wstring& key_name,
         _In_ const std::vector<std::uint8_t>& public_key,

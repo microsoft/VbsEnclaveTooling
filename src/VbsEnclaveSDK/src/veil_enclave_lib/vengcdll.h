@@ -12,11 +12,12 @@
 #include <ntenclv.h>
 #include <enclaveium.h>
 
-// Forward declare DeveloperTypes to avoid circular dependency
-namespace DeveloperTypes
-{
-struct keyCredentialCacheConfig;
-}
+
+// Local session info structure to avoid dependency on DeveloperTypes
+typedef struct _VEINTEROP_SESSION_INFO {
+    std::uintptr_t sessionKeyPtr;
+    std::uint64_t sessionNonce;
+} VEINTEROP_SESSION_INFO;
 
 // KCM Trustlet Identity constant
 #ifndef TRUSTLETIDENTITY_KCM
@@ -60,6 +61,12 @@ DECLARE_HANDLE(USER_BOUND_KEY_AUTH_CONTEXT_HANDLE);
 BOOL CloseUserBoundKeyAuthContextHandle(
     _In_ USER_BOUND_KEY_AUTH_CONTEXT_HANDLE handle);
 
+// Session management APIs
+// Closes a user bound key session and destroys the associated BCRYPT_KEY_HANDLE
+HRESULT CloseUserBoundKeySession(
+    _In_ const VEINTEROP_SESSION_INFO* sessionInfo
+);
+
 // Legacy structure for backward compatibility
 typedef struct _KEY_CREDENTIAL_CACHE_CONFIG {
     UINT32 cacheType;
@@ -76,15 +83,6 @@ typedef enum _USER_BOUND_KEY_AUTH_CONTEXT_PROPERTIES {
 HRESULT GetUserBoundKeyAuthContext(
     _In_ UINT_PTR sessionKeyPtr,
     _In_reads_bytes_(authContextBlobSize) const void* authContextBlob, // auth context generated as part of RequestCreateAsync
-    _In_ UINT32 authContextBlobSize,
-    _Out_ USER_BOUND_KEY_AUTH_CONTEXT_HANDLE* authContextHandle
-);
-
-// Called as part of the flow when loading an existing user bound key.
-// Decrypts the auth context blob provided by KCM, verifies that the keyname matches the one in the auth context blob.
-HRESULT GetUserBoundKeyLoadingAuthContext(
-    _In_ UINT_PTR sessionKeyPtr,
-    _In_reads_bytes_(authContextBlobSize) const void* authContextBlob, // auth context generated as part of RequestCreateAsync 
     _In_ UINT32 authContextBlobSize,
     _Out_ USER_BOUND_KEY_AUTH_CONTEXT_HANDLE* authContextHandle
 );
@@ -116,26 +114,23 @@ HRESULT ProtectUserBoundKey(
     _Inout_ UINT32* boundKeySize
 );
 
-// Creates an encrypted KCM request for DeriveSharedSecret using the session key and ephemeral public key bytes
+// Creates an encrypted KCM request for DeriveSharedSecret using session information and ephemeral public key bytes
 // NOTE OF CAUTION: We should prevent nonce reuse under any circumstances.
-// If the same nonce is passed to CreateEncryptedRequestForDeriveSharedSecret for the same session key,
-// it will catastrophically break the security.
+// This function handles nonce manipulation internally to prevent reuse.
 HRESULT CreateEncryptedRequestForDeriveSharedSecret(
-    _In_ UINT_PTR sessionKeyPtr,
+    _Inout_ VEINTEROP_SESSION_INFO* sessionInfo,
     _In_reads_bytes_(keyNameSize) const void* keyName,
     _In_ UINT32 keyNameSize,
     _In_reads_bytes_(publicKeyBytesSize) const void* publicKeyBytes,
     _In_ UINT32 publicKeyBytesSize,
     _Outptr_result_buffer_(*encryptedRequestSize) void** encryptedRequest,
-    _Out_ UINT32* encryptedRequestSize,
-    _Out_ ULONG64* nonceNumber
+    _Out_ UINT32* encryptedRequestSize
 );
 
 // Decrypt the user key from material from disk
 HRESULT UnprotectUserBoundKey(
-    _In_ UINT_PTR sessionKeyPtr,
+    _In_ const VEINTEROP_SESSION_INFO* sessionInfo,
     _In_ USER_BOUND_KEY_AUTH_CONTEXT_HANDLE authContext,
-    _In_ ULONG64 nonceNumber,
     _In_reads_bytes_(sessionEncryptedDerivedSecretSize) const void* sessionEncryptedDerivedSecret,
     _In_ UINT32 sessionEncryptedDerivedSecretSize,
     _In_reads_bytes_(encryptedUserBoundKeySize) const void* encryptedUserBoundKey,

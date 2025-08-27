@@ -3,6 +3,12 @@
 
 enclave
 {
+    struct sessionInfo
+    {
+        uintptr_t sessionKeyPtr;
+        uint64_t sessionNonce;
+    };
+
     struct keyCredentialCacheConfig
     {
         uint32_t cacheOption;
@@ -22,17 +28,17 @@ enclave
         uintptr_t sessionKeyPtr;
     };
 
-    struct authContextBlobAndSessionKeyPtr
+    struct authContextBlobAndSessionInfo
     {
         vector<uint8_t> authContextBlob;
-        uintptr_t sessionKeyPtr;
+        sessionInfo session;
     };
 
-    struct credentialAndFormattedKeyNameAndSessionKeyPtr
+    struct credentialAndFormattedKeyNameAndSessionInfo
     {
         vector<uint8_t> credential;
         wstring formattedKeyName;
-        uintptr_t sessionKeyPtr;
+        sessionInfo session;
     };
 
     trusted
@@ -82,7 +88,7 @@ enclave
         );
 
         // hello user bound key
-        authContextBlobAndSessionKeyPtr userboundkey_establish_session_for_create(
+        authContextBlobAndSessionInfo userboundkey_establish_session_for_create(
             uintptr_t enclave,
             wstring key_name,
             uintptr_t ecdh_protocol,
@@ -91,7 +97,7 @@ enclave
             keyCredentialCacheConfig cache_config
             );
 
-        credentialAndFormattedKeyNameAndSessionKeyPtr userboundkey_establish_session_for_load(
+        credentialAndFormattedKeyNameAndSessionInfo userboundkey_establish_session_for_load(
             uintptr_t enclave,
             wstring key_name,
             vector<uint8_t> public_key,

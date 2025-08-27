@@ -601,6 +601,34 @@ HRESULT InitializeUserBoundKeySessionInfo(
     return hr;
 }
 
+//
+// Session management APIs
+// Closes a user bound key session and destroys the associated BCRYPT_KEY_HANDLE
+HRESULT CloseUserBoundKeySession(
+    _In_ const VEINTEROP_SESSION_INFO* sessionInfo)
+{
+    if (sessionInfo == nullptr)
+    {
+        return E_INVALIDARG;
+    }
+
+    if (sessionInfo->sessionKeyPtr == 0)
+    {
+        return E_INVALIDARG;
+    }
+
+    BCRYPT_KEY_HANDLE hSessionKey = reinterpret_cast<BCRYPT_KEY_HANDLE>(sessionInfo->sessionKeyPtr);
+    
+    // Destroy the BCrypt key handle
+    NTSTATUS status = BCryptDestroyKey(hSessionKey);
+    if (FAILED(HRESULT_FROM_NT(status)))
+    {
+        return HRESULT_FROM_NT(status);
+    }
+
+    return S_OK;
+}
+
 BOOL CloseUserBoundKeyAuthContextHandle(
     _In_ USER_BOUND_KEY_AUTH_CONTEXT_HANDLE handle)
 {
@@ -793,7 +821,7 @@ HRESULT GetUserBoundKeyAuthContext(
     PUSER_BOUND_KEY_AUTH_CONTEXT_INTERNAL pInternalContext = NULL;
 
     //
-    // Step 1: Validate input parameters
+    // Step 1: Validate input parameters 
     //
     hr = ValidateAuthContextInputParameters(sessionKeyPtr, authContextBlob, authContextBlobSize, authContextHandle);
     if (FAILED(hr))
@@ -844,22 +872,6 @@ HRESULT GetUserBoundKeyAuthContext(
     }
 
     return hr;
-}
-
-// Called as part of the flow when creating a new user bound key.
-// Decrypts the auth context blob provided by NGC and returns a handle to the decrypted blob
-HRESULT GetUserBoundKeyLoadingAuthContext(
-    _In_ UINT_PTR sessionKeyPtr,
-    _In_reads_bytes_(authContextBlobSize) const void* authContextBlob,
-    _In_ UINT32 authContextBlobSize,
-    _Out_ USER_BOUND_KEY_AUTH_CONTEXT_HANDLE* authContextHandle
-)
-{
-    UNREFERENCED_PARAMETER(sessionKeyPtr);
-    UNREFERENCED_PARAMETER(authContextBlob);
-    UNREFERENCED_PARAMETER(authContextBlobSize);
-    UNREFERENCED_PARAMETER(authContextHandle);
-    return S_OK;
 }
 
 //
@@ -1575,16 +1587,15 @@ HRESULT ProtectUserBoundKey(
 }
 
 //
-// Creates an encrypted NGC request for DeriveSharedSecret using the session key and ephemeral public key bytes
+// Creates an encrypted NGC request for DeriveSharedSecret using session information and ephemeral public key bytes
 HRESULT CreateEncryptedRequestForDeriveSharedSecret(
-    _In_ UINT_PTR sessionKeyPtr,
+    _Inout_ VEINTEROP_SESSION_INFO* sessionInfo,
     _In_reads_bytes_(keyNameSize) const void* keyName,
     _In_ UINT32 keyNameSize,
     _In_reads_bytes_(publicKeyBytesSize) const void* publicKeyBytes,
     _In_ UINT32 publicKeyBytesSize,
     _Outptr_result_buffer_(*encryptedRequestSize) void** encryptedRequest,
-    _Out_ UINT32* encryptedRequestSize,
-    _Out_ ULONG64* nonceNumber
+    _Out_ UINT32* encryptedRequestSize
 )
 {
     veil::vtl1::vtl0_functions::debug_print("DEBUG: CreateEncryptedRequestForDeriveSharedSecret - Function entered");
@@ -1613,14 +1624,14 @@ HRESULT CreateEncryptedRequestForDeriveSharedSecret(
     // Step 1: Validate input parameters
     //
     veil::vtl1::vtl0_functions::debug_print("DEBUG: CreateEncryptedRequestForDeriveSharedSecret - Step 1: Validating input parameters");
-    if (sessionKeyPtr == 0 || 
+    if (sessionInfo == NULL ||
+        sessionInfo->sessionKeyPtr == 0 ||
         keyName == NULL || 
         keyNameSize == 0 || 
         publicKeyBytes == NULL || 
         publicKeyBytesSize == 0 ||
         encryptedRequest == NULL || 
-        encryptedRequestSize == NULL || 
-        nonceNumber == NULL)
+        encryptedRequestSize == NULL)
     {
         veil::vtl1::vtl0_functions::debug_print("DEBUG: CreateEncryptedRequestForDeriveSharedSecret - Invalid input parameters");
         hr = E_INVALIDARG;
@@ -1630,10 +1641,10 @@ HRESULT CreateEncryptedRequestForDeriveSharedSecret(
     // Initialize output parameters
     *encryptedRequest = NULL;
     *encryptedRequestSize = 0;
-    *nonceNumber = 0;
 
     veil::vtl1::vtl0_functions::debug_print("DEBUG: CreateEncryptedRequestForDeriveSharedSecret - Input validation completed");
-    veil::vtl1::vtl0_functions::debug_print("DEBUG: CreateEncryptedRequestForDeriveSharedSecret - sessionKeyPtr: 0x%p", (void*)sessionKeyPtr);
+    veil::vtl1::vtl0_functions::debug_print("DEBUG: CreateEncryptedRequestForDeriveSharedSecret - sessionKeyPtr: 0x%p", (void*)sessionInfo->sessionKeyPtr);
+    veil::vtl1::vtl0_functions::debug_print("DEBUG: CreateEncryptedRequestForDeriveSharedSecret - current sessionNonce: %llu", sessionInfo->sessionNonce);
     veil::vtl1::vtl0_functions::debug_print("DEBUG: CreateEncryptedRequestForDeriveSharedSecret - keyNameSize: %u", keyNameSize);
     veil::vtl1::vtl0_functions::debug_print("DEBUG: CreateEncryptedRequestForDeriveSharedSecret - publicKeyBytesSize: %u", publicKeyBytesSize);
 
@@ -1695,16 +1706,27 @@ HRESULT CreateEncryptedRequestForDeriveSharedSecret(
     veil::vtl1::vtl0_functions::debug_print("DEBUG: CreateEncryptedRequestForDeriveSharedSecret - Constructed plaintext, size: %u", plaintextSize);
 
     //
-    // Step 3: Generate nonce for encryption
+    // Step 3: Handle nonce manipulation to prevent reuse
     //
-    veil::vtl1::vtl0_functions::debug_print("DEBUG: CreateEncryptedRequestForDeriveSharedSecret - Step 3: Generating nonce");
+    veil::vtl1::vtl0_functions::debug_print("DEBUG: CreateEncryptedRequestForDeriveSharedSecret - Step 3: Handling nonce manipulation");
+
+    // Handle nonce manipulation to prevent reuse
+    nonce = sessionInfo->sessionNonce;
+    if (nonce > 0)
+    {
+        // This nonce is already used once. We should increment it to avoid reuse.
+        nonce++;
+    }
 
     nonce = InterlockedIncrement64(reinterpret_cast<LONG64*>(&requestNonce));
+
     if (nonce >= Vtl1MutualAuth::c_maxRequestNonce)
     {
         hr = HRESULT_FROM_WIN32(ERROR_TOO_MANY_SECRETS);
         goto cleanup;
     }
+
+    veil::vtl1::vtl0_functions::debug_print("DEBUG: CreateEncryptedRequestForDeriveSharedSecret - Using nonce: %llu", nonce);
 
     // Create nonce buffer manually (instead of using crypto utility)
     memcpy(&nonceBuffer[AES_GCM_NONCE_SIZE - sizeof(nonce)], &nonce, sizeof(nonce));
@@ -1722,7 +1744,7 @@ HRESULT CreateEncryptedRequestForDeriveSharedSecret(
     authInfo.cbTag = AES_GCM_TAG_SIZE;
 
     // Get session key handle
-    sessionKey = reinterpret_cast<BCRYPT_KEY_HANDLE>(sessionKeyPtr);
+    sessionKey = reinterpret_cast<BCRYPT_KEY_HANDLE>(sessionInfo->sessionKeyPtr);
 
     // Allocate buffer for encrypted data
     pEncryptedData = (BYTE*)VengcAlloc(plaintextSize);
@@ -1828,9 +1850,9 @@ HRESULT CreateEncryptedRequestForDeriveSharedSecret(
     veil::vtl1::vtl0_functions::debug_print("DEBUG: CreateEncryptedRequestForDeriveSharedSecret - Final encrypted request size: %u", totalEncryptedSize);
 
     //
-    // Step 6: Allocate and return encrypted request
+    // Step 6: Allocate and return encrypted request, update sessionInfo
     //
-    veil::vtl1::vtl0_functions::debug_print("DEBUG: CreateEncryptedRequestForDeriveSharedSecret - Step 6: Allocating output buffer");
+    veil::vtl1::vtl0_functions::debug_print("DEBUG: CreateEncryptedRequestForDeriveSharedSecret - Step 6: Allocating output buffer and updating sessionInfo");
 
     pEncryptedRequest = VengcAlloc(totalEncryptedSize);
     if (pEncryptedRequest == NULL)
@@ -1841,10 +1863,13 @@ HRESULT CreateEncryptedRequestForDeriveSharedSecret(
 
     memcpy(pEncryptedRequest, pCiphertextBuffer, totalEncryptedSize);
 
+    // Update the session info with the new nonce value on success
+    sessionInfo->sessionNonce = nonce;
+    veil::vtl1::vtl0_functions::debug_print("DEBUG: CreateEncryptedRequestForDeriveSharedSecret - Updated sessionInfo->sessionNonce to: %llu", sessionInfo->sessionNonce);
+
     // Success - transfer ownership to caller
     *encryptedRequest = pEncryptedRequest;
     *encryptedRequestSize = totalEncryptedSize;
-    *nonceNumber = nonce;
     pEncryptedRequest = NULL; // Transfer ownership
 
     veil::vtl1::vtl0_functions::debug_print("DEBUG: CreateEncryptedRequestForDeriveSharedSecret - Function completed successfully");
@@ -1873,7 +1898,6 @@ cleanup:
     veil::vtl1::vtl0_functions::debug_print("DEBUG: CreateEncryptedRequestForDeriveSharedSecret - Function exiting with hr: 0x%08X", hr);
     return hr;
 }
-
 //
 // Private helper functions for UnprotectUserBoundKey
 //
@@ -2184,9 +2208,8 @@ DecryptAndUntagSecret(
 
 // Decrypt the user key from material from disk
 HRESULT UnprotectUserBoundKey(
-    _In_ UINT_PTR sessionKeyPtr,
+    _In_ const VEINTEROP_SESSION_INFO* sessionInfo,
     _In_ USER_BOUND_KEY_AUTH_CONTEXT_HANDLE /*authContext*/,
-    _In_ ULONG64 nonceNumber,
     _In_reads_bytes_(sessionEncryptedDerivedSecretSize) const void* sessionEncryptedDerivedSecret,
     _In_ UINT32 sessionEncryptedDerivedSecretSize,
     _In_reads_bytes_(encryptedUserBoundKeySize) const void* encryptedUserBoundKey,
@@ -2217,7 +2240,9 @@ HRESULT UnprotectUserBoundKey(
     // Step 1: Validate input parameters
     //
     veil::vtl1::vtl0_functions::debug_print("DEBUG: UnprotectUserBoundKey - Step 1: Validating input parameters");
-    if (sessionEncryptedDerivedSecret == NULL ||
+    if (sessionInfo == NULL ||
+        sessionInfo->sessionKeyPtr == 0 ||
+        sessionEncryptedDerivedSecret == NULL ||
         sessionEncryptedDerivedSecretSize == 0 ||
         encryptedUserBoundKey == NULL || 
         encryptedUserBoundKeySize == 0 || 
@@ -2242,7 +2267,7 @@ HRESULT UnprotectUserBoundKey(
     // Step 2.5: Decrypt the secret using session key and nonce
     //
     veil::vtl1::vtl0_functions::debug_print("DEBUG: UnprotectUserBoundKey - Step 2.5: Decrypting secret using DecryptAndUntagSecret");
-    hr = DecryptAndUntagSecret(sessionKeyPtr, sessionEncryptedDerivedSecret, sessionEncryptedDerivedSecretSize, &pDecryptedSecret, &decryptedSecretSize, nonceNumber);
+    hr = DecryptAndUntagSecret(sessionInfo->sessionKeyPtr, sessionEncryptedDerivedSecret, sessionEncryptedDerivedSecretSize, &pDecryptedSecret, &decryptedSecretSize, sessionInfo->sessionNonce);
     if (FAILED(hr))
     {
         veil::vtl1::vtl0_functions::debug_print("DEBUG: UnprotectUserBoundKey - DecryptAuthContextBlob failed: 0x%08X", hr);
@@ -2285,7 +2310,7 @@ HRESULT UnprotectUserBoundKey(
     }
 
     //
- // Step 5: Decrypt the user key using AES-GCM
+    // Step 5: Decrypt the user key using AES-GCM
     //
     veil::vtl1::vtl0_functions::debug_print("DEBUG: UnprotectUserBoundKey - Step 5: Decrypting user key");
     
