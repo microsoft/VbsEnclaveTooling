@@ -50,7 +50,7 @@ HRESULT InitializeUserBoundKeySessionInfo(
     _In_ UINT32 challengeSize,
     _Outptr_result_buffer_(*reportSize) void** report,
     _Out_ UINT32* reportSize,
-    _Out_ VEINTEROP_SESSION_INFO* sessionInfo
+    _Out_ UINT_PTR* sessionKeyPtr
 );
 
 // Auth Context APIs
@@ -79,7 +79,7 @@ typedef enum _USER_BOUND_KEY_AUTH_CONTEXT_PROPERTIES {
 // Called as part of the flow when creating a new user bound key.
 // Decrypts the auth context blob provided by KCM and returns a handle to the decrypted blob
 HRESULT GetUserBoundKeyAuthContext(
-    _In_ const VEINTEROP_SESSION_INFO* sessionInfo,
+    _In_ UINT_PTR sessionKeyPtr,
     _In_reads_bytes_(authContextBlobSize) const void* authContextBlob, // auth context generated as part of RequestCreateAsync
     _In_ UINT32 authContextBlobSize,
     _Out_ USER_BOUND_KEY_AUTH_CONTEXT_HANDLE* authContextHandle

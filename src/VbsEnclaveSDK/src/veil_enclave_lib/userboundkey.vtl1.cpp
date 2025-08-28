@@ -33,7 +33,7 @@ DeveloperTypes::attestationReportAndSessionKeyPtr userboundkey_get_attestation_r
     void* tempReportPtr = nullptr; // Temporary variable of type void*
     size_t reportSize = 0;
 
-    VEINTEROP_SESSION_INFO sessionInfo = {};
+    UINT_PTR sessionKeyPtr = 0;
 
     // DEBUG: Log before calling InitializeUserBoundKeySessionInfo
     veil::vtl1::vtl0_functions::debug_print(L"DEBUG: About to call InitializeUserBoundKeySessionInfo");
@@ -43,7 +43,7 @@ DeveloperTypes::attestationReportAndSessionKeyPtr userboundkey_get_attestation_r
         static_cast<UINT32>(challenge.size()),
         &tempReportPtr,
         reinterpret_cast<UINT32*>(&reportSize),
-        &sessionInfo)); // OS CALL
+        &sessionKeyPtr)); // OS CALL
 
     // DEBUG: Log after InitializeUserBoundKeySessionInfo completes
     veil::vtl1::vtl0_functions::debug_print(L"DEBUG: InitializeUserBoundKeySessionInfo completed successfully");
@@ -56,7 +56,7 @@ DeveloperTypes::attestationReportAndSessionKeyPtr userboundkey_get_attestation_r
     // DEBUG: Log before returning
     veil::vtl1::vtl0_functions::debug_print(L"DEBUG: userboundkey_get_attestation_report returning successfully");
 
-    return DeveloperTypes::attestationReportAndSessionKeyPtr {std::move(report), static_cast<std::uintptr_t>(sessionInfo.sessionKeyPtr)};
+    return DeveloperTypes::attestationReportAndSessionKeyPtr {std::move(report), static_cast<std::uintptr_t>(sessionKeyPtr)};
 }
 }
 
@@ -315,12 +315,8 @@ wil::secure_vector<uint8_t> enclave_create_user_bound_key(
 
         // AUTH CONTEXT
         unique_auth_context_handle authContext;
-        
-        // Convert sessionInfo to VEINTEROP_SESSION_INFO for the API call
-        VEINTEROP_SESSION_INFO veinteropSessionInfo = ConvertToVeinteropSessionInfo(sessionInfo);
-        
         THROW_IF_FAILED(GetUserBoundKeyAuthContext(
-            &veinteropSessionInfo,
+            sessionInfo.sessionKeyPtr,
             authContextBlob.data(),
             static_cast<UINT32>(authContextBlob.size()),
             authContext.put()
@@ -501,12 +497,8 @@ std::vector<uint8_t> enclave_load_user_bound_key(
         // AUTH CONTEXT
         veil::vtl1::vtl0_functions::debug_print(L"DEBUG: enclave_load_user_bound_key - About to call GetUserBoundKeyAuthContext");
         unique_auth_context_handle authContext;
-        
-        // Convert sessionInfo to VEINTEROP_SESSION_INFO for the API call
-        VEINTEROP_SESSION_INFO veinteropSessionInfoForAuth = ConvertToVeinteropSessionInfo(sessionInfo);
-        
         THROW_IF_FAILED(GetUserBoundKeyAuthContext(
-            &veinteropSessionInfoForAuth,
+            sessionInfo.sessionKeyPtr,
             authContextBlob.data(),
             static_cast<UINT32>(authContextBlob.size()),
             authContext.put())); // OS CALL
