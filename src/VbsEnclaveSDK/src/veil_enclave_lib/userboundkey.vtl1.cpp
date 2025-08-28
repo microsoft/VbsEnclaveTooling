@@ -121,26 +121,22 @@ DeveloperTypes::keyCredentialCacheConfig ConvertToDeveloperType(const KEY_CREDEN
     return devType;
 }
 
-// Helper function to convert DeveloperTypes::sessionInfo to USER_BOUND_KEY_SESSION_HANDLE
-HRESULT ConvertToSessionHandle(const DeveloperTypes::sessionInfo& sessionInfo, USER_BOUND_KEY_SESSION_HANDLE* sessionHandle)
+// Helper function to convert DeveloperTypes::sessionInfo to VEINTEROP_SESSION_INFO
+VEINTEROP_SESSION_INFO ConvertToVeinteropSessionInfo(const DeveloperTypes::sessionInfo& sessionInfo)
 {
-    return CreateUserBoundKeySession(sessionInfo.sessionKeyPtr, sessionInfo.sessionNonce, sessionHandle);
+    VEINTEROP_SESSION_INFO veinteropSessionInfo;
+    veinteropSessionInfo.sessionKeyPtr = sessionInfo.sessionKeyPtr;
+    veinteropSessionInfo.sessionNonce = sessionInfo.sessionNonce;
+    return veinteropSessionInfo;
 }
 
-// Helper function to convert USER_BOUND_KEY_SESSION_HANDLE to DeveloperTypes::sessionInfo
-HRESULT ConvertFromSessionHandle(USER_BOUND_KEY_SESSION_HANDLE sessionHandle, DeveloperTypes::sessionInfo& sessionInfo)
+// Helper function to convert VEINTEROP_SESSION_INFO back to DeveloperTypes::sessionInfo
+DeveloperTypes::sessionInfo ConvertFromVeinteropSessionInfo(const VEINTEROP_SESSION_INFO& veinteropSessionInfo)
 {
-    UINT_PTR sessionKeyPtr = 0;
-    ULONG64 sessionNonce = 0;
-    
-    HRESULT hr = GetUserBoundKeySessionInfo(sessionHandle, &sessionKeyPtr, &sessionNonce);
-    if (SUCCEEDED(hr))
-    {
-        sessionInfo.sessionKeyPtr = sessionKeyPtr;
-        sessionInfo.sessionNonce = sessionNonce;
-    }
-    
-    return hr;
+    DeveloperTypes::sessionInfo sessionInfo;
+    sessionInfo.sessionKeyPtr = veinteropSessionInfo.sessionKeyPtr;
+    sessionInfo.sessionNonce = veinteropSessionInfo.sessionNonce;
+    return sessionInfo;
 }
 
 // Helper function to clean up session information by calling CloseUserBoundKeySession
@@ -148,12 +144,9 @@ void CleanupSessionInfo(const DeveloperTypes::sessionInfo& sessionInfo)
 {
     if (sessionInfo.sessionKeyPtr != 0)
     {
-        // Create session handle and close it
-        USER_BOUND_KEY_SESSION_HANDLE sessionHandle = nullptr;
-        if (SUCCEEDED(ConvertToSessionHandle(sessionInfo, &sessionHandle)))
-        {
-            CloseUserBoundKeySession(sessionHandle);
-        }
+        // Convert sessionInfo to VEINTEROP_SESSION_INFO for the API call
+        VEINTEROP_SESSION_INFO veinteropSessionInfo = ConvertToVeinteropSessionInfo(sessionInfo);
+        CloseUserBoundKeySession(&veinteropSessionInfo);
     }
 }
 
@@ -195,10 +188,7 @@ class unique_auth_context_handle
     {
         if (m_handle)
         {
-            // CloseUserBoundKeyAuthContextHandle now returns HRESULT
-            // In a noexcept context, we can't throw, so we ignore the return value
-            // but could potentially log errors in a debug build
-            (void)CloseUserBoundKeyAuthContextHandle(m_handle);
+            CloseUserBoundKeyAuthContextHandle(m_handle);
         }
         m_handle = new_handle;
     }
@@ -410,7 +400,6 @@ std::vector<uint8_t> enclave_load_user_bound_key(
     veil::vtl1::vtl0_functions::debug_print(L"DEBUG: enclave_load_user_bound_key - Function entered");
 
     DeveloperTypes::sessionInfo sessionInfo{}; // Initialize session info for cleanup
-    USER_BOUND_KEY_SESSION_HANDLE sessionHandle = nullptr; // Declare session handle for proper cleanup
 
     try
     {
@@ -460,12 +449,12 @@ std::vector<uint8_t> enclave_load_user_bound_key(
         veil::vtl1::vtl0_functions::debug_print((L"DEBUG: enclave_load_user_bound_key - formattedKeyName: " + formattedKeyName).c_str());
         veil::vtl1::vtl0_functions::debug_print((L"DEBUG: enclave_load_user_bound_key - keyNameSizeBytes (without null terminator): " + std::to_wstring(keyNameSizeBytes)).c_str());
 
-        // Convert sessionInfo to session handle for the API call
-        THROW_IF_FAILED(ConvertToSessionHandle(sessionInfo, &sessionHandle));
+        // Convert sessionInfo to VEINTEROP_SESSION_INFO for the API call
+        VEINTEROP_SESSION_INFO veinteropSessionInfo = ConvertToVeinteropSessionInfo(sessionInfo);
 
-        // Use the function that accepts session handle and handles nonce manipulation internally
+        // Use the function that accepts VEINTEROP_SESSION_INFO and handles nonce manipulation internally
         THROW_IF_FAILED(CreateEncryptedRequestForDeriveSharedSecret(
-            sessionHandle,  // Pass session handle - nonce manipulation is handled internally
+            &veinteropSessionInfo,  // Pass converted sessionInfo by reference - nonce manipulation is handled internally
             keyNamePtr,
             keyNameSizeBytes,
             ephemeralPublicKeyBytes.data(),
@@ -474,7 +463,7 @@ std::vector<uint8_t> enclave_load_user_bound_key(
             &encryptedNgcRequestSize)); // OS CALL
 
         // Convert back to update the original sessionInfo
-        THROW_IF_FAILED(ConvertFromSessionHandle(sessionHandle, sessionInfo));
+        sessionInfo = ConvertFromVeinteropSessionInfo(veinteropSessionInfo);
 
         // Convert the result to vector for the callback
         std::vector<uint8_t> encryptedNgcRequestForDeriveSharedSecret;
@@ -491,7 +480,7 @@ std::vector<uint8_t> enclave_load_user_bound_key(
         // Second call to extract secret and authorization context from credential
         veil::vtl1::vtl0_functions::debug_print(L"DEBUG: enclave_load_user_bound_key - About to call userboundkey_get_secret_and_authorizationcontext_from_credential_callback");
 
-        auto secretAndAuthorizationContext = veil_abi::VTL0_Callbacks::userboundkey_get_secret_and_authorizationcontext_from_credential_callback(
+        auto secretAndAuthorizationContext = veil::vtl1::implementation::userboundkey::callouts::userboundkey_get_secret_and_authorizationcontext_from_credential_callback(
             credentialVector,
             encryptedNgcRequestForDeriveSharedSecret,
             message,
@@ -529,9 +518,11 @@ std::vector<uint8_t> enclave_load_user_bound_key(
         UINT32 cbUserkeyBytes = 0;
         void* pUserkeyBytes = nullptr;
 
-        // Use the existing session handle for the API call
+        // Convert sessionInfo to VEINTEROP_SESSION_INFO for the API call
+        VEINTEROP_SESSION_INFO unprotectSessionInfo = ConvertToVeinteropSessionInfo(sessionInfo);
+
         THROW_IF_FAILED(UnprotectUserBoundKey(
-            sessionHandle,
+            &unprotectSessionInfo,
             authContext.get(),
             secret.data(),
             static_cast<UINT32>(secret.size()),
@@ -544,8 +535,8 @@ std::vector<uint8_t> enclave_load_user_bound_key(
         std::vector<uint8_t> userkeyBytes(static_cast<uint8_t*>(pUserkeyBytes), static_cast<uint8_t*>(pUserkeyBytes) + cbUserkeyBytes);
         HeapFree(GetProcessHeap(), 0, pUserkeyBytes);
 
-        // Clean up session handle before returning
-        CloseUserBoundKeySession(sessionHandle);
+        // Clean up session key before returning
+        CleanupSessionInfo(sessionInfo);
 
         veil::vtl1::vtl0_functions::debug_print(L"DEBUG: enclave_load_user_bound_key - Function completed successfully");
         return userkeyBytes;
@@ -554,12 +545,6 @@ std::vector<uint8_t> enclave_load_user_bound_key(
     {
         // Clean up session key on exception
         CleanupSessionInfo(sessionInfo);
-
-        // Clean up session handle if it was created
-        if (sessionHandle != nullptr)
-        {
-            CloseUserBoundKeySession(sessionHandle);
-        }
 
         // Convert exception message to wide string for debug printing
         std::string error_msg = e.what();
@@ -571,12 +556,6 @@ std::vector<uint8_t> enclave_load_user_bound_key(
     {
         // Clean up session key on exception
         CleanupSessionInfo(sessionInfo);
-
-        // Clean up session handle if it was created
-        if (sessionHandle != nullptr)
-        {
-            CloseUserBoundKeySession(sessionHandle);
-        }
 
         veil::vtl1::vtl0_functions::debug_print(L"ERROR: enclave_load_user_bound_key - Unknown exception caught");
         throw; // Re-throw the exception
