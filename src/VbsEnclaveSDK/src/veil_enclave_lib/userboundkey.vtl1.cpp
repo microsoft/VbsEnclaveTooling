@@ -124,7 +124,7 @@ DeveloperTypes::keyCredentialCacheConfig ConvertToDeveloperType(const KEY_CREDEN
 // Helper function to convert DeveloperTypes::sessionInfo to USER_BOUND_KEY_SESSION_HANDLE
 HRESULT ConvertToSessionHandle(const DeveloperTypes::sessionInfo& sessionInfo, USER_BOUND_KEY_SESSION_HANDLE* sessionHandle)
 {
-    return CreateUserBoundKeySession(sessionInfo.sessionKeyPtr, sessionInfo.sessionNonce, sessionHandle);
+    return CreateUserBoundKeySessionHandle(sessionInfo.sessionKeyPtr, sessionInfo.sessionNonce, sessionHandle);
 }
 
 // Helper function to convert USER_BOUND_KEY_SESSION_HANDLE to DeveloperTypes::sessionInfo
