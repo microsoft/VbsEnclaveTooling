@@ -612,7 +612,7 @@ HRESULT InitializeUserBoundKeySessionInfo(
 //
 
 // Creates a user bound key session handle from session key pointer and nonce
-HRESULT CreateUserBoundKeySessionHandle(
+HRESULT CreateUserBoundKeySession(
     _In_ UINT_PTR sessionKeyPtr,
     _In_ ULONG64 sessionNonce,
     _Out_ USER_BOUND_KEY_SESSION_HANDLE* sessionHandle)

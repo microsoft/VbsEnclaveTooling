@@ -57,7 +57,7 @@ HRESULT CloseUserBoundKeyAuthContextHandle(
 
 // Session management APIs
 // Creates a user bound key session handle from session key pointer and nonce
-HRESULT CreateUserBoundKeySessionHandle(
+HRESULT CreateUserBoundKeySession(
     _In_ UINT_PTR sessionKeyPtr,
     _In_ ULONG64 sessionNonce,
     _Out_ USER_BOUND_KEY_SESSION_HANDLE* sessionHandle
@@ -68,6 +68,12 @@ HRESULT GetUserBoundKeySessionInfo(
     _In_ USER_BOUND_KEY_SESSION_HANDLE sessionHandle,
     _Out_ UINT_PTR* sessionKeyPtr,
     _Out_ ULONG64* sessionNonce
+);
+
+// Updates the session nonce in a session handle
+HRESULT UpdateUserBoundKeySessionNonce(
+    _In_ USER_BOUND_KEY_SESSION_HANDLE sessionHandle,
+    _In_ ULONG64 newNonce
 );
 
 // Closes a user bound key session and destroys the associated BCRYPT_KEY_HANDLE
