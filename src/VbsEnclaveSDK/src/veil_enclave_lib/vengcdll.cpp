@@ -629,12 +629,13 @@ HRESULT CloseUserBoundKeySession(
     return S_OK;
 }
 
-HRESULT CloseUserBoundKeyAuthContextHandle(
+BOOL CloseUserBoundKeyAuthContextHandle(
     _In_ USER_BOUND_KEY_AUTH_CONTEXT_HANDLE handle)
 {
     if (handle == NULL)
     {
-        return E_INVALIDARG;
+        SetLastError(ERROR_INVALID_HANDLE);
+        return FALSE;
     }
 
     // Cast to internal context to access internal data
@@ -649,7 +650,7 @@ HRESULT CloseUserBoundKeyAuthContextHandle(
     // Free the handle memory itself
     VengcFree(handle);
 
-    return S_OK;
+    return TRUE;
 }
 
 //

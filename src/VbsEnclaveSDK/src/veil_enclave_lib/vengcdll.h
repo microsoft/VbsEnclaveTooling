@@ -12,6 +12,8 @@
 #include <ntenclv.h>
 #include <enclaveium.h>
 
+
+// Local session info structure to avoid dependency on DeveloperTypes
 typedef struct _VEINTEROP_SESSION_INFO {
     UINT_PTR sessionKeyPtr;
     ULONG64 sessionNonce;
@@ -56,7 +58,7 @@ HRESULT InitializeUserBoundKeySessionInfo(
 // Auth Context APIs
 DECLARE_HANDLE(USER_BOUND_KEY_AUTH_CONTEXT_HANDLE);
 
-HRESULT CloseUserBoundKeyAuthContextHandle(
+BOOL CloseUserBoundKeyAuthContextHandle(
     _In_ USER_BOUND_KEY_AUTH_CONTEXT_HANDLE handle);
 
 // Session management APIs
