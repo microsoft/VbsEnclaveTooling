@@ -176,7 +176,7 @@ typedef struct _USER_BOUND_KEY_AUTH_CONTEXT_INTERNAL {
 //
 
 //
-// Step 1: Validate input parameters for session initialization
+/// Step 1: Validate input parameters for session initialization
 //
 static HRESULT
 ValidateSessionInputParameters(
@@ -184,7 +184,7 @@ ValidateSessionInputParameters(
     _In_ UINT32 challengeSize,
     _In_ void** report,
     _In_ UINT32* reportSize,
-    _In_ UINT_PTR* sessionKeyPtr
+    _In_ VEINTEROP_SESSION_INFO* sessionInfo
 )
 {
     if (challenge == NULL || challengeSize == 0)
@@ -192,7 +192,7 @@ ValidateSessionInputParameters(
         return E_INVALIDARG;
     }
 
-    if (report == NULL || reportSize == NULL || sessionKeyPtr == NULL)
+    if (report == NULL || reportSize == NULL || sessionInfo == NULL)
     {
         return E_POINTER;
     }
@@ -200,7 +200,8 @@ ValidateSessionInputParameters(
     // Initialize output parameters
     *report = NULL;
     *reportSize = 0;
-    *sessionKeyPtr = 0;
+    sessionInfo->sessionKeyPtr = 0;
+    sessionInfo->sessionNonce = 0;
 
     return S_OK;
 }
@@ -488,7 +489,7 @@ HRESULT InitializeUserBoundKeySessionInfo(
     _In_ UINT32 challengeSize,
     _Outptr_result_buffer_(*reportSize) void** report,
     _Out_ UINT32* reportSize,
-    _Out_ UINT_PTR* sessionKey
+    _Out_ VEINTEROP_SESSION_INFO* sessionInfo
 )
 {
     // DEBUG: Log entry to InitializeUserBoundKeySessionInfo
@@ -509,7 +510,7 @@ HRESULT InitializeUserBoundKeySessionInfo(
     // Step 1: Validate input parameters
     //
     veil::vtl1::vtl0_functions::debug_print("DEBUG: Step 1 - Validating input parameters");
-    hr = ValidateSessionInputParameters(challenge, challengeSize, report, reportSize, sessionKey);
+    hr = ValidateSessionInputParameters(challenge, challengeSize, report, reportSize, sessionInfo);
     if (FAILED(hr))
     {
         veil::vtl1::vtl0_functions::debug_print("DEBUG: Step 1 - Input parameter validation failed");
@@ -559,12 +560,13 @@ HRESULT InitializeUserBoundKeySessionInfo(
     veil::vtl1::vtl0_functions::debug_print("DEBUG: Step 4 - Encrypt attestation report succeeded");
 
     //
-    // Step 5: Return encrypted report and session key information
+    // Step 5: Return encrypted report and session information
     //
     veil::vtl1::vtl0_functions::debug_print("DEBUG: Step 5 - Returning results");
     *report = pEncryptedReport;
     *reportSize = encryptedReportSize;
-    *sessionKey = (UINT_PTR)pSessionKey;
+    sessionInfo->sessionKeyPtr = (UINT_PTR)pSessionKey;
+    sessionInfo->sessionNonce = 0;  // Initial nonce value
 
     // Clear local pointers so they won't be freed in cleanup
     pEncryptedReport = NULL;
@@ -661,18 +663,18 @@ HRESULT CloseUserBoundKeyAuthContextHandle(
 //
 static HRESULT
 ValidateAuthContextInputParameters(
-    _In_ UINT_PTR sessionKeyPtr,
+    _In_ const VEINTEROP_SESSION_INFO* sessionInfo,
     _In_ const void* authContextBlob,
     _In_ UINT32 authContextBlobSize,
     _In_ USER_BOUND_KEY_AUTH_CONTEXT_HANDLE* authContextHandle
 )
 {
-    if (authContextBlob == NULL || authContextHandle == NULL)
+    if (sessionInfo == NULL || authContextBlob == NULL || authContextHandle == NULL)
     {
         return E_INVALIDARG;
     }
 
-    if (authContextBlobSize == 0 || sessionKeyPtr == 0)
+    if (authContextBlobSize == 0 || sessionInfo->sessionKeyPtr == 0)
     {
         return E_INVALIDARG;
     }
@@ -808,7 +810,7 @@ DecryptAuthContextBlob(
 // Called as part of the flow when creating a new user bound key.
 // Decrypts the auth context blob provided by NGC and returns a handle to the decrypted blob
 HRESULT GetUserBoundKeyAuthContext(
-    _In_ UINT_PTR sessionKeyPtr,
+    _In_ const VEINTEROP_SESSION_INFO* sessionInfo,
     _In_reads_bytes_(authContextBlobSize) const void* authContextBlob,
     _In_ UINT32 authContextBlobSize,
     _Out_ USER_BOUND_KEY_AUTH_CONTEXT_HANDLE* authContextHandle
@@ -822,7 +824,7 @@ HRESULT GetUserBoundKeyAuthContext(
     //
     // Step 1: Validate input parameters 
     //
-    hr = ValidateAuthContextInputParameters(sessionKeyPtr, authContextBlob, authContextBlobSize, authContextHandle);
+    hr = ValidateAuthContextInputParameters(sessionInfo, authContextBlob, authContextBlobSize, authContextHandle);
     if (FAILED(hr))
     {
         goto cleanup;
@@ -831,7 +833,7 @@ HRESULT GetUserBoundKeyAuthContext(
     //
     // Step 2: Decrypt the auth context blob using BCrypt APIs
     //
-    hr = DecryptAuthContextBlob(sessionKeyPtr, authContextBlob, authContextBlobSize, &pDecryptedAuthContext, &decryptedSize);
+    hr = DecryptAuthContextBlob(sessionInfo->sessionKeyPtr, authContextBlob, authContextBlobSize, &pDecryptedAuthContext, &decryptedSize);
     if (FAILED(hr))
     {
         goto cleanup;
