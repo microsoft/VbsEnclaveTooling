@@ -3,6 +3,12 @@
 
 enclave
 {
+    struct sessionInfo
+    {
+        uintptr_t sessionKeyPtr;
+        uint64_t sessionNonce;
+    };
+
     struct keyCredentialCacheConfig
     {
         uint32_t cacheOption;
@@ -25,14 +31,14 @@ enclave
     struct authContextBlobAndSessionInfo
     {
         vector<uint8_t> authContextBlob;
-        vector<uint8_t> sessionInfo;
+        sessionInfo session;
     };
 
     struct credentialAndFormattedKeyNameAndSessionInfo
     {
         vector<uint8_t> credential;
         wstring formattedKeyName;
-        vector<uint8_t> sessionInfo;
+        sessionInfo session;
     };
 
     trusted

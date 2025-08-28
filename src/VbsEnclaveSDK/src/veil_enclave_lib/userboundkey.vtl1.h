@@ -16,6 +16,7 @@ namespace DeveloperTypes
     struct keyCredentialCacheConfig;
     struct credentialAndFormattedKeyNameAndSessionInfo;
     struct secretAndAuthorizationContext;
+    struct sessionInfo; // This is auto-generated, don't redefine it
 }
 
 namespace veil::vtl1::implementation::userboundkey::callouts

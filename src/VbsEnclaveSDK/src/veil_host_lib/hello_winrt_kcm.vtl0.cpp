@@ -252,13 +252,7 @@ authContextBlobAndSessionInfo veil_abi::VTL0_Stubs::export_interface::userboundk
 
     auto authContextBuffer = credential.RetrieveAuthorizationContext();
     result.authContextBlob = ConvertBufferToVector(authContextBuffer);
-    
-    // Serialize sessionKeyPtr and nonce into sessionInfo vector
-    std::vector<uint8_t> sessionInfoData(sizeof(uintptr_t) + sizeof(uint64_t));
-    std::memcpy(sessionInfoData.data(), sessionKeyPtr.get(), sizeof(uintptr_t));
-    uint64_t nonce = 0; // Initialize nonce to 0
-    std::memcpy(sessionInfoData.data() + sizeof(uintptr_t), &nonce, sizeof(uint64_t));
-    result.sessionInfo = sessionInfoData;
+    result.session = {*sessionKeyPtr, 0 /*Nonce*/}; // Initialize session info  
 
     return result;
 }
@@ -411,14 +405,7 @@ credentialAndFormattedKeyNameAndSessionInfo veil_abi::VTL0_Stubs::export_interfa
     credentialAndFormattedKeyNameAndSessionInfo result;
     result.credential = ConvertCredentialToVector(credential);
     result.formattedKeyName = formattedKeyName;
-    
-    // Serialize sessionKeyPtr and nonce into sessionInfo vector
-    std::vector<uint8_t> sessionInfoData(sizeof(uintptr_t) + sizeof(uint64_t));
-    std::memcpy(sessionInfoData.data(), sessionKeyPtr.get(), sizeof(uintptr_t));
-    uint64_t nonce = 0; // Initialize nonce to 0
-    std::memcpy(sessionInfoData.data() + sizeof(uintptr_t), &nonce, sizeof(uint64_t));
-    result.sessionInfo = sessionInfoData;
-    
+    result.session = { *sessionKeyPtr, 0 /*Nonce*/}; // Initialize session info  
     return result;
 }
 
