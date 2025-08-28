@@ -12,13 +12,6 @@
 #include <ntenclv.h>
 #include <enclaveium.h>
 
-
-// Local session info structure to avoid dependency on DeveloperTypes
-typedef struct _VEINTEROP_SESSION_INFO {
-    UINT_PTR sessionKeyPtr;
-    ULONG64 sessionNonce;
-} VEINTEROP_SESSION_INFO;
-
 // KCM Trustlet Identity constant
 #ifndef TRUSTLETIDENTITY_KCM
 #define TRUSTLETIDENTITY_KCM 6
@@ -57,14 +50,35 @@ HRESULT InitializeUserBoundKeySessionInfo(
 
 // Auth Context APIs
 DECLARE_HANDLE(USER_BOUND_KEY_AUTH_CONTEXT_HANDLE);
+DECLARE_HANDLE(USER_BOUND_KEY_SESSION_HANDLE);
 
-BOOL CloseUserBoundKeyAuthContextHandle(
+HRESULT CloseUserBoundKeyAuthContextHandle(
     _In_ USER_BOUND_KEY_AUTH_CONTEXT_HANDLE handle);
 
 // Session management APIs
+// Creates a user bound key session handle from session key pointer and nonce
+HRESULT CreateUserBoundKeySession(
+    _In_ UINT_PTR sessionKeyPtr,
+    _In_ ULONG64 sessionNonce,
+    _Out_ USER_BOUND_KEY_SESSION_HANDLE* sessionHandle
+);
+
+// Gets session information from a session handle
+HRESULT GetUserBoundKeySessionInfo(
+    _In_ USER_BOUND_KEY_SESSION_HANDLE sessionHandle,
+    _Out_ UINT_PTR* sessionKeyPtr,
+    _Out_ ULONG64* sessionNonce
+);
+
+// Updates the session nonce in a session handle
+HRESULT UpdateUserBoundKeySessionNonce(
+    _In_ USER_BOUND_KEY_SESSION_HANDLE sessionHandle,
+    _In_ ULONG64 newNonce
+);
+
 // Closes a user bound key session and destroys the associated BCRYPT_KEY_HANDLE
 HRESULT CloseUserBoundKeySession(
-    _In_ const VEINTEROP_SESSION_INFO* sessionInfo
+    _In_ USER_BOUND_KEY_SESSION_HANDLE sessionHandle
 );
 
 // Legacy structure for backward compatibility
@@ -118,7 +132,7 @@ HRESULT ProtectUserBoundKey(
 // NOTE OF CAUTION: We should prevent nonce reuse under any circumstances.
 // This function handles nonce manipulation internally to prevent reuse.
 HRESULT CreateEncryptedRequestForDeriveSharedSecret(
-    _Inout_ VEINTEROP_SESSION_INFO* sessionInfo,
+    _In_ USER_BOUND_KEY_SESSION_HANDLE sessionHandle,
     _In_reads_bytes_(keyNameSize) const void* keyName,
     _In_ UINT32 keyNameSize,
     _In_reads_bytes_(publicKeyBytesSize) const void* publicKeyBytes,
@@ -129,7 +143,7 @@ HRESULT CreateEncryptedRequestForDeriveSharedSecret(
 
 // Decrypt the user key from material from disk
 HRESULT UnprotectUserBoundKey(
-    _In_ const VEINTEROP_SESSION_INFO* sessionInfo,
+    _In_ USER_BOUND_KEY_SESSION_HANDLE sessionHandle,
     _In_ USER_BOUND_KEY_AUTH_CONTEXT_HANDLE authContext,
     _In_reads_bytes_(sessionEncryptedDerivedSecretSize) const void* sessionEncryptedDerivedSecret,
     _In_ UINT32 sessionEncryptedDerivedSecretSize,
