@@ -106,14 +106,11 @@ KeyCredentialCacheConfiguration ConvertCacheConfig(const DeveloperTypes::keyCred
     KeyCredentialCacheOption cacheOption;
     switch (cacheConfig.cacheOption)
     {
-        case 1:
+        case 0:
             cacheOption = KeyCredentialCacheOption::NoCache;
             break;
-        case 2:
+        case 1:
             cacheOption = KeyCredentialCacheOption::CacheWhenUnlocked;
-            break;
-        case 4:
-            cacheOption = KeyCredentialCacheOption::CacheUnderLock;
             break;
         default:
             cacheOption = KeyCredentialCacheOption::NoCache; // Default fallback

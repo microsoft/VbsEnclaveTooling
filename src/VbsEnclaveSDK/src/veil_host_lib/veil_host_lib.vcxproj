@@ -29,9 +29,9 @@
     <DefaultLanguage>en-US</DefaultLanguage>
     <GenerateProjectSpecificOutputFolder>true</GenerateProjectSpecificOutputFolder>
     <ConfigurationType>StaticLibrary</ConfigurationType>
-    <TargetPlatformVersion>10.0.26458.0</TargetPlatformVersion>
+    <TargetPlatformVersion>10.0.26475.0</TargetPlatformVersion>
     <WindowsTargetPlatformMinVersion>10.0.2-prerelease.250520.3.0</WindowsTargetPlatformMinVersion>
-    <WindowsTargetPlatformVersion>10.0.26458.0</WindowsTargetPlatformVersion>
+    <WindowsTargetPlatformVersion>10.0.26475.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <PropertyGroup>
     <VbsEnclaveVirtualTrustLayer>HostApp</VbsEnclaveVirtualTrustLayer>
