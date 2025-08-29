@@ -13,18 +13,7 @@
 #include <veil\enclave\vengcdll.h>
 #include <veil\enclave\vtl0_functions.vtl1.h>
 #include <VbsEnclave\Enclave\Trusted.h>
-
-// Define the global DeveloperTypes namespace structure BEFORE including VbsEnclave headers
-// to ensure it doesn't conflict with the VbsEnclave types
-namespace DeveloperTypes
-{
-struct keyCredentialCacheConfig
-{
-    std::uint32_t cacheOption {};
-    std::uint32_t cacheTimeoutInSeconds {};
-    std::uint32_t cacheUsageCount {};
-};
-}
+#include <veil\enclave\DeveloperTypes.h>
 
 // Store the actual key object, not just the handle
 wil::unique_bcrypt_key g_encryptionKey;
