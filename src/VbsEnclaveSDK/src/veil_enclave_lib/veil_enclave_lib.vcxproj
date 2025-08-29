@@ -97,6 +97,12 @@
       <AdditionalIncludeDirectories>$(WindowsSdk_EnclaveIncludes_Path)\um;$(WindowsSdk_EnclaveIncludes_Path)\shared;$(WindowsSdk_EnclaveIncludes_Path)\ucrt;$(SolutionDir)..\..\Common\veil_enclave_wil_inc;$(MSBUILDThisFileDirectory)..\veil_enclave_inc;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp20</LanguageStandard>
       <GuardEHContMetadata>true</GuardEHContMetadata>
+        <!-- 
+          Add /FS to enable file-based locking on .pdb files. Without this, parallel cl.exe processes
+          (as used by vcpkg builds) can collide when writing debug info, causing error 
+          C1041 ("cannot open program database").
+        -->
+      <AdditionalOptions>/FS %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
