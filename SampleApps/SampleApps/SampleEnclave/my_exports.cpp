@@ -12,8 +12,19 @@
 #include <veil\enclave\userboundkey.vtl1.h>
 #include <veil\enclave\vengcdll.h>
 #include <veil\enclave\vtl0_functions.vtl1.h>
-
 #include <VbsEnclave\Enclave\Trusted.h>
+
+// Define the global DeveloperTypes namespace structure BEFORE including VbsEnclave headers
+// to ensure it doesn't conflict with the VbsEnclave types
+namespace DeveloperTypes
+{
+struct keyCredentialCacheConfig
+{
+    std::uint32_t cacheOption {};
+    std::uint32_t cacheTimeoutInSeconds {};
+    std::uint32_t cacheUsageCount {};
+};
+}
 
 // Store the actual key object, not just the handle
 wil::unique_bcrypt_key g_encryptionKey;
@@ -301,7 +312,7 @@ HRESULT VbsEnclave::Trusted::Implementation::MyEnclaveCreateUserBoundKey(
     _In_ const std::wstring& helloKeyName,
     _In_ const std::wstring& pinMessage,
     _In_ const uintptr_t windowId,
-    _In_ const VbsEnclave::DeveloperTypes::keyCredentialCacheConfig& keyCredentialCacheConfiguration,
+    _In_ const keyCredentialCacheConfig& keyCredentialCacheConfiguration,
     _Out_ std::vector<std::uint8_t>& securedEncryptionKeyBytes)
 {
     using namespace veil::vtl1::vtl0_functions;
@@ -310,17 +321,17 @@ HRESULT VbsEnclave::Trusted::Implementation::MyEnclaveCreateUserBoundKey(
     {
         debug_print(L"Start MyEnclaveCreateUserBoundKey");
 
-        // Convert VbsEnclave::DeveloperTypes::keyCredentialCacheConfig to KEY_CREDENTIAL_CACHE_CONFIG
-        KEY_CREDENTIAL_CACHE_CONFIG mutableKeyCredentialCacheConfig = {};
-        mutableKeyCredentialCacheConfig.cacheType = keyCredentialCacheConfiguration.cacheOption;
-        mutableKeyCredentialCacheConfig.cacheTimeout = keyCredentialCacheConfiguration.cacheTimeoutInSeconds;
-        mutableKeyCredentialCacheConfig.cacheCallCount = keyCredentialCacheConfiguration.cacheUsageCount;
+        // Convert to the expected DeveloperTypes struct
+        ::DeveloperTypes::keyCredentialCacheConfig convertedConfig;
+        convertedConfig.cacheOption = keyCredentialCacheConfiguration.cacheOption;
+        convertedConfig.cacheTimeoutInSeconds = keyCredentialCacheConfiguration.cacheTimeoutInSeconds;
+        convertedConfig.cacheUsageCount = keyCredentialCacheConfiguration.cacheUsageCount;
 
         debug_print(L"Created mutableKeyCredentialCacheConfig");
 
         auto keyBytes = veil::vtl1::userboundkey::enclave_create_user_bound_key(
             helloKeyName,
-            mutableKeyCredentialCacheConfig,
+            convertedConfig,
             pinMessage,
             windowId,
             ENCLAVE_SEALING_IDENTITY_POLICY::ENCLAVE_IDENTITY_POLICY_SEAL_SAME_IMAGE);
@@ -349,7 +360,7 @@ HRESULT VbsEnclave::Trusted::Implementation::MyEnclaveLoadUserBoundKeyAndEncrypt
     _In_ const std::wstring& helloKeyName,
     _In_ const std::wstring& pinMessage,
     _In_ const uintptr_t windowId,
-    _In_ const VbsEnclave::DeveloperTypes::keyCredentialCacheConfig& keyCredentialCacheConfiguration,
+    _In_ const keyCredentialCacheConfig& keyCredentialCacheConfiguration,
     _In_ const std::vector<std::uint8_t>& securedEncryptionKeyBytes,
     _In_ const std::wstring& inputData,
     _Out_ std::vector<std::uint8_t>& encryptedInputBytes,
@@ -366,11 +377,11 @@ HRESULT VbsEnclave::Trusted::Implementation::MyEnclaveLoadUserBoundKeyAndEncrypt
         {
             debug_print(L"UBK not loaded, loading user-bound key");
 
-            // Convert VbsEnclave::DeveloperTypes::keyCredentialCacheConfig to KEY_CREDENTIAL_CACHE_CONFIG
-            KEY_CREDENTIAL_CACHE_CONFIG mutableKeyCredentialCacheConfig = {};
-            mutableKeyCredentialCacheConfig.cacheType = keyCredentialCacheConfiguration.cacheOption;
-            mutableKeyCredentialCacheConfig.cacheTimeout = keyCredentialCacheConfiguration.cacheTimeoutInSeconds;
-            mutableKeyCredentialCacheConfig.cacheCallCount = keyCredentialCacheConfiguration.cacheUsageCount;
+            // Convert to the expected DeveloperTypes struct
+            ::DeveloperTypes::keyCredentialCacheConfig convertedConfig;
+            convertedConfig.cacheOption = keyCredentialCacheConfiguration.cacheOption;
+            convertedConfig.cacheTimeoutInSeconds = keyCredentialCacheConfiguration.cacheTimeoutInSeconds;
+            convertedConfig.cacheUsageCount = keyCredentialCacheConfiguration.cacheUsageCount;
 
             debug_print(L"Created mutableKeyCredentialCacheConfig");
 
@@ -378,7 +389,7 @@ HRESULT VbsEnclave::Trusted::Implementation::MyEnclaveLoadUserBoundKeyAndEncrypt
             // Note: securedEncryptionKeyBytes contains the user-bound key data, not raw key material
             auto loadedKeyBytes = veil::vtl1::userboundkey::enclave_load_user_bound_key(
                 helloKeyName,
-                mutableKeyCredentialCacheConfig,
+                convertedConfig,
                 pinMessage,
                 windowId,
                 const_cast<std::vector<std::uint8_t>&>(securedEncryptionKeyBytes));
@@ -424,7 +435,7 @@ HRESULT VbsEnclave::Trusted::Implementation::MyEnclaveLoadUserBoundKeyAndDecrypt
     _In_ const std::wstring& helloKeyName,
     _In_ const std::wstring& pinMessage,
     _In_ const uintptr_t windowId,
-    _In_ const VbsEnclave::DeveloperTypes::keyCredentialCacheConfig& keyCredentialCacheConfiguration,
+    _In_ const keyCredentialCacheConfig& keyCredentialCacheConfiguration,
     _In_ const std::vector<std::uint8_t>& securedEncryptionKeyBytes,
     _In_ const std::vector<std::uint8_t>& encryptedInputBytes,
     _In_ const std::vector<std::uint8_t>& tag,
@@ -441,11 +452,11 @@ HRESULT VbsEnclave::Trusted::Implementation::MyEnclaveLoadUserBoundKeyAndDecrypt
         {
             debug_print(L"UBK not loaded, loading user-bound key");
 
-            // Convert VbsEnclave::DeveloperTypes::keyCredentialCacheConfig to KEY_CREDENTIAL_CACHE_CONFIG
-            KEY_CREDENTIAL_CACHE_CONFIG mutableKeyCredentialCacheConfig = {};
-            mutableKeyCredentialCacheConfig.cacheType = keyCredentialCacheConfiguration.cacheOption;
-            mutableKeyCredentialCacheConfig.cacheTimeout = keyCredentialCacheConfiguration.cacheTimeoutInSeconds;
-            mutableKeyCredentialCacheConfig.cacheCallCount = keyCredentialCacheConfiguration.cacheUsageCount;
+            // Convert to the expected DeveloperTypes struct
+            ::DeveloperTypes::keyCredentialCacheConfig convertedConfig;
+            convertedConfig.cacheOption = keyCredentialCacheConfiguration.cacheOption;
+            convertedConfig.cacheTimeoutInSeconds = keyCredentialCacheConfiguration.cacheTimeoutInSeconds;
+            convertedConfig.cacheUsageCount = keyCredentialCacheConfiguration.cacheUsageCount;
 
             debug_print(L"Created mutableKeyCredentialCacheConfig");
             debug_print(L"securedEncryptionKeyBytes size: %d", securedEncryptionKeyBytes.size());
@@ -454,7 +465,7 @@ HRESULT VbsEnclave::Trusted::Implementation::MyEnclaveLoadUserBoundKeyAndDecrypt
             // Note: securedEncryptionKeyBytes contains the user-bound key data, not raw key material
             auto loadedKeyBytes = veil::vtl1::userboundkey::enclave_load_user_bound_key(
                 helloKeyName,
-                mutableKeyCredentialCacheConfig,
+                convertedConfig,
                 pinMessage,
                 windowId,
                 const_cast<std::vector<std::uint8_t>&>(securedEncryptionKeyBytes));
@@ -519,7 +530,7 @@ HRESULT VbsEnclave::Trusted::Implementation::RunEncryptionKeyExample_CreateEncry
     
     debug_print("");
 
-    // Generate our encryption key
+// Generate our encryption key
     debug_print(L"1. Generating our encryption key");
     veil::vtl1::logger::add_log_from_enclave(
         L"[Enclave] Generating our encryption key",

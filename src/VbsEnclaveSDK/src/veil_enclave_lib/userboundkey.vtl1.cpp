@@ -111,6 +111,7 @@ namespace veil::vtl1::implementation::userboundkey::callouts
 
 namespace veil::vtl1::userboundkey
 {
+/*
 // Helper function to convert KEY_CREDENTIAL_CACHE_CONFIG to DeveloperTypes::keyCredentialCacheConfig
 DeveloperTypes::keyCredentialCacheConfig ConvertToDeveloperType(const KEY_CREDENTIAL_CACHE_CONFIG& cacheConfig)
 {
@@ -120,6 +121,7 @@ DeveloperTypes::keyCredentialCacheConfig ConvertToDeveloperType(const KEY_CREDEN
     devType.cacheUsageCount = cacheConfig.cacheCallCount;
     return devType;
 }
+*/
 
 // Helper function to convert DeveloperTypes::sessionInfo to USER_BOUND_KEY_SESSION_HANDLE
 HRESULT ConvertToSessionHandle(const DeveloperTypes::sessionInfo& sessionInfo, USER_BOUND_KEY_SESSION_HANDLE* sessionHandle)
@@ -290,7 +292,7 @@ std::vector<uint8_t> GetEphemeralPublicKeyBytesFromBoundKeyBytes(wil::secure_vec
 
 wil::secure_vector<uint8_t> enclave_create_user_bound_key(
     const std::wstring& keyName,
-    KEY_CREDENTIAL_CACHE_CONFIG& cacheConfig,
+    DeveloperTypes::keyCredentialCacheConfig& cacheConfig,
     const std::wstring& message,
     uintptr_t windowId,
     ENCLAVE_SEALING_IDENTITY_POLICY sealingPolicy)
@@ -302,9 +304,9 @@ wil::secure_vector<uint8_t> enclave_create_user_bound_key(
     try
     {
         // Convert cacheConfig to the type expected by the callback
-        auto devCacheConfig = ConvertToDeveloperType(cacheConfig);
+        auto devCacheConfig = cacheConfig;
 
-        veil::vtl1::vtl0_functions::debug_print(L"DEBUG: enclave_create_user_bound_key - ConvertToDeveloperType completed");
+        // veil::vtl1::vtl0_functions::debug_print(L"DEBUG: enclave_create_user_bound_key - ConvertToDeveloperType completed");
 
         // SESSION
         void* enclave = veil::vtl1::enclave_information().BaseAddress;
@@ -402,7 +404,7 @@ wil::secure_vector<uint8_t> enclave_create_user_bound_key(
 
 std::vector<uint8_t> enclave_load_user_bound_key(
     const std::wstring& keyName,
-    KEY_CREDENTIAL_CACHE_CONFIG& cacheConfig,
+    DeveloperTypes::keyCredentialCacheConfig& cacheConfig,
     const std::wstring& message,
     uintptr_t windowId,
     std::vector<uint8_t>& sealedBoundKeyBytes)

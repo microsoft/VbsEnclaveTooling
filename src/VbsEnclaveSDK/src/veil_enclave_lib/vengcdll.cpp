@@ -5,6 +5,13 @@
 #include "vengcdll.h"  // Use quotes for local header
 #include "vtl0_functions.vtl1.h"  // Add this include for debug_print
 
+// Legacy structure for backward compatibility
+typedef struct _KEY_CREDENTIAL_CACHE_CONFIG {
+    UINT32 cacheType;
+    UINT32 cacheTimeout; // in seconds
+    UINT32 cacheCallCount;
+} KEY_CREDENTIAL_CACHE_CONFIG;
+
 // Forward declarations for NGC types
 // Structure to return values for NCRYPT_NGC_AUTHORIZATION_CONTEXT_PROPERTY
 typedef struct _NCRYPT_NGC_AUTHORIZATION_CONTEXT{

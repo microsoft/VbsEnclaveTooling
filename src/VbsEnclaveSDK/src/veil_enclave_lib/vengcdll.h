@@ -75,12 +75,14 @@ HRESULT CloseUserBoundKeySession(
     _In_ USER_BOUND_KEY_SESSION_HANDLE sessionHandle
 );
 
+/*
 // Legacy structure for backward compatibility
 typedef struct _KEY_CREDENTIAL_CACHE_CONFIG {
     UINT32 cacheType;
     UINT32 cacheTimeout; // in seconds
     UINT32 cacheCallCount;
 } KEY_CREDENTIAL_CACHE_CONFIG;
+*/
 
 typedef enum _USER_BOUND_KEY_AUTH_CONTEXT_PROPERTIES {
     UserBoundKeyAuthContextPropertyCacheConfig = 0, // The cache configuration for the user bound key, encoded as a CACHE_CONFIG structure
