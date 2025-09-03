@@ -973,6 +973,8 @@ HRESULT GetUserBoundKeyAuthContext(
 //
 static HRESULT
 ValidateAuthorizationContext(
+    _In_reads_bytes_(keyNameSize) const void* keyName,
+    _In_ UINT32 /*keyNameSize*/,
     _In_ BYTE* pDecryptedAuthContext,
     _In_ UINT32 decryptedSize,
     _In_ UINT32 count,
@@ -1001,6 +1003,22 @@ ValidateAuthorizationContext(
     if (authCtx->keyNameLength == 0 || authCtx->keyNameLength > sizeof(authCtx->keyName))
     {
         return E_INVALIDARG;
+    }
+
+    // Extract the key name from the structure
+    SIZE_T keyNameChars = authCtx->keyNameLength / sizeof(WCHAR);
+
+    // Ensure the key name is null-terminated within the allocated space
+    WCHAR tempKeyName[KCM_KEY_NAME_BUFFER_SIZE + 1] = {0}; // +1 for safety
+    SIZE_T charsToCopy = min(keyNameChars, KCM_KEY_NAME_BUFFER_SIZE);
+    memcpy(tempKeyName, authCtx->keyName, charsToCopy * sizeof(WCHAR));
+    tempKeyName[charsToCopy] = L'\0'; // Ensure null termination
+
+    // Compare the extracted key name with the provided key name
+    if (wcscmp(static_cast<const wchar_t*>(keyName), tempKeyName) != 0)
+    {
+        // Key names don't match - this auth context is for a different key
+        return E_ACCESSDENIED;
     }
 
     // Always verify the secure ID owner ID state
@@ -1063,6 +1081,8 @@ ValidateAuthorizationContext(
 // Verifies that the keyname matches the one in the auth context blob, 
 // and validates cacheConfig, IsSecureIdOwnerId, publicKeyBytes
 HRESULT ValidateUserBoundKeyAuthContext(
+    _In_reads_bytes_(keyNameSize) const void* keyName,
+    _In_ UINT32 keyNameSize,
     _In_ USER_BOUND_KEY_AUTH_CONTEXT_HANDLE authContextHandle,
     _In_ UINT32 count,
     _In_reads_(count) const USER_BOUND_KEY_AUTH_CONTEXT_PROPERTY* values
@@ -1089,7 +1109,7 @@ HRESULT ValidateUserBoundKeyAuthContext(
     //
     // Step 2: Verify properties against authorization context
     //
-    hr = ValidateAuthorizationContext(pInternalContext->pDecryptedAuthContext, pInternalContext->decryptedSize, count, values);
+    hr = ValidateAuthorizationContext(keyName, keyNameSize, pInternalContext->pDecryptedAuthContext, pInternalContext->decryptedSize, count, values);
     if (FAILED(hr))
     {
         goto cleanup;

@@ -151,7 +151,7 @@ KeyCredentialCacheConfiguration ConvertCacheConfig(const DeveloperTypes::keyCred
 
 }
 
-authContextBlobAndSessionInfo veil_abi::VTL0_Stubs::export_interface::userboundkey_establish_session_for_create_callback(
+authContextBlobAndFormattedKeyNameAndSessionInfo veil_abi::VTL0_Stubs::export_interface::userboundkey_establish_session_for_create_callback(
     uintptr_t enclave,
     const std::wstring& key_name,
     uintptr_t ecdh_protocol,
@@ -244,12 +244,14 @@ authContextBlobAndSessionInfo veil_abi::VTL0_Stubs::export_interface::userboundk
     }
 
     const auto& credential = credentialResult.Credential();
+    std::wstring formattedKeyName = FormatUserHelloKeyName(key_name.c_str());
 
-    authContextBlobAndSessionInfo result;
+    authContextBlobAndFormattedKeyNameAndSessionInfo result;
 
     auto authContextBuffer = credential.RetrieveAuthorizationContext();
     result.authContextBlob = ConvertBufferToVector(authContextBuffer);
-    result.session = {*sessionKeyPtr, 0 /*Nonce*/}; // Initialize session info  
+    result.formattedKeyName = formattedKeyName; // Store the formatted key name
+    result.session = {*sessionKeyPtr, 0 /*Nonce*/}; // Initialize session info
 
     return result;
 }
