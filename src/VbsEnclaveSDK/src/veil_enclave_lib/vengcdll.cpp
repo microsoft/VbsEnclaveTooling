@@ -974,7 +974,7 @@ HRESULT GetUserBoundKeyAuthContext(
 static HRESULT
 ValidateAuthorizationContext(
     _In_reads_bytes_(keyNameSize) const void* keyName,
-    _In_ UINT32 /*keyNameSize*/,
+    _In_ UINT32 keyNameSize,
     _In_ BYTE* pDecryptedAuthContext,
     _In_ UINT32 decryptedSize,
     _In_ UINT32 count,
@@ -984,8 +984,9 @@ ValidateAuthorizationContext(
     // The decrypted auth context is a NCRYPT_NGC_AUTHORIZATION_CONTEXT structure
     // that contains structured data
 
-    // Ensure we have enough data for the basic structure
-    if (decryptedSize < sizeof(NCRYPT_NGC_AUTHORIZATION_CONTEXT))
+    // Ensure we have enough data for the basic structure and we have a valid keyName
+    if (decryptedSize < sizeof(NCRYPT_NGC_AUTHORIZATION_CONTEXT) || 
+        keyNameSize == 0)
     {
         return E_INVALIDARG;
     }
