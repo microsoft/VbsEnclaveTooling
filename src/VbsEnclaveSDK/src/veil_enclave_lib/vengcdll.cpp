@@ -973,8 +973,7 @@ HRESULT GetUserBoundKeyAuthContext(
 //
 static HRESULT
 ValidateAuthorizationContext(
-    _In_reads_bytes_(keyNameSize) const void* keyName,
-    _In_ UINT32 keyNameSize,
+    _In_ PCWSTR keyName,
     _In_ BYTE* pDecryptedAuthContext,
     _In_ UINT32 decryptedSize,
     _In_ UINT32 count,
@@ -986,7 +985,7 @@ ValidateAuthorizationContext(
 
     // Ensure we have enough data for the basic structure and we have a valid keyName
     if (decryptedSize < sizeof(NCRYPT_NGC_AUTHORIZATION_CONTEXT) || 
-        keyNameSize == 0)
+        keyName == NULL)
     {
         return E_INVALIDARG;
     }
@@ -1082,8 +1081,7 @@ ValidateAuthorizationContext(
 // Verifies that the keyname matches the one in the auth context blob, 
 // and validates cacheConfig, IsSecureIdOwnerId, publicKeyBytes
 HRESULT ValidateUserBoundKeyAuthContext(
-    _In_reads_bytes_(keyNameSize) const void* keyName,
-    _In_ UINT32 keyNameSize,
+    _In_ PCWSTR keyName,
     _In_ USER_BOUND_KEY_AUTH_CONTEXT_HANDLE authContextHandle,
     _In_ UINT32 count,
     _In_reads_(count) const USER_BOUND_KEY_AUTH_CONTEXT_PROPERTY* values
@@ -1110,7 +1108,7 @@ HRESULT ValidateUserBoundKeyAuthContext(
     //
     // Step 2: Verify properties against authorization context
     //
-    hr = ValidateAuthorizationContext(keyName, keyNameSize, pInternalContext->pDecryptedAuthContext, pInternalContext->decryptedSize, count, values);
+    hr = ValidateAuthorizationContext(keyName, pInternalContext->pDecryptedAuthContext, pInternalContext->decryptedSize, count, values);
     if (FAILED(hr))
     {
         goto cleanup;

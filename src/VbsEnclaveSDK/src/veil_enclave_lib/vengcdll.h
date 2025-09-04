@@ -107,8 +107,7 @@ typedef struct _USER_BOUND_KEY_AUTH_CONTEXT_PROPERTY
 // Verifies that the keyname matches the one in the auth context blob, 
 // and validates cacheConfig, IsSecureIdOwnerId, publicKeyBytes
 HRESULT ValidateUserBoundKeyAuthContext(
-    _In_reads_bytes_(keyNameSize) const void* keyName,
-    _In_ UINT32 keyNameSize,
+    _In_ PCWSTR keyName,
     _In_ USER_BOUND_KEY_AUTH_CONTEXT_HANDLE authContextHandle,
     _In_ UINT32 count,
     _In_reads_(count) const USER_BOUND_KEY_AUTH_CONTEXT_PROPERTY* values
