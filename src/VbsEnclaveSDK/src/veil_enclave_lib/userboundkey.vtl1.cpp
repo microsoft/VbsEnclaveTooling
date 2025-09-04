@@ -345,6 +345,7 @@ wil::secure_vector<uint8_t> enclave_create_user_bound_key(
         auto& formattedKeyName = authContextBlobAndFormattedKeyNameAndSessionInfo.formattedKeyName;
         THROW_IF_FAILED(ValidateUserBoundKeyAuthContext(
             formattedKeyName.c_str(),
+            static_cast<UINT32>(formattedKeyName.length() * sizeof(wchar_t)),
             authContext.get(),
             1,
             &propCacheConfig)); // OS CALL
@@ -530,8 +531,9 @@ std::vector<uint8_t> enclave_load_user_bound_key(
         propCacheConfig.value = &cacheConfig;
         THROW_IF_FAILED(ValidateUserBoundKeyAuthContext(
             formattedKeyName.c_str(),
-            authContext.get(),
-            1,
+            static_cast<UINT32>(keyName.length() * sizeof(wchar_t)),
+            authContext.get(), 
+            1, 
             &propCacheConfig)); // OS CALL
         veil::vtl1::vtl0_functions::debug_print(L"DEBUG: enclave_load_user_bound_key - Auth context validation completed");
 
