@@ -343,9 +343,9 @@ wil::secure_vector<uint8_t> enclave_create_user_bound_key(
         propCacheConfig.size = sizeof(cacheConfig);
         propCacheConfig.value = &cacheConfig;
 
-        // auto& formattedKeyName = authContextBlobAndFormattedKeyNameAndSessionInfo.formattedKeyName;
+        auto& formattedKeyName = authContextBlobAndFormattedKeyNameAndSessionInfo.formattedKeyName;
         THROW_IF_FAILED(ValidateUserBoundKeyAuthContext(
-            // formattedKeyName.c_str(),
+            formattedKeyName.c_str(),
             authContext.get(),
             1,
             &propCacheConfig)); // OS CALL
@@ -530,7 +530,7 @@ std::vector<uint8_t> enclave_load_user_bound_key(
         propCacheConfig.size = sizeof(cacheConfig);
         propCacheConfig.value = &cacheConfig;
         THROW_IF_FAILED(ValidateUserBoundKeyAuthContext(
-            // formattedKeyName.c_str(),
+            formattedKeyName.c_str(),
             authContext.get(), 
             1, 
             &propCacheConfig)); // OS CALL
