@@ -12,6 +12,7 @@
 #include <ntenclv.h>
 #include <enclaveium.h>
 
+/*
 // KCM Trustlet Identity constant
 #ifndef TRUSTLETIDENTITY_KCM
 #define TRUSTLETIDENTITY_KCM 6
@@ -32,6 +33,7 @@
 // KCM public key validation limits
 #define KCM_PUBLIC_KEY_MIN_SIZE 32          // Minimum allowed KCM public key size
 #define KCM_PUBLIC_KEY_MAX_SIZE 1024        // Maximum allowed KCM public key size
+*/
 
 //
 // Exports for vengcdll.dll (new OS DLL in VTL1)
@@ -142,6 +144,7 @@ HRESULT CreateEncryptedRequestForDeriveSharedSecret(
 HRESULT UnprotectUserBoundKey(
     _In_ USER_BOUND_KEY_SESSION_HANDLE sessionHandle,
     _In_ USER_BOUND_KEY_AUTH_CONTEXT_HANDLE authContext,
+    _In_ ULONG64 nonceNumber,
     _In_reads_bytes_(sessionEncryptedDerivedSecretSize) const void* sessionEncryptedDerivedSecret,
     _In_ UINT32 sessionEncryptedDerivedSecretSize,
     _In_reads_bytes_(encryptedUserBoundKeySize) const void* encryptedUserBoundKey,

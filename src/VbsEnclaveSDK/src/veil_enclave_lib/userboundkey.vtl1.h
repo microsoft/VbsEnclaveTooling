@@ -6,7 +6,8 @@
 #include <wil/resource.h>
 #include "future.vtl1.h"
 #include "object_table.vtl1.h"
-#include "vengcdll.h" // For KEY_CREDENTIAL_CACHE_CONFIG and other OS types
+#include <veinterop_kcm.h>
+// #include "vengcdll.h" // For KEY_CREDENTIAL_CACHE_CONFIG and other OS types
 
 // Forward declarations for the auto-generated types
 namespace DeveloperTypes

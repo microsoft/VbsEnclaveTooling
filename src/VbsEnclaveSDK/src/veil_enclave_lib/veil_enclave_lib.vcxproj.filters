@@ -39,9 +39,9 @@
     <ClInclude Include="logger.vtl1.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="vengcdll.h">
+    <!-- <ClInclude Include="vengcdll.h">
       <Filter>Header Files</Filter>
-    </ClInclude>
+    </ClInclude> -->
     <ClInclude Include="userboundkey.vtl1.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -62,9 +62,9 @@
     <ClCompile Include="vtl0_functions.vtl1.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="vengcdll.cpp">
+    <!-- <ClCompile Include="vengcdll.cpp">
       <Filter>Source Files</Filter>
-    </ClCompile>
+    </ClCompile> -->
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />

@@ -24,7 +24,8 @@
 #include <winrt/Windows.Storage.Streams.h>
 
 #include <VbsEnclave\HostApp\Stubs.h>
-#include "..\veil_enclave_lib\vengcdll.h"
+// #include "..\veil_enclave_lib\vengcdll.h"
+#include <veinterop_kcm.h>
 #include <VbsEnclave\HostApp\DeveloperTypes.h>
 #include <sddl.h>
 

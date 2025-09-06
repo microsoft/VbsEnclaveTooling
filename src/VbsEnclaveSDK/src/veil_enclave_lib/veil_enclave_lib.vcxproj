@@ -25,7 +25,7 @@
     <Keyword>Win32Proj</Keyword>
     <ProjectGuid>{323433E4-11D6-4B5B-93E4-04504E2EF0E1}</ProjectGuid>
     <RootNamespace>veil_enclave_lib</RootNamespace>
-    <WindowsTargetPlatformVersion>10.0.26475.0</WindowsTargetPlatformVersion>
+    <WindowsTargetPlatformVersion>10.0.26483.0</WindowsTargetPlatformVersion>
     <ConfigurationType>StaticLibrary</ConfigurationType>
     <PlatformToolset>v143</PlatformToolset>
     <ProjectName>veil_enclave_lib</ProjectName>
@@ -116,7 +116,7 @@
     <ClInclude Include="object_table.vtl1.h" />
     <ClInclude Include="logger.vtl1.h" />
     <ClInclude Include="userboundkey.vtl1.h" />
-    <ClInclude Include="vengcdll.h" />
+    <!-- <ClInclude Include="vengcdll.h" /> -->
     <ClInclude Include="vtl0_functions.vtl1.h" />
     <ClInclude Include="pch.h" />
     <ClInclude Include="taskpool.vtl1.h" />
@@ -129,7 +129,7 @@
     </ClCompile>
     <ClCompile Include="taskpool.vtl1.cpp" />
     <ClCompile Include="userboundkey.vtl1.cpp" />
-    <ClCompile Include="vengcdll.cpp" />
+    <!-- <ClCompile Include="vengcdll.cpp" /> -->
     <ClCompile Include="vtl0_functions.vtl1.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

@@ -2,8 +2,30 @@
 //
 
 #include "pch.h"
-#include "vengcdll.h"  // Use quotes for local header
+#include <veinterop_kcm.h>
+// #include "vengcdll.h"  // Use quotes for local header
 #include "vtl0_functions.vtl1.h"  // Add this include for debug_print
+
+// KCM Trustlet Identity constant
+#ifndef TRUSTLETIDENTITY_KCM
+#define TRUSTLETIDENTITY_KCM 6
+#endif
+
+// AES-GCM constants
+#define AES_GCM_NONCE_SIZE 12
+#define AES_GCM_TAG_SIZE 16
+
+// Cryptographic constants
+#define ECDH_P384_KEY_SIZE_BITS 384         // ECDH P-384 key size in bits
+#define AES_256_KEY_SIZE_BYTES 32           // AES-256 session key size in bytes
+
+// Buffer size constants
+#define KCM_KEY_NAME_BUFFER_SIZE 256        // Buffer size for key names
+#define KCM_ATTESTATION_BUFFER_SIZE 256     // Buffer size for attestation data
+
+// KCM public key validation limits
+#define KCM_PUBLIC_KEY_MIN_SIZE 32          // Minimum allowed KCM public key size
+#define KCM_PUBLIC_KEY_MAX_SIZE 1024        // Maximum allowed KCM public key size
 
 // Legacy structure for backward compatibility
 typedef struct _KEY_CREDENTIAL_CACHE_CONFIG {
@@ -2335,6 +2357,7 @@ DecryptAndUntagSecret(
 HRESULT UnprotectUserBoundKey(
     _In_ USER_BOUND_KEY_SESSION_HANDLE sessionHandle,
     _In_ USER_BOUND_KEY_AUTH_CONTEXT_HANDLE /*authContext*/,
+    _In_ ULONG64 /*nonceNumber*/,
     _In_reads_bytes_(sessionEncryptedDerivedSecretSize) const void* sessionEncryptedDerivedSecret,
     _In_ UINT32 sessionEncryptedDerivedSecretSize,
     _In_reads_bytes_(encryptedUserBoundKeySize) const void* encryptedUserBoundKey,

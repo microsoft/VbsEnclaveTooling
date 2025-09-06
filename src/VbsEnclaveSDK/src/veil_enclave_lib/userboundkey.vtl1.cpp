@@ -5,7 +5,8 @@
 #include <VbsEnclave\Enclave\Implementations.h>
 #include "crypto.vtl1.h"
 #include "utils.vtl1.h"
-#include "vengcdll.h" // OS APIs
+// #include "vengcdll.h" // OS APIs
+#include <veinterop_kcm.h>
 #include "userboundkey.any.h"
 #include "userboundkey.vtl1.h" // Function declarations
 #include "vtl0_functions.vtl1.h"
@@ -342,9 +343,9 @@ wil::secure_vector<uint8_t> enclave_create_user_bound_key(
         propCacheConfig.size = sizeof(cacheConfig);
         propCacheConfig.value = &cacheConfig;
 
-        auto& formattedKeyName = authContextBlobAndFormattedKeyNameAndSessionInfo.formattedKeyName;
+        // auto& formattedKeyName = authContextBlobAndFormattedKeyNameAndSessionInfo.formattedKeyName;
         THROW_IF_FAILED(ValidateUserBoundKeyAuthContext(
-            formattedKeyName.c_str(),
+            // formattedKeyName.c_str(),
             authContext.get(),
             1,
             &propCacheConfig)); // OS CALL
@@ -529,7 +530,7 @@ std::vector<uint8_t> enclave_load_user_bound_key(
         propCacheConfig.size = sizeof(cacheConfig);
         propCacheConfig.value = &cacheConfig;
         THROW_IF_FAILED(ValidateUserBoundKeyAuthContext(
-            formattedKeyName.c_str(),
+            // formattedKeyName.c_str(),
             authContext.get(), 
             1, 
             &propCacheConfig)); // OS CALL
