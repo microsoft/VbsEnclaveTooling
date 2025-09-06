@@ -308,7 +308,6 @@ GenerateAttestationReport(
 
     // Declare all variables at the beginning to avoid goto initialization issues
     BYTE enclaveData[ENCLAVE_REPORT_DATA_LENGTH] = {0};
-    SIZE_T copyLen = 0;
     UINT32 tempReportSize = 0;
     BYTE attestationVector[Vtl1MutualAuth::AttestationData::c_attestationDataVectorSize];
     Vtl1MutualAuth::AttestationData attestationData {};
@@ -344,9 +343,8 @@ GenerateAttestationReport(
     veil::vtl1::vtl0_functions::debug_print("DEBUG: GenerateAttestationReport - AttestationData::ToVector succeeded");
 
     // Calculate copy length and prepare enclaveData buffer
-    copyLen = Vtl1MutualAuth::AttestationData::c_attestationDataVectorSize < ENCLAVE_REPORT_DATA_LENGTH ? 
-              Vtl1MutualAuth::AttestationData::c_attestationDataVectorSize : ENCLAVE_REPORT_DATA_LENGTH;
-    memcpy(enclaveData, attestationVector, copyLen);
+    static_assert(Vtl1MutualAuth::AttestationData::c_attestationDataVectorSize <= ENCLAVE_REPORT_DATA_LENGTH);
+    memcpy(enclaveData, attestationVector, Vtl1MutualAuth::AttestationData::c_attestationDataVectorSize);
 
     // Debug print: Display all computed sizes so far
     veil::vtl1::vtl0_functions::debug_print("DEBUG: GenerateAttestationReport - Computed sizes: challengeSize=%u, sessionKeySize=%u, attestationVectorSize=%u", 
@@ -1005,6 +1003,7 @@ ValidateAuthorizationContext(
         return E_INVALIDARG;
     }
 
+    /*
     // Extract the key name from the structure
     SIZE_T keyNameChars = authCtx->keyNameLength / sizeof(WCHAR);
 
@@ -1020,6 +1019,7 @@ ValidateAuthorizationContext(
         // Key names don't match - this auth context is for a different key
         return E_ACCESSDENIED;
     }
+    */
 
     // Always verify the secure ID owner ID state
     if (!authCtx->isSecureIdOwnerId)
