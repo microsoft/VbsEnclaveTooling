@@ -101,13 +101,12 @@ enclave
         credentialAndFormattedKeyNameAndSessionInfo userboundkey_establish_session_for_load(
             uintptr_t enclave,
             wstring key_name,
-            vector<uint8_t> public_key,
             wstring message,
             uintptr_t window_id);
 
         secretAndAuthorizationContext userboundkey_get_secret_and_authorizationcontext_from_credential(
             vector<uint8_t> credential_vector,
-            vector<uint8_t> encrypted_ngc_request_for_derive_shared_secret,
+            vector<uint8_t> encrypted_kcm_request_for_derive_shared_secret,
             wstring message,
             uintptr_t window_id);
     };

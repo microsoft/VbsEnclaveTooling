@@ -24,7 +24,6 @@
 #include <winrt/Windows.Storage.Streams.h>
 
 #include <VbsEnclave\HostApp\Stubs.h>
-// #include "..\veil_enclave_lib\vengcdll.h"
 #include <veinterop_kcm.h>
 #include <VbsEnclave\HostApp\DeveloperTypes.h>
 #include <sddl.h>
@@ -335,7 +334,6 @@ KeyCredential ConvertVectorToCredential(const std::vector<uint8_t>& credentialVe
 credentialAndFormattedKeyNameAndSessionInfo veil_abi::VTL0_Stubs::export_interface::userboundkey_establish_session_for_load_callback(
     uintptr_t enclave,
     const std::wstring& key_name,
-    const std::vector<uint8_t>& public_key,
     const std::wstring& message,
     uintptr_t window_id)
 {
@@ -412,7 +410,7 @@ credentialAndFormattedKeyNameAndSessionInfo veil_abi::VTL0_Stubs::export_interfa
 // New VTL0 function to extract secret and authorization context from credential
 secretAndAuthorizationContext veil_abi::VTL0_Stubs::export_interface::userboundkey_get_secret_and_authorizationcontext_from_credential_callback(
     const std::vector<uint8_t>& credential_vector,
-    const std::vector<uint8_t>& encrypted_ngc_request_for_derive_shared_secret,
+    const std::vector<uint8_t>& encrypted_kcm_request_for_derive_shared_secret,
     const std::wstring& message,
     uintptr_t window_id)
 {
@@ -434,7 +432,7 @@ secretAndAuthorizationContext veil_abi::VTL0_Stubs::export_interface::userboundk
         auto secret = credential.RequestDeriveSharedSecretAsync(
             (winrt::Windows::UI::WindowId)window_id, 
             message, 
-            winrt::Windows::Security::Cryptography::CryptographicBuffer::CreateFromByteArray(encrypted_ngc_request_for_derive_shared_secret)).get();
+            winrt::Windows::Security::Cryptography::CryptographicBuffer::CreateFromByteArray(encrypted_kcm_request_for_derive_shared_secret)).get();
 
         secretAndAuthorizationContext result;
         result.secret = ConvertBufferToVector(secret.Result());

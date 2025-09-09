@@ -50,9 +50,6 @@
     <ClInclude Include="logger.vtl0.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="keycredentialmanager.vtl0.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="userboundkey.vtl0.h">
       <Filter>Header Files</Filter>
     </ClInclude>

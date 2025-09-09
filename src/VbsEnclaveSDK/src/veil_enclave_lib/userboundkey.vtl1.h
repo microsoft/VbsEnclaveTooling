@@ -5,9 +5,7 @@
 #include <cstdint>
 #include <wil/resource.h>
 #include "future.vtl1.h"
-#include "object_table.vtl1.h"
 #include <veinterop_kcm.h>
-// #include "vengcdll.h" // For KEY_CREDENTIAL_CACHE_CONFIG and other OS types
 
 // Forward declarations for the auto-generated types
 namespace DeveloperTypes
@@ -18,31 +16,6 @@ namespace DeveloperTypes
     struct credentialAndFormattedKeyNameAndSessionInfo;
     struct secretAndAuthorizationContext;
     struct sessionInfo; // This is auto-generated, don't redefine it
-}
-
-namespace veil::vtl1::implementation::userboundkey::callouts
-{
-    DeveloperTypes::authContextBlobAndFormattedKeyNameAndSessionInfo userboundkey_establish_session_for_create_callback(
-        _In_ const void* enclave,
-        _In_ const std::wstring& key_name,
-        _In_ const uintptr_t ecdh_protocol,
-        _In_ const std::wstring& message,
-        _In_ const uintptr_t window_id,
-        _In_ const DeveloperTypes::keyCredentialCacheConfig& cache_config);
-
-    DeveloperTypes::credentialAndFormattedKeyNameAndSessionInfo userboundkey_establish_session_for_load_callback(
-        _In_ const void* enclave,
-        _In_ const std::wstring& key_name,
-        _In_ const std::vector<std::uint8_t>& public_key,
-        _In_ const std::wstring& message,
-        _In_ const uintptr_t window_id);
-
-    // New function to extract secret and authorization context from credential
-    DeveloperTypes::secretAndAuthorizationContext userboundkey_get_secret_and_authorizationcontext_from_credential_callback(
-        _In_ const std::vector<std::uint8_t>& credential_vector,
-        _In_ const std::vector<std::uint8_t>& public_key,
-        _In_ const std::wstring& message,
-        _In_ const uintptr_t window_id);
 }
 
 namespace veil::vtl1::userboundkey
