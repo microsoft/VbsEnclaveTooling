@@ -110,18 +110,6 @@ namespace veil::vtl1::implementation::userboundkey::callouts
 
 namespace veil::vtl1::userboundkey
 {
-/*
-// Helper function to convert KEY_CREDENTIAL_CACHE_CONFIG to DeveloperTypes::keyCredentialCacheConfig
-DeveloperTypes::keyCredentialCacheConfig ConvertToDeveloperType(const KEY_CREDENTIAL_CACHE_CONFIG& cacheConfig)
-{
-    DeveloperTypes::keyCredentialCacheConfig devType;
-    devType.cacheOption = cacheConfig.cacheType;
-    devType.cacheTimeoutInSeconds = cacheConfig.cacheTimeout;
-    devType.cacheUsageCount = cacheConfig.cacheCallCount;
-    return devType;
-}
-*/
-
 // Helper function to convert DeveloperTypes::sessionInfo to USER_BOUND_KEY_SESSION_HANDLE
 HRESULT ConvertToSessionHandle(const DeveloperTypes::sessionInfo& sessionInfo, USER_BOUND_KEY_SESSION_HANDLE* sessionHandle)
 {
@@ -158,71 +146,29 @@ void CleanupSessionInfo(const DeveloperTypes::sessionInfo& sessionInfo)
     }
 }
 
-// RAII wrapper for USER_BOUND_KEY_AUTH_CONTEXT_HANDLE to prevent resource leaks
-class unique_auth_context_handle
+// RAII wrapper using WIL for USER_BOUND_KEY_AUTH_CONTEXT_HANDLE to prevent resource leaks
+namespace
 {
-    public:
-    unique_auth_context_handle() noexcept : m_handle(nullptr) {}
-
-    explicit unique_auth_context_handle(USER_BOUND_KEY_AUTH_CONTEXT_HANDLE handle) noexcept : m_handle(handle) {}
-
-    ~unique_auth_context_handle() noexcept
+    inline void close_auth_context_handle(USER_BOUND_KEY_AUTH_CONTEXT_HANDLE handle) noexcept
     {
-        reset();
-    }
-
-    // Non-copyable
-    unique_auth_context_handle(const unique_auth_context_handle&) = delete;
-    unique_auth_context_handle& operator=(const unique_auth_context_handle&) = delete;
-
-    // Movable
-    unique_auth_context_handle(unique_auth_context_handle&& other) noexcept : m_handle(other.m_handle)
-    {
-        other.m_handle = nullptr;
-    }
-
-    unique_auth_context_handle& operator=(unique_auth_context_handle&& other) noexcept
-    {
-        if (this != &other)
+        if (handle)
         {
-            reset();
-            m_handle = other.m_handle;
-            other.m_handle = nullptr;
+            // CloseUserBoundKeyAuthContextHandle returns HRESULT, but we're in a noexcept context
+            // so we ignore the return value (similar to the original implementation)
+            (void)CloseUserBoundKeyAuthContextHandle(handle);
         }
-        return *this;
     }
+}
 
-    void reset(USER_BOUND_KEY_AUTH_CONTEXT_HANDLE new_handle = nullptr) noexcept
-    {
-        if (m_handle)
-        {
-            // CloseUserBoundKeyAuthContextHandle now returns HRESULT
-            // In a noexcept context, we can't throw, so we ignore the return value
-            // but could potentially log errors in a debug build
-            (void)CloseUserBoundKeyAuthContextHandle(m_handle);
-        }
-        m_handle = new_handle;
-    }
-
-    USER_BOUND_KEY_AUTH_CONTEXT_HANDLE* put() noexcept
-    {
-        reset();
-        return &m_handle;
-    }
-
-    USER_BOUND_KEY_AUTH_CONTEXT_HANDLE get() const noexcept
-    {
-        return m_handle;
-    }
-
-    explicit operator bool() const noexcept
-    {
-        return m_handle != nullptr;
-    }
-
-    private:
-    USER_BOUND_KEY_AUTH_CONTEXT_HANDLE m_handle;
-};
+using unique_auth_context_handle = wil::unique_any<
+    USER_BOUND_KEY_AUTH_CONTEXT_HANDLE,
+    decltype(&close_auth_context_handle),
+    close_auth_context_handle,
+    wil::details::pointer_access_all,
+    USER_BOUND_KEY_AUTH_CONTEXT_HANDLE,
+    decltype(nullptr),
+    nullptr
+>;
 
 std::vector<uint8_t> GetEphemeralPublicKeyBytesFromBoundKeyBytes(wil::secure_vector<uint8_t> boundKeyBytes)
 {
@@ -304,8 +250,6 @@ wil::secure_vector<uint8_t> enclave_create_user_bound_key(
     {
         // Convert cacheConfig to the type expected by the callback
         auto devCacheConfig = cacheConfig;
-
-        // veil::vtl1::vtl0_functions::debug_print(L"DEBUG: enclave_create_user_bound_key - ConvertToDeveloperType completed");
 
         // SESSION
         void* enclave = veil::vtl1::enclave_information().BaseAddress;
