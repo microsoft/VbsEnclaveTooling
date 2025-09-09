@@ -13,6 +13,29 @@
 
 namespace veil_abi::VTL1_Declarations
 {
+
+// RAII wrapper using WIL for heap-allocated memory to prevent resource leaks
+namespace
+{
+    inline void heap_deleter(void* ptr) noexcept
+    {
+        if (ptr)
+        {
+            HeapFree(GetProcessHeap(), 0, ptr);
+        }
+    }
+}
+
+using unique_heap_ptr = wil::unique_any<
+    void*,
+    decltype(&heap_deleter),
+    heap_deleter,
+    wil::details::pointer_access_all,
+    void*,
+    decltype(nullptr),
+    nullptr
+>;
+
 DeveloperTypes::attestationReportAndSessionKeyPtr userboundkey_get_attestation_report(_In_ const std::vector<std::uint8_t>& challenge)
 {
     // DEBUG: Log that the enclave function has been called
@@ -30,29 +53,34 @@ DeveloperTypes::attestationReportAndSessionKeyPtr userboundkey_get_attestation_r
     }
     veil::vtl1::vtl0_functions::debug_print(challengeHex.c_str());
     
-    uint8_t* reportPtr = nullptr;
-    void* tempReportPtr = nullptr; // Temporary variable of type void*
+    unique_heap_ptr reportPtr; // RAII wrapper for automatic cleanup
     size_t reportSize = 0;
-
     UINT_PTR sessionKeyPtr = 0;
 
     // DEBUG: Log before calling InitializeUserBoundKeySessionInfo
     veil::vtl1::vtl0_functions::debug_print(L"DEBUG: About to call InitializeUserBoundKeySessionInfo");
 
+    // Safe overflow check before casting
+    if (challenge.size() > UINT32_MAX) {
+        veil::vtl1::vtl0_functions::debug_print(L"ERROR: Challenge size exceeds UINT32_MAX");
+        throw std::overflow_error("Challenge size exceeds UINT32_MAX");
+    }
+
     THROW_IF_FAILED(InitializeUserBoundKeySessionInfo(
         challenge.data(),
         static_cast<UINT32>(challenge.size()),
-        &tempReportPtr,
+        reportPtr.put(), // RAII wrapper handles cleanup automatically
         reinterpret_cast<UINT32*>(&reportSize),
         &sessionKeyPtr)); // OS CALL
 
     // DEBUG: Log after InitializeUserBoundKeySessionInfo completes
     veil::vtl1::vtl0_functions::debug_print(L"DEBUG: InitializeUserBoundKeySessionInfo completed successfully");
 
-    reportPtr = static_cast<uint8_t*>(tempReportPtr); // Cast back to uint8_t*
-    std::vector<uint8_t> report(reportPtr, reportPtr + reportSize);
+    // Create vector from the allocated memory - RAII will handle cleanup
+    uint8_t* rawPtr = static_cast<uint8_t*>(reportPtr.get());
+    std::vector<uint8_t> report(rawPtr, rawPtr + reportSize);
     
-    HeapFree(GetProcessHeap(), 0, reportPtr);
+    // Memory is automatically freed by unique_heap_ptr destructor
 
     // DEBUG: Log before returning
     veil::vtl1::vtl0_functions::debug_print(L"DEBUG: userboundkey_get_attestation_report returning successfully");
@@ -297,7 +325,7 @@ wil::secure_vector<uint8_t> enclave_create_user_bound_key(
         auto userkeyBytes = veil::vtl1::crypto::generate_symmetric_key_bytes();
         veil::vtl1::vtl0_functions::debug_print(L"DEBUG: enclave_create_user_bound_key - Generated user key bytes");
 
-        // ENCRYPT USERKEY - CORRECTED VERSION
+        // ENCRYPT USERKEY - CORRECTED VERSION  
         void* pBoundKey = nullptr;
         UINT32 cbBoundKeyBytes = 0;
         veil::vtl1::vtl0_functions::debug_print(L"DEBUG: enclave_create_user_bound_key - About to call ProtectUserBoundKey");
@@ -305,8 +333,8 @@ wil::secure_vector<uint8_t> enclave_create_user_bound_key(
             authContext.get(),
             userkeyBytes.data(),
             static_cast<UINT32>(userkeyBytes.size()),
-            &pBoundKey,        // ? CORRECT: address of pointer for dynamic allocation
-            &cbBoundKeyBytes   // ? Will be set to actual size by ProtectUserBoundKey
+            &pBoundKey,        // CORRECT: address of pointer for dynamic allocation
+            &cbBoundKeyBytes   // Will be set to actual size by ProtectUserBoundKey
         )); // OS CALL
         veil::vtl1::vtl0_functions::debug_print((L"DEBUG: enclave_create_user_bound_key - ProtectUserBoundKey returned boundKey size: " + std::to_wstring(cbBoundKeyBytes)).c_str());
 
@@ -319,7 +347,7 @@ wil::secure_vector<uint8_t> enclave_create_user_bound_key(
         // Free the dynamically allocated memory
         HeapFree(GetProcessHeap(), 0, pBoundKey);
 
-        veil::vtl1::vtl0_functions::debug_print((L"DEBUG: enclave_create_user_bound_key - Created boundKeyBytes vector with size: " + std::to_wstring(boundKeyBytes.size())).c_str());
+        // Memory is automatically freed by unique_heap_ptr destructor;
 
         // Clean up session info before sealing
         CleanupSessionInfo(sessionInfo);
@@ -434,7 +462,6 @@ std::vector<uint8_t> enclave_load_user_bound_key(
 
         // Free the allocated memory
         HeapFree(GetProcessHeap(), 0, encryptedKcmRequest);
-
 
         // Second call to extract secret and authorization context from credential
         veil::vtl1::vtl0_functions::debug_print(L"DEBUG: enclave_load_user_bound_key - About to call userboundkey_get_secret_and_authorizationcontext_from_credential_callback");
