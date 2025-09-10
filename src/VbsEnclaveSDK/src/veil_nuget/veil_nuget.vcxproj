@@ -160,7 +160,6 @@
     <None Include="Nuget\Microsoft.Windows.VbsEnclave.SDK.props" />
     <None Include="Nuget\Microsoft.Windows.VbsEnclave.SDK.targets" />
     <None Include="Nuget\VisualStudioUiBuild.targets" />
-    <None Include="packages.config" />
     <None Include="README.md" />
   </ItemGroup>
   <Import Project="Nuget\Microsoft.Windows.VbsEnclave.SDK.targets" />

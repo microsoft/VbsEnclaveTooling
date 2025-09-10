@@ -58,6 +58,18 @@ jobs:
     VeilCppSupportPdbARM64Debug: vbsenclave_sdk_cpp_support_ARM64_Debug_pdb=$(Arm64DebugBuildLocation)\veil_enclave_cpp_support_ARM64_Debug_lib.pdb
     
   steps:
+    - checkout: Vcpkg
+      path: 's\vcpkg'
+      displayName: "Checkout Vcpkg"
+    - script: |
+        cd $(VCPKG_ROOT)
+        .\bootstrap-vcpkg.bat
+      displayName: "Bootstrap vcpkg"
+    - script: |
+        cd $(VCPKG_ROOT)
+        .\vcpkg.exe integrate install
+      displayName: "Integrate vcpkg into msbuild"
+
     - task: NuGetCommand@2
       displayName: NuGet restore vbs_enclave_implementation_library.sln
       inputs:

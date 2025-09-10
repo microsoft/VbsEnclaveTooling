@@ -82,8 +82,8 @@ Try
     # Create nuget pack properties that will always exist
     $nuspecFile = "$BaseRepositoryDirectory\src\ToolingNuget\nuget\Microsoft.Windows.VbsEnclave.CodeGenerator.nuspec"
     $nugetPackProperties = "target_version=$BuildTargetVersion;"
-    $nugetPackProperties += "vcpkg_sources=$BaseRepositoryDirectory\src\ToolingSharedLibrary\vcpkg_installed\x64-windows-static-cfg\x64-windows-static-cfg;";
-    $nugetPackProperties += "vcpkg_tools=$BaseRepositoryDirectory\src\ToolingSharedLibrary\vcpkg_installed\x64-windows-static-cfg\x64-windows\tools;";
+    $nugetPackProperties += "vcpkg_sources=$BaseRepositoryDirectory\src\ToolingSharedLibrary\vcpkg_installed\x64-windows-cfg\x64-windows-cfg;";
+    $nugetPackProperties += "vcpkg_tools=$BaseRepositoryDirectory\src\ToolingSharedLibrary\vcpkg_installed\x64-windows-cfg\x64-windows\tools;";
          
     $edlcodegen_exe_path = ""
     $cppSupportLibPath = ""

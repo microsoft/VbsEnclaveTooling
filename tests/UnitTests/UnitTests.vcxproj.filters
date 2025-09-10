@@ -56,7 +56,6 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="README.md" />
-    <None Include="packages.config" />
     <None Include="TestFiles\ImportTestFiles\ImproperImportStatementsTest.edl" />
     <None Include="TestFiles\ArrayTest.edl" />
     <None Include="TestFiles\BasicTypesTest.edl" />
@@ -72,8 +71,5 @@
     <None Include="TestFiles\ImportTestFiles\CycleImports\C_Cycle.edl" />
     <None Include="TestFiles\ImportTestFiles\CycleImports\D_Cycle.edl" />
     <None Include="TestFiles\ImportTestFiles\DuplicateAnonymousEnumValues.edl" />
-  </ItemGroup>
-  <ItemGroup>
-    <Natvis Include="$(MSBuildThisFileDirectory)..\..\natvis\wil.natvis" />
   </ItemGroup>
 </Project>

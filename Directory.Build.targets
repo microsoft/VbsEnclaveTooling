@@ -2,4 +2,23 @@
   <PropertyGroup>
     <IntDir>$(OutDir)temp\$(ProjectName)\</IntDir>
   </PropertyGroup>
+    
+  <PropertyGroup Label="Vcpkg">
+    <VcpkgEnableManifest>true</VcpkgEnableManifest>
+  </PropertyGroup>
+    
+    <!-- 
+        When solutions are built by vcpkg, the default package install location is
+        provided in the $(VcpkgInstalledDir) property. In all other scenarios
+        it is empty.
+    -->
+    <ItemDefinitionGroup
+        Condition="$(VcpkgInstalledDir) != ''">
+        <ClCompile>
+            <AdditionalIncludeDirectories>
+                $(VcpkgInstalledDir)/$(VcpkgHostTriplet)/include;
+                $(VcpkgInstalledDir)/$(VcpkgTriplet)/include;
+                %(AdditionalIncludeDirectories);</AdditionalIncludeDirectories>
+        </ClCompile>
+    </ItemDefinitionGroup>
 </Project>

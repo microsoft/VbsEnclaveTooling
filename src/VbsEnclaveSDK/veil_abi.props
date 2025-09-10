@@ -4,5 +4,20 @@
         <VbsEnclaveEdlPath>$(ProjectDir)..\..\veil_abi.edl</VbsEnclaveEdlPath>
         <VbsEnclaveVtl0ClassName>export_interface</VbsEnclaveVtl0ClassName>
         <VbsEnclaveNamespace>veil_abi</VbsEnclaveNamespace>
+        <VbsEnclaveGeneratedFilesDir>$(ProjectDir)Generated Files</VbsEnclaveGeneratedFilesDir>
+        <VbsEnclaveCodeGenLanguage>C++</VbsEnclaveCodeGenLanguage>
+        <VbsEnclaveErrorHandling>Exception</VbsEnclaveErrorHandling>
+    </PropertyGroup>
+
+    <!-- When the solution is built by vcpkg -->
+    <PropertyGroup Condition="$(VcpkgInstalledDir) != ''">
+        <VbsEnclaveFlatbuffersExePath>$(VcpkgInstalledDir)\x64-windows\tools\flatbuffers\flatc.exe</VbsEnclaveFlatbuffersExePath>
+        <VbsEnclaveCodeGenExePath>$(VcpkgInstalledDir)\$(Platform)-windows\tools\vbs-enclave-tooling-codegen\edlcodegen.exe</VbsEnclaveCodeGenExePath>
+    </PropertyGroup>
+    
+    <!-- When the solution is built outside of vcpkg -->
+    <PropertyGroup Condition="$(VcpkgInstalledDir) == ''">
+        <VbsEnclaveFlatbuffersExePath>$(SolutionDir)vcpkg_installed\x64-windows\x64-windows\tools\flatbuffers\flatc.exe</VbsEnclaveFlatbuffersExePath>
+        <VbsEnclaveCodeGenExePath>$(SolutionDir)vcpkg_installed\$(Platform)-windows\$(Platform)-windows\tools\vbs-enclave-tooling-codegen\edlcodegen.exe</VbsEnclaveCodeGenExePath>
     </PropertyGroup>
 </Project>

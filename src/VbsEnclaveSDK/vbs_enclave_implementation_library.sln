@@ -8,6 +8,9 @@ EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "veil_any_inc", "src\veil_any_inc\veil_any_inc.vcxitems", "{AB8C652A-8847-43C0-8F56-386102A43C4D}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "veil_enclave_lib", "src\veil_enclave_lib\veil_enclave_lib.vcxproj", "{323433E4-11D6-4B5B-93E4-04504E2EF0E1}"
+	ProjectSection(ProjectDependencies) = postProject
+		{26116633-98EC-4EAC-859C-139D020D10C9} = {26116633-98EC-4EAC-859C-139D020D10C9}
+	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "veil_host_lib", "src\veil_host_lib\veil_host_lib.vcxproj", "{EE419DF4-62DC-4827-A0FC-727709B90C06}"
 EndProject
@@ -29,6 +32,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 		BuildScripts\build.ps1 = BuildScripts\build.ps1
 		nuget.config = nuget.config
 		README.md = README.md
+		vcpkg.json = vcpkg.json
+		veil.vcpkg.targets = veil.vcpkg.targets
 	EndProjectSection
 EndProject
 Global

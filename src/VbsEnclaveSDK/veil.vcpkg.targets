@@ -1,0 +1,60 @@
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+    <!-- 
+        The below properties and targets are used to invoke the edlcodegen executable provided
+        via vcpkg. The generated files are also added to the additional includes directory for both
+        the enclave and host veil projects.
+    -->
+
+    <PropertyGroup>
+        <!-- 
+            TODO: Remove need for the __VBS_ENCLAVE_CODEGEN_VERSION__ definition in consuming projects. 
+            See: https://github.com/microsoft/VbsEnclaveTooling/issues/142
+        -->
+        <VbsEnclaveCodegenVersion Condition="'$(VbsEnclaveCodegenVersion)' == ''">0.0.0-Dev</VbsEnclaveCodegenVersion>
+    </PropertyGroup>
+    
+    <!-- Only run the VbsEnclaveCodeGeneration target if the developer passed in a value for <VbsEnclaveEdlPath> -->
+    <Target
+        Name="VbsEnclaveCodeGeneration"
+        BeforeTargets="ClCompile;ClInclude;AddGeneratedFilesToBuild">
+        
+        <!-- Remove old generated files  -->
+        <RemoveDir Directories="$(VbsEnclaveGeneratedFilesDir)\VbsEnclave" />
+        
+        <!-- Generate the codegen files using the edlcodegen.exe -->
+        <PropertyGroup>
+            <VbsEnclaveToolingExecutionCommand>
+                "$(VbsEnclaveCodeGenExePath)" --Language "$(VbsEnclaveCodeGenLanguage)" --EdlPath "$(VbsEnclaveEdlPath)" --ErrorHandling "$(VbsEnclaveErrorHandling)" --OutputDirectory "$(VbsEnclaveGeneratedFilesDir)" --VirtualTrustLayer "$(VbsEnclaveVirtualTrustLayer)" --Vtl0ClassName "$(VbsEnclaveVtl0ClassName)" --Namespace "$(VbsEnclaveNamespace)" --FlatbuffersCompilerPath "$(VbsEnclaveFlatbuffersExePath)" --ImportDirectories "$(VbsEnclaveImportDirectories)"
+            </VbsEnclaveToolingExecutionCommand>
+        </PropertyGroup>
+
+        <Exec Command="$(VbsEnclaveToolingExecutionCommand)" />
+        <Message Text="Generated '$(VbsEnclaveCodeGenLanguage)' code in output directory: '$(VbsEnclaveGeneratedFilesDir)'" Importance="high" />
+    </Target>
+
+    <Target Name="AddGeneratedFilesToBuild"
+            BeforeTargets="ClCompile;ClInclude">
+        <!-- Make sure the generated cpp files are added to the build without us needing to explicitly add them to the project. -->
+        <ItemGroup>
+            <_WildCardClCompileFor_Cpp Include="$(VbsEnclaveGeneratedFilesDir)\VbsEnclave\**\*.cpp" />
+            <_WildCardClCompileFor_Cpp_h Include="$(VbsEnclaveGeneratedFilesDir)\VbsEnclave\**\*.h" />
+            
+            <ClCompile Include="@(_WildCardClCompileFor_Cpp)">
+                <PrecompiledHeader>NotUsing</PrecompiledHeader>
+            </ClCompile>
+            <ClInclude Include="@(_WildCardClCompileFor_Cpp_h)"  />
+        </ItemGroup>
+    </Target>
+
+    <ItemDefinitionGroup>
+        <!-- Add the generated headers to the consuming projects include path-->
+        <ClCompile>
+            <AdditionalIncludeDirectories>$(VbsEnclaveGeneratedFilesDir);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+        </ClCompile>
+
+        <!-- Add the expected codegen version as a macro PreprocessorDefinition -->
+        <ClCompile>
+            <PreprocessorDefinitions>__VBS_ENCLAVE_CODEGEN_VERSION__="$(VbsEnclaveCodegenVersion)";%(PreprocessorDefinitions)</PreprocessorDefinitions>
+        </ClCompile>
+    </ItemDefinitionGroup>
+</Project>

@@ -2,7 +2,7 @@
 
 #include <span>
 
-#include <gsl/gsl_util>
+#include <gsl/util>
 #include <wil/stl.h>
 
 #include "..\veil_any_inc\logger.any.h"

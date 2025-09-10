@@ -1,9 +1,9 @@
 {
     "$schema": "https://raw.githubusercontent.com/microsoft/vcpkg/master/scripts/vcpkg.schema.json",
-    "name": "vbsenclavetooling-sharedlib-dependencies",
+    "name": "vbsenclavetooling-sdk-dependencies",
     "version": "1.0",
     "dependencies": [
-        "flatbuffers",
-        "wil"
+        "vbs-enclave-tooling-codegen",
+        "ms-gsl"
     ]
 }
