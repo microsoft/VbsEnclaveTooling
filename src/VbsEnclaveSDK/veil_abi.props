@@ -17,7 +17,7 @@
     
     <!-- When the solution is built outside of vcpkg -->
     <PropertyGroup Condition="$(VcpkgInstalledDir) == ''">
-        <VbsEnclaveFlatbuffersExePath>$(SolutionDir)vcpkg_installed\x64-windows\x64-windows\tools\flatbuffers\flatc.exe</VbsEnclaveFlatbuffersExePath>
+        <VbsEnclaveFlatbuffersExePath>$(SolutionDir)vcpkg_installed\$(Platform)-windows\x64-windows\tools\flatbuffers\flatc.exe</VbsEnclaveFlatbuffersExePath>
         <VbsEnclaveCodeGenExePath>$(SolutionDir)vcpkg_installed\$(Platform)-windows\$(Platform)-windows\tools\vbs-enclave-tooling-codegen\edlcodegen.exe</VbsEnclaveCodeGenExePath>
     </PropertyGroup>
 </Project>
