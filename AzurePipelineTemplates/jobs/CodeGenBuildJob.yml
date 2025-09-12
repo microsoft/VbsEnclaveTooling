@@ -15,8 +15,6 @@ jobs:
     VcpkgDirectory: $(Build.SourcesDirectory)\src\ToolingSharedLibrary\vcpkg_installed\x64-windows-cfg
     VcpkgToolsDirectory: $(VcpkgDirectory)\x64-windows\tools
     VcpkgSourcesDirectory: $(VcpkgDirectory)\x64-windows-cfg
-    VCPKG_ROOT: '$(Pipeline.Workspace)\s\vcpkg'
-    VCPKG_DEFAULT_TRIPLET: 'x64-windows'
     NewCodeGenVersion: ${{ parameters.CodeGenBuildVersion }}
     ob_outputDirectory: '$(Build.SourcesDirectory)\signed_nuget'   
     ob_artifactBaseName: signed_codegen_nuget_package 

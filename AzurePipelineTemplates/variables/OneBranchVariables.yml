@@ -14,3 +14,5 @@ variables:
 
   Codeql.Enabled: true #  CodeQL once every 3 days on the default branch for all languages its applicable to in that pipeline.
   GDN_USE_DOTNET: true
+  VCPKG_ROOT: '$(Pipeline.Workspace)\s\vcpkg'
+  VCPKG_DEFAULT_TRIPLET: 'x64-windows'
