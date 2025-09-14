@@ -85,7 +85,7 @@ Try
     $nugetPackProperties += "vcpkg_sources=$BaseRepositoryDirectory\src\ToolingSharedLibrary\vcpkg_installed\x64-windows-cfg\x64-windows-cfg;";
     $nugetPackProperties += "vcpkg_tools=$BaseRepositoryDirectory\src\ToolingSharedLibrary\vcpkg_installed\x64-windows-cfg\x64-windows\tools;";
          
-    $edlcodegen_exe_path = ""
+    $edlcodegen_path = ""
     $cppSupportLibPath = ""
 
     # Build
@@ -116,12 +116,12 @@ Try
             $nugetPackProperties += "vbsenclave_codegen_cpp_support_${platform}_${configuration}_lib=$cppSupportLibPath;"
             $nugetPackProperties += "vbsenclave_codegen_cpp_support_${platform}_${configuration}_pdb=$cppSupportLibPdbPath;"
 
-            # only need the exe path once. If the user uses the -all flag for the configuration, we use the release version. Otherwise
+            # only need the exe path once. If the user uses the -all flag for the configuration, we use the x64 release version. Otherwise
             # we use the specified user provided configuration. e.g debug or release.
-            if ($edlcodegen_exe_path -eq "")
+            if ($edlcodegen_path -eq "")
             {
-                $edlcodegen_exe_path = "vbsenclave_codegen_x64_exe=$BaseRepositoryDirectory\_build\x64\$configuration\edlcodegen.exe;"
-                $nugetPackProperties += $edlcodegen_exe_path
+                $edlcodegen_path = "vbsenclave_codegen_exe=$BaseRepositoryDirectory\_build\${platform}\$configuration\edlcodegen.exe;"
+                $nugetPackProperties += $edlcodegen_path
             }
         }
     }

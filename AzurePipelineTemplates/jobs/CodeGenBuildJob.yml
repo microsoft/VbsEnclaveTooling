@@ -125,7 +125,7 @@ jobs:
       displayName: 'Build CodeGenerator NuGet package'
       inputs:
         command: 'custom'
-        arguments: 'pack src\ToolingNuget\Nuget\Microsoft.Windows.VbsEnclave.CodeGenerator.nuspec -NonInteractive -OutputDirectory $(BaseBuildDirectory) -Properties target_version=$(NewCodeGenVersion);vbsenclave_codegen_x64_exe=$(x64ReleaseBuildLocation)\edlcodegen.exe;vcpkg_sources=$(VcpkgSourcesDirectory);vcpkg_tools=$(VcpkgToolsDirectory);$(VeilCppSupportLibX64Release);$(VeilCppSupportLibX64Debug);$(VeilCppSupportLibARM64Release);$(VeilCppSupportLibARM64Debug);$(VeilCppSupportPdbX64Release);$(VeilCppSupportPdbX64Debug);$(VeilCppSupportPdbARM64Release);$(VeilCppSupportPdbARM64Debug)  -Version $(NewCodeGenVersion) -Verbosity Detailed'
+        arguments: 'pack src\ToolingNuget\Nuget\Microsoft.Windows.VbsEnclave.CodeGenerator.nuspec -NonInteractive -OutputDirectory $(BaseBuildDirectory) -Properties target_version=$(NewCodeGenVersion);vbsenclave_codegen_exe=$(x64ReleaseBuildLocation)\edlcodegen.exe;vcpkg_sources=$(VcpkgSourcesDirectory);vcpkg_tools=$(VcpkgToolsDirectory);$(VeilCppSupportLibX64Release);$(VeilCppSupportLibX64Debug);$(VeilCppSupportLibARM64Release);$(VeilCppSupportLibARM64Debug);$(VeilCppSupportPdbX64Release);$(VeilCppSupportPdbX64Debug);$(VeilCppSupportPdbARM64Release);$(VeilCppSupportPdbARM64Debug)  -Version $(NewCodeGenVersion) -Verbosity Detailed'
     
     # Sign codegen nuget package
     - task: onebranch.pipeline.signing@1
