@@ -5,7 +5,8 @@
 #include <VbsEnclave\Enclave\Implementations.h>
 #include "crypto.vtl1.h"
 #include "utils.vtl1.h"
-#include <veinterop_kcm.h>
+#include "vengcdll.h" // OS APIs
+// #include <veinterop_kcm.h>
 #include "userboundkey.any.h"
 #include "userboundkey.vtl1.h" // Function declarations
 #include "vtl0_functions.vtl1.h"
