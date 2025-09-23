@@ -5,7 +5,7 @@
 
 #include <span>
 #include <wil/stl.h>
-#include <gsl/gsl_util>
+#include "utils.vtl1.h"
 
 namespace veil::vtl1::crypto
 {
@@ -60,9 +60,9 @@ namespace veil::vtl1::crypto
         BCRYPT_AUTHENTICATED_CIPHER_MODE_INFO cipherInfo {};
         BCRYPT_INIT_AUTH_MODE_INFO(cipherInfo);
         cipherInfo.pbNonce = const_cast<UCHAR*>(nonce.data());
-        cipherInfo.cbNonce = gsl::narrow_cast<ULONG>(nonce.size());;
+        cipherInfo.cbNonce = veil::vtl1::narrow_cast<ULONG>(nonce.size());;
         cipherInfo.pbTag = const_cast<UCHAR*>(tag.data());
-        cipherInfo.cbTag = gsl::narrow_cast<ULONG>(tag.size());
+        cipherInfo.cbTag = veil::vtl1::narrow_cast<ULONG>(tag.size());
         return cipherInfo;
     }
 
@@ -108,7 +108,7 @@ namespace veil::vtl1::crypto
             nullptr,
             0,
             const_cast<uint8_t*>(symmetricKeyBytes.data()),
-            gsl::narrow_cast<ULONG>(symmetricKeyBytes.size()),
+            veil::vtl1::narrow_cast<ULONG>(symmetricKeyBytes.size()),
             0));
 
         return S_OK;
@@ -142,7 +142,7 @@ namespace veil::vtl1::crypto
             BCRYPT_ECCPUBLIC_BLOB,
             &key,
             const_cast<PUCHAR>(keyBytes.data()),
-            gsl::narrow_cast<ULONG>(keyBytes.size()),
+            veil::vtl1::narrow_cast<ULONG>(keyBytes.size()),
             0));
         return key;
     }
@@ -193,12 +193,12 @@ namespace veil::vtl1::crypto
         NTSTATUS status = BCryptEncrypt(
             symmetricKey,
             const_cast<PBYTE>(plaintext.data()),
-            gsl::narrow_cast<ULONG>(plaintext.size()),
+            veil::vtl1::narrow_cast<ULONG>(plaintext.size()),
             const_cast<BCRYPT_AUTHENTICATED_CIPHER_MODE_INFO*>(cipherInfo),
             nullptr,
             0,
             ciphertext.data(),
-            gsl::narrow_cast<ULONG>(ciphertext.size()),
+            veil::vtl1::narrow_cast<ULONG>(ciphertext.size()),
             &ciphertextSize,
             0);
 
@@ -297,7 +297,7 @@ namespace veil::vtl1::crypto
         UINT32 sealedSize = 0;
         THROW_IF_FAILED(::EnclaveSealData(
             unsealedData.data(),
-            gsl::narrow_cast<UINT32>(unsealedData.size()),
+            veil::vtl1::narrow_cast<UINT32>(unsealedData.size()),
             identityPolicy,
             runtimePolicy,
             nullptr,
@@ -307,7 +307,7 @@ namespace veil::vtl1::crypto
         auto sealedBytes = wil::secure_vector<uint8_t>(sealedSize);
         THROW_IF_FAILED(::EnclaveSealData(
             unsealedData.data(),
-            gsl::narrow_cast<UINT32>(unsealedData.size()),
+            veil::vtl1::narrow_cast<UINT32>(unsealedData.size()),
             identityPolicy,
             runtimePolicy,
             sealedBytes.data(),
@@ -322,7 +322,7 @@ namespace veil::vtl1::crypto
         UINT32 unsealedDataSize;
         THROW_IF_FAILED(::EnclaveUnsealData(
             sealedBytes.data(),
-            gsl::narrow_cast<UINT32>(sealedBytes.size()),
+            veil::vtl1::narrow_cast<UINT32>(sealedBytes.size()),
             nullptr,
             0,
             &unsealedDataSize,
@@ -333,7 +333,7 @@ namespace veil::vtl1::crypto
         auto unsealedBytes = wil::secure_vector<uint8_t>(unsealedDataSize);
         THROW_IF_FAILED(::EnclaveUnsealData(
             sealedBytes.data(),
-            gsl::narrow_cast<UINT32>(sealedBytes.size()),
+            veil::vtl1::narrow_cast<UINT32>(sealedBytes.size()),
             unsealedBytes.data(),
             unsealedDataSize,
             &unsealedDataSize,
