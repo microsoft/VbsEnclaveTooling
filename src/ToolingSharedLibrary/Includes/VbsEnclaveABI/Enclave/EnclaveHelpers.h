@@ -2,17 +2,12 @@
 // Licensed under the MIT License.
 #pragma once 
 
-#if !defined(__ENCLAVE_PROJECT__)
-#error This header can only be included in an Enclave project (never the HostApp).
-#endif
-
-#if !defined(__VBS_ENCLAVE_CODEGEN_VERSION__)
-#error "VBS enclave code generator consumed without without version specified"
-#endif
+#include <wil\enclave\wil_for_enclaves.h>
 #include <VbsEnclaveABI\Enclave\MemoryAllocation.h>
 #include <VbsEnclaveABI\Enclave\Vtl0Pointers.h>
 #include <VbsEnclaveABI\Shared\ConversionHelpers.h>
 #include <VbsEnclaveABI\Shared\VbsEnclaveAbiBase.h>
+#include <VbsEnclaveABI\Shared\Version.h>
 
 // Version to ensure all translation units are consuming a consistent version of the codegen
 #pragma detect_mismatch("__VBS_ENCLAVE_CODEGEN_VERSION__", __VBS_ENCLAVE_CODEGEN_VERSION__)

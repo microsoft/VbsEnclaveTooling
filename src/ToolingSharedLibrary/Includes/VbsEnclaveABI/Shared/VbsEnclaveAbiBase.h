@@ -2,16 +2,6 @@
 // Licensed under the MIT License.
 #pragma once 
 
-// Must be the first header included for enclave dll's
-#ifdef __ENCLAVE_PROJECT__
-#pragma warning(push)
-#pragma warning(disable : 5260) // the constant variable has external\internal linkage: wistd_functional.h(278,28)
-#include <wil/enclave/wil_for_enclaves.h>
-#pragma warning(pop)
-#endif
-
-// end
-
 #include <array>
 #include <atomic>
 #include <cstdint>
