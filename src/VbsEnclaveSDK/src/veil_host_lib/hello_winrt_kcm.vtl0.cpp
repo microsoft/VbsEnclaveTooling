@@ -249,7 +249,8 @@ authContextBlobAndFormattedKeyNameAndSessionInfo veil_abi::VTL0_Stubs::export_in
 
     authContextBlobAndFormattedKeyNameAndSessionInfo result;
 
-    auto authContextBuffer = credential.RetrieveAuthorizationContext();
+    winrt::Windows::Storage::Streams::IBuffer encryptedRequest;
+    auto authContextBuffer = credential.RetrieveAuthorizationContext(encryptedRequest);
     result.authContextBlob = ConvertBufferToVector(authContextBuffer);
     result.formattedKeyName = formattedKeyName; // Store the formatted key name
     result.session = {*sessionKeyPtr, 0 /*Nonce*/}; // Initialize session info
@@ -429,7 +430,8 @@ secretAndAuthorizationContext veil_abi::VTL0_Stubs::export_interface::userboundk
         std::wcout << L"DEBUG: Converting credential vector back to KeyCredential" << std::endl;
 
         // Extract authorization context and derive shared secret
-        auto authorizationContext = credential.RetrieveAuthorizationContext();
+        winrt::Windows::Storage::Streams::IBuffer encryptedRequest;
+        auto authorizationContext = credential.RetrieveAuthorizationContext(encryptedRequest);
         auto secret = credential.RequestDeriveSharedSecretAsync(
             (winrt::Windows::UI::WindowId)window_id, 
             message, 

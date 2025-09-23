@@ -1745,7 +1745,6 @@ HRESULT CreateEncryptedRequestForDeriveSharedSecret(
     const char header[] = "NgcReq"; // 7 bytes including null terminator
     const UINT32 OPERATION_DERIVE_SHARED_SECRET = 2;
     BYTE* pCurrentPos = NULL;
-    ULONG64 requestNonce = 0;
     ULONG64 nonce = 0;
     BYTE nonceBuffer[AES_GCM_NONCE_SIZE] = {0};
     BYTE authTag[AES_GCM_TAG_SIZE] = {0};
@@ -1853,13 +1852,7 @@ HRESULT CreateEncryptedRequestForDeriveSharedSecret(
 
     // Handle nonce manipulation to prevent reuse
     nonce = sessionNonce;
-    if (nonce > 0)
-    {
-        // This nonce is already used once. We should increment it to avoid reuse.
-        nonce++;
-    }
-
-    nonce = InterlockedIncrement64(reinterpret_cast<LONG64*>(&requestNonce));
+    // nonce = InterlockedIncrement64(reinterpret_cast<LONG64*>(&sessionNonce));
 
     if (nonce >= Vtl1MutualAuth::c_maxRequestNonce)
     {
@@ -2582,4 +2575,17 @@ HRESULT UnprotectUserBoundKey(
     }
 
     return hr;
+}
+
+//
+// Creates an encrypted NGC request for RetrieveAuthorizationContext using the session key
+HRESULT CreateEncryptedRequestForRetrieveAuthorizationContext(
+    USER_BOUND_KEY_SESSION_HANDLE /*sessionHandle*/,
+    const void* /*keyName*/,
+    UINT32 /*keyNameSize*/,
+    void** /*encryptedRequest*/,
+    UINT32* /*encryptedRequestSize*/
+)
+{
+    return E_NOTIMPL;
 }

@@ -152,4 +152,13 @@ HRESULT UnprotectUserBoundKey(
     _Inout_ UINT32* userKeySize
 );
 
+// Creates an encrypted KCM request for RetrieveAuthorizationContext using the session key
+HRESULT CreateEncryptedRequestForRetrieveAuthorizationContext(
+    _Inout_ USER_BOUND_KEY_SESSION_HANDLE sessionHandle,
+    _In_reads_bytes_(keyNameSize) const void* keyName,
+    _In_ UINT32 keyNameSize,
+    _Outptr_result_buffer_(*encryptedRequestSize) void** encryptedRequest,
+    _Out_ UINT32* encryptedRequestSize
+);
+
 #endif // VENGCDLL_H
