@@ -7,10 +7,6 @@
 #include <VbsEnclaveABI\Enclave\Vtl0Pointers.h>
 #include <VbsEnclaveABI\Shared\ConversionHelpers.h>
 #include <VbsEnclaveABI\Shared\VbsEnclaveAbiBase.h>
-#include <VbsEnclaveABI\Shared\Version.h>
-
-// Version to ensure all translation units are consuming a consistent version of the codegen
-#pragma detect_mismatch("__VBS_ENCLAVE_CODEGEN_VERSION__", __VBS_ENCLAVE_CODEGEN_VERSION__)
 
 // Default all projects consuming VBS Enclave codegen to having restricted memory access enabled.
 // See: https://learn.microsoft.com/en-us/windows/win32/api/winenclaveapi/nf-winenclaveapi-enclaverestrictcontainingprocessaccess

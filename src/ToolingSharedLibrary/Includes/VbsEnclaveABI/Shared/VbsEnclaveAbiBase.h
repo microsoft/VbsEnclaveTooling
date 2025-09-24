@@ -2,6 +2,11 @@
 // Licensed under the MIT License.
 #pragma once 
 
+#include <VbsEnclaveABI\Shared\Version.h>
+
+// Version to ensure all translation units are consuming a consistent version of the codegen
+#pragma detect_mismatch("__VBS_ENCLAVE_CODEGEN_VERSION__", __VBS_ENCLAVE_CODEGEN_VERSION__)
+
 #include <array>
 #include <atomic>
 #include <cstdint>
