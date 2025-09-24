@@ -694,7 +694,7 @@ HRESULT GetUserBoundKeySessionInfo(
 // Updates the session nonce in a session handle
 HRESULT UpdateUserBoundKeySessionNonce(
     _In_ USER_BOUND_KEY_SESSION_HANDLE sessionHandle,
-    _In_ ULONG64 newNonce)
+    _In_ ULONG64 curNonce)
 {
     if (sessionHandle == nullptr)
     {
@@ -704,7 +704,7 @@ HRESULT UpdateUserBoundKeySessionNonce(
     // Cast the handle to internal context
     PUSER_BOUND_KEY_SESSION_INTERNAL pInternalSession = (PUSER_BOUND_KEY_SESSION_INTERNAL)sessionHandle;
 
-    pInternalSession->sessionNonce = newNonce;
+    pInternalSession->sessionNonce = InterlockedIncrement64(reinterpret_cast<LONG64*>(&curNonce));
 
     return S_OK;
 }
@@ -801,6 +801,7 @@ ValidateAuthContextInputParameters(
 static HRESULT
 DecryptAuthContextBlob(
     _In_ UINT_PTR sessionKeyPtr,
+    _In_ ULONG64 sessionNonce,
     _In_ const void* authContextBlob,
     _In_ UINT32 authContextBlobSize,
     _Out_ BYTE** ppDecryptedAuthContext,
@@ -822,7 +823,6 @@ DecryptAuthContextBlob(
     BYTE nonceBuffer[AES_GCM_NONCE_SIZE] = {0}; // Fill with 0s
     BCRYPT_AUTHENTICATED_CIPHER_MODE_INFO authInfo;
     ULONG bytesDecrypted = 0;
-    const ULONG64 constantTestNonce = 0x1234567890ABCDEFULL;  // Same as NgcIsoSrv.cpp
 
     // The auth context blob was encrypted using ClientAuth::EncryptResponse which uses
     // VTL1 mutual authentication protocol with AES-GCM format.
@@ -847,7 +847,7 @@ DecryptAuthContextBlob(
     // The nonce used was: requestNonce ^ c_responderBitFlip (where requestNonce was provided to EncryptResponse)
     // TEMPORARY: Use the same constant nonce as NgcIsoSrv.cpp for testing
     // TODO: Implement proper nonce sharing between encryption and decryption
-    nonce = constantTestNonce ^ c_responderBitFlip;  // Apply responder bit flip as per VTL1 protocol
+    nonce = sessionNonce ^ c_responderBitFlip;  // Apply responder bit flip as per VTL1 protocol
 
     // Add nonce value towards the end of the buffer (last 8 bytes)
     memcpy(&nonceBuffer[AES_GCM_NONCE_SIZE - sizeof(nonce)], &nonce, sizeof(nonce));
@@ -920,7 +920,7 @@ DecryptAuthContextBlob(
 // Called as part of the flow when creating a new user bound key.
 // Decrypts the auth context blob provided by NGC and returns a handle to the decrypted blob
 HRESULT GetUserBoundKeyAuthContext(
-    _In_ UINT_PTR sessionKeyPtr,
+    _In_ USER_BOUND_KEY_SESSION_HANDLE sessionHandle,
     _In_reads_bytes_(authContextBlobSize) const void* authContextBlob,
     _In_ UINT32 authContextBlobSize,
     _Out_ USER_BOUND_KEY_AUTH_CONTEXT_HANDLE* authContextHandle
@@ -930,6 +930,16 @@ HRESULT GetUserBoundKeyAuthContext(
     BYTE* pDecryptedAuthContext = NULL;
     UINT32 decryptedSize = 0;
     PUSER_BOUND_KEY_AUTH_CONTEXT_INTERNAL pInternalContext = NULL;
+    UINT_PTR sessionKeyPtr = 0;
+    ULONG64 sessionNonce = 0;
+
+    // Get session information
+    hr = GetUserBoundKeySessionInfo(sessionHandle, &sessionKeyPtr, &sessionNonce);
+    if (FAILED(hr))
+    {
+        veil::vtl1::vtl0_functions::debug_print("DEBUG: CreateEncryptedRequestForDeriveSharedSecret - GetUserBoundKeySessionInfo failed");
+        goto cleanup;
+    }
 
     //
     // Step 1: Validate input parameters 
@@ -943,7 +953,7 @@ HRESULT GetUserBoundKeyAuthContext(
     //
     // Step 2: Decrypt the auth context blob using BCrypt APIs
     //
-    hr = DecryptAuthContextBlob(sessionKeyPtr, authContextBlob, authContextBlobSize, &pDecryptedAuthContext, &decryptedSize);
+    hr = DecryptAuthContextBlob(sessionKeyPtr, sessionNonce, authContextBlob, authContextBlobSize, &pDecryptedAuthContext, &decryptedSize);
     if (FAILED(hr))
     {
         goto cleanup;
@@ -2580,12 +2590,304 @@ HRESULT UnprotectUserBoundKey(
 //
 // Creates an encrypted NGC request for RetrieveAuthorizationContext using the session key
 HRESULT CreateEncryptedRequestForRetrieveAuthorizationContext(
-    USER_BOUND_KEY_SESSION_HANDLE /*sessionHandle*/,
-    const void* /*keyName*/,
-    UINT32 /*keyNameSize*/,
-    void** /*encryptedRequest*/,
-    UINT32* /*encryptedRequestSize*/
+    _In_ USER_BOUND_KEY_SESSION_HANDLE sessionHandle,
+    _In_reads_bytes_(keyNameSize) const void* keyName,
+    _In_ UINT32 keyNameSize,
+    _Outptr_result_buffer_(*encryptedRequestSize) void** encryptedRequest,
+    _Out_ UINT32* encryptedRequestSize
 )
 {
-    return E_NOTIMPL;
+    veil::vtl1::vtl0_functions::debug_print("DEBUG: CreateEncryptedRequestForRetrieveAuthorizationContext - Function entered");
+
+    HRESULT hr = S_OK;
+    void* pEncryptedRequest = NULL;
+    UINT32 totalEncryptedSize = 0;
+    BYTE* pPlaintextBuffer = NULL;
+    UINT32 plaintextSize = 0;
+    BYTE* pCiphertextBuffer = NULL;
+    BYTE* pEncryptedData = NULL;
+    ULONG bytesEncrypted = 0;
+
+    // Declare all variables at the beginning to avoid goto initialization issues
+    const char header[] = "NgcReq"; // 7 bytes including null terminator
+    const UINT32 OPERATION_RETRIEVE_AUTHORIZATION_CONTEXT = 9; // Different operation ID
+    BYTE* pCurrentPos = NULL;
+    ULONG64 nonce = 0;
+    BYTE nonceBuffer[AES_GCM_NONCE_SIZE] = {0};
+    BYTE authTag[AES_GCM_TAG_SIZE] = {0};
+    BCRYPT_AUTHENTICATED_CIPHER_MODE_INFO authInfo;
+    BCRYPT_KEY_HANDLE sessionKey = NULL;
+    UINT_PTR sessionKeyPtr = 0;
+    ULONG64 sessionNonce = 0;
+
+    //
+    // Step 1: Validate input parameters and get session info
+    //
+    veil::vtl1::vtl0_functions::debug_print("DEBUG: CreateEncryptedRequestForRetrieveAuthorizationContext - Step 1: Validating input parameters");
+    if (sessionHandle == NULL ||
+        keyName == NULL ||
+        keyNameSize == 0 ||
+        encryptedRequest == NULL ||
+        encryptedRequestSize == NULL)
+    {
+        veil::vtl1::vtl0_functions::debug_print("DEBUG: CreateEncryptedRequestForRetrieveAuthorizationContext - Invalid input parameters");
+        hr = E_INVALIDARG;
+        goto cleanup;
+    }
+
+    // Get session information
+    hr = GetUserBoundKeySessionInfo(sessionHandle, &sessionKeyPtr, &sessionNonce);
+    if (FAILED(hr))
+    {
+        veil::vtl1::vtl0_functions::debug_print("DEBUG: CreateEncryptedRequestForRetrieveAuthorizationContext - GetUserBoundKeySessionInfo failed");
+        goto cleanup;
+    }
+
+    // Initialize output parameters
+    *encryptedRequest = NULL;
+    *encryptedRequestSize = 0;
+
+    veil::vtl1::vtl0_functions::debug_print("DEBUG: CreateEncryptedRequestForRetrieveAuthorizationContext - Input validation completed");
+    veil::vtl1::vtl0_functions::debug_print("DEBUG: CreateEncryptedRequestForRetrieveAuthorizationContext - sessionKeyPtr: 0x%p", (void*)sessionKeyPtr);
+    veil::vtl1::vtl0_functions::debug_print("DEBUG: CreateEncryptedRequestForRetrieveAuthorizationContext - current sessionNonce: %llu", sessionNonce);
+    veil::vtl1::vtl0_functions::debug_print("DEBUG: CreateEncryptedRequestForRetrieveAuthorizationContext - keyNameSize: %u", keyNameSize);
+
+    //
+    // Step 2: Construct NGC request structure
+    //
+    veil::vtl1::vtl0_functions::debug_print("DEBUG: CreateEncryptedRequestForRetrieveAuthorizationContext - Step 2: Constructing NGC request");
+
+    // NGC request format with 7-byte header for RetrieveAuthorizationContext:
+    // [7 bytes: header "NgcReq" including null terminator]
+    // [4 bytes: operation type (RetrieveAuthorizationContext = 9)]
+    // [4 bytes: key name size]
+    // [key name data]
+    // Note: Unlike DeriveSharedSecret, this operation doesn't require public key data
+
+    // Calculate total plaintext size
+    plaintextSize = sizeof(header) +   // 7-byte header including null terminator
+        sizeof(UINT32) +    // operation type
+        sizeof(UINT32) +    // key name size
+        keyNameSize;        // key name data
+
+    // Allocate plaintext buffer
+    pPlaintextBuffer = (BYTE*)VengcAlloc(plaintextSize);
+    if (pPlaintextBuffer == NULL)
+    {
+        hr = E_OUTOFMEMORY;
+        goto cleanup;
+    }
+
+    // Build the plaintext buffer
+    pCurrentPos = pPlaintextBuffer;
+
+    // Add 7-byte header first
+    memcpy(pCurrentPos, header, sizeof(header));
+    pCurrentPos += sizeof(header);
+
+    // Add operation type
+    memcpy(pCurrentPos, &OPERATION_RETRIEVE_AUTHORIZATION_CONTEXT, sizeof(UINT32));
+    pCurrentPos += sizeof(UINT32);
+
+    // Add key name size
+    memcpy(pCurrentPos, &keyNameSize, sizeof(UINT32));
+    pCurrentPos += sizeof(UINT32);
+
+    // Add key name data
+    memcpy(pCurrentPos, keyName, keyNameSize);
+
+    veil::vtl1::vtl0_functions::debug_print("DEBUG: CreateEncryptedRequestForRetrieveAuthorizationContext - Constructed plaintext, size: %u", plaintextSize);
+
+    //
+    // Step 3: Handle nonce manipulation to prevent reuse
+    //
+    veil::vtl1::vtl0_functions::debug_print("DEBUG: CreateEncryptedRequestForRetrieveAuthorizationContext - Step 3: Handling nonce manipulation");
+
+    // Handle nonce manipulation to prevent reuse
+    nonce = sessionNonce;
+    // nonce = InterlockedIncrement64(reinterpret_cast<LONG64*>(&sessionNonce));
+
+    if (nonce >= Vtl1MutualAuth::c_maxRequestNonce)
+    {
+        hr = HRESULT_FROM_WIN32(ERROR_TOO_MANY_SECRETS);
+        goto cleanup;
+    }
+
+    veil::vtl1::vtl0_functions::debug_print("DEBUG: CreateEncryptedRequestForRetrieveAuthorizationContext - Using nonce: %llu", nonce);
+
+    // Create nonce buffer manually (instead of using crypto utility)
+    memcpy(&nonceBuffer[AES_GCM_NONCE_SIZE - sizeof(nonce)], &nonce, sizeof(nonce));
+
+    //
+    // Step 4: Encrypt the NGC request using BCrypt directly
+    //
+    veil::vtl1::vtl0_functions::debug_print("DEBUG: CreateEncryptedRequestForRetrieveAuthorizationContext - Step 4: Encrypting NGC request");
+
+    // Set up AES-GCM authentication info
+    BCRYPT_INIT_AUTH_MODE_INFO(authInfo);
+    authInfo.pbNonce = nonceBuffer;
+    authInfo.cbNonce = AES_GCM_NONCE_SIZE;
+    authInfo.pbTag = authTag;
+    authInfo.cbTag = AES_GCM_TAG_SIZE;
+
+    // Get session key handle
+    sessionKey = reinterpret_cast<BCRYPT_KEY_HANDLE>(sessionKeyPtr);
+
+    // Allocate buffer for encrypted data
+    pEncryptedData = (BYTE*)VengcAlloc(plaintextSize);
+    if (pEncryptedData == NULL)
+    {
+        hr = E_OUTOFMEMORY;
+        goto cleanup;
+    }
+
+    // DEBUG: Print nonce and tag before BCryptEncrypt
+    {
+        char nonceHexStr[AES_GCM_NONCE_SIZE * 2 + 1] = {0};
+        char tagHexStr[AES_GCM_TAG_SIZE * 2 + 1] = {0};
+
+        // Convert nonce to hex string
+        for (UINT32 i = 0; i < AES_GCM_NONCE_SIZE; i++)
+        {
+            sprintf_s(&nonceHexStr[i * 2], 3, "%02X", nonceBuffer[i]);
+        }
+
+        // Convert tag to hex string (should be zeros before encryption)
+        for (UINT32 i = 0; i < AES_GCM_TAG_SIZE; i++)
+        {
+            sprintf_s(&tagHexStr[i * 2], 3, "%02X", authTag[i]);
+        }
+
+        veil::vtl1::vtl0_functions::debug_print("DEBUG: CreateEncryptedRequestForRetrieveAuthorizationContext - BEFORE BCryptEncrypt - Nonce (hex): %s", nonceHexStr);
+        veil::vtl1::vtl0_functions::debug_print("DEBUG: CreateEncryptedRequestForRetrieveAuthorizationContext - BEFORE BCryptEncrypt - Auth Tag (hex): %s", tagHexStr);
+    }
+
+    // Encrypt the plaintext using BCrypt
+    // In AES-GCM ciphertext and plaintext lengths are the same
+    hr = HRESULT_FROM_NT(BCryptEncrypt(
+        sessionKey,
+        pPlaintextBuffer,
+        plaintextSize,
+        &authInfo,
+        NULL,  // No IV for GCM (nonce is in authInfo)
+        0,
+        pEncryptedData,
+        plaintextSize,
+        &bytesEncrypted,
+        0
+    ));
+
+    // DEBUG: Print nonce and tag after BCryptEncrypt
+    {
+        char nonceHexStr[AES_GCM_NONCE_SIZE * 2 + 1] = {0};
+        char tagHexStr[AES_GCM_TAG_SIZE * 2 + 1] = {0};
+
+        // Convert nonce to hex string
+        for (UINT32 i = 0; i < AES_GCM_NONCE_SIZE; i++)
+        {
+            sprintf_s(&nonceHexStr[i * 2], 3, "%02X", nonceBuffer[i]);
+        }
+
+        // Convert tag to hex string (should contain auth tag after encryption)
+        for (UINT32 i = 0; i < AES_GCM_TAG_SIZE; i++)
+        {
+            sprintf_s(&tagHexStr[i * 2], 3, "%02X", authTag[i]);
+        }
+
+        veil::vtl1::vtl0_functions::debug_print("DEBUG: CreateEncryptedRequestForRetrieveAuthorizationContext - AFTER BCryptEncrypt - Nonce (hex): %s", nonceHexStr);
+        veil::vtl1::vtl0_functions::debug_print("DEBUG: CreateEncryptedRequestForRetrieveAuthorizationContext - AFTER BCryptEncrypt - Auth Tag (hex): %s", tagHexStr);
+    }
+
+    if (FAILED(hr))
+    {
+        veil::vtl1::vtl0_functions::debug_print("DEBUG: CreateEncryptedRequestForRetrieveAuthorizationContext - BCryptEncrypt failed");
+        goto cleanup;
+    }
+
+    //
+    // Step 5: Construct final encrypted request format
+    //
+    veil::vtl1::vtl0_functions::debug_print("DEBUG: CreateEncryptedRequestForRetrieveAuthorizationContext - Step 5: Constructing final encrypted request");
+
+    // Final format: [8 bytes: nonce number][encrypted data][16 bytes: auth tag]
+    totalEncryptedSize = sizeof(nonce) + bytesEncrypted + AES_GCM_TAG_SIZE;
+
+    // Allocate ciphertext buffer
+    pCiphertextBuffer = (BYTE*)VengcAlloc(totalEncryptedSize);
+    if (pCiphertextBuffer == NULL)
+    {
+        hr = E_OUTOFMEMORY;
+        goto cleanup;
+    }
+
+    // Build the ciphertext buffer
+    pCurrentPos = pCiphertextBuffer;
+
+    // Add nonce number
+    memcpy(pCurrentPos, &nonce, sizeof(nonce));
+    pCurrentPos += sizeof(nonce);
+
+    // Add encrypted data
+    memcpy(pCurrentPos, pEncryptedData, bytesEncrypted);
+    pCurrentPos += bytesEncrypted;
+
+    // Add authentication tag
+    memcpy(pCurrentPos, authTag, AES_GCM_TAG_SIZE);
+
+    veil::vtl1::vtl0_functions::debug_print("DEBUG: CreateEncryptedRequestForRetrieveAuthorizationContext - Final encrypted request size: %u", totalEncryptedSize);
+
+    //
+    // Step 6: Allocate and return encrypted request, update session nonce
+    //
+    veil::vtl1::vtl0_functions::debug_print("DEBUG: CreateEncryptedRequestForRetrieveAuthorizationContext - Step 6: Allocating output buffer and updating session nonce");
+
+    pEncryptedRequest = VengcAlloc(totalEncryptedSize);
+    if (pEncryptedRequest == NULL)
+    {
+        hr = E_OUTOFMEMORY;
+        goto cleanup;
+    }
+
+    memcpy(pEncryptedRequest, pCiphertextBuffer, totalEncryptedSize);
+
+    // Update the session nonce on success
+    hr = UpdateUserBoundKeySessionNonce(sessionHandle, nonce);
+    if (FAILED(hr))
+    {
+        VengcFree(pEncryptedRequest);
+        pEncryptedRequest = NULL;
+        goto cleanup;
+    }
+    veil::vtl1::vtl0_functions::debug_print("DEBUG: CreateEncryptedRequestForRetrieveAuthorizationContext - Updated session nonce to: %llu", nonce);
+
+    // Success - transfer ownership to caller
+    *encryptedRequest = pEncryptedRequest;
+    *encryptedRequestSize = totalEncryptedSize;
+    pEncryptedRequest = NULL; // Transfer ownership
+
+    veil::vtl1::vtl0_functions::debug_print("DEBUG: CreateEncryptedRequestForRetrieveAuthorizationContext - Function completed successfully");
+
+    cleanup:
+    if (pEncryptedRequest != NULL)
+    {
+        VengcFree(pEncryptedRequest);
+    }
+
+    if (pEncryptedData != NULL)
+    {
+        VengcSecureFree(pEncryptedData, plaintextSize);
+    }
+
+    if (pPlaintextBuffer != NULL)
+    {
+        VengcSecureFree(pPlaintextBuffer, plaintextSize);
+    }
+
+    if (pCiphertextBuffer != NULL)
+    {
+        VengcFree(pCiphertextBuffer);
+    }
+
+    veil::vtl1::vtl0_functions::debug_print("DEBUG: CreateEncryptedRequestForRetrieveAuthorizationContext - Function exiting with hr: 0x%08X", hr);
+    return hr;
 }

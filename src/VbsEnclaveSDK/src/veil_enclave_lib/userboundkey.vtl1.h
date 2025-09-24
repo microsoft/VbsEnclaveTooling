@@ -12,10 +12,8 @@
 namespace DeveloperTypes
 {
     struct authContextBlobAndFormattedKeyNameAndSessionInfo;
-    struct secretAndAuthorizationContextAndSessionKeyPtr;
     struct keyCredentialCacheConfig;
     struct credentialAndFormattedKeyNameAndSessionInfo;
-    struct secretAndAuthorizationContext;
     struct sessionInfo; // This is auto-generated, don't redefine it
 }
 

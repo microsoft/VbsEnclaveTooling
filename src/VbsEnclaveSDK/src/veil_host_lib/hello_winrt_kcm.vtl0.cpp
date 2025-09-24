@@ -158,7 +158,8 @@ authContextBlobAndFormattedKeyNameAndSessionInfo veil_abi::VTL0_Stubs::export_in
     uintptr_t ecdh_protocol,
     const std::wstring& message,
     uintptr_t window_id,
-    const DeveloperTypes::keyCredentialCacheConfig& cache_config)
+    const DeveloperTypes::keyCredentialCacheConfig& cache_config,
+    uint64_t nonce)
 {
     std::wcout << L"Inside userboundkey_establish_session_for_create_callback"<< std::endl;
     auto algorithm = GetAlgorithm(ecdh_protocol);
@@ -253,7 +254,7 @@ authContextBlobAndFormattedKeyNameAndSessionInfo veil_abi::VTL0_Stubs::export_in
     auto authContextBuffer = credential.RetrieveAuthorizationContext(encryptedRequest);
     result.authContextBlob = ConvertBufferToVector(authContextBuffer);
     result.formattedKeyName = formattedKeyName; // Store the formatted key name
-    result.session = {*sessionKeyPtr, 0 /*Nonce*/}; // Initialize session info
+    result.session = {*sessionKeyPtr, nonce}; // Initialize session info
 
     return result;
 }
@@ -337,7 +338,8 @@ credentialAndFormattedKeyNameAndSessionInfo veil_abi::VTL0_Stubs::export_interfa
     uintptr_t enclave,
     const std::wstring& key_name,
     const std::wstring& message,
-    uintptr_t window_id)
+    uintptr_t window_id,
+    uint64_t nonce)
 {
     auto sessionKeyPtr = std::make_shared<uintptr_t>(0);
 
@@ -405,19 +407,19 @@ credentialAndFormattedKeyNameAndSessionInfo veil_abi::VTL0_Stubs::export_interfa
     credentialAndFormattedKeyNameAndSessionInfo result;
     result.credential = ConvertCredentialToVector(credential);
     result.formattedKeyName = formattedKeyName;
-    result.session = { *sessionKeyPtr, 0 /*Nonce*/}; // Initialize session info  
+    result.session = { *sessionKeyPtr, nonce }; // Initialize session info
     return result;
 }
 
-// New VTL0 function to extract secret and authorization context from credential
-secretAndAuthorizationContext veil_abi::VTL0_Stubs::export_interface::userboundkey_get_secret_and_authorizationcontext_from_credential_callback(
+// New VTL0 function to extract authorization context from credential
+std::vector<uint8_t> veil_abi::VTL0_Stubs::export_interface::userboundkey_get_authorization_context_from_credential_callback(
     const std::vector<uint8_t>& credential_vector,
-    const std::vector<uint8_t>& encrypted_kcm_request_for_derive_shared_secret,
+    const std::vector<uint8_t>& encrypted_kcm_request_for_get_authorization_context,
     const std::wstring& message,
     uintptr_t window_id)
 {
-    std::wcout << L"DEBUG: userboundkey_get_secret_and_authorizationcontext_from_credential_callback called" << std::endl;
-    
+    std::wcout << L"DEBUG: userboundkey_get_authorization_context_from_credential_callback called" << std::endl;
+
     KeyCredential credential{ nullptr };
     bool credentialValid = false;
     
@@ -429,35 +431,79 @@ secretAndAuthorizationContext veil_abi::VTL0_Stubs::export_interface::userboundk
         
         std::wcout << L"DEBUG: Converting credential vector back to KeyCredential" << std::endl;
 
-        // Extract authorization context and derive shared secret
-        winrt::Windows::Storage::Streams::IBuffer encryptedRequest;
-        auto authorizationContext = credential.RetrieveAuthorizationContext(encryptedRequest);
-        auto secret = credential.RequestDeriveSharedSecretAsync(
-            (winrt::Windows::UI::WindowId)window_id, 
-            message, 
-            winrt::Windows::Security::Cryptography::CryptographicBuffer::CreateFromByteArray(encrypted_kcm_request_for_derive_shared_secret)).get();
+        // Extract authorization context
+        auto authorizationContext = credential.RetrieveAuthorizationContext(
+            winrt::Windows::Security::Cryptography::CryptographicBuffer::CreateFromByteArray(encrypted_kcm_request_for_get_authorization_context));
 
-        secretAndAuthorizationContext result;
-        result.secret = ConvertBufferToVector(secret.Result());
-        result.authorizationContext = ConvertBufferToVector(authorizationContext);
+        auto result = ConvertBufferToVector(authorizationContext);
 
-        std::wcout << L"DEBUG: userboundkey_get_secret_and_authorizationcontext_from_credential_callback completed successfully" << std::endl;
+        std::wcout << L"DEBUG: userboundkey_get_authorization_context_from_credential_callback completed successfully" << std::endl;
         
         // The KeyCredential destructor will automatically handle the Release when it goes out of scope
         return result;
     }
     catch (const std::exception& e)
     {
-        std::wcout << L"DEBUG: Exception in userboundkey_get_secret_and_authorizationcontext_from_credential_callback: " << e.what() << std::endl;
-        
+        std::wcout << L"DEBUG: Exception in userboundkey_get_authorization_context_from_credential_callback: " << e.what() << std::endl;
+
         // If we successfully created the credential but failed later, the destructor will clean up
         // If we failed to create the credential, there's nothing extra to clean up
         throw;
     }
     catch (...)
     {
-        std::wcout << L"DEBUG: Unknown exception in userboundkey_get_secret_and_authorizationcontext_from_credential_callback" << std::endl;
+        std::wcout << L"DEBUG: Unknown exception in userboundkey_get_authorization_context_from_credential_callback" << std::endl;
         
+        // If we successfully created the credential but failed later, the destructor will clean up
+        // If we failed to create the credential, there's nothing extra to clean up
+        throw;
+    }
+}
+
+// New VTL0 function to extract secret from credential
+std::vector<uint8_t> veil_abi::VTL0_Stubs::export_interface::userboundkey_get_secret_from_credential_callback(
+    const std::vector<uint8_t>& credential_vector,
+    const std::vector<uint8_t>& encrypted_kcm_request_for_derive_shared_secret,
+    const std::wstring& message,
+    uintptr_t window_id)
+{
+    std::wcout << L"DEBUG: userboundkey_get_secret_from_credential_callback called" << std::endl;
+
+    KeyCredential credential {nullptr};
+    bool credentialValid = false;
+
+    try
+    {
+        // Convert the credential vector back to KeyCredential
+        credential = ConvertVectorToCredential(credential_vector);
+        credentialValid = true;
+
+        std::wcout << L"DEBUG: Converting credential vector back to KeyCredential" << std::endl;
+
+        // Derive shared secret
+        auto secret = credential.RequestDeriveSharedSecretAsync(
+            (winrt::Windows::UI::WindowId)window_id,
+            message,
+            winrt::Windows::Security::Cryptography::CryptographicBuffer::CreateFromByteArray(encrypted_kcm_request_for_derive_shared_secret)).get();
+
+        auto result = ConvertBufferToVector(secret.Result());
+        std::wcout << L"DEBUG: userboundkey_get_secret_from_credential_callback completed successfully" << std::endl;
+
+        // The KeyCredential destructor will automatically handle the Release when it goes out of scope
+        return result;
+    }
+    catch (const std::exception& e)
+    {
+        std::wcout << L"DEBUG: Exception in userboundkey_get_secret_from_credential_callback: " << e.what() << std::endl;
+
+        // If we successfully created the credential but failed later, the destructor will clean up
+        // If we failed to create the credential, there's nothing extra to clean up
+        throw;
+    }
+    catch (...)
+    {
+        std::wcout << L"DEBUG: Unknown exception in userboundkey_get_secret_from_credential_callback" << std::endl;
+
         // If we successfully created the credential but failed later, the destructor will clean up
         // If we failed to create the credential, there's nothing extra to clean up
         throw;

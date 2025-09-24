@@ -16,12 +16,6 @@ enclave
         uint32_t cacheUsageCount;
     };
 
-    struct secretAndAuthorizationContext
-    {
-        vector<uint8_t> secret;
-        vector<uint8_t> authorizationContext;
-    };
-
     struct attestationReportAndSessionKeyPtr
     {
         vector<uint8_t> attestationReport;
@@ -95,19 +89,30 @@ enclave
             uintptr_t ecdh_protocol,
             wstring message,
             uintptr_t window_id,
-            keyCredentialCacheConfig cache_config
-            );
+            keyCredentialCacheConfig cache_config,
+            uint64_t nonce
+        );
 
         credentialAndFormattedKeyNameAndSessionInfo userboundkey_establish_session_for_load(
             uintptr_t enclave,
             wstring key_name,
             wstring message,
-            uintptr_t window_id);
+            uintptr_t window_id,
+            uint64_t nonce
+        );
 
-        secretAndAuthorizationContext userboundkey_get_secret_and_authorizationcontext_from_credential(
+        vector<uint8_t> userboundkey_get_authorization_context_from_credential(
+            vector<uint8_t> credential_vector,
+            vector<uint8_t> encrypted_kcm_request_for_get_authorization_context,
+            wstring message,
+            uintptr_t window_id
+        );
+
+        vector<uint8_t> userboundkey_get_secret_from_credential(
             vector<uint8_t> credential_vector,
             vector<uint8_t> encrypted_kcm_request_for_derive_shared_secret,
             wstring message,
-            uintptr_t window_id);
+            uintptr_t window_id
+        );
     };
 };

@@ -98,7 +98,8 @@ namespace veil::vtl1::implementation::userboundkey::callouts
         _In_ const uintptr_t ecdh_protocol, 
         _In_ const std::wstring& message, 
         _In_ const uintptr_t window_id, 
-        _In_ const DeveloperTypes::keyCredentialCacheConfig& cache_config)
+        _In_ const DeveloperTypes::keyCredentialCacheConfig& cache_config,
+        _In_ const uint64_t nonce)
     {
         return veil_abi::VTL0_Callbacks::userboundkey_establish_session_for_create_callback(
             reinterpret_cast<uintptr_t>(enclave),
@@ -106,30 +107,46 @@ namespace veil::vtl1::implementation::userboundkey::callouts
             ecdh_protocol,
             message,
             window_id,
-            cache_config);
+            cache_config,
+            nonce);
     }
 
     DeveloperTypes::credentialAndFormattedKeyNameAndSessionInfo userboundkey_establish_session_for_load_callback(
         _In_ const void* enclave,
         _In_ const std::wstring& key_name,
         _In_ const std::wstring& message, 
-        _In_ const uintptr_t window_id)
+        _In_ const uintptr_t window_id,
+        _In_ const uint64_t nonce)
     {
         return veil_abi::VTL0_Callbacks::userboundkey_establish_session_for_load_callback(
             reinterpret_cast<uintptr_t>(enclave),
             key_name,
             message,
-            window_id);
+            window_id,
+            nonce);
     }
 
     // New function to extract secret and authorization context from credential
-    DeveloperTypes::secretAndAuthorizationContext userboundkey_get_secret_and_authorizationcontext_from_credential_callback(
+    std::vector<std::uint8_t> userboundkey_get_authorization_context_from_credential_callback(
         _In_ const std::vector<std::uint8_t>& credential_vector,
         _In_ const std::vector<std::uint8_t>& public_key,
         _In_ const std::wstring& message,
         _In_ const uintptr_t window_id)
     {
-        return veil_abi::VTL0_Callbacks::userboundkey_get_secret_and_authorizationcontext_from_credential_callback(
+        return veil_abi::VTL0_Callbacks::userboundkey_get_authorization_context_from_credential_callback(
+            credential_vector,
+            public_key,
+            message,
+            window_id);
+    }
+
+    std::vector<std::uint8_t> userboundkey_get_secret_from_credential_callback(
+        _In_ const std::vector<std::uint8_t>& credential_vector,
+        _In_ const std::vector<std::uint8_t>& public_key,
+        _In_ const std::wstring& message,
+        _In_ const uintptr_t window_id)
+    {
+        return veil_abi::VTL0_Callbacks::userboundkey_get_secret_from_credential_callback(
             credential_vector,
             public_key,
             message,
@@ -274,6 +291,7 @@ wil::secure_vector<uint8_t> enclave_create_user_bound_key(
     veil::vtl1::vtl0_functions::debug_print(L"DEBUG: enclave_create_user_bound_key - Function entered");
 
     DeveloperTypes::sessionInfo sessionInfo{}; // Initialize session info for cleanup
+    USER_BOUND_KEY_SESSION_HANDLE sessionHandle = nullptr; // Declare session handle for proper cleanup
 
     try
     {
@@ -288,7 +306,8 @@ wil::secure_vector<uint8_t> enclave_create_user_bound_key(
             reinterpret_cast<uintptr_t>(BCRYPT_ECDH_P384_ALG_HANDLE),
             message,
             windowId,
-            devCacheConfig);
+            devCacheConfig,
+            0 /* nonce */);
 
         veil::vtl1::vtl0_functions::debug_print(L"DEBUG: enclave_create_user_bound_key - Received authContextBlobAndFormattedKeyNameAndSessionInfo");
 
@@ -299,8 +318,10 @@ wil::secure_vector<uint8_t> enclave_create_user_bound_key(
 
         // AUTH CONTEXT
         unique_auth_context_handle authContext;
+        // Convert back to update the original sessionInfo
+        THROW_IF_FAILED(ConvertFromSessionHandle(sessionHandle, sessionInfo));
         THROW_IF_FAILED(GetUserBoundKeyAuthContext(
-            sessionInfo.sessionKeyPtr,
+            sessionHandle,
             authContextBlob.data(),
             static_cast<UINT32>(authContextBlob.size()),
             authContext.put()
@@ -415,7 +436,8 @@ std::vector<uint8_t> enclave_load_user_bound_key(
             enclave,
             keyName,
             message,
-            windowId);
+            windowId,
+            0 /* nonce */);
 
         veil::vtl1::vtl0_functions::debug_print(L"DEBUG: enclave_load_user_bound_key - establish_session_for_load_callback completed");
 
@@ -427,9 +449,13 @@ std::vector<uint8_t> enclave_load_user_bound_key(
         veil::vtl1::vtl0_functions::debug_print((L"DEBUG: enclave_load_user_bound_key - credentialVector size: " + std::to_wstring(credentialVector.size())).c_str());
         veil::vtl1::vtl0_functions::debug_print((L"DEBUG: enclave_load_user_bound_key - sessionKeyPtr: 0x" + std::to_wstring(sessionInfo.sessionKeyPtr)).c_str());
 
+        // Call to veinterop to create the encrypted KCM request for RetrieveAuthorizationContext
+        void* encryptedKcmRequestRac = nullptr;
+        UINT32 encryptedKcmRequestRacSize = 0;
+
         // Call to veinterop to create the encrypted KCM request for DeriveSharedSecret
-        void* encryptedKcmRequest = nullptr;
-        UINT32 encryptedKcmRequestSize = 0;
+        void* encryptedKcmRequestDss = nullptr;
+        UINT32 encryptedKcmRequestDssSize = 0;
 
         const void* keyNamePtr = formattedKeyName.c_str();
         UINT32 keyNameSizeBytes = static_cast<UINT32>(formattedKeyName.length() * sizeof(wchar_t)); // Exclude null terminator
@@ -442,41 +468,73 @@ std::vector<uint8_t> enclave_load_user_bound_key(
         THROW_IF_FAILED(ConvertToSessionHandle(sessionInfo, &sessionHandle));
 
         // Use the function that accepts session handle and handles nonce manipulation internally
+        THROW_IF_FAILED(CreateEncryptedRequestForRetrieveAuthorizationContext(
+            sessionHandle,  // Pass session handle - nonce manipulation is handled internally
+            keyNamePtr,
+            keyNameSizeBytes,
+            &encryptedKcmRequestRac,
+            &encryptedKcmRequestRacSize)); // OS CALL
+
+        // Convert back to update the original sessionInfo
+        THROW_IF_FAILED(ConvertFromSessionHandle(sessionHandle, sessionInfo));
+
+        // Convert the result to vector for the callback
+        std::vector<uint8_t> encryptedKcmRequestForRetrieveAuthorizationContext;
+        THROW_IF_FAILED(encryptedKcmRequestRac == nullptr || encryptedKcmRequestRacSize <= 0 ? E_INVALIDARG : S_OK);
+        encryptedKcmRequestForRetrieveAuthorizationContext.assign(
+            static_cast<uint8_t*>(encryptedKcmRequestRac),
+            static_cast<uint8_t*>(encryptedKcmRequestRac) + encryptedKcmRequestRacSize);
+
+        // Free the allocated memory
+        HeapFree(GetProcessHeap(), 0, encryptedKcmRequestRac);
+
+        // Second call to extract secret from credential
+        veil::vtl1::vtl0_functions::debug_print(L"DEBUG: enclave_load_user_bound_key - About to call userboundkey_get_authorization_context_from_credential_callback");
+
+        auto authContextBlob = veil_abi::VTL0_Callbacks::userboundkey_get_authorization_context_from_credential_callback(
+            credentialVector,
+            encryptedKcmRequestForRetrieveAuthorizationContext,
+            message,
+            windowId);
+
+        veil::vtl1::vtl0_functions::debug_print(L"DEBUG: enclave_load_user_bound_key - userboundkey_get_authorization_context_from_credential_callback completed");
+
+        // Convert sessionInfo to session handle for the API call
+        THROW_IF_FAILED(ConvertToSessionHandle(sessionInfo, &sessionHandle));
+
+        // Use the function that accepts session handle and handles nonce manipulation internally
         THROW_IF_FAILED(CreateEncryptedRequestForDeriveSharedSecret(
             sessionHandle,  // Pass session handle - nonce manipulation is handled internally
             keyNamePtr,
             keyNameSizeBytes,
             ephemeralPublicKeyBytes.data(),
             static_cast<UINT32>(ephemeralPublicKeyBytes.size()),
-            &encryptedKcmRequest,
-            &encryptedKcmRequestSize)); // OS CALL
+            &encryptedKcmRequestDss,
+            &encryptedKcmRequestDssSize)); // OS CALL
 
         // Convert back to update the original sessionInfo
         THROW_IF_FAILED(ConvertFromSessionHandle(sessionHandle, sessionInfo));
 
         // Convert the result to vector for the callback
         std::vector<uint8_t> encryptedKcmRequestForDeriveSharedSecret;
-        THROW_IF_FAILED(encryptedKcmRequest == nullptr || encryptedKcmRequestSize <= 0 ? E_INVALIDARG : S_OK);
+        THROW_IF_FAILED(encryptedKcmRequestDss == nullptr || encryptedKcmRequestDssSize <= 0 ? E_INVALIDARG : S_OK);
         encryptedKcmRequestForDeriveSharedSecret.assign(
-            static_cast<uint8_t*>(encryptedKcmRequest),
-            static_cast<uint8_t*>(encryptedKcmRequest) + encryptedKcmRequestSize);
+            static_cast<uint8_t*>(encryptedKcmRequestDss),
+            static_cast<uint8_t*>(encryptedKcmRequestDss) + encryptedKcmRequestDssSize);
 
         // Free the allocated memory
-        HeapFree(GetProcessHeap(), 0, encryptedKcmRequest);
+        HeapFree(GetProcessHeap(), 0, encryptedKcmRequestDss);
 
-        // Second call to extract secret and authorization context from credential
-        veil::vtl1::vtl0_functions::debug_print(L"DEBUG: enclave_load_user_bound_key - About to call userboundkey_get_secret_and_authorizationcontext_from_credential_callback");
+        // Second call to extract secret from credential
+        veil::vtl1::vtl0_functions::debug_print(L"DEBUG: enclave_load_user_bound_key - About to call userboundkey_get_secret_from_credential_callback");
 
-        auto secretAndAuthorizationContext = veil_abi::VTL0_Callbacks::userboundkey_get_secret_and_authorizationcontext_from_credential_callback(
+        auto secret = veil_abi::VTL0_Callbacks::userboundkey_get_secret_from_credential_callback(
             credentialVector,
             encryptedKcmRequestForDeriveSharedSecret,
             message,
             windowId);
 
-        veil::vtl1::vtl0_functions::debug_print(L"DEBUG: enclave_load_user_bound_key - userboundkey_get_secret_and_authorizationcontext_from_credential_callback completed");
-
-        auto& secret = secretAndAuthorizationContext.secret;
-        auto& authContextBlob = secretAndAuthorizationContext.authorizationContext;
+        veil::vtl1::vtl0_functions::debug_print(L"DEBUG: enclave_load_user_bound_key - userboundkey_get_secret_from_credential_callback completed");
 
         veil::vtl1::vtl0_functions::debug_print((L"DEBUG: enclave_load_user_bound_key - secret size: " + std::to_wstring(secret.size())).c_str());
         veil::vtl1::vtl0_functions::debug_print((L"DEBUG: enclave_load_user_bound_key - authContextBlob size: " + std::to_wstring(authContextBlob.size())).c_str());
@@ -485,7 +543,7 @@ std::vector<uint8_t> enclave_load_user_bound_key(
         veil::vtl1::vtl0_functions::debug_print(L"DEBUG: enclave_load_user_bound_key - About to call GetUserBoundKeyAuthContext");
         unique_auth_context_handle authContext;
         THROW_IF_FAILED(GetUserBoundKeyAuthContext(
-            sessionInfo.sessionKeyPtr,
+            sessionHandle,
             authContextBlob.data(),
             static_cast<UINT32>(authContextBlob.size()),
             authContext.put())); // OS CALL
