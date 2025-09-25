@@ -521,7 +521,7 @@ HRESULT InitializeUserBoundKeySessionInfo(
     _In_ UINT32 challengeSize,
     _Outptr_result_buffer_(*reportSize) void** report,
     _Out_ UINT32* reportSize,
-    _Out_ UINT_PTR* sessionKey
+    _Out_ USER_BOUND_KEY_SESSION_HANDLE* sessionHandle
 )
 {
     // DEBUG: Log entry to InitializeUserBoundKeySessionInfo
@@ -537,12 +537,14 @@ HRESULT InitializeUserBoundKeySessionInfo(
     BCRYPT_KEY_HANDLE hSessionKey = NULL;
     PUCHAR pSessionKeyBytes = NULL;
     PS_TRUSTLET_TKSESSION_ID sessionId = {0};
+    
+    UINT_PTR sessionKeyPtr = 0;
 
     //
     // Step 1: Validate input parameters
     //
     veil::vtl1::vtl0_functions::debug_print("DEBUG: Step 1 - Validating input parameters");
-    hr = ValidateSessionInputParameters(challenge, challengeSize, report, reportSize, sessionKey);
+    hr = ValidateSessionInputParameters(challenge, challengeSize, report, reportSize, &sessionKeyPtr);
     if (FAILED(hr))
     {
         veil::vtl1::vtl0_functions::debug_print("DEBUG: Step 1 - Input parameter validation failed");
@@ -597,7 +599,7 @@ HRESULT InitializeUserBoundKeySessionInfo(
     veil::vtl1::vtl0_functions::debug_print("DEBUG: Step 5 - Returning results");
     *report = pEncryptedReport;
     *reportSize = encryptedReportSize;
-    *sessionKey = (UINT_PTR)pSessionKey;
+    CreateUserBoundKeySessionHandle((UINT_PTR)pSessionKey, 0 /*sessionNonce*/, sessionHandle);
 
     // Clear local pointers so they won't be freed in cleanup
     pEncryptedReport = NULL;
@@ -2606,7 +2608,7 @@ HRESULT CreateEncryptedRequestForRetrieveAuthorizationContext(
     _In_ USER_BOUND_KEY_SESSION_HANDLE sessionHandle,
     _In_reads_bytes_(keyNameSize) const void* keyName,
     _In_ UINT32 keyNameSize,
-    _Inout_ UINT64* localNonce,
+    _Out_ UINT64* localNonce,
     _Outptr_result_buffer_(*encryptedRequestSize) void** encryptedRequest,
     _Out_ UINT32* encryptedRequestSize
 )
@@ -2719,7 +2721,6 @@ HRESULT CreateEncryptedRequestForRetrieveAuthorizationContext(
 
     // Handle nonce manipulation to prevent reuse
     nonce = sessionNonce;
-    // nonce = InterlockedIncrement64(reinterpret_cast<LONG64*>(&sessionNonce));
 
     if (nonce >= Vtl1MutualAuth::c_maxRequestNonce)
     {

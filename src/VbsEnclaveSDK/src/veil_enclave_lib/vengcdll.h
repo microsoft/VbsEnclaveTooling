@@ -39,6 +39,10 @@
 // Exports for vengcdll.dll (new OS DLL in VTL1)
 //
 
+// Auth Context APIs
+DECLARE_HANDLE(USER_BOUND_KEY_AUTH_CONTEXT_HANDLE);
+DECLARE_HANDLE(USER_BOUND_KEY_SESSION_HANDLE);
+
 // Attestation report generation API for user bound keys.
 // Generates a session key, passes session key and provided challenge to EnclaveGetAttestationReport,
 // encrypts the attestation report with EnclaveEncryptDataForTrustlet, returns the encrypted report.
@@ -47,12 +51,8 @@ HRESULT InitializeUserBoundKeySessionInfo(
     _In_ UINT32 challengeSize,
     _Outptr_result_buffer_(*reportSize) void** report,
     _Out_ UINT32* reportSize,
-    _Out_ UINT_PTR* sessionKeyPtr
+    _Out_ USER_BOUND_KEY_SESSION_HANDLE* sessionHandle
 );
-
-// Auth Context APIs
-DECLARE_HANDLE(USER_BOUND_KEY_AUTH_CONTEXT_HANDLE);
-DECLARE_HANDLE(USER_BOUND_KEY_SESSION_HANDLE);
 
 HRESULT CloseUserBoundKeyAuthContextHandle(
     _In_ USER_BOUND_KEY_AUTH_CONTEXT_HANDLE handle);

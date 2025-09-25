@@ -3,12 +3,6 @@
 
 enclave
 {
-    struct sessionInfo
-    {
-        uintptr_t sessionKeyPtr;
-        uint64_t sessionNonce;
-    };
-
     struct keyCredentialCacheConfig
     {
         uint32_t cacheOption;
@@ -16,17 +10,17 @@ enclave
         uint32_t cacheUsageCount;
     };
 
-    struct attestationReportAndSessionKeyPtr
+    struct attestationReportAndSessionInfo
     {
         vector<uint8_t> attestationReport;
-        uintptr_t sessionKeyPtr;
+        uintptr_t sessionInfo;
     };
 
     struct credentialAndFormattedKeyNameAndSessionInfo
     {
         vector<uint8_t> credential;
         wstring formattedKeyName;
-        sessionInfo session;
+        uintptr_t sessionInfo;
     };
 
     trusted
@@ -37,7 +31,7 @@ enclave
         );
 
         // hello user bound key
-        attestationReportAndSessionKeyPtr userboundkey_get_attestation_report(
+        attestationReportAndSessionInfo userboundkey_get_attestation_report(
             vector<uint8_t> challenge);
     };
 
