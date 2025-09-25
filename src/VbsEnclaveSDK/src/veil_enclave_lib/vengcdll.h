@@ -62,18 +62,18 @@ HRESULT CloseUserBoundKeySession(
     _In_ USER_BOUND_KEY_SESSION_HANDLE sessionHandle
 );
 
-/*
-// Legacy structure for backward compatibility
-typedef struct _KEY_CREDENTIAL_CACHE_CONFIG {
-    UINT32 cacheType;
-    UINT32 cacheTimeout; // in seconds
-    UINT32 cacheCallCount;
-} KEY_CREDENTIAL_CACHE_CONFIG;
-*/
-
 typedef enum _USER_BOUND_KEY_AUTH_CONTEXT_PROPERTIES {
     UserBoundKeyAuthContextPropertyCacheConfig = 0, // The cache configuration for the user bound key, encoded as a CACHE_CONFIG structure
 } USER_BOUND_KEY_AUTH_CONTEXT_PROPERTIES;
+
+// Creates an encrypted KCM request for RetrieveAuthorizationContext using the session key
+HRESULT CreateUserBoundKeyRequestForRetrieveAuthorizationContext(
+    _Inout_ USER_BOUND_KEY_SESSION_HANDLE sessionHandle,
+    _In_ PCWSTR keyName,
+    _Out_ UINT64* nonce,
+    _Outptr_result_buffer_(*encryptedRequestSize) void** encryptedRequest,
+    _Out_ UINT32* encryptedRequestSize
+);
 
 // Called as part of the flow when creating a new user bound key.
 // Decrypts the auth context blob provided by KCM and returns a handle to the decrypted blob
@@ -81,7 +81,7 @@ HRESULT GetUserBoundKeyAuthContext(
     _In_ USER_BOUND_KEY_SESSION_HANDLE sessionHandle,
     _In_reads_bytes_(authContextBlobSize) const void* authContextBlob, // auth context generated as part of RequestCreateAsync
     _In_ UINT32 authContextBlobSize,
-    _In_ UINT64 localNonce,
+    _In_ UINT64 nonce,
     _Out_ USER_BOUND_KEY_AUTH_CONTEXT_HANDLE* authContextHandle
 );
 
@@ -116,13 +116,12 @@ HRESULT ProtectUserBoundKey(
 // Creates an encrypted KCM request for DeriveSharedSecret using session information and ephemeral public key bytes
 // NOTE OF CAUTION: We should prevent nonce reuse under any circumstances.
 // This function handles nonce manipulation internally to prevent reuse.
-HRESULT CreateEncryptedRequestForDeriveSharedSecret(
+HRESULT CreateUserBoundKeyRequestForDeriveSharedSecret(
     _In_ USER_BOUND_KEY_SESSION_HANDLE sessionHandle,
-    _In_reads_bytes_(keyNameSize) const void* keyName,
-    _In_ UINT32 keyNameSize,
+    _In_ PCWSTR keyName,
     _In_reads_bytes_(publicKeyBytesSize) const void* publicKeyBytes,
     _In_ UINT32 publicKeyBytesSize,
-    _Out_ UINT64* localNonce,
+    _Out_ UINT64* nonce,
     _Outptr_result_buffer_(*encryptedRequestSize) void** encryptedRequest,
     _Out_ UINT32* encryptedRequestSize
 );
@@ -135,19 +134,9 @@ HRESULT UnprotectUserBoundKey(
     _In_ UINT32 sessionEncryptedDerivedSecretSize,
     _In_reads_bytes_(encryptedUserBoundKeySize) const void* encryptedUserBoundKey,
     _In_ UINT32 encryptedUserBoundKeySize,
-    _In_ UINT64 localNonce,
+    _In_ UINT64 nonce,
     _Outptr_result_buffer_(*userKeySize) void** userKey,
     _Inout_ UINT32* userKeySize
-);
-
-// Creates an encrypted KCM request for RetrieveAuthorizationContext using the session key
-HRESULT CreateEncryptedRequestForRetrieveAuthorizationContext(
-    _Inout_ USER_BOUND_KEY_SESSION_HANDLE sessionHandle,
-    _In_reads_bytes_(keyNameSize) const void* keyName,
-    _In_ UINT32 keyNameSize,
-    _Out_ UINT64* localNonce,
-    _Outptr_result_buffer_(*encryptedRequestSize) void** encryptedRequest,
-    _Out_ UINT32* encryptedRequestSize
 );
 
 #endif // VENGCDLL_H

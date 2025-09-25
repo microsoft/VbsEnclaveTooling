@@ -1742,10 +1742,9 @@ HRESULT ProtectUserBoundKey(
 
 //
 // Creates an encrypted NGC request for DeriveSharedSecret using session information and ephemeral public key bytes
-HRESULT CreateEncryptedRequestForDeriveSharedSecret(
+HRESULT CreateUserBoundKeyRequestForDeriveSharedSecret(
     _In_ USER_BOUND_KEY_SESSION_HANDLE sessionHandle,
-    _In_reads_bytes_(keyNameSize) const void* keyName,
-    _In_ UINT32 keyNameSize,
+    _In_ PCWSTR keyName,
     _In_reads_bytes_(publicKeyBytesSize) const void* publicKeyBytes,
     _In_ UINT32 publicKeyBytesSize,
     _Out_ UINT64* localNonce,
@@ -1775,6 +1774,7 @@ HRESULT CreateEncryptedRequestForDeriveSharedSecret(
     BCRYPT_KEY_HANDLE sessionKey = NULL;
     UINT_PTR sessionKeyPtr = 0;
     ULONG64 sessionNonce = 0;
+    UINT32 keyNameSize = 0;
 
     //
     // Step 1: Validate input parameters and get session info
@@ -1782,7 +1782,6 @@ HRESULT CreateEncryptedRequestForDeriveSharedSecret(
     veil::vtl1::vtl0_functions::debug_print("DEBUG: CreateEncryptedRequestForDeriveSharedSecret - Step 1: Validating input parameters");
     if (sessionHandle == NULL ||
         keyName == NULL ||
-        keyNameSize == 0 ||
         publicKeyBytes == NULL ||
         publicKeyBytesSize == 0 ||
         encryptedRequest == NULL ||
@@ -1808,7 +1807,6 @@ HRESULT CreateEncryptedRequestForDeriveSharedSecret(
     veil::vtl1::vtl0_functions::debug_print("DEBUG: CreateEncryptedRequestForDeriveSharedSecret - Input validation completed");
     veil::vtl1::vtl0_functions::debug_print("DEBUG: CreateEncryptedRequestForDeriveSharedSecret - sessionKeyPtr: 0x%p", (void*)sessionKeyPtr);
     veil::vtl1::vtl0_functions::debug_print("DEBUG: CreateEncryptedRequestForDeriveSharedSecret - current sessionNonce: %llu", sessionNonce);
-    veil::vtl1::vtl0_functions::debug_print("DEBUG: CreateEncryptedRequestForDeriveSharedSecret - keyNameSize: %u", keyNameSize);
     veil::vtl1::vtl0_functions::debug_print("DEBUG: CreateEncryptedRequestForDeriveSharedSecret - publicKeyBytesSize: %u", publicKeyBytesSize);
 
     //
@@ -1825,6 +1823,7 @@ HRESULT CreateEncryptedRequestForDeriveSharedSecret(
     // [public key data]
 
     // Calculate total plaintext size
+    keyNameSize = (UINT32)(wcslen(keyName) * sizeof(wchar_t));
     plaintextSize = sizeof(header) +   // 7-byte header including null terminator
         sizeof(UINT32) +    // operation type
         sizeof(UINT32) +    // key name size
@@ -2604,10 +2603,9 @@ HRESULT UnprotectUserBoundKey(
 
 //
 // Creates an encrypted NGC request for RetrieveAuthorizationContext using the session key
-HRESULT CreateEncryptedRequestForRetrieveAuthorizationContext(
+HRESULT CreateUserBoundKeyRequestForRetrieveAuthorizationContext(
     _In_ USER_BOUND_KEY_SESSION_HANDLE sessionHandle,
-    _In_reads_bytes_(keyNameSize) const void* keyName,
-    _In_ UINT32 keyNameSize,
+    _In_ PCWSTR keyName,
     _Out_ UINT64* localNonce,
     _Outptr_result_buffer_(*encryptedRequestSize) void** encryptedRequest,
     _Out_ UINT32* encryptedRequestSize
@@ -2635,6 +2633,7 @@ HRESULT CreateEncryptedRequestForRetrieveAuthorizationContext(
     BCRYPT_KEY_HANDLE sessionKey = NULL;
     UINT_PTR sessionKeyPtr = 0;
     ULONG64 sessionNonce = 0;
+    UINT32 keyNameSize = 0;
 
     //
     // Step 1: Validate input parameters and get session info
@@ -2642,7 +2641,6 @@ HRESULT CreateEncryptedRequestForRetrieveAuthorizationContext(
     veil::vtl1::vtl0_functions::debug_print("DEBUG: CreateEncryptedRequestForRetrieveAuthorizationContext - Step 1: Validating input parameters");
     if (sessionHandle == NULL ||
         keyName == NULL ||
-        keyNameSize == 0 ||
         encryptedRequest == NULL ||
         encryptedRequestSize == NULL)
     {
@@ -2666,7 +2664,6 @@ HRESULT CreateEncryptedRequestForRetrieveAuthorizationContext(
     veil::vtl1::vtl0_functions::debug_print("DEBUG: CreateEncryptedRequestForRetrieveAuthorizationContext - Input validation completed");
     veil::vtl1::vtl0_functions::debug_print("DEBUG: CreateEncryptedRequestForRetrieveAuthorizationContext - sessionKeyPtr: 0x%p", (void*)sessionKeyPtr);
     veil::vtl1::vtl0_functions::debug_print("DEBUG: CreateEncryptedRequestForRetrieveAuthorizationContext - current sessionNonce: %llu", sessionNonce);
-    veil::vtl1::vtl0_functions::debug_print("DEBUG: CreateEncryptedRequestForRetrieveAuthorizationContext - keyNameSize: %u", keyNameSize);
 
     //
     // Step 2: Construct NGC request structure
@@ -2681,6 +2678,7 @@ HRESULT CreateEncryptedRequestForRetrieveAuthorizationContext(
     // Note: Unlike DeriveSharedSecret, this operation doesn't require public key data
 
     // Calculate total plaintext size
+    keyNameSize = (UINT32)(wcslen(keyName) * sizeof(wchar_t));
     plaintextSize = sizeof(header) +   // 7-byte header including null terminator
         sizeof(UINT32) +    // operation type
         sizeof(UINT32) +    // key name size

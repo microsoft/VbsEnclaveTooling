@@ -12,19 +12,21 @@
 #include "vtl0_functions.vtl1.h"
 #include "object_table.vtl1.h"
 
+using unique_sessionhandle = wil::unique_any<USER_BOUND_KEY_SESSION_HANDLE, decltype(&::CloseUserBoundKeySession), ::CloseUserBoundKeySession>;
+
 namespace veil::vtl1::userboundkey
 {
 
 // Helper function to convert USER_BOUND_KEY_SESSION_HANDLE to DeveloperTypes::sessionInfo
-USER_BOUND_KEY_SESSION_HANDLE ConvertToSessionHandle(uintptr_t sessionInfo)
+unique_sessionhandle ConvertToSessionHandle(uintptr_t sessionInfo)
 {
-    return reinterpret_cast<USER_BOUND_KEY_SESSION_HANDLE>(sessionInfo);
+    return unique_sessionhandle{reinterpret_cast<USER_BOUND_KEY_SESSION_HANDLE>(sessionInfo)};
 }
 
 // Helper function to convert USER_BOUND_KEY_SESSION_HANDLE to DeveloperTypes::sessionInfo
-uintptr_t ConvertFromSessionHandle(USER_BOUND_KEY_SESSION_HANDLE sessionHandle)
+uintptr_t ConvertFromSessionHandle(unique_sessionhandle sessionHandle)
 {
-    return reinterpret_cast<uintptr_t>(sessionHandle);
+    return reinterpret_cast<uintptr_t>(sessionHandle.release());
 }
 }
 
@@ -55,7 +57,6 @@ using unique_heap_ptr = wil::unique_any<
 
 DeveloperTypes::attestationReportAndSessionInfo userboundkey_get_attestation_report(_In_ const std::vector<std::uint8_t>& challenge)
 {
-    USER_BOUND_KEY_SESSION_HANDLE sessionHandle = nullptr; // Declare session handle for proper cleanup
 
     // DEBUG: Log that the enclave function has been called
     veil::vtl1::vtl0_functions::debug_print(L"DEBUG: userboundkey_get_attestation_report called - enclave function started");
@@ -84,6 +85,7 @@ DeveloperTypes::attestationReportAndSessionInfo userboundkey_get_attestation_rep
         throw std::overflow_error("Challenge size exceeds UINT32_MAX");
     }
 
+    unique_sessionhandle sessionHandle; // RAII wrapper for automatic cleanup
     THROW_IF_FAILED(InitializeUserBoundKeySessionInfo(
         challenge.data(),
         static_cast<UINT32>(challenge.size()),
@@ -103,7 +105,7 @@ DeveloperTypes::attestationReportAndSessionInfo userboundkey_get_attestation_rep
     // DEBUG: Log before returning
     veil::vtl1::vtl0_functions::debug_print(L"DEBUG: userboundkey_get_attestation_report returning successfully");
 
-    auto sessionInfo = veil::vtl1::userboundkey::ConvertFromSessionHandle(sessionHandle);
+    auto sessionInfo = veil::vtl1::userboundkey::ConvertFromSessionHandle(std::move(sessionHandle));
     return DeveloperTypes::attestationReportAndSessionInfo {std::move(report), sessionInfo};
 }
 }
@@ -297,19 +299,14 @@ wil::secure_vector<uint8_t> enclave_create_user_bound_key(
 
         veil::vtl1::vtl0_functions::debug_print((L"DEBUG: enclave_create_user_bound_key - credentialVector size: " + std::to_wstring(credentialVector.size())).c_str());
 
-        const void* keyNamePtr = formattedKeyName.c_str();
-        UINT32 keyNameSizeBytes = static_cast<UINT32>(formattedKeyName.length() * sizeof(wchar_t)); // Exclude null terminator
-
         // DEBUG: Print formattedKeyName and keyNameSizeBytes
         veil::vtl1::vtl0_functions::debug_print((L"DEBUG: enclave_create_user_bound_key - formattedKeyName: " + formattedKeyName).c_str());
-        veil::vtl1::vtl0_functions::debug_print((L"DEBUG: enclave_create_user_bound_key - keyNameSizeBytes (without null terminator): " + std::to_wstring(keyNameSizeBytes)).c_str());
 
         // Call to veinterop to create the encrypted KCM request for RetrieveAuthorizationContext
         // Use the function that accepts session handle and handles nonce manipulation internally
-        THROW_IF_FAILED(CreateEncryptedRequestForRetrieveAuthorizationContext(
-            sessionHandle,  // Pass session handle - nonce manipulation is handled internally
-            keyNamePtr,
-            keyNameSizeBytes,
+        THROW_IF_FAILED(CreateUserBoundKeyRequestForRetrieveAuthorizationContext(
+            sessionHandle.get(),  // Pass session handle - nonce manipulation is handled internally
+            formattedKeyName.c_str(),
             &localNonce,
             &encryptedKcmRequestRac,
             &encryptedKcmRequestRacSize)); // OS CALL
@@ -338,7 +335,7 @@ wil::secure_vector<uint8_t> enclave_create_user_bound_key(
         // AUTH CONTEXT
         unique_auth_context_handle authContext;
         THROW_IF_FAILED(GetUserBoundKeyAuthContext(
-            sessionHandle,
+            sessionHandle.get(),
             authContextBlob.data(),
             static_cast<UINT32>(authContextBlob.size()),
             localNonce,
@@ -386,11 +383,6 @@ wil::secure_vector<uint8_t> enclave_create_user_bound_key(
         // Free the dynamically allocated memory
         HeapFree(GetProcessHeap(), 0, pBoundKey);
 
-        // Memory is automatically freed by unique_heap_ptr destructor;
-
-        // Clean up session info before sealing
-        CloseUserBoundKeySession(sessionHandle);
-
         // SEAL
         auto sealedKeyMaterial = veil::vtl1::crypto::seal_data(boundKeyBytes, sealingPolicy, ENCLAVE_RUNTIME_POLICY_ALLOW_FULL_DEBUG);
         veil::vtl1::vtl0_functions::debug_print(L"DEBUG: enclave_create_user_bound_key - Function completed successfully");
@@ -398,9 +390,6 @@ wil::secure_vector<uint8_t> enclave_create_user_bound_key(
     }
     catch (const std::exception& e)
     {
-        // Clean up session info on exception
-        //CloseUserBoundKeySession(sessionHandle);
-
         // Convert exception message to wide string for debug printing
         std::string error_msg = e.what();
         std::wstring werror_msg(error_msg.begin(), error_msg.end());
@@ -409,9 +398,6 @@ wil::secure_vector<uint8_t> enclave_create_user_bound_key(
     }
     catch (...)
     {
-        // Clean up session info on exception
-        //CloseUserBoundKeySession(sessionHandle);
-
         veil::vtl1::vtl0_functions::debug_print(L"ERROR: enclave_create_user_bound_key - Unknown exception caught");
         throw; // Re-throw the exception
     }
@@ -472,18 +458,13 @@ std::vector<uint8_t> enclave_load_user_bound_key(
         void* encryptedKcmRequestDss = nullptr;
         UINT32 encryptedKcmRequestDssSize = 0;
 
-        const void* keyNamePtr = formattedKeyName.c_str();
-        UINT32 keyNameSizeBytes = static_cast<UINT32>(formattedKeyName.length() * sizeof(wchar_t)); // Exclude null terminator
-
         // DEBUG: Print formattedKeyName and keyNameSizeBytes
         veil::vtl1::vtl0_functions::debug_print((L"DEBUG: enclave_load_user_bound_key - formattedKeyName: " + formattedKeyName).c_str());
-        veil::vtl1::vtl0_functions::debug_print((L"DEBUG: enclave_load_user_bound_key - keyNameSizeBytes (without null terminator): " + std::to_wstring(keyNameSizeBytes)).c_str());
 
         // Use the function that accepts session handle and handles nonce manipulation internally
-        THROW_IF_FAILED(CreateEncryptedRequestForRetrieveAuthorizationContext(
-            sessionHandle,  // Pass session handle - nonce manipulation is handled internally
-            keyNamePtr,
-            keyNameSizeBytes,
+        THROW_IF_FAILED(CreateUserBoundKeyRequestForRetrieveAuthorizationContext(
+            sessionHandle.get(),  // Pass session handle - nonce manipulation is handled internally
+            formattedKeyName.c_str(),
             &localNonce,
             &encryptedKcmRequestRac,
             &encryptedKcmRequestRacSize)); // OS CALL
@@ -514,7 +495,7 @@ std::vector<uint8_t> enclave_load_user_bound_key(
         veil::vtl1::vtl0_functions::debug_print(L"DEBUG: enclave_load_user_bound_key - About to call GetUserBoundKeyAuthContext");
         unique_auth_context_handle authContext;
         THROW_IF_FAILED(GetUserBoundKeyAuthContext(
-            sessionHandle,
+            sessionHandle.get(),
             authContextBlob.data(),
             static_cast<UINT32>(authContextBlob.size()),
             localNonce,
@@ -535,10 +516,9 @@ std::vector<uint8_t> enclave_load_user_bound_key(
         veil::vtl1::vtl0_functions::debug_print(L"DEBUG: enclave_load_user_bound_key - Auth context validation completed");
 
         // Use the function that accepts session handle and handles nonce manipulation internally
-        THROW_IF_FAILED(CreateEncryptedRequestForDeriveSharedSecret(
-            sessionHandle,  // Pass session handle - nonce manipulation is handled internally
-            keyNamePtr,
-            keyNameSizeBytes,
+        THROW_IF_FAILED(CreateUserBoundKeyRequestForDeriveSharedSecret(
+            sessionHandle.get(),  // Pass session handle - nonce manipulation is handled internally
+            formattedKeyName.c_str(),
             ephemeralPublicKeyBytes.data(),
             static_cast<UINT32>(ephemeralPublicKeyBytes.size()),
             &localNonce,
@@ -574,7 +554,7 @@ std::vector<uint8_t> enclave_load_user_bound_key(
 
         // Use the existing session handle for the API call
         THROW_IF_FAILED(UnprotectUserBoundKey(
-            sessionHandle,
+            sessionHandle.get(),
             authContext.get(),
             secret.data(),
             static_cast<UINT32>(secret.size()),
@@ -588,17 +568,11 @@ std::vector<uint8_t> enclave_load_user_bound_key(
         std::vector<uint8_t> userkeyBytes(static_cast<uint8_t*>(pUserkeyBytes), static_cast<uint8_t*>(pUserkeyBytes) + cbUserkeyBytes);
         HeapFree(GetProcessHeap(), 0, pUserkeyBytes);
 
-        // Clean up session handle before returning
-        CloseUserBoundKeySession(sessionHandle);
-
         veil::vtl1::vtl0_functions::debug_print(L"DEBUG: enclave_load_user_bound_key - Function completed successfully");
         return userkeyBytes;
     }
     catch (const std::exception& e)
     {
-        // Clean up session info on exception
-        // CloseUserBoundKeySession(sessionHandle);
-
         // Convert exception message to wide string for debug printing
         std::string error_msg = e.what();
         std::wstring werror_msg(error_msg.begin(), error_msg.end());
@@ -607,9 +581,6 @@ std::vector<uint8_t> enclave_load_user_bound_key(
     }
     catch (...)
     {
-        // Clean up session key on exception
-        // CloseUserBoundKeySession(sessionHandle);
-
         veil::vtl1::vtl0_functions::debug_print(L"ERROR: enclave_load_user_bound_key - Unknown exception caught");
         throw; // Re-throw the exception
     }
