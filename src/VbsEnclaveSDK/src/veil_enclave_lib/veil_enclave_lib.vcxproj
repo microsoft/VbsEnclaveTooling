@@ -113,8 +113,10 @@
     <ClInclude Include="crypto.vtl1.h" />
     <ClInclude Include="DeveloperTypes.h" />
     <ClInclude Include="future.vtl1.h" />
+    <ClInclude Include="Vtl1MutualAuth.h" />
     <ClInclude Include="object_table.vtl1.h" />
     <ClInclude Include="logger.vtl1.h" />
+    <ClInclude Include="EnclaveMutualAuth.h" />
     <ClInclude Include="userboundkey.vtl1.h" />
     <ClInclude Include="vengcdll.h" />
     <ClInclude Include="vtl0_functions.vtl1.h" />

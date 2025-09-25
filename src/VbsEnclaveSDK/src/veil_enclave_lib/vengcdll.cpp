@@ -5,6 +5,8 @@
 // #include <veinterop_kcm.h>
 #include "vengcdll.h"  // Use quotes for local header
 #include "vtl0_functions.vtl1.h"  // Add this include for debug_print
+#include "Vtl1MutualAuth.h"  // Add this include for debug_print
+#include "EnclaveMutualAuth.h"  // Add this include for debug_print
 
 // KCM Trustlet Identity constant
 #ifndef TRUSTLETIDENTITY_KCM
@@ -60,7 +62,7 @@ void VengcSecureFree(void* ptr, SIZE_T size)
         VengcFree(ptr);
     }
 }
-
+/*
 namespace Vtl1MutualAuth
 {
     // Header constants used throughout the namespace - defined once to eliminate duplication
@@ -193,6 +195,7 @@ struct AttestationData
     }
 };
 }
+*/
 
 // Internal structure to hold decrypted auth context data
 typedef struct _USER_BOUND_KEY_AUTH_CONTEXT_INTERNAL {
@@ -313,113 +316,16 @@ GenerateSessionKey(
 //
 static HRESULT
 GenerateAttestationReport(
-    _In_ const void* challenge,
-    _In_ UINT32 challengeSize,
-    _In_ PUCHAR pSessionKeyBytes,
-    _In_ UINT32 sessionKeySize,
-    _Out_ void** ppAttestationReport,
-    _Out_ UINT32* pAttestationReportSize,
-    _Out_ PS_TRUSTLET_TKSESSION_ID* pSessionId
+    _In_ const void* ,
+    _In_ UINT32 ,
+    _In_ PUCHAR ,
+    _In_ UINT32 ,
+    _Out_ void** ,
+    _Out_ UINT32* ,
+    _Out_ PS_TRUSTLET_TKSESSION_ID* 
 )
 {
-    veil::vtl1::vtl0_functions::debug_print("DEBUG: GenerateAttestationReport - Function entered");
-
-    HRESULT hr = S_OK;
-    void* pAttestationReport = NULL;
-    UINT32 attestationReportSize = 0;
-
-    // Declare all variables at the beginning to avoid goto initialization issues
-    BYTE enclaveData[ENCLAVE_REPORT_DATA_LENGTH] = {0};
-    UINT32 tempReportSize = 0;
-    BYTE attestationVector[Vtl1MutualAuth::AttestationData::c_attestationDataVectorSize];
-    Vtl1MutualAuth::AttestationData attestationData {};
-    Vtl1MutualAuth::SessionChallenge sessionChallenge {};
-
-    // Parse the NGC session challenge using SessionChallenge directly
-    veil::vtl1::vtl0_functions::debug_print("DEBUG: GenerateAttestationReport - Parsing NGC session challenge");
-    hr = Vtl1MutualAuth::SessionChallenge::FromVector((const BYTE*)challenge, challengeSize, &sessionChallenge);
-    if (FAILED(hr))
-    {
-        veil::vtl1::vtl0_functions::debug_print("DEBUG: GenerateAttestationReport - SessionChallenge::FromVector failed");
-        goto cleanup;
-    }
-    veil::vtl1::vtl0_functions::debug_print("DEBUG: GenerateAttestationReport - SessionChallenge::FromVector succeeded");
-
-    // Create AttestationData using the standard Vtl1MutualAuth structure
-    veil::vtl1::vtl0_functions::debug_print("DEBUG: GenerateAttestationReport - Creating AttestationData structure");
-
-    // Copy challenge bytes (guaranteed to be exactly 24 bytes)
-    memcpy(attestationData.challenge, sessionChallenge.challenge, sizeof(attestationData.challenge));
-
-    // Copy session key as symmetric secret (both are 32 bytes)
-    // static_assert(sizeof(attestationData.symmetricSecret) == sessionKeySize, "Session key size mismatch");
-    memcpy(attestationData.symmetricSecret, pSessionKeyBytes, sessionKeySize);
-
-    veil::vtl1::vtl0_functions::debug_print("DEBUG: GenerateAttestationReport - Converting AttestationData to vector");
-    hr = attestationData.ToVector(attestationVector);
-    if (FAILED(hr))
-    {
-        veil::vtl1::vtl0_functions::debug_print("DEBUG: GenerateAttestationReport - AttestationData::ToVector failed");
-        goto cleanup;
-    }
-    veil::vtl1::vtl0_functions::debug_print("DEBUG: GenerateAttestationReport - AttestationData::ToVector succeeded");
-
-    // Calculate copy length and prepare enclaveData buffer
-    static_assert(Vtl1MutualAuth::AttestationData::c_attestationDataVectorSize <= ENCLAVE_REPORT_DATA_LENGTH);
-    memcpy(enclaveData, attestationVector, Vtl1MutualAuth::AttestationData::c_attestationDataVectorSize);
-
-    // Debug print: Display all computed sizes so far
-    veil::vtl1::vtl0_functions::debug_print("DEBUG: GenerateAttestationReport - Computed sizes: challengeSize=%u, sessionKeySize=%u, attestationVectorSize=%u",
-                                            challengeSize, sessionKeySize, (UINT32)Vtl1MutualAuth::AttestationData::c_attestationDataVectorSize);
-
-    // Call Windows enclave attestation API to get size
-    veil::vtl1::vtl0_functions::debug_print("DEBUG: GenerateAttestationReport - Calling EnclaveGetAttestationReport (size query)");
-    hr = EnclaveGetAttestationReport(enclaveData, NULL, 0, &tempReportSize);
-    if (FAILED(hr))
-    {
-        veil::vtl1::vtl0_functions::debug_print("DEBUG: GenerateAttestationReport - EnclaveGetAttestationReport (size query) failed");
-        goto cleanup;
-    }
-    veil::vtl1::vtl0_functions::debug_print("DEBUG: GenerateAttestationReport - EnclaveGetAttestationReport (size query) succeeded");
-
-    attestationReportSize = tempReportSize;
-
-    // Allocate buffer for the actual attestation report
-    veil::vtl1::vtl0_functions::debug_print("DEBUG: GenerateAttestationReport - Allocating buffer for attestation report");
-    pAttestationReport = VengcAlloc(attestationReportSize);
-    if (pAttestationReport == NULL)
-    {
-        veil::vtl1::vtl0_functions::debug_print("DEBUG: GenerateAttestationReport - Buffer allocation failed");
-        hr = E_OUTOFMEMORY;
-        goto cleanup;
-    }
-
-    // Get the actual attestation report
-    veil::vtl1::vtl0_functions::debug_print("DEBUG: GenerateAttestationReport - Calling EnclaveGetAttestationReport (actual call)");
-    hr = EnclaveGetAttestationReport(enclaveData, pAttestationReport, attestationReportSize, &tempReportSize);
-    if (FAILED(hr))
-    {
-        veil::vtl1::vtl0_functions::debug_print("DEBUG: GenerateAttestationReport - EnclaveGetAttestationReport (actual call) failed");
-        goto cleanup;
-    }
-    veil::vtl1::vtl0_functions::debug_print("DEBUG: GenerateAttestationReport - EnclaveGetAttestationReport (actual call) succeeded");
-
-    // Success - transfer ownership to caller
-    *ppAttestationReport = pAttestationReport;
-    *pAttestationReportSize = attestationReportSize;
-    *pSessionId = sessionChallenge.sessionId;
-    pAttestationReport = NULL;
-
-    veil::vtl1::vtl0_functions::debug_print("DEBUG: GenerateAttestationReport - Function completed successfully");
-
-    cleanup:
-        // Clean up allocated resources
-    if (pAttestationReport != NULL)
-    {
-        VengcSecureFree(pAttestationReport, attestationReportSize);
-    }
-
-    return hr;
+    return S_OK;
 }
 
 //
@@ -809,124 +715,19 @@ DecryptAuthContextBlob(
     _Out_ UINT32* pDecryptedSize
 )
 {
-    HRESULT hr = S_OK;
-    BYTE* pDecryptedAuthContext = NULL;
-    UINT32 decryptedSize = 0;
+    EnclaveUtils::EnclaveMutualAuth auth;
 
-    // Declare all variables at the beginning to avoid goto initialization issues
-    BCRYPT_KEY_HANDLE hSessionKey = NULL;
-    const UINT32 VTL1_TAG_SIZE = AES_GCM_TAG_SIZE;       // AES-GCM auth tag at end
-    const ULONG64 c_responderBitFlip = 0x80000000ULL;
-    UINT64 nonce = 0;
-    const BYTE* pEncryptedData = NULL;
-    UINT32 encryptedDataSize = 0;
-    const BYTE* pAuthTag = NULL;
-    BYTE nonceBuffer[AES_GCM_NONCE_SIZE] = {0}; // Fill with 0s
-    BCRYPT_AUTHENTICATED_CIPHER_MODE_INFO authInfo;
-    ULONG bytesDecrypted = 0;
+    std::vector<BYTE> cipherText((BYTE*)authContextBlob, (BYTE*)authContextBlob + authContextBlobSize);
+    //auto cipherText = std::vector<BYTE>{};
+    std::vector<BYTE> plaintext;
+    // set key
+    RETURN_IF_FAILED(auth.DecryptResponse(cipherText, localNonce, plaintext));
 
-    // The auth context blob was encrypted using ClientAuth::EncryptResponse which uses
-    // VTL1 mutual authentication protocol with AES-GCM format.
-    // IMPORTANT: EncryptResponse (new protocol) format is: [encrypted data][16-byte auth tag]
-    // The nonce is NOT stored in the encrypted blob - it must be provided separately!
-
-    hSessionKey = (BCRYPT_KEY_HANDLE)sessionKeyPtr;
-    if (hSessionKey == NULL)
-    {
-        hr = E_INVALIDARG;
-        goto cleanup;
-    }
-
-    // For EncryptResponse format: [encrypted data][16-byte auth tag]
-    if (authContextBlobSize < VTL1_TAG_SIZE)
-    {
-        hr = NTE_BAD_DATA;
-        goto cleanup;
-    }
-
-    // For EncryptResponse, we need to reconstruct the nonce used during encryption
-    // The nonce used was: requestNonce ^ c_responderBitFlip (where requestNonce was provided to EncryptResponse)
-    nonce = localNonce ^ c_responderBitFlip;  // Apply responder bit flip as per VTL1 protocol
-
-    // Add nonce value towards the end of the buffer (last 8 bytes)
-    memcpy(&nonceBuffer[AES_GCM_NONCE_SIZE - sizeof(nonce)], &nonce, sizeof(nonce));
-
-    // DEBUG: Print localNonce
-    {
-        char nonceHexStr[AES_GCM_NONCE_SIZE * 2 + 1] = {0};
-
-        // Convert nonce to hex string
-        for (UINT32 i = 0; i < AES_GCM_NONCE_SIZE; i++)
-        {
-            sprintf_s(&nonceHexStr[i * 2], 3, "%02X", nonceBuffer[i]);
-        }
-
-        veil::vtl1::vtl0_functions::debug_print("DEBUG: DecryptAuthContextBlob - BEFORE BCryptDecrypt - Nonce (hex): %s", nonceHexStr);
-    }
-
-    // Extract components from the EncryptResponse encrypted blob
-    // Format: [encrypted data][16-byte auth tag] - NO NONCE stored in blob
-    pEncryptedData = (const BYTE*)authContextBlob;
-    encryptedDataSize = authContextBlobSize - VTL1_TAG_SIZE;
-    pAuthTag = pEncryptedData + encryptedDataSize;
-
-    // Set up AES-GCM authentication info for VTL1 format
-    BCRYPT_INIT_AUTH_MODE_INFO(authInfo);
-    authInfo.pbNonce = nonceBuffer;
-    authInfo.cbNonce = AES_GCM_NONCE_SIZE;
-    authInfo.pbTag = (PUCHAR)pAuthTag;
-    authInfo.cbTag = VTL1_TAG_SIZE;
-
-    // Allocate buffer for decrypted data
-    pDecryptedAuthContext = (BYTE*)VengcAlloc(encryptedDataSize);
-    if (pDecryptedAuthContext == NULL)
-    {
-        hr = E_OUTOFMEMORY;
-        goto cleanup;
-    }
-
-    // Perform AES-GCM decryption using VTL1 format
-    hr = HRESULT_FROM_NT(BCryptDecrypt(
-        hSessionKey,
-        (PUCHAR)pEncryptedData,
-        encryptedDataSize,
-        &authInfo,
-        NULL,  // No IV for GCM (nonce is in authInfo)
-        0,
-        pDecryptedAuthContext,
-        encryptedDataSize,
-        &bytesDecrypted,
-        0
-    ));
-
-    if (FAILED(hr))
-    {
-        goto cleanup;
-    }
-
-    decryptedSize = bytesDecrypted;
-
-    // Debug print: Display computed sizes for decryption operation
-    veil::vtl1::vtl0_functions::debug_print("DEBUG: DecryptAuthContextBlob - Computed sizes: decryptedSize=%u, encryptedDataSize=%u", decryptedSize, encryptedDataSize);
-
-    if (pDecryptedAuthContext == NULL || decryptedSize == 0)
-    {
-        hr = E_UNEXPECTED;
-        goto cleanup;
-    }
-
-    // Success - transfer ownership to caller
-    *ppDecryptedAuthContext = pDecryptedAuthContext;
-    *pDecryptedSize = decryptedSize;
-    pDecryptedAuthContext = NULL;
-
-    cleanup:
-    if (pDecryptedAuthContext != NULL)
-    {
-        VengcSecureFree(pDecryptedAuthContext, decryptedSize);
-    }
-
-    return hr;
+    // copy from plaintext to buffer
+    // alloc + memcpy(..)
+    //*ppDecryptedAuthContext = ..
+    //*pDecryptedSize = ..
+    return S_OK;
 }
 
 // Called as part of the flow when creating a new user bound key.
