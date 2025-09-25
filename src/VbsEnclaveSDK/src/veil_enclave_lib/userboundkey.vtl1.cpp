@@ -116,8 +116,7 @@ namespace veil::vtl1::implementation::userboundkey::callouts
         _In_ const uintptr_t ecdh_protocol, 
         _In_ const std::wstring& message, 
         _In_ const uintptr_t window_id, 
-        _In_ const DeveloperTypes::keyCredentialCacheConfig& cache_config,
-        _In_ const uint64_t nonce)
+        _In_ const DeveloperTypes::keyCredentialCacheConfig& cache_config)
     {
         return veil_abi::VTL0_Callbacks::userboundkey_establish_session_for_create_callback(
             reinterpret_cast<uintptr_t>(enclave),
@@ -125,8 +124,7 @@ namespace veil::vtl1::implementation::userboundkey::callouts
             ecdh_protocol,
             message,
             window_id,
-            cache_config,
-            nonce);
+            cache_config);
     }
 
     DeveloperTypes::credentialAndFormattedKeyNameAndSessionInfo userboundkey_establish_session_for_load_callback(
@@ -288,8 +286,7 @@ wil::secure_vector<uint8_t> enclave_create_user_bound_key(
             reinterpret_cast<uintptr_t>(BCRYPT_ECDH_P384_ALG_HANDLE),
             message,
             windowId,
-            devCacheConfig,
-            0 /* sessionNonce */);
+            devCacheConfig);
 
         veil::vtl1::vtl0_functions::debug_print(L"DEBUG: enclave_create_user_bound_key - Received credentialAndFormattedKeyNameAndSessionInfo");
 
@@ -428,7 +425,6 @@ std::vector<uint8_t> enclave_load_user_bound_key(
     std::vector<uint8_t>& sealedBoundKeyBytes)
 {
     veil::vtl1::vtl0_functions::debug_print(L"DEBUG: enclave_load_user_bound_key - Function entered");
-    USER_BOUND_KEY_SESSION_HANDLE sessionHandle = nullptr; // Declare session handle for proper cleanup
 
     try
     {
@@ -600,8 +596,8 @@ std::vector<uint8_t> enclave_load_user_bound_key(
     }
     catch (const std::exception& e)
     {
-        // Clean up session key on exception
-        CloseUserBoundKeySession(sessionHandle);
+        // Clean up session info on exception
+        // CloseUserBoundKeySession(sessionHandle);
 
         // Convert exception message to wide string for debug printing
         std::string error_msg = e.what();
@@ -612,7 +608,7 @@ std::vector<uint8_t> enclave_load_user_bound_key(
     catch (...)
     {
         // Clean up session key on exception
-        CloseUserBoundKeySession(sessionHandle);
+        // CloseUserBoundKeySession(sessionHandle);
 
         veil::vtl1::vtl0_functions::debug_print(L"ERROR: enclave_load_user_bound_key - Unknown exception caught");
         throw; // Re-throw the exception

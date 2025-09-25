@@ -76,8 +76,7 @@ enclave
             uintptr_t ecdh_protocol,
             wstring message,
             uintptr_t window_id,
-            keyCredentialCacheConfig cache_config,
-            uint64_t nonce
+            keyCredentialCacheConfig cache_config
         );
 
         credentialAndFormattedKeyNameAndSessionInfo userboundkey_establish_session_for_load(

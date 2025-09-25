@@ -211,8 +211,7 @@ credentialAndFormattedKeyNameAndSessionInfo veil_abi::VTL0_Stubs::export_interfa
     uintptr_t ecdh_protocol,
     const std::wstring& message,
     uintptr_t window_id,
-    const DeveloperTypes::keyCredentialCacheConfig& cache_config,
-    uint64_t nonce)
+    const DeveloperTypes::keyCredentialCacheConfig& cache_config)
 {
     std::wcout << L"Inside userboundkey_establish_session_for_create_callback"<< std::endl;
     auto algorithm = GetAlgorithm(ecdh_protocol);
@@ -220,7 +219,7 @@ credentialAndFormattedKeyNameAndSessionInfo veil_abi::VTL0_Stubs::export_interfa
     // Convert the cacheConfig parameter to KeyCredentialCacheConfiguration
     auto cacheConfiguration = ConvertCacheConfig(cache_config);
 
-    auto sessionKeyPtr = std::make_shared<uintptr_t>(0);
+    auto sessionInfo = std::make_shared<uintptr_t>(0);
     auto enclaveptr = (void*)enclave;
     
     // Create the enclave interface directly with the VBS enclave handle
@@ -246,7 +245,7 @@ credentialAndFormattedKeyNameAndSessionInfo veil_abi::VTL0_Stubs::export_interfa
         cacheConfiguration,
         (winrt::Windows::UI::WindowId)window_id,
         ChallengeResponseKind::VirtualizationBasedSecurityEnclave,
-        [sessionKeyPtr, enclaveptr] (const auto& challenge) mutable -> winrt::Windows::Storage::Streams::IBuffer
+        [sessionInfo, enclaveptr] (const auto& challenge) mutable -> winrt::Windows::Storage::Streams::IBuffer
         {            
             std::wcout << L"DEBUG: Challenge callback invoked! Challenge size: " << challenge.Length() << std::endl;
             
@@ -266,15 +265,15 @@ credentialAndFormattedKeyNameAndSessionInfo veil_abi::VTL0_Stubs::export_interfa
                 std::wcout << L"DEBUG: Challenge vector size: " << challengeVector.size() << std::endl;
 
                 std::wcout << L"DEBUG: About to call userboundkey_get_attestation_report..." << std::endl;
-                auto attestationReportAndSessionKeyPtr = enclaveInterface.userboundkey_get_attestation_report(challengeVector);
+                auto attestationReportAndSessionInfo = enclaveInterface.userboundkey_get_attestation_report(challengeVector);
                 std::wcout << L"DEBUG: userboundkey_get_attestation_report returned successfully!" << std::endl;
 
-                *sessionKeyPtr = attestationReportAndSessionKeyPtr.sessionKeyPtr;
-                std::wcout << L"DEBUG: Session key stored: " << *sessionKeyPtr << std::endl;
+                *sessionInfo = attestationReportAndSessionInfo.sessionInfo;
+                std::wcout << L"DEBUG: Session key stored: " << *sessionInfo << std::endl;
             
                 // Convert std::vector<uint8_t> back to IBuffer for return
                 std::wcout << L"DEBUG: Converting attestation report back to IBuffer..." << std::endl;
-                auto result = winrt::Windows::Security::Cryptography::CryptographicBuffer::CreateFromByteArray(attestationReportAndSessionKeyPtr.attestationReport);
+                auto result = winrt::Windows::Security::Cryptography::CryptographicBuffer::CreateFromByteArray(attestationReportAndSessionInfo.attestationReport);
                 std::wcout << L"DEBUG: Challenge callback completed successfully!" << std::endl;
                 return result;
             }
@@ -304,7 +303,7 @@ credentialAndFormattedKeyNameAndSessionInfo veil_abi::VTL0_Stubs::export_interfa
     credentialAndFormattedKeyNameAndSessionInfo result;
     result.credential = ConvertCredentialToVector(credential);
     result.formattedKeyName = formattedKeyName; // Store the formatted key name
-    result.session = {*sessionKeyPtr, nonce}; // Initialize session info
+    result.sessionInfo = *sessionInfo; // Store session info
 
     return result;
 }
@@ -342,7 +341,7 @@ credentialAndFormattedKeyNameAndSessionInfo veil_abi::VTL0_Stubs::export_interfa
     uintptr_t window_id,
     uint64_t nonce)
 {
-    auto sessionKeyPtr = std::make_shared<uintptr_t>(0);
+    auto sessionInfo = std::make_shared<uintptr_t>(0);
 
     auto enclaveptr = (void*)enclave;
     auto enclaveInterface = veil_abi::VTL0_Stubs::export_interface(enclaveptr);
@@ -357,7 +356,7 @@ credentialAndFormattedKeyNameAndSessionInfo veil_abi::VTL0_Stubs::export_interfa
     auto credentialResult = KeyCredentialManager::OpenAsync(
         key_name.c_str(),
         ChallengeResponseKind::VirtualizationBasedSecurityEnclave,
-        [sessionKeyPtr, enclaveptr] (const auto& challenge) mutable -> winrt::Windows::Storage::Streams::IBuffer
+        [sessionInfo, enclaveptr] (const auto& challenge) mutable -> winrt::Windows::Storage::Streams::IBuffer
     {
         std::wcout << L"DEBUG: Load callback challenge invoked! Challenge size: " << challenge.Length() << std::endl;
         
@@ -375,13 +374,13 @@ credentialAndFormattedKeyNameAndSessionInfo veil_abi::VTL0_Stubs::export_interfa
             std::wcout << L"DEBUG: Challenge vector size: " << challengeVector.size() << std::endl;
 
             std::wcout << L"DEBUG: About to call userboundkey_get_attestation_report (load callback)..." << std::endl;
-            auto attestationReportAndSessionKeyPtr = enclaveInterface.userboundkey_get_attestation_report(challengeVector);
+            auto attestationReportAndSessionInfo = enclaveInterface.userboundkey_get_attestation_report(challengeVector);
             std::wcout << L"DEBUG: userboundkey_get_attestation_report returned successfully (load callback)!" << std::endl;
-            
-            *sessionKeyPtr = attestationReportAndSessionKeyPtr.sessionKeyPtr;
-            
+
+            *sessionInfo = attestationReportAndSessionInfo.sessionInfo;
+
             // Convert std::vector<uint8_t> back to IBuffer for return
-            return winrt::Windows::Security::Cryptography::CryptographicBuffer::CreateFromByteArray(attestationReportAndSessionKeyPtr.attestationReport);
+            return winrt::Windows::Security::Cryptography::CryptographicBuffer::CreateFromByteArray(attestationReportAndSessionInfo.attestationReport);
         }
         catch (const std::exception& e) {
             std::wcout << L"DEBUG: Exception in load callback: " << e.what() << std::endl;
@@ -404,11 +403,11 @@ credentialAndFormattedKeyNameAndSessionInfo veil_abi::VTL0_Stubs::export_interfa
     const auto& credential = credentialResult.Credential();
     std::wstring formattedKeyName = FormatUserHelloKeyName(key_name.c_str());
 
-    // Return the credential as a vector along with sessionKeyPtr for VTL1 to use later
+    // Return the credential as a vector along with sessionInfo for VTL1 to use later
     credentialAndFormattedKeyNameAndSessionInfo result;
     result.credential = ConvertCredentialToVector(credential, 2); // 2 = expected usage count: one for RetrieveAuthorizationContext and one for DeriveSharedSecret in load flow
     result.formattedKeyName = formattedKeyName;
-    result.session = { *sessionKeyPtr, nonce }; // Initialize session info
+    result.sessionInfo = *sessionInfo; // Store session info    
     return result;
 }
 

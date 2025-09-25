@@ -513,6 +513,112 @@ EncryptAttestationReport(
     return hr;
 }
 
+//
+// Session management APIs
+//
+
+// Creates a user bound key session handle from session key pointer and nonce
+HRESULT CreateUserBoundKeySessionHandle(
+    _In_ UINT_PTR sessionKeyPtr,
+    _In_ ULONG64 sessionNonce,
+    _Out_ USER_BOUND_KEY_SESSION_HANDLE* sessionHandle)
+{
+    if (sessionHandle == nullptr)
+    {
+        return E_INVALIDARG;
+    }
+
+    if (sessionKeyPtr == 0)
+    {
+        return E_INVALIDARG;
+    }
+
+    // Allocate internal session structure
+    PUSER_BOUND_KEY_SESSION_INTERNAL pInternalSession = (PUSER_BOUND_KEY_SESSION_INTERNAL)VengcAlloc(sizeof(USER_BOUND_KEY_SESSION_INTERNAL));
+    if (pInternalSession == nullptr)
+    {
+        return E_OUTOFMEMORY;
+    }
+
+    // Initialize the session data
+    pInternalSession->sessionKeyPtr = sessionKeyPtr;
+    pInternalSession->sessionNonce = sessionNonce;
+
+    // Return the internal context as an opaque handle
+    *sessionHandle = (USER_BOUND_KEY_SESSION_HANDLE)pInternalSession;
+
+    return S_OK;
+}
+
+// Gets session information from a session handle
+HRESULT GetUserBoundKeySessionInfo(
+    _In_ USER_BOUND_KEY_SESSION_HANDLE sessionHandle,
+    _Out_ UINT_PTR* sessionKeyPtr,
+    _Out_ ULONG64* sessionNonce)
+{
+    if (sessionHandle == nullptr || sessionKeyPtr == nullptr || sessionNonce == nullptr)
+    {
+        return E_INVALIDARG;
+    }
+
+    // Cast the handle to internal context
+    PUSER_BOUND_KEY_SESSION_INTERNAL pInternalSession = (PUSER_BOUND_KEY_SESSION_INTERNAL)sessionHandle;
+
+    *sessionKeyPtr = pInternalSession->sessionKeyPtr;
+    *sessionNonce = pInternalSession->sessionNonce;
+
+    return S_OK;
+}
+
+// Updates the session nonce in a session handle
+HRESULT UpdateUserBoundKeySessionNonce(
+    _In_ USER_BOUND_KEY_SESSION_HANDLE sessionHandle)
+{
+    if (sessionHandle == nullptr)
+    {
+        return E_INVALIDARG;
+    }
+
+    // Cast the handle to internal context
+    PUSER_BOUND_KEY_SESSION_INTERNAL pInternalSession = (PUSER_BOUND_KEY_SESSION_INTERNAL)sessionHandle;
+    ULONG64 curNonce = pInternalSession->sessionNonce;
+    pInternalSession->sessionNonce = InterlockedIncrement64(reinterpret_cast<LONG64*>(&curNonce));
+
+    return S_OK;
+}
+
+// Closes a user bound key session and destroys the associated BCRYPT_KEY_HANDLE
+HRESULT CloseUserBoundKeySession(
+    _In_ USER_BOUND_KEY_SESSION_HANDLE sessionHandle)
+{
+    if (sessionHandle == nullptr)
+    {
+        return E_INVALIDARG;
+    }
+
+    // Cast the handle to internal context
+    PUSER_BOUND_KEY_SESSION_INTERNAL pInternalSession = (PUSER_BOUND_KEY_SESSION_INTERNAL)sessionHandle;
+
+    if (pInternalSession->sessionKeyPtr != 0)
+    {
+        BCRYPT_KEY_HANDLE hSessionKey = reinterpret_cast<BCRYPT_KEY_HANDLE>(pInternalSession->sessionKeyPtr);
+
+        // Destroy the BCrypt key handle
+        NTSTATUS status = BCryptDestroyKey(hSessionKey);
+        if (FAILED(HRESULT_FROM_NT(status)))
+        {
+            // Free the handle memory even if BCryptDestroyKey fails
+            VengcFree(sessionHandle);
+            return HRESULT_FROM_NT(status);
+        }
+    }
+
+    // Free the handle memory itself
+    VengcFree(sessionHandle);
+
+    return S_OK;
+}
+
 // Attestation report generation API for user bound keys.
 // Generates a session key, passes session key and provided challenge to EnclaveGetAttestationReport,
 // encrypts the attestation report with EnclaveEncryptDataForTrustlet, returns the encrypted report. 
@@ -634,112 +740,6 @@ HRESULT InitializeUserBoundKeySessionInfo(
     }
 
     return hr;
-}
-
-//
-// Session management APIs
-//
-
-// Creates a user bound key session handle from session key pointer and nonce
-HRESULT CreateUserBoundKeySessionHandle(
-    _In_ UINT_PTR sessionKeyPtr,
-    _In_ ULONG64 sessionNonce,
-    _Out_ USER_BOUND_KEY_SESSION_HANDLE* sessionHandle)
-{
-    if (sessionHandle == nullptr)
-    {
-        return E_INVALIDARG;
-    }
-
-    if (sessionKeyPtr == 0)
-    {
-        return E_INVALIDARG;
-    }
-
-    // Allocate internal session structure
-    PUSER_BOUND_KEY_SESSION_INTERNAL pInternalSession = (PUSER_BOUND_KEY_SESSION_INTERNAL)VengcAlloc(sizeof(USER_BOUND_KEY_SESSION_INTERNAL));
-    if (pInternalSession == nullptr)
-    {
-        return E_OUTOFMEMORY;
-    }
-
-    // Initialize the session data
-    pInternalSession->sessionKeyPtr = sessionKeyPtr;
-    pInternalSession->sessionNonce = sessionNonce;
-
-    // Return the internal context as an opaque handle
-    *sessionHandle = (USER_BOUND_KEY_SESSION_HANDLE)pInternalSession;
-
-    return S_OK;
-}
-
-// Gets session information from a session handle
-HRESULT GetUserBoundKeySessionInfo(
-    _In_ USER_BOUND_KEY_SESSION_HANDLE sessionHandle,
-    _Out_ UINT_PTR* sessionKeyPtr,
-    _Out_ ULONG64* sessionNonce)
-{
-    if (sessionHandle == nullptr || sessionKeyPtr == nullptr || sessionNonce == nullptr)
-    {
-        return E_INVALIDARG;
-    }
-
-    // Cast the handle to internal context
-    PUSER_BOUND_KEY_SESSION_INTERNAL pInternalSession = (PUSER_BOUND_KEY_SESSION_INTERNAL)sessionHandle;
-
-    *sessionKeyPtr = pInternalSession->sessionKeyPtr;
-    *sessionNonce = pInternalSession->sessionNonce;
-
-    return S_OK;
-}
-
-// Updates the session nonce in a session handle
-HRESULT UpdateUserBoundKeySessionNonce(
-    _In_ USER_BOUND_KEY_SESSION_HANDLE sessionHandle)
-{
-    if (sessionHandle == nullptr)
-    {
-        return E_INVALIDARG;
-    }
-
-    // Cast the handle to internal context
-    PUSER_BOUND_KEY_SESSION_INTERNAL pInternalSession = (PUSER_BOUND_KEY_SESSION_INTERNAL)sessionHandle;
-    ULONG64 curNonce = pInternalSession->sessionNonce;
-    pInternalSession->sessionNonce = InterlockedIncrement64(reinterpret_cast<LONG64*>(&curNonce));
-
-    return S_OK;
-}
-
-// Closes a user bound key session and destroys the associated BCRYPT_KEY_HANDLE
-HRESULT CloseUserBoundKeySession(
-    _In_ USER_BOUND_KEY_SESSION_HANDLE sessionHandle)
-{
-    if (sessionHandle == nullptr)
-    {
-        return E_INVALIDARG;
-    }
-
-    // Cast the handle to internal context
-    PUSER_BOUND_KEY_SESSION_INTERNAL pInternalSession = (PUSER_BOUND_KEY_SESSION_INTERNAL)sessionHandle;
-
-    if (pInternalSession->sessionKeyPtr != 0)
-    {
-        BCRYPT_KEY_HANDLE hSessionKey = reinterpret_cast<BCRYPT_KEY_HANDLE>(pInternalSession->sessionKeyPtr);
-
-        // Destroy the BCrypt key handle
-        NTSTATUS status = BCryptDestroyKey(hSessionKey);
-        if (FAILED(HRESULT_FROM_NT(status)))
-        {
-            // Free the handle memory even if BCryptDestroyKey fails
-            VengcFree(sessionHandle);
-            return HRESULT_FROM_NT(status);
-        }
-    }
-
-    // Free the handle memory itself
-    VengcFree(sessionHandle);
-
-    return S_OK;
 }
 
 HRESULT CloseUserBoundKeyAuthContextHandle(
