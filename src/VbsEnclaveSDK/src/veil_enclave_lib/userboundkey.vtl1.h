@@ -11,7 +11,6 @@
 // Forward declarations for the auto-generated types
 namespace DeveloperTypes
 {
-    struct authContextBlobAndFormattedKeyNameAndSessionInfo;
     struct keyCredentialCacheConfig;
     struct credentialAndFormattedKeyNameAndSessionInfo;
     struct sessionInfo; // This is auto-generated, don't redefine it

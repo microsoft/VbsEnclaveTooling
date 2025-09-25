@@ -152,7 +152,60 @@ KeyCredentialCacheConfiguration ConvertCacheConfig(const DeveloperTypes::keyCred
 
 }
 
-authContextBlobAndFormattedKeyNameAndSessionInfo veil_abi::VTL0_Stubs::export_interface::userboundkey_establish_session_for_create_callback(
+// Helper function to validate that a COM object is still valid
+bool IsValidCOMObject(void* abi)
+{
+    if (abi == nullptr)
+        return false;
+
+    try
+    {
+        // Try to QueryInterface for IUnknown - this will fail if the object is invalid
+        IUnknown* unknown = nullptr;
+        HRESULT hr = static_cast<IUnknown*>(abi)->QueryInterface(IID_IUnknown, reinterpret_cast<void**>(&unknown));
+        if (SUCCEEDED(hr) && unknown != nullptr)
+        {
+            unknown->Release(); // Release the extra reference from QueryInterface
+            return true;
+        }
+    }
+    catch (...)
+    {
+        // Any exception means the object is invalid
+        return false;
+    }
+
+    return false;
+}
+
+// Helper function to convert a KeyCredential to vector<uint8_t> for transmission to VTL1
+std::vector<uint8_t> ConvertCredentialToVector(const KeyCredential& credential, int expectedUsageCount = 1)
+{
+    // Get the ABI pointer and AddRef to keep the COM object alive
+    auto abi = winrt::get_abi(credential);
+
+    // Validate the COM object before proceeding
+    if (!IsValidCOMObject(abi))
+    {
+        std::wcout << L"ERROR: ConvertCredentialToVector - Invalid COM object" << std::endl;
+        THROW_HR(E_INVALIDARG);
+    }
+
+    // Add references based on expected Usage count
+    for (int i = 0; i < expectedUsageCount; ++i)
+    {
+        static_cast<IUnknown*>(abi)->AddRef();
+    }
+
+    std::wcout << L"DEBUG: ConvertCredentialToVector - AddRef called " << expectedUsageCount << L" times on credential ABI: 0x" << std::hex << reinterpret_cast<uintptr_t>(abi) << std::dec << std::endl;
+
+    uintptr_t credentialPtr = reinterpret_cast<uintptr_t>(abi);
+    std::vector<uint8_t> credentialVector(sizeof(uintptr_t));
+    memcpy(credentialVector.data(), &credentialPtr, sizeof(uintptr_t));
+    return credentialVector;
+}
+
+credentialAndFormattedKeyNameAndSessionInfo veil_abi::VTL0_Stubs::export_interface::userboundkey_establish_session_for_create_callback(
     uintptr_t enclave,
     const std::wstring& key_name,
     uintptr_t ecdh_protocol,
@@ -248,64 +301,12 @@ authContextBlobAndFormattedKeyNameAndSessionInfo veil_abi::VTL0_Stubs::export_in
     const auto& credential = credentialResult.Credential();
     std::wstring formattedKeyName = FormatUserHelloKeyName(key_name.c_str());
 
-    authContextBlobAndFormattedKeyNameAndSessionInfo result;
-
-    winrt::Windows::Storage::Streams::IBuffer encryptedRequest;
-    auto authContextBuffer = credential.RetrieveAuthorizationContext(encryptedRequest);
-    result.authContextBlob = ConvertBufferToVector(authContextBuffer);
+    credentialAndFormattedKeyNameAndSessionInfo result;
+    result.credential = ConvertCredentialToVector(credential);
     result.formattedKeyName = formattedKeyName; // Store the formatted key name
     result.session = {*sessionKeyPtr, nonce}; // Initialize session info
 
     return result;
-}
-
-// Helper function to validate that a COM object is still valid
-bool IsValidCOMObject(void* abi)
-{
-    if (abi == nullptr)
-        return false;
-    
-    try
-    {
-        // Try to QueryInterface for IUnknown - this will fail if the object is invalid
-        IUnknown* unknown = nullptr;
-        HRESULT hr = static_cast<IUnknown*>(abi)->QueryInterface(IID_IUnknown, reinterpret_cast<void**>(&unknown));
-        if (SUCCEEDED(hr) && unknown != nullptr)
-        {
-            unknown->Release(); // Release the extra reference from QueryInterface
-            return true;
-        }
-    }
-    catch (...)
-    {
-        // Any exception means the object is invalid
-        return false;
-    }
-    
-    return false;
-}
-
-// Helper function to convert a KeyCredential to vector<uint8_t> for transmission to VTL1
-std::vector<uint8_t> ConvertCredentialToVector(const KeyCredential& credential)
-{
-    // Get the ABI pointer and AddRef to keep the COM object alive
-    auto abi = winrt::get_abi(credential);
-    
-    // Validate the COM object before proceeding
-    if (!IsValidCOMObject(abi))
-    {
-        std::wcout << L"ERROR: ConvertCredentialToVector - Invalid COM object" << std::endl;
-        THROW_HR(E_INVALIDARG);
-    }
-    
-    static_cast<IUnknown*>(abi)->AddRef(); // Increment reference count to keep object alive
-    
-    std::wcout << L"DEBUG: ConvertCredentialToVector - AddRef called on credential ABI: 0x" << std::hex << reinterpret_cast<uintptr_t>(abi) << std::dec << std::endl;
-    
-    uintptr_t credentialPtr = reinterpret_cast<uintptr_t>(abi);
-    std::vector<uint8_t> credentialVector(sizeof(uintptr_t));
-    memcpy(credentialVector.data(), &credentialPtr, sizeof(uintptr_t));
-    return credentialVector;
 }
 
 // Helper function to convert vector<uint8_t> back to KeyCredential
@@ -405,7 +406,7 @@ credentialAndFormattedKeyNameAndSessionInfo veil_abi::VTL0_Stubs::export_interfa
 
     // Return the credential as a vector along with sessionKeyPtr for VTL1 to use later
     credentialAndFormattedKeyNameAndSessionInfo result;
-    result.credential = ConvertCredentialToVector(credential);
+    result.credential = ConvertCredentialToVector(credential, 2); // 2 = expected usage count: one for RetrieveAuthorizationContext and one for DeriveSharedSecret in load flow
     result.formattedKeyName = formattedKeyName;
     result.session = { *sessionKeyPtr, nonce }; // Initialize session info
     return result;

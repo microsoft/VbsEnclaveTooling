@@ -22,13 +22,6 @@ enclave
         uintptr_t sessionKeyPtr;
     };
 
-    struct authContextBlobAndFormattedKeyNameAndSessionInfo
-    {
-        vector<uint8_t> authContextBlob;
-        wstring formattedKeyName;
-        sessionInfo session;
-    };
-
     struct credentialAndFormattedKeyNameAndSessionInfo
     {
         vector<uint8_t> credential;
@@ -83,7 +76,7 @@ enclave
         );
 
         // hello user bound key
-        authContextBlobAndFormattedKeyNameAndSessionInfo userboundkey_establish_session_for_create(
+        credentialAndFormattedKeyNameAndSessionInfo userboundkey_establish_session_for_create(
             uintptr_t enclave,
             wstring key_name,
             uintptr_t ecdh_protocol,

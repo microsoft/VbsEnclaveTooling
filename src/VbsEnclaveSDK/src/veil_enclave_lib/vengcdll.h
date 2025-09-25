@@ -96,6 +96,7 @@ HRESULT GetUserBoundKeyAuthContext(
     _In_ USER_BOUND_KEY_SESSION_HANDLE sessionHandle,
     _In_reads_bytes_(authContextBlobSize) const void* authContextBlob, // auth context generated as part of RequestCreateAsync
     _In_ UINT32 authContextBlobSize,
+    _In_ UINT64 localNonce,
     _Out_ USER_BOUND_KEY_AUTH_CONTEXT_HANDLE* authContextHandle
 );
 
@@ -136,6 +137,7 @@ HRESULT CreateEncryptedRequestForDeriveSharedSecret(
     _In_ UINT32 keyNameSize,
     _In_reads_bytes_(publicKeyBytesSize) const void* publicKeyBytes,
     _In_ UINT32 publicKeyBytesSize,
+    _Out_ UINT64* localNonce,
     _Outptr_result_buffer_(*encryptedRequestSize) void** encryptedRequest,
     _Out_ UINT32* encryptedRequestSize
 );
@@ -148,6 +150,7 @@ HRESULT UnprotectUserBoundKey(
     _In_ UINT32 sessionEncryptedDerivedSecretSize,
     _In_reads_bytes_(encryptedUserBoundKeySize) const void* encryptedUserBoundKey,
     _In_ UINT32 encryptedUserBoundKeySize,
+    _In_ UINT64 localNonce,
     _Outptr_result_buffer_(*userKeySize) void** userKey,
     _Inout_ UINT32* userKeySize
 );
@@ -157,6 +160,7 @@ HRESULT CreateEncryptedRequestForRetrieveAuthorizationContext(
     _Inout_ USER_BOUND_KEY_SESSION_HANDLE sessionHandle,
     _In_reads_bytes_(keyNameSize) const void* keyName,
     _In_ UINT32 keyNameSize,
+    _Out_ UINT64* localNonce,
     _Outptr_result_buffer_(*encryptedRequestSize) void** encryptedRequest,
     _Out_ UINT32* encryptedRequestSize
 );

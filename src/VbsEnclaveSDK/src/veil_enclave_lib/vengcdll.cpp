@@ -693,8 +693,7 @@ HRESULT GetUserBoundKeySessionInfo(
 
 // Updates the session nonce in a session handle
 HRESULT UpdateUserBoundKeySessionNonce(
-    _In_ USER_BOUND_KEY_SESSION_HANDLE sessionHandle,
-    _In_ ULONG64 curNonce)
+    _In_ USER_BOUND_KEY_SESSION_HANDLE sessionHandle)
 {
     if (sessionHandle == nullptr)
     {
@@ -703,7 +702,7 @@ HRESULT UpdateUserBoundKeySessionNonce(
 
     // Cast the handle to internal context
     PUSER_BOUND_KEY_SESSION_INTERNAL pInternalSession = (PUSER_BOUND_KEY_SESSION_INTERNAL)sessionHandle;
-
+    ULONG64 curNonce = pInternalSession->sessionNonce;
     pInternalSession->sessionNonce = InterlockedIncrement64(reinterpret_cast<LONG64*>(&curNonce));
 
     return S_OK;
@@ -801,7 +800,7 @@ ValidateAuthContextInputParameters(
 static HRESULT
 DecryptAuthContextBlob(
     _In_ UINT_PTR sessionKeyPtr,
-    _In_ ULONG64 sessionNonce,
+    _In_ ULONG64 localNonce,
     _In_ const void* authContextBlob,
     _In_ UINT32 authContextBlobSize,
     _Out_ BYTE** ppDecryptedAuthContext,
@@ -845,12 +844,23 @@ DecryptAuthContextBlob(
 
     // For EncryptResponse, we need to reconstruct the nonce used during encryption
     // The nonce used was: requestNonce ^ c_responderBitFlip (where requestNonce was provided to EncryptResponse)
-    // TEMPORARY: Use the same constant nonce as NgcIsoSrv.cpp for testing
-    // TODO: Implement proper nonce sharing between encryption and decryption
-    nonce = sessionNonce ^ c_responderBitFlip;  // Apply responder bit flip as per VTL1 protocol
+    nonce = localNonce ^ c_responderBitFlip;  // Apply responder bit flip as per VTL1 protocol
 
     // Add nonce value towards the end of the buffer (last 8 bytes)
     memcpy(&nonceBuffer[AES_GCM_NONCE_SIZE - sizeof(nonce)], &nonce, sizeof(nonce));
+
+    // DEBUG: Print localNonce
+    {
+        char nonceHexStr[AES_GCM_NONCE_SIZE * 2 + 1] = {0};
+
+        // Convert nonce to hex string
+        for (UINT32 i = 0; i < AES_GCM_NONCE_SIZE; i++)
+        {
+            sprintf_s(&nonceHexStr[i * 2], 3, "%02X", nonceBuffer[i]);
+        }
+
+        veil::vtl1::vtl0_functions::debug_print("DEBUG: DecryptAuthContextBlob - BEFORE BCryptDecrypt - Nonce (hex): %s", nonceHexStr);
+    }
 
     // Extract components from the EncryptResponse encrypted blob
     // Format: [encrypted data][16-byte auth tag] - NO NONCE stored in blob
@@ -923,6 +933,7 @@ HRESULT GetUserBoundKeyAuthContext(
     _In_ USER_BOUND_KEY_SESSION_HANDLE sessionHandle,
     _In_reads_bytes_(authContextBlobSize) const void* authContextBlob,
     _In_ UINT32 authContextBlobSize,
+    _In_ UINT64 localNonce,
     _Out_ USER_BOUND_KEY_AUTH_CONTEXT_HANDLE* authContextHandle
 )
 {
@@ -937,7 +948,7 @@ HRESULT GetUserBoundKeyAuthContext(
     hr = GetUserBoundKeySessionInfo(sessionHandle, &sessionKeyPtr, &sessionNonce);
     if (FAILED(hr))
     {
-        veil::vtl1::vtl0_functions::debug_print("DEBUG: CreateEncryptedRequestForDeriveSharedSecret - GetUserBoundKeySessionInfo failed");
+        veil::vtl1::vtl0_functions::debug_print("DEBUG: GetUserBoundKeyAuthContext - GetUserBoundKeySessionInfo failed");
         goto cleanup;
     }
 
@@ -953,7 +964,7 @@ HRESULT GetUserBoundKeyAuthContext(
     //
     // Step 2: Decrypt the auth context blob using BCrypt APIs
     //
-    hr = DecryptAuthContextBlob(sessionKeyPtr, sessionNonce, authContextBlob, authContextBlobSize, &pDecryptedAuthContext, &decryptedSize);
+    hr = DecryptAuthContextBlob(sessionKeyPtr, localNonce, authContextBlob, authContextBlobSize, &pDecryptedAuthContext, &decryptedSize);
     if (FAILED(hr))
     {
         goto cleanup;
@@ -1223,7 +1234,6 @@ PerformECDHKeyEstablishment(
     veil::vtl1::vtl0_functions::debug_print("DEBUG:   Algorithm: BCRYPT_ECDH_P384_ALG_HANDLE");
     veil::vtl1::vtl0_functions::debug_print("DEBUG:   Blob type: BCRYPT_ECCPUBLIC_BLOB");
     veil::vtl1::vtl0_functions::debug_print("DEBUG:   Key data size: %u bytes", ngcPublicKeySize);
-    veil::vtl1::vtl0_functions::debug_print("DEBUG:   Expected P-384 public key size: %u bytes (uncompressed)", 2 * 48 + sizeof(BCRYPT_ECCKEY_BLOB));
 
     // Import NGC public key for ECDH
     // The public key data (after skipping header) should be in BCRYPT_ECCPUBLIC_BLOB format
@@ -1736,6 +1746,7 @@ HRESULT CreateEncryptedRequestForDeriveSharedSecret(
     _In_ UINT32 keyNameSize,
     _In_reads_bytes_(publicKeyBytesSize) const void* publicKeyBytes,
     _In_ UINT32 publicKeyBytesSize,
+    _Out_ UINT64* localNonce,
     _Outptr_result_buffer_(*encryptedRequestSize) void** encryptedRequest,
     _Out_ UINT32* encryptedRequestSize
 )
@@ -2008,14 +2019,14 @@ HRESULT CreateEncryptedRequestForDeriveSharedSecret(
     memcpy(pEncryptedRequest, pCiphertextBuffer, totalEncryptedSize);
 
     // Update the session nonce on success
-    hr = UpdateUserBoundKeySessionNonce(sessionHandle, nonce);
+    hr = UpdateUserBoundKeySessionNonce(sessionHandle);
     if (FAILED(hr))
     {
         VengcFree(pEncryptedRequest);
         pEncryptedRequest = NULL;
         goto cleanup;
     }
-    veil::vtl1::vtl0_functions::debug_print("DEBUG: CreateEncryptedRequestForDeriveSharedSecret - Updated session nonce to: %llu", nonce);
+    *localNonce = nonce;
 
     // Success - transfer ownership to caller
     *encryptedRequest = pEncryptedRequest;
@@ -2048,6 +2059,7 @@ HRESULT CreateEncryptedRequestForDeriveSharedSecret(
     veil::vtl1::vtl0_functions::debug_print("DEBUG: CreateEncryptedRequestForDeriveSharedSecret - Function exiting with hr: 0x%08X", hr);
     return hr;
 }
+
 //
 // Private helper functions for UnprotectUserBoundKey
 //
@@ -2364,6 +2376,7 @@ HRESULT UnprotectUserBoundKey(
     _In_ UINT32 sessionEncryptedDerivedSecretSize,
     _In_reads_bytes_(encryptedUserBoundKeySize) const void* encryptedUserBoundKey,
     _In_ UINT32 encryptedUserBoundKeySize,
+    _In_ UINT64 localNonce,
     _Outptr_result_buffer_(*userKeySize) void** userKey,
     _Inout_ UINT32* userKeySize
 )
@@ -2437,14 +2450,14 @@ HRESULT UnprotectUserBoundKey(
         sessionEncryptedDerivedSecretSize,
         &pDecryptedSecret,
         &decryptedSecretSize,
-        sessionNonce);
+        localNonce);
 
     if (FAILED(hr))
     {
-        veil::vtl1::vtl0_functions::debug_print("DEBUG: UnprotectUserBoundKey - DecryptAuthContextBlob failed: 0x%08X", hr);
+        veil::vtl1::vtl0_functions::debug_print("DEBUG: UnprotectUserBoundKey - DecryptAndUntagSecret failed: 0x%08X", hr);
         goto cleanup;
     }
-    veil::vtl1::vtl0_functions::debug_print("DEBUG: UnprotectUserBoundKey - DecryptAuthContextBlob succeeded, decrypted secret size: %u", decryptedSecretSize);
+    veil::vtl1::vtl0_functions::debug_print("DEBUG: UnprotectUserBoundKey - DecryptAndUntagSecret succeeded, decrypted secret size: %u", decryptedSecretSize);
 
     //
     // Step 3: Use the decrypted secret to recreate the KEK
@@ -2593,6 +2606,7 @@ HRESULT CreateEncryptedRequestForRetrieveAuthorizationContext(
     _In_ USER_BOUND_KEY_SESSION_HANDLE sessionHandle,
     _In_reads_bytes_(keyNameSize) const void* keyName,
     _In_ UINT32 keyNameSize,
+    _Inout_ UINT64* localNonce,
     _Outptr_result_buffer_(*encryptedRequestSize) void** encryptedRequest,
     _Out_ UINT32* encryptedRequestSize
 )
@@ -2851,14 +2865,14 @@ HRESULT CreateEncryptedRequestForRetrieveAuthorizationContext(
     memcpy(pEncryptedRequest, pCiphertextBuffer, totalEncryptedSize);
 
     // Update the session nonce on success
-    hr = UpdateUserBoundKeySessionNonce(sessionHandle, nonce);
+    hr = UpdateUserBoundKeySessionNonce(sessionHandle);
     if (FAILED(hr))
     {
         VengcFree(pEncryptedRequest);
         pEncryptedRequest = NULL;
         goto cleanup;
     }
-    veil::vtl1::vtl0_functions::debug_print("DEBUG: CreateEncryptedRequestForRetrieveAuthorizationContext - Updated session nonce to: %llu", nonce);
+    *localNonce = nonce;
 
     // Success - transfer ownership to caller
     *encryptedRequest = pEncryptedRequest;

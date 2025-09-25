@@ -92,7 +92,7 @@ DeveloperTypes::attestationReportAndSessionKeyPtr userboundkey_get_attestation_r
 
 namespace veil::vtl1::implementation::userboundkey::callouts
 {
-    DeveloperTypes::authContextBlobAndFormattedKeyNameAndSessionInfo userboundkey_establish_session_for_create_callback(
+    DeveloperTypes::credentialAndFormattedKeyNameAndSessionInfo userboundkey_establish_session_for_create_callback(
         _In_ const void* enclave, 
         _In_ const std::wstring& key_name, 
         _In_ const uintptr_t ecdh_protocol, 
@@ -297,24 +297,78 @@ wil::secure_vector<uint8_t> enclave_create_user_bound_key(
     {
         // Convert cacheConfig to the type expected by the callback
         auto devCacheConfig = cacheConfig;
+        void* encryptedKcmRequestRac = nullptr;
+        UINT32 encryptedKcmRequestRacSize = 0;
+        ULONG64 localNonce = 0; // captures the nonce used in the encrypted request, will be used in the corresponding decrypt call
 
         // SESSION
         void* enclave = veil::vtl1::enclave_information().BaseAddress;
-        auto authContextBlobAndFormattedKeyNameAndSessionInfo = veil_abi::VTL0_Callbacks::userboundkey_establish_session_for_create_callback(
+        auto credentialAndFormattedKeyNameAndSessionInfoResult = veil_abi::VTL0_Callbacks::userboundkey_establish_session_for_create_callback(
             reinterpret_cast<uint64_t>(enclave),
             keyName,
             reinterpret_cast<uintptr_t>(BCRYPT_ECDH_P384_ALG_HANDLE),
             message,
             windowId,
             devCacheConfig,
-            0 /* nonce */);
+            0 /* sessionNonce */);
 
-        veil::vtl1::vtl0_functions::debug_print(L"DEBUG: enclave_create_user_bound_key - Received authContextBlobAndFormattedKeyNameAndSessionInfo");
+        veil::vtl1::vtl0_functions::debug_print(L"DEBUG: enclave_create_user_bound_key - Received credentialAndFormattedKeyNameAndSessionInfo");
 
-        auto& authContextBlob = authContextBlobAndFormattedKeyNameAndSessionInfo.authContextBlob;
-        // Extract session info from the response - the create callback returns sessionKeyPtr directly
-        sessionInfo = authContextBlobAndFormattedKeyNameAndSessionInfo.session;
-        veil::vtl1::vtl0_functions::debug_print(L"DEBUG: enclave_create_user_bound_key - Received authContextBlob");
+        // Extract credential vector and session info from first call
+        auto& credentialVector = credentialAndFormattedKeyNameAndSessionInfoResult.credential;
+        sessionInfo = credentialAndFormattedKeyNameAndSessionInfoResult.session;
+        auto& formattedKeyName = credentialAndFormattedKeyNameAndSessionInfoResult.formattedKeyName;
+
+        veil::vtl1::vtl0_functions::debug_print((L"DEBUG: enclave_create_user_bound_key - credentialVector size: " + std::to_wstring(credentialVector.size())).c_str());
+        veil::vtl1::vtl0_functions::debug_print((L"DEBUG: enclave_create_user_bound_key - sessionKeyPtr: 0x" + std::to_wstring(sessionInfo.sessionKeyPtr)).c_str());
+
+        const void* keyNamePtr = formattedKeyName.c_str();
+        UINT32 keyNameSizeBytes = static_cast<UINT32>(formattedKeyName.length() * sizeof(wchar_t)); // Exclude null terminator
+
+        // DEBUG: Print formattedKeyName and keyNameSizeBytes
+        veil::vtl1::vtl0_functions::debug_print((L"DEBUG: enclave_create_user_bound_key - formattedKeyName: " + formattedKeyName).c_str());
+        veil::vtl1::vtl0_functions::debug_print((L"DEBUG: enclave_create_user_bound_key - keyNameSizeBytes (without null terminator): " + std::to_wstring(keyNameSizeBytes)).c_str());
+
+        // Convert sessionInfo to session handle for the API call
+        THROW_IF_FAILED(ConvertToSessionHandle(sessionInfo, &sessionHandle));
+
+        // Call to veinterop to create the encrypted KCM request for RetrieveAuthorizationContext
+        // Use the function that accepts session handle and handles nonce manipulation internally
+        THROW_IF_FAILED(CreateEncryptedRequestForRetrieveAuthorizationContext(
+            sessionHandle,  // Pass session handle - nonce manipulation is handled internally
+            keyNamePtr,
+            keyNameSizeBytes,
+            &localNonce,
+            &encryptedKcmRequestRac,
+            &encryptedKcmRequestRacSize)); // OS CALL
+
+        // Convert back to update the original sessionInfo
+        THROW_IF_FAILED(ConvertFromSessionHandle(sessionHandle, sessionInfo));
+
+        // Convert the result to vector for the callback
+        std::vector<uint8_t> encryptedKcmRequestForRetrieveAuthorizationContext;
+        THROW_IF_FAILED(encryptedKcmRequestRac == nullptr || encryptedKcmRequestRacSize <= 0 ? E_INVALIDARG : S_OK);
+        encryptedKcmRequestForRetrieveAuthorizationContext.assign(
+            static_cast<uint8_t*>(encryptedKcmRequestRac),
+            static_cast<uint8_t*>(encryptedKcmRequestRac) + encryptedKcmRequestRacSize);
+
+        // Free the allocated memory
+        HeapFree(GetProcessHeap(), 0, encryptedKcmRequestRac);
+
+        // Second call to extract secret from credential
+        veil::vtl1::vtl0_functions::debug_print(L"DEBUG: enclave_create_user_bound_key - About to call userboundkey_get_authorization_context_from_credential_callback");
+
+        auto authContextBlob = veil_abi::VTL0_Callbacks::userboundkey_get_authorization_context_from_credential_callback(
+            credentialVector,
+            encryptedKcmRequestForRetrieveAuthorizationContext,
+            message,
+            windowId);
+
+        veil::vtl1::vtl0_functions::debug_print(L"DEBUG: enclave_create_user_bound_key - userboundkey_get_authorization_context_from_credential_callback completed");
+
+        // Convert sessionInfo to session handle for the API call
+        THROW_IF_FAILED(ConvertToSessionHandle(sessionInfo, &sessionHandle));
+
 
         // AUTH CONTEXT
         unique_auth_context_handle authContext;
@@ -324,6 +378,7 @@ wil::secure_vector<uint8_t> enclave_create_user_bound_key(
             sessionHandle,
             authContextBlob.data(),
             static_cast<UINT32>(authContextBlob.size()),
+            localNonce,
             authContext.put()
         )); // OS CALL
         
@@ -335,7 +390,6 @@ wil::secure_vector<uint8_t> enclave_create_user_bound_key(
         propCacheConfig.size = sizeof(cacheConfig);
         propCacheConfig.value = &cacheConfig;
 
-        auto& formattedKeyName = authContextBlobAndFormattedKeyNameAndSessionInfo.formattedKeyName;
         THROW_IF_FAILED(ValidateUserBoundKeyAuthContext(
             formattedKeyName.c_str(),
             authContext.get(),
@@ -414,6 +468,8 @@ std::vector<uint8_t> enclave_load_user_bound_key(
 
     try
     {
+        ULONG64 localNonce = 0; // captures the nonce used in the encrypted request, will be used in the corresponding decrypt call
+
         // UNSEAL
         veil::vtl1::vtl0_functions::debug_print(L"DEBUG: enclave_load_user_bound_key - About to call unseal_data");
         veil::vtl1::vtl0_functions::debug_print((L"DEBUG: enclave_load_user_bound_key - sealedBoundKeyBytes size: " + std::to_wstring(sealedBoundKeyBytes.size())).c_str());
@@ -437,7 +493,7 @@ std::vector<uint8_t> enclave_load_user_bound_key(
             keyName,
             message,
             windowId,
-            0 /* nonce */);
+            0 /* sessionNonce */);
 
         veil::vtl1::vtl0_functions::debug_print(L"DEBUG: enclave_load_user_bound_key - establish_session_for_load_callback completed");
 
@@ -472,6 +528,7 @@ std::vector<uint8_t> enclave_load_user_bound_key(
             sessionHandle,  // Pass session handle - nonce manipulation is handled internally
             keyNamePtr,
             keyNameSizeBytes,
+            &localNonce,
             &encryptedKcmRequestRac,
             &encryptedKcmRequestRacSize)); // OS CALL
 
@@ -498,9 +555,34 @@ std::vector<uint8_t> enclave_load_user_bound_key(
             windowId);
 
         veil::vtl1::vtl0_functions::debug_print(L"DEBUG: enclave_load_user_bound_key - userboundkey_get_authorization_context_from_credential_callback completed");
+        veil::vtl1::vtl0_functions::debug_print((L"DEBUG: enclave_load_user_bound_key - authContextBlob size: " + std::to_wstring(authContextBlob.size())).c_str());
 
         // Convert sessionInfo to session handle for the API call
         THROW_IF_FAILED(ConvertToSessionHandle(sessionInfo, &sessionHandle));
+
+        // AUTH CONTEXT
+        veil::vtl1::vtl0_functions::debug_print(L"DEBUG: enclave_load_user_bound_key - About to call GetUserBoundKeyAuthContext");
+        unique_auth_context_handle authContext;
+        THROW_IF_FAILED(GetUserBoundKeyAuthContext(
+            sessionHandle,
+            authContextBlob.data(),
+            static_cast<UINT32>(authContextBlob.size()),
+            localNonce,
+            authContext.put())); // OS CALL
+        veil::vtl1::vtl0_functions::debug_print(L"DEBUG: enclave_load_user_bound_key - GetUserBoundKeyAuthContext completed");
+
+        // Validate
+        veil::vtl1::vtl0_functions::debug_print(L"DEBUG: enclave_load_user_bound_key - About to validate auth context");
+        USER_BOUND_KEY_AUTH_CONTEXT_PROPERTY propCacheConfig;
+        propCacheConfig.name = UserBoundKeyAuthContextPropertyCacheConfig;
+        propCacheConfig.size = sizeof(cacheConfig);
+        propCacheConfig.value = &cacheConfig;
+        THROW_IF_FAILED(ValidateUserBoundKeyAuthContext(
+            formattedKeyName.c_str(),
+            authContext.get(),
+            1,
+            &propCacheConfig)); // OS CALL
+        veil::vtl1::vtl0_functions::debug_print(L"DEBUG: enclave_load_user_bound_key - Auth context validation completed");
 
         // Use the function that accepts session handle and handles nonce manipulation internally
         THROW_IF_FAILED(CreateEncryptedRequestForDeriveSharedSecret(
@@ -509,6 +591,7 @@ std::vector<uint8_t> enclave_load_user_bound_key(
             keyNameSizeBytes,
             ephemeralPublicKeyBytes.data(),
             static_cast<UINT32>(ephemeralPublicKeyBytes.size()),
+            &localNonce,
             &encryptedKcmRequestDss,
             &encryptedKcmRequestDssSize)); // OS CALL
 
@@ -535,32 +618,7 @@ std::vector<uint8_t> enclave_load_user_bound_key(
             windowId);
 
         veil::vtl1::vtl0_functions::debug_print(L"DEBUG: enclave_load_user_bound_key - userboundkey_get_secret_from_credential_callback completed");
-
         veil::vtl1::vtl0_functions::debug_print((L"DEBUG: enclave_load_user_bound_key - secret size: " + std::to_wstring(secret.size())).c_str());
-        veil::vtl1::vtl0_functions::debug_print((L"DEBUG: enclave_load_user_bound_key - authContextBlob size: " + std::to_wstring(authContextBlob.size())).c_str());
-
-        // AUTH CONTEXT
-        veil::vtl1::vtl0_functions::debug_print(L"DEBUG: enclave_load_user_bound_key - About to call GetUserBoundKeyAuthContext");
-        unique_auth_context_handle authContext;
-        THROW_IF_FAILED(GetUserBoundKeyAuthContext(
-            sessionHandle,
-            authContextBlob.data(),
-            static_cast<UINT32>(authContextBlob.size()),
-            authContext.put())); // OS CALL
-        veil::vtl1::vtl0_functions::debug_print(L"DEBUG: enclave_load_user_bound_key - GetUserBoundKeyAuthContext completed");
-
-        // Validate
-        veil::vtl1::vtl0_functions::debug_print(L"DEBUG: enclave_load_user_bound_key - About to validate auth context");
-        USER_BOUND_KEY_AUTH_CONTEXT_PROPERTY propCacheConfig;
-        propCacheConfig.name = UserBoundKeyAuthContextPropertyCacheConfig;
-        propCacheConfig.size = sizeof(cacheConfig);
-        propCacheConfig.value = &cacheConfig;
-        THROW_IF_FAILED(ValidateUserBoundKeyAuthContext(
-            formattedKeyName.c_str(),
-            authContext.get(), 
-            1, 
-            &propCacheConfig)); // OS CALL
-        veil::vtl1::vtl0_functions::debug_print(L"DEBUG: enclave_load_user_bound_key - Auth context validation completed");
 
         // DECRYPT USERKEY
         veil::vtl1::vtl0_functions::debug_print(L"DEBUG: enclave_load_user_bound_key - About to call UnprotectUserBoundKey");
@@ -575,6 +633,7 @@ std::vector<uint8_t> enclave_load_user_bound_key(
             static_cast<UINT32>(secret.size()),
             boundKeyBytes.data(),
             static_cast<UINT32>(boundKeyBytes.size()),
+            localNonce,
             &pUserkeyBytes,
             &cbUserkeyBytes)); // OS CALL
         veil::vtl1::vtl0_functions::debug_print(L"DEBUG: enclave_load_user_bound_key - UnprotectUserBoundKey completed");
