@@ -596,6 +596,8 @@ HRESULT CloseUserBoundKeySession(
         return E_INVALIDARG;
     }
 
+    HRESULT hrResult = S_OK;
+
     // Cast the handle to internal context
     PUSER_BOUND_KEY_SESSION_INTERNAL pInternalSession = (PUSER_BOUND_KEY_SESSION_INTERNAL)sessionHandle;
 
@@ -608,15 +610,14 @@ HRESULT CloseUserBoundKeySession(
         if (FAILED(HRESULT_FROM_NT(status)))
         {
             // Free the handle memory even if BCryptDestroyKey fails
-            VengcFree(sessionHandle);
-            return HRESULT_FROM_NT(status);
+            hrResult = HRESULT_FROM_NT(status);
         }
     }
 
     // Free the handle memory itself
     VengcFree(sessionHandle);
 
-    return S_OK;
+    return hrResult;
 }
 
 // Attestation report generation API for user bound keys.
@@ -1048,7 +1049,6 @@ ValidateAuthorizationContext(
         return E_INVALIDARG;
     }
 
-    /*
     // Extract the key name from the structure
     SIZE_T keyNameChars = authCtx->keyNameLength / sizeof(WCHAR);
 
@@ -1064,7 +1064,6 @@ ValidateAuthorizationContext(
         // Key names don't match - this auth context is for a different key
         return E_ACCESSDENIED;
     }
-    */
 
     // Always verify the secure ID owner ID state
     if (!authCtx->isSecureIdOwnerId)
@@ -1518,7 +1517,6 @@ EncryptUserKeyWithKEK(
 )
 {
     HRESULT hr = S_OK;
-    void* pBoundKey = NULL;
     BYTE* pEncryptedUserKey = NULL;
     UINT32 encryptedUserKeySize = 0;  // Initialize to 0
 
@@ -1592,11 +1590,6 @@ EncryptUserKeyWithKEK(
     if (pEncryptedUserKey != NULL)
     {
         VengcSecureFree(pEncryptedUserKey, encryptedUserKeySize);
-    }
-
-    if (pBoundKey != NULL)
-    {
-        VengcFree(pBoundKey);
     }
 
     return hr;
