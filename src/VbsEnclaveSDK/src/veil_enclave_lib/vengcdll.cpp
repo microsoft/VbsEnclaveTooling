@@ -254,7 +254,7 @@ GenerateSessionKey(
 
     HRESULT hr = S_OK;
     PUCHAR pSessionKeyBytes = NULL;
-    BCRYPT_KEY_HANDLE hSessionKey = NULL;
+    wil::unique_bcrypt_key hSessionKey;
 
     // Allocate memory for key bytes
     veil::vtl1::vtl0_functions::debug_print("DEBUG: GenerateSessionKey - Allocating memory for key bytes");
@@ -288,9 +288,8 @@ GenerateSessionKey(
     veil::vtl1::vtl0_functions::debug_print("DEBUG: GenerateSessionKey - BCryptGenerateSymmetricKey succeeded");
 
     // Success - transfer ownership to caller
-    *phSessionKey = hSessionKey;
+    *phSessionKey = hSessionKey.release(); // Release ownership from WIL smart pointer
     *ppSessionKeyBytes = pSessionKeyBytes;
-    hSessionKey = NULL;
     pSessionKeyBytes = NULL;
 
     veil::vtl1::vtl0_functions::debug_print("DEBUG: GenerateSessionKey - Function completed successfully");
@@ -300,11 +299,6 @@ GenerateSessionKey(
     {
         VengcSecureFree(pSessionKeyBytes, sessionKeySize);
     }
-    if (hSessionKey != NULL)
-    {
-        BCryptDestroyKey(hSessionKey);
-    }
-
     return hr;
 }
 
@@ -641,7 +635,7 @@ HRESULT InitializeUserBoundKeySessionInfo(
     UINT32 attestationReportSize = 0;
     UINT32 encryptedReportSize = 0;
     const UINT32 SESSION_KEY_SIZE = AES_256_KEY_SIZE_BYTES; // 256-bit AES key
-    BCRYPT_KEY_HANDLE hSessionKey = NULL;
+    wil::unique_bcrypt_key hSessionKey;
     PUCHAR pSessionKeyBytes = NULL;
     PS_TRUSTLET_TKSESSION_ID sessionId = {0};
     
@@ -663,6 +657,7 @@ HRESULT InitializeUserBoundKeySessionInfo(
     // Step 2: Generate session key for encryption
     //
     veil::vtl1::vtl0_functions::debug_print("DEBUG: Step 2 - Generating session key");
+
     hr = GenerateSessionKey(SESSION_KEY_SIZE, &hSessionKey, &pSessionKeyBytes);
     if (FAILED(hr))
     {
@@ -672,7 +667,7 @@ HRESULT InitializeUserBoundKeySessionInfo(
     veil::vtl1::vtl0_functions::debug_print("DEBUG: Step 2 - Generate session key succeeded");
 
     // Store the session key handle for later use
-    pSessionKey = (void*)hSessionKey;
+    pSessionKey = (void*)hSessionKey.get();
 
     //
     // Step 3: Generate attestation report with session key and challenge
@@ -706,7 +701,7 @@ HRESULT InitializeUserBoundKeySessionInfo(
     veil::vtl1::vtl0_functions::debug_print("DEBUG: Step 5 - Returning results");
     *report = pEncryptedReport;
     *reportSize = encryptedReportSize;
-    CreateUserBoundKeySessionHandle((UINT_PTR)pSessionKey, 0 /*sessionNonce*/, sessionHandle);
+    CreateUserBoundKeySessionHandle((UINT_PTR)hSessionKey.release(), 0 /*sessionNonce*/, sessionHandle); // Release ownership
 
     // Clear local pointers so they won't be freed in cleanup
     pEncryptedReport = NULL;
@@ -722,11 +717,6 @@ HRESULT InitializeUserBoundKeySessionInfo(
         if (pEncryptedReport)
         {
             VengcSecureFree(pEncryptedReport, encryptedReportSize);
-        }
-        if (pSessionKey)
-        {
-            // pSessionKey is actually the BCrypt key handle, so destroy it
-            BCryptDestroyKey((BCRYPT_KEY_HANDLE)pSessionKey);
         }
     }
 
@@ -1180,9 +1170,9 @@ PerformECDHKeyEstablishment(
 )
 {
     HRESULT hr = S_OK;
-    BCRYPT_KEY_HANDLE ecdhKeyPair = NULL;
-    BCRYPT_KEY_HANDLE helloPublicKeyHandle = NULL;
-    BCRYPT_SECRET_HANDLE ecdhSecret = NULL;
+    wil::unique_bcrypt_key ecdhKeyPair;
+    wil::unique_bcrypt_key helloPublicKeyHandle;
+    wil::unique_bcrypt_secret ecdhSecret;
     ULONG derivedKeySize = 0;
 
     // Declare all variables at the beginning to avoid goto initialization issues
@@ -1267,7 +1257,7 @@ PerformECDHKeyEstablishment(
     }
 
     // Finalize the enclave key pair
-    hr = HRESULT_FROM_NT(BCryptFinalizeKeyPair(ecdhKeyPair, 0));
+    hr = HRESULT_FROM_NT(BCryptFinalizeKeyPair(ecdhKeyPair.get(), 0));
     if (FAILED(hr))
     {
         goto cleanup;
@@ -1275,14 +1265,14 @@ PerformECDHKeyEstablishment(
 
     // Derive a key to use as a Key-Encryption-Key (KEK)
     // Perform ECDH secret agreement
-    hr = HRESULT_FROM_NT(BCryptSecretAgreement(ecdhKeyPair, helloPublicKeyHandle, &ecdhSecret, 0));
+    hr = HRESULT_FROM_NT(BCryptSecretAgreement(ecdhKeyPair.get(), helloPublicKeyHandle.get(), &ecdhSecret, 0));
     if (FAILED(hr))
     {
         goto cleanup;
     }
 
     // Derive the shared secret
-    hr = HRESULT_FROM_NT(BCryptDeriveKey(ecdhSecret, BCRYPT_KDF_RAW_SECRET, NULL, NULL, 0, &derivedKeySize, 0));
+    hr = HRESULT_FROM_NT(BCryptDeriveKey(ecdhSecret.get(), BCRYPT_KDF_RAW_SECRET, NULL, NULL, 0, &derivedKeySize, 0));
     if (FAILED(hr))
     {
         goto cleanup;
@@ -1297,7 +1287,7 @@ PerformECDHKeyEstablishment(
     }
 
     // Actually derive the shared secret into the buffer
-    hr = HRESULT_FROM_NT(BCryptDeriveKey(ecdhSecret, BCRYPT_KDF_RAW_SECRET, NULL, pSharedSecret, derivedKeySize, &derivedKeySize, 0));
+    hr = HRESULT_FROM_NT(BCryptDeriveKey(ecdhSecret.get(), BCRYPT_KDF_RAW_SECRET, NULL, pSharedSecret, derivedKeySize, &derivedKeySize, 0));
     if (FAILED(hr))
     {
         VengcSecureFree(pSharedSecret, derivedKeySize);
@@ -1305,9 +1295,9 @@ PerformECDHKeyEstablishment(
     }
 
     // Success - transfer ownership to caller
-    *pEcdhKeyPair = ecdhKeyPair;
-    *pHelloPublicKeyHandle = helloPublicKeyHandle;
-    *pEcdhSecret = ecdhSecret;
+    *pEcdhKeyPair = ecdhKeyPair.release();
+    *pHelloPublicKeyHandle = helloPublicKeyHandle.release();
+    *pEcdhSecret = ecdhSecret.release();
     *pDerivedKeySize = derivedKeySize;
     *ppSharedSecret = pSharedSecret;
 
@@ -1316,20 +1306,6 @@ PerformECDHKeyEstablishment(
     ecdhSecret = NULL;
 
     cleanup:
-    if (ecdhSecret != NULL)
-    {
-        BCryptDestroySecret(ecdhSecret);
-    }
-
-    if (helloPublicKeyHandle != NULL)
-    {
-        BCryptDestroyKey(helloPublicKeyHandle);
-    }
-
-    if (ecdhKeyPair != NULL)
-    {
-        BCryptDestroyKey(ecdhKeyPair);
-    }
 
     return hr;
 }
@@ -1348,7 +1324,7 @@ ComputeKEKFromSharedSecret(
 )
 {
     HRESULT hr = S_OK;
-    BCRYPT_KEY_HANDLE hDerivedKey = NULL;
+    wil::unique_bcrypt_key hDerivedKey;
     PUCHAR pEnclavePublicKeyBlob = NULL;
     ULONG enclavePublicKeyBlobSize = 0;
 
@@ -1401,18 +1377,13 @@ ComputeKEKFromSharedSecret(
     }
 
     // Success - transfer ownership to caller
-    *phDerivedKey = hDerivedKey;
+    *phDerivedKey = hDerivedKey.release();
     *ppEnclavePublicKeyBlob = pEnclavePublicKeyBlob;
     *pEnclavePublicKeyBlobSize = enclavePublicKeyBlobSize;
 
-    hDerivedKey = NULL;
     pEnclavePublicKeyBlob = NULL;
 
     cleanup:
-    if (hDerivedKey != NULL)
-    {
-        BCryptDestroyKey(hDerivedKey);
-    }
 
     if (pEnclavePublicKeyBlob != NULL)
     {
@@ -1612,14 +1583,14 @@ HRESULT ProtectUserBoundKey(
     PNCRYPT_NGC_AUTHORIZATION_CONTEXT authCtx = NULL;
 
     // ECDH key establishment variables
-    BCRYPT_KEY_HANDLE ecdhKeyPair = NULL;
-    BCRYPT_KEY_HANDLE helloPublicKeyHandle = NULL;
-    BCRYPT_SECRET_HANDLE ecdhSecret = NULL;
+    wil::unique_bcrypt_key ecdhKeyPair;
+    wil::unique_bcrypt_key helloPublicKeyHandle;
+    wil::unique_bcrypt_secret ecdhSecret;
     PUCHAR pEnclavePublicKeyBlob = NULL;
     ULONG enclavePublicKeyBlobSize = 0;
     BYTE* pSharedSecret = NULL;
     ULONG derivedKeySize = 0;
-    BCRYPT_KEY_HANDLE hDerivedKey = NULL;
+    wil::unique_bcrypt_key hDerivedKey;
 
     void* pBoundKey = NULL;
 
@@ -1657,7 +1628,7 @@ HRESULT ProtectUserBoundKey(
     //
     // Step 3: Compute KEK (hDerivedKey)
     //
-    hr = ComputeKEKFromSharedSecret(ecdhKeyPair, pSharedSecret, derivedKeySize, &hDerivedKey, &pEnclavePublicKeyBlob, &enclavePublicKeyBlobSize);
+    hr = ComputeKEKFromSharedSecret(ecdhKeyPair.get(), pSharedSecret, derivedKeySize, &hDerivedKey, &pEnclavePublicKeyBlob, &enclavePublicKeyBlobSize);
     if (FAILED(hr))
     {
         goto cleanup;
@@ -1667,23 +1638,15 @@ HRESULT ProtectUserBoundKey(
     // 
     //  This means we can never re-materialize the KEK here, we need Hello to do that for us
     //  using the Hello private key (and the ephemeral public key)
-    if (ecdhKeyPair != NULL)
-    {
-        BCryptDestroyKey(ecdhKeyPair);
-        ecdhKeyPair = NULL;
-    }
+    ecdhKeyPair.reset();
 
     // Clean up ECDH handles (keep shared secret and KEK for encryption)
-    if (ecdhSecret != NULL)
-    {
-        BCryptDestroySecret(ecdhSecret);
-        ecdhSecret = NULL;
-    }
+    ecdhSecret.reset();
 
     //
     // Step 4: Encrypt the user key using the KEK
     //
-    hr = EncryptUserKeyWithKEK(hDerivedKey, userKey, userKeySize, pEnclavePublicKeyBlob, enclavePublicKeyBlobSize, &pBoundKey, boundKeySize);
+    hr = EncryptUserKeyWithKEK(hDerivedKey.get(), userKey, userKeySize, pEnclavePublicKeyBlob, enclavePublicKeyBlobSize, &pBoundKey, boundKeySize);
     if (FAILED(hr))
     {
         goto cleanup;
@@ -1705,29 +1668,9 @@ HRESULT ProtectUserBoundKey(
         VengcSecureFree(pSharedSecret, derivedKeySize);
     }
 
-    if (hDerivedKey != NULL)
-    {
-        BCryptDestroyKey(hDerivedKey);
-    }
-
     if (pEnclavePublicKeyBlob != NULL)
     {
         VengcFree(pEnclavePublicKeyBlob);
-    }
-
-    if (ecdhSecret != NULL)
-    {
-        BCryptDestroySecret(ecdhSecret);
-    }
-
-    if (helloPublicKeyHandle != NULL)
-    {
-        BCryptDestroyKey(helloPublicKeyHandle);
-    }
-
-    if (ecdhKeyPair != NULL)
-    {
-        BCryptDestroyKey(ecdhKeyPair);
     }
 
     return hr;
@@ -2381,11 +2324,9 @@ HRESULT UnprotectUserBoundKey(
 
     // Declare all variables at the beginning to avoid goto initialization issues
     PARSED_BOUND_KEY_COMPONENTS boundKeyComponents = {0};
-    BCRYPT_KEY_HANDLE ecdhKeyPair = NULL;
-    BCRYPT_SECRET_HANDLE ecdhSecret = NULL;
     ULONG derivedKeySize = 0;
     BYTE* pSharedSecret = NULL;
-    BCRYPT_KEY_HANDLE hDerivedKey = NULL;
+    wil::unique_bcrypt_key hDerivedKey;
     BYTE* pDecryptedUserKey = NULL;
     ULONG bytesDecrypted = 0;
     void* pOutputUserKey = NULL;
@@ -2509,7 +2450,7 @@ HRESULT UnprotectUserBoundKey(
 
     // Perform AES-GCM decryption
     hr = HRESULT_FROM_NT(BCryptDecrypt(
-        hDerivedKey,
+        hDerivedKey.get(),
         (PUCHAR)boundKeyComponents.pEncryptedUserKey,
         boundKeyComponents.encryptedUserKeySize,
         &authInfo,
@@ -2564,21 +2505,6 @@ HRESULT UnprotectUserBoundKey(
     if (pSharedSecret != NULL)
     {
         VengcSecureFree(pSharedSecret, derivedKeySize);
-    }
-
-    if (hDerivedKey != NULL)
-    {
-        BCryptDestroyKey(hDerivedKey);
-    }
-
-    if (ecdhKeyPair != NULL)
-    {
-        BCryptDestroyKey(ecdhKeyPair);
-    }
-
-    if (ecdhSecret != NULL)
-    {
-        BCryptDestroySecret(ecdhSecret);
     }
 
     if (pDecryptedUserKey != NULL)
