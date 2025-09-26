@@ -1301,10 +1301,6 @@ PerformECDHKeyEstablishment(
     *pDerivedKeySize = derivedKeySize;
     *ppSharedSecret = pSharedSecret;
 
-    ecdhKeyPair = NULL;
-    helloPublicKeyHandle = NULL;
-    ecdhSecret = NULL;
-
     cleanup:
 
     return hr;
