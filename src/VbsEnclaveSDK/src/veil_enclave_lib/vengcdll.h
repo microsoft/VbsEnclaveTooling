@@ -46,7 +46,7 @@ DECLARE_HANDLE(USER_BOUND_KEY_SESSION_HANDLE);
 // Attestation report generation API for user bound keys.
 // Generates a session key, passes session key and provided challenge to EnclaveGetAttestationReport,
 // encrypts the attestation report with EnclaveEncryptDataForTrustlet, returns the encrypted report.
-HRESULT InitializeUserBoundKeySessionInfo(
+HRESULT InitializeUserBoundKeySession(
     _In_reads_bytes_(challengeSize) const void* challenge,
     _In_ UINT32 challengeSize,
     _Outptr_result_buffer_(*reportSize) void** report,
@@ -54,7 +54,7 @@ HRESULT InitializeUserBoundKeySessionInfo(
     _Out_ USER_BOUND_KEY_SESSION_HANDLE* sessionHandle
 );
 
-HRESULT CloseUserBoundKeyAuthContextHandle(
+HRESULT CloseUserBoundKeyAuthContext(
     _In_ USER_BOUND_KEY_AUTH_CONTEXT_HANDLE handle);
 
 // Closes a user bound key session and destroys the associated BCRYPT_KEY_HANDLE

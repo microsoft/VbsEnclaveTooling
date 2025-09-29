@@ -28,15 +28,16 @@
 #define KCM_PUBLIC_KEY_MAX_SIZE 1024        // Maximum allowed KCM public key size
 
 // Legacy structure for backward compatibility
-typedef struct _KEY_CREDENTIAL_CACHE_CONFIG {
+struct KEY_CREDENTIAL_CACHE_CONFIG 
+{
     UINT32 cacheType;
     UINT32 cacheTimeout; // in seconds
     UINT32 cacheCallCount;
-} KEY_CREDENTIAL_CACHE_CONFIG;
+};
 
 // Forward declarations for NGC types
 // Structure to return values for NCRYPT_NGC_AUTHORIZATION_CONTEXT_PROPERTY
-typedef struct _NCRYPT_NGC_AUTHORIZATION_CONTEXT{
+struct NCRYPT_NGC_AUTHORIZATION_CONTEXT{
     DWORD structSize;
     BOOL isSecureIdOwnerId;
     KEY_CREDENTIAL_CACHE_CONFIG cacheConfig;
@@ -44,7 +45,7 @@ typedef struct _NCRYPT_NGC_AUTHORIZATION_CONTEXT{
     WCHAR keyName[KCM_KEY_NAME_BUFFER_SIZE];
     DWORD publicKeyByteCount;
     BYTE publicKey[1];
-} NCRYPT_NGC_AUTHORIZATION_CONTEXT, * PNCRYPT_NGC_AUTHORIZATION_CONTEXT;
+};
 
 // Use HeapAlloc/HeapFree instead of malloc/free for VTL1 compatibility
 #define VengcAlloc(size) HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY, (size))
@@ -195,19 +196,21 @@ struct AttestationData
 }
 
 // Internal structure to hold decrypted auth context data
-typedef struct _USER_BOUND_KEY_AUTH_CONTEXT_INTERNAL {
+struct USER_BOUND_KEY_AUTH_CONTEXT_INTERNAL 
+{
     BYTE* pDecryptedAuthContext;
     UINT32 decryptedSize;
-} USER_BOUND_KEY_AUTH_CONTEXT_INTERNAL, * PUSER_BOUND_KEY_AUTH_CONTEXT_INTERNAL;
+};
 
 // Internal structure to hold session information (moved from header)
-typedef struct _USER_BOUND_KEY_SESSION_INTERNAL {
+struct USER_BOUND_KEY_SESSION_INTERNAL 
+{
     UINT_PTR sessionKeyPtr;
     ULONG64 sessionNonce;
-} USER_BOUND_KEY_SESSION_INTERNAL, * PUSER_BOUND_KEY_SESSION_INTERNAL;
+};
 
 //
-// Private helper functions for InitializeUserBoundKeySessionInfo
+// Private helper functions for InitializeUserBoundKeySession
 //
 
 //
@@ -513,7 +516,7 @@ EncryptAttestationReport(
 
 // Creates a user bound key session handle from session key pointer and nonce
 HRESULT CreateUserBoundKeySessionHandle(
-    _In_ UINT_PTR sessionKeyPtr,
+    _In_ BCRYPT_KEY_HANDLE&& sessionKey,
     _In_ ULONG64 sessionNonce,
     _Out_ USER_BOUND_KEY_SESSION_HANDLE* sessionHandle)
 {
@@ -522,24 +525,21 @@ HRESULT CreateUserBoundKeySessionHandle(
         return E_INVALIDARG;
     }
 
-    if (sessionKeyPtr == 0)
+    if (sessionKey == nullptr)
     {
         return E_INVALIDARG;
     }
 
     // Allocate internal session structure
-    PUSER_BOUND_KEY_SESSION_INTERNAL pInternalSession = (PUSER_BOUND_KEY_SESSION_INTERNAL)VengcAlloc(sizeof(USER_BOUND_KEY_SESSION_INTERNAL));
-    if (pInternalSession == nullptr)
-    {
-        return E_OUTOFMEMORY;
-    }
+    USER_BOUND_KEY_SESSION_INTERNAL* pInternalSession = (USER_BOUND_KEY_SESSION_INTERNAL*)VengcAlloc(sizeof(USER_BOUND_KEY_SESSION_INTERNAL));
+    RETURN_IF_NULL_ALLOC(pInternalSession);
 
-    // Initialize the session data
-    pInternalSession->sessionKeyPtr = sessionKeyPtr;
+    // Initialize the session data - move the session key
+    pInternalSession->sessionKeyPtr = reinterpret_cast<UINT_PTR>(std::move(sessionKey));
     pInternalSession->sessionNonce = sessionNonce;
 
     // Return the internal context as an opaque handle
-    *sessionHandle = (USER_BOUND_KEY_SESSION_HANDLE)pInternalSession;
+    *sessionHandle = reinterpret_cast<USER_BOUND_KEY_SESSION_HANDLE>(pInternalSession);
 
     return S_OK;
 }
@@ -548,18 +548,22 @@ HRESULT CreateUserBoundKeySessionHandle(
 HRESULT GetUserBoundKeySessionInfo(
     _In_ USER_BOUND_KEY_SESSION_HANDLE sessionHandle,
     _Out_ UINT_PTR* sessionKeyPtr,
-    _Out_ ULONG64* sessionNonce)
+    _Out_ ULONG64* sessionNonce = nullptr)
 {
-    if (sessionHandle == nullptr || sessionKeyPtr == nullptr || sessionNonce == nullptr)
+    if (sessionHandle == nullptr)
     {
         return E_INVALIDARG;
     }
 
     // Cast the handle to internal context
-    PUSER_BOUND_KEY_SESSION_INTERNAL pInternalSession = (PUSER_BOUND_KEY_SESSION_INTERNAL)sessionHandle;
+    USER_BOUND_KEY_SESSION_INTERNAL* pInternalSession = reinterpret_cast<USER_BOUND_KEY_SESSION_INTERNAL*>(sessionHandle);
 
     *sessionKeyPtr = pInternalSession->sessionKeyPtr;
-    *sessionNonce = pInternalSession->sessionNonce;
+
+    if (sessionNonce != nullptr)
+    {
+        *sessionNonce = pInternalSession->sessionNonce;
+    }
 
     return S_OK;
 }
@@ -574,7 +578,7 @@ HRESULT UpdateUserBoundKeySessionNonce(
     }
 
     // Cast the handle to internal context
-    PUSER_BOUND_KEY_SESSION_INTERNAL pInternalSession = (PUSER_BOUND_KEY_SESSION_INTERNAL)sessionHandle;
+    USER_BOUND_KEY_SESSION_INTERNAL* pInternalSession = (USER_BOUND_KEY_SESSION_INTERNAL*)sessionHandle;
     ULONG64 curNonce = pInternalSession->sessionNonce;
     pInternalSession->sessionNonce = InterlockedIncrement64(reinterpret_cast<LONG64*>(&curNonce));
 
@@ -593,7 +597,7 @@ HRESULT CloseUserBoundKeySession(
     HRESULT hrResult = S_OK;
 
     // Cast the handle to internal context
-    PUSER_BOUND_KEY_SESSION_INTERNAL pInternalSession = (PUSER_BOUND_KEY_SESSION_INTERNAL)sessionHandle;
+    USER_BOUND_KEY_SESSION_INTERNAL* pInternalSession = (USER_BOUND_KEY_SESSION_INTERNAL*)sessionHandle;
 
     if (pInternalSession->sessionKeyPtr != 0)
     {
@@ -617,7 +621,7 @@ HRESULT CloseUserBoundKeySession(
 // Attestation report generation API for user bound keys.
 // Generates a session key, passes session key and provided challenge to EnclaveGetAttestationReport,
 // encrypts the attestation report with EnclaveEncryptDataForTrustlet, returns the encrypted report. 
-HRESULT InitializeUserBoundKeySessionInfo(
+HRESULT InitializeUserBoundKeySession(
     _In_reads_bytes_(challengeSize) const void* challenge,
     _In_ UINT32 challengeSize,
     _Outptr_result_buffer_(*reportSize) void** report,
@@ -625,11 +629,10 @@ HRESULT InitializeUserBoundKeySessionInfo(
     _Out_ USER_BOUND_KEY_SESSION_HANDLE* sessionHandle
 )
 {
-    // DEBUG: Log entry to InitializeUserBoundKeySessionInfo
-    veil::vtl1::vtl0_functions::debug_print("DEBUG: InitializeUserBoundKeySessionInfo - Function entered");
+    // DEBUG: Log entry to InitializeUserBoundKeySession
+    veil::vtl1::vtl0_functions::debug_print("DEBUG: InitializeUserBoundKeySession - Function entered");
 
     HRESULT hr = S_OK;
-    void* pSessionKey = NULL;
     void* pAttestationReport = NULL;
     void* pEncryptedReport = NULL;
     UINT32 attestationReportSize = 0;
@@ -666,9 +669,6 @@ HRESULT InitializeUserBoundKeySessionInfo(
     }
     veil::vtl1::vtl0_functions::debug_print("DEBUG: Step 2 - Generate session key succeeded");
 
-    // Store the session key handle for later use
-    pSessionKey = (void*)hSessionKey.get();
-
     //
     // Step 3: Generate attestation report with session key and challenge
     //
@@ -701,19 +701,24 @@ HRESULT InitializeUserBoundKeySessionInfo(
     veil::vtl1::vtl0_functions::debug_print("DEBUG: Step 5 - Returning results");
     *report = pEncryptedReport;
     *reportSize = encryptedReportSize;
-    CreateUserBoundKeySessionHandle((UINT_PTR)hSessionKey.release(), 0 /*sessionNonce*/, sessionHandle); // Release ownership
+    
+    hr = CreateUserBoundKeySessionHandle(std::move(hSessionKey.release()), 0 /*sessionNonce*/, sessionHandle); // Release ownership
+    if (FAILED(hr))
+    {
+        veil::vtl1::vtl0_functions::debug_print("DEBUG: Step 5 - CreateUserBoundKeySessionHandle failed");
+        goto cleanup;
+    }
 
     // Clear local pointers so they won't be freed in cleanup
     pEncryptedReport = NULL;
-    pSessionKey = NULL;
 
-    veil::vtl1::vtl0_functions::debug_print("DEBUG: InitializeUserBoundKeySessionInfo - Function completed successfully");
+    veil::vtl1::vtl0_functions::debug_print("DEBUG: InitializeUserBoundKeySession - Function completed successfully");
 
     cleanup:
         // Clean up on failure
     if (FAILED(hr))
     {
-        veil::vtl1::vtl0_functions::debug_print("DEBUG: InitializeUserBoundKeySessionInfo - Cleanup on failure");
+        veil::vtl1::vtl0_functions::debug_print("DEBUG: InitializeUserBoundKeySession - Cleanup on failure");
         if (pEncryptedReport)
         {
             VengcSecureFree(pEncryptedReport, encryptedReportSize);
@@ -733,7 +738,7 @@ HRESULT InitializeUserBoundKeySessionInfo(
     return hr;
 }
 
-HRESULT CloseUserBoundKeyAuthContextHandle(
+HRESULT CloseUserBoundKeyAuthContext(
     _In_ USER_BOUND_KEY_AUTH_CONTEXT_HANDLE handle)
 {
     if (handle == NULL)
@@ -742,7 +747,7 @@ HRESULT CloseUserBoundKeyAuthContextHandle(
     }
 
     // Cast to internal context to access internal data
-    PUSER_BOUND_KEY_AUTH_CONTEXT_INTERNAL pInternalContext = (PUSER_BOUND_KEY_AUTH_CONTEXT_INTERNAL)handle;
+    USER_BOUND_KEY_AUTH_CONTEXT_INTERNAL* pInternalContext = (USER_BOUND_KEY_AUTH_CONTEXT_INTERNAL*)handle;
 
     // Free the internal decrypted auth context data if it exists
     if (pInternalContext->pDecryptedAuthContext != NULL && pInternalContext->decryptedSize > 0)
@@ -933,12 +938,11 @@ HRESULT GetUserBoundKeyAuthContext(
     HRESULT hr = S_OK;
     BYTE* pDecryptedAuthContext = NULL;
     UINT32 decryptedSize = 0;
-    PUSER_BOUND_KEY_AUTH_CONTEXT_INTERNAL pInternalContext = NULL;
+    USER_BOUND_KEY_AUTH_CONTEXT_INTERNAL* pInternalContext = NULL;
     UINT_PTR sessionKeyPtr = 0;
-    ULONG64 sessionNonce = 0;
 
     // Get session information
-    hr = GetUserBoundKeySessionInfo(sessionHandle, &sessionKeyPtr, &sessionNonce);
+    hr = GetUserBoundKeySessionInfo(sessionHandle, &sessionKeyPtr);
     if (FAILED(hr))
     {
         veil::vtl1::vtl0_functions::debug_print("DEBUG: GetUserBoundKeyAuthContext - GetUserBoundKeySessionInfo failed");
@@ -966,7 +970,7 @@ HRESULT GetUserBoundKeyAuthContext(
     //
     // Step 3: Create and return auth context handle
     //
-    pInternalContext = (PUSER_BOUND_KEY_AUTH_CONTEXT_INTERNAL)VengcAlloc(sizeof(USER_BOUND_KEY_AUTH_CONTEXT_INTERNAL));
+    pInternalContext = (USER_BOUND_KEY_AUTH_CONTEXT_INTERNAL*)VengcAlloc(sizeof(USER_BOUND_KEY_AUTH_CONTEXT_INTERNAL));
     if (pInternalContext == NULL)
     {
         hr = E_OUTOFMEMORY;
@@ -1025,7 +1029,7 @@ ValidateAuthorizationContext(
     }
 
     // Cast to the authorization context structure
-    PNCRYPT_NGC_AUTHORIZATION_CONTEXT authCtx = (PNCRYPT_NGC_AUTHORIZATION_CONTEXT)pDecryptedAuthContext;
+    NCRYPT_NGC_AUTHORIZATION_CONTEXT* authCtx = (NCRYPT_NGC_AUTHORIZATION_CONTEXT*)pDecryptedAuthContext;
 
     // Verify the structure size field
     if (authCtx->structSize != sizeof(NCRYPT_NGC_AUTHORIZATION_CONTEXT))
@@ -1122,7 +1126,7 @@ HRESULT ValidateUserBoundKeyAuthContext(
 )
 {
     HRESULT hr = S_OK;
-    PUSER_BOUND_KEY_AUTH_CONTEXT_INTERNAL pInternalContext = NULL;
+    USER_BOUND_KEY_AUTH_CONTEXT_INTERNAL* pInternalContext = NULL;
 
     //
     // Step 1: Validate input parameters
@@ -1133,7 +1137,7 @@ HRESULT ValidateUserBoundKeyAuthContext(
     }
 
     // Cast the handle to internal context
-    pInternalContext = (PUSER_BOUND_KEY_AUTH_CONTEXT_INTERNAL)authContextHandle;
+    pInternalContext = (USER_BOUND_KEY_AUTH_CONTEXT_INTERNAL*)authContextHandle;
     if (pInternalContext->pDecryptedAuthContext == NULL || pInternalContext->decryptedSize == 0)
     {
         return E_INVALIDARG;
@@ -1160,7 +1164,7 @@ HRESULT ValidateUserBoundKeyAuthContext(
 //
 static HRESULT
 PerformECDHKeyEstablishment(
-    _In_ PNCRYPT_NGC_AUTHORIZATION_CONTEXT authCtx,
+    _In_ NCRYPT_NGC_AUTHORIZATION_CONTEXT* authCtx,
     _In_ UINT32 decryptedSize,
     _Out_ BCRYPT_KEY_HANDLE* pEcdhKeyPair,
     _Out_ BCRYPT_KEY_HANDLE* pHelloPublicKeyHandle,
@@ -1575,8 +1579,8 @@ HRESULT ProtectUserBoundKey(
 )
 {
     HRESULT hr = S_OK;
-    PUSER_BOUND_KEY_AUTH_CONTEXT_INTERNAL pInternalContext = NULL;
-    PNCRYPT_NGC_AUTHORIZATION_CONTEXT authCtx = NULL;
+    USER_BOUND_KEY_AUTH_CONTEXT_INTERNAL* pInternalContext = NULL;
+    NCRYPT_NGC_AUTHORIZATION_CONTEXT* authCtx = NULL;
 
     // ECDH key establishment variables
     wil::unique_bcrypt_key ecdhKeyPair;
@@ -1603,14 +1607,14 @@ HRESULT ProtectUserBoundKey(
     }
 
     // Cast the handle to internal context
-    pInternalContext = (PUSER_BOUND_KEY_AUTH_CONTEXT_INTERNAL)authContext;
+    pInternalContext = (USER_BOUND_KEY_AUTH_CONTEXT_INTERNAL*)authContext;
     if (pInternalContext->pDecryptedAuthContext == NULL || pInternalContext->decryptedSize == 0)
     {
         return E_INVALIDARG;
     }
 
     // Typecast the decrypted auth context to the authorization context structure
-    authCtx = (PNCRYPT_NGC_AUTHORIZATION_CONTEXT)pInternalContext->pDecryptedAuthContext;
+    authCtx = (NCRYPT_NGC_AUTHORIZATION_CONTEXT*)pInternalContext->pDecryptedAuthContext;
 
     //
     // Step 2: Extract NGC public key and perform key establishment
@@ -2000,14 +2004,15 @@ HRESULT CreateUserBoundKeyRequestForDeriveSharedSecret(
 //
 // Structure to hold parsed bound key components
 //
-typedef struct _PARSED_BOUND_KEY_COMPONENTS {
+struct PARSED_BOUND_KEY_COMPONENTS
+{
     PUCHAR pEnclavePublicKeyBlob;
     UINT32 enclavePublicKeyBlobSize;
     BYTE nonce[AES_GCM_NONCE_SIZE];
     const BYTE* pEncryptedUserKey;
     UINT32 encryptedUserKeySize;
     const BYTE* pAuthTag;
-} PARSED_BOUND_KEY_COMPONENTS, * PPARSED_BOUND_KEY_COMPONENTS;
+};
 
 //
 // Parse the bound key structure and extract all components
@@ -2016,7 +2021,7 @@ static HRESULT
 ParseBoundKeyStructure(
     _In_reads_bytes_(boundKeySize) const void* boundKey,
     _In_ UINT32 boundKeySize,
-    _Out_ PPARSED_BOUND_KEY_COMPONENTS pComponents
+    _Out_ PARSED_BOUND_KEY_COMPONENTS* pComponents
 )
 {
     HRESULT hr = S_OK;
@@ -2138,7 +2143,7 @@ ParseBoundKeyStructure(
 //
 static void
 CleanupParsedBoundKeyComponents(
-    _Inout_ PPARSED_BOUND_KEY_COMPONENTS pComponents
+    _Inout_ PARSED_BOUND_KEY_COMPONENTS* pComponents
 )
 {
     if (pComponents != NULL && pComponents->pEnclavePublicKeyBlob != NULL)
@@ -2330,7 +2335,6 @@ HRESULT UnprotectUserBoundKey(
     BYTE* pDecryptedSecret = NULL;
     UINT32 decryptedSecretSize = 0;
     UINT_PTR sessionKeyPtr = 0;
-    ULONG64 sessionNonce = 0;
 
     //
     // Step 1: Validate input parameters
@@ -2359,7 +2363,7 @@ HRESULT UnprotectUserBoundKey(
     }
 
     // Get session information    
-    hr = GetUserBoundKeySessionInfo(sessionHandle, &sessionKeyPtr, &sessionNonce);
+    hr = GetUserBoundKeySessionInfo(sessionHandle, &sessionKeyPtr);
 
     if (FAILED(hr))
 

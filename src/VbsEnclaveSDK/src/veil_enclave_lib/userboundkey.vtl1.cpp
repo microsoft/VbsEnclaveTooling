@@ -76,8 +76,8 @@ DeveloperTypes::attestationReportAndSessionInfo userboundkey_get_attestation_rep
     unique_heap_ptr reportPtr; // RAII wrapper for automatic cleanup
     size_t reportSize = 0;
 
-    // DEBUG: Log before calling InitializeUserBoundKeySessionInfo
-    veil::vtl1::vtl0_functions::debug_print(L"DEBUG: About to call InitializeUserBoundKeySessionInfo");
+    // DEBUG: Log before calling InitializeUserBoundKeySession
+    veil::vtl1::vtl0_functions::debug_print(L"DEBUG: About to call InitializeUserBoundKeySession");
 
     // Safe overflow check before casting
     if (challenge.size() > UINT32_MAX) {
@@ -86,15 +86,15 @@ DeveloperTypes::attestationReportAndSessionInfo userboundkey_get_attestation_rep
     }
 
     unique_sessionhandle sessionHandle; // RAII wrapper for automatic cleanup
-    THROW_IF_FAILED(InitializeUserBoundKeySessionInfo(
+    THROW_IF_FAILED(InitializeUserBoundKeySession(
         challenge.data(),
         static_cast<UINT32>(challenge.size()),
         reportPtr.put(), // RAII wrapper handles cleanup automatically
         reinterpret_cast<UINT32*>(&reportSize),
         &sessionHandle)); // OS CALL
 
-    // DEBUG: Log after InitializeUserBoundKeySessionInfo completes
-    veil::vtl1::vtl0_functions::debug_print(L"DEBUG: InitializeUserBoundKeySessionInfo completed successfully");
+    // DEBUG: Log after InitializeUserBoundKeySession completes
+    veil::vtl1::vtl0_functions::debug_print(L"DEBUG: InitializeUserBoundKeySession completed successfully");
 
     // Create vector from the allocated memory - RAII will handle cleanup
     uint8_t* rawPtr = static_cast<uint8_t*>(reportPtr.get());
@@ -181,9 +181,9 @@ namespace
     {
         if (handle)
         {
-            // CloseUserBoundKeyAuthContextHandle returns HRESULT, but we're in a noexcept context
+            // CloseUserBoundKeyAuthContext returns HRESULT, but we're in a noexcept context
             // so we ignore the return value (similar to the original implementation)
-            (void)CloseUserBoundKeyAuthContextHandle(handle);
+            (void)CloseUserBoundKeyAuthContext(handle);
         }
     }
 }
