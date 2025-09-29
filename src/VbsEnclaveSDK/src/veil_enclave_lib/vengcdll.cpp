@@ -200,17 +200,6 @@ struct USER_BOUND_KEY_AUTH_CONTEXT_INTERNAL
 {
     BYTE* pDecryptedAuthContext;
     UINT32 decryptedSize;
-
-    // Destructor to clean up allocated memory
-    ~USER_BOUND_KEY_AUTH_CONTEXT_INTERNAL()
-    {
-        if (pDecryptedAuthContext != NULL && decryptedSize > 0)
-        {
-            VengcSecureFree(pDecryptedAuthContext, decryptedSize);
-            pDecryptedAuthContext = NULL;
-            decryptedSize = 0;
-        }
-    }
 };
 
 // Internal structure to hold session information (moved from header)
@@ -579,15 +568,12 @@ HRESULT GetUserBoundKeySessionInfo(
     return S_OK;
 }
 
-// Updates the session nonce in a session handle
-HRESULT UpdateUserBoundKeySessionNonce(
+LONG64 ConsumeNextSessionNonce(
     _In_ USER_BOUND_KEY_SESSION_HANDLE sessionHandle)
 {
     // Cast the handle to internal context
     USER_BOUND_KEY_SESSION_INTERNAL* pInternalSession = reinterpret_cast<USER_BOUND_KEY_SESSION_INTERNAL*>(sessionHandle);
-    InterlockedIncrement64((volatile LONG64*)(&pInternalSession->sessionNonce));
-
-    return S_OK;
+    return InterlockedIncrement64((volatile LONG64*)(&pInternalSession->sessionNonce));
 }
 
 // Closes a user bound key session and destroys the associated BCRYPT_KEY_HANDLE
@@ -734,8 +720,13 @@ HRESULT CloseUserBoundKeyAuthContext(
     }
 
     // Cast to internal context to access internal data
-    USER_BOUND_KEY_AUTH_CONTEXT_INTERNAL* pInternalContext = reinterpret_cast<USER_BOUND_KEY_AUTH_CONTEXT_INTERNAL*>(handle);
-    pInternalContext->~USER_BOUND_KEY_AUTH_CONTEXT_INTERNAL(); // Call destructor to clean up decrypted data
+    USER_BOUND_KEY_AUTH_CONTEXT_INTERNAL* pInternalContext = (USER_BOUND_KEY_AUTH_CONTEXT_INTERNAL*)handle;
+
+    // Free the internal decrypted auth context data if it exists
+    if (pInternalContext->pDecryptedAuthContext != NULL && pInternalContext->decryptedSize > 0)
+    {
+        VengcSecureFree(pInternalContext->pDecryptedAuthContext, pInternalContext->decryptedSize);
+    }
 
     // Free the handle memory itself
     VengcFree(handle);
@@ -979,7 +970,7 @@ HRESULT GetUserBoundKeyAuthContext(
 
     if (pInternalContext != NULL)
     {
-        pInternalContext->~USER_BOUND_KEY_AUTH_CONTEXT_INTERNAL(); // Call destructor to clean up decrypted data
+        VengcFree(pInternalContext);
     }
 
     return hr;
@@ -1796,7 +1787,8 @@ HRESULT CreateUserBoundKeyRequestForDeriveSharedSecret(
     veil::vtl1::vtl0_functions::debug_print("DEBUG: CreateEncryptedRequestForDeriveSharedSecret - Step 3: Handling nonce manipulation");
 
     // Handle nonce manipulation to prevent reuse
-    nonce = sessionNonce;
+    nonce = ConsumeNextSessionNonce(sessionHandle);
+    *localNonce = nonce;
     if (nonce >= Vtl1MutualAuth::c_maxRequestNonce)
     {
         hr = HRESULT_FROM_WIN32(ERROR_TOO_MANY_SECRETS);
@@ -1939,16 +1931,6 @@ HRESULT CreateUserBoundKeyRequestForDeriveSharedSecret(
     }
 
     memcpy(pEncryptedRequest, pCiphertextBuffer, totalEncryptedSize);
-
-    // Update the session nonce on success
-    hr = UpdateUserBoundKeySessionNonce(sessionHandle);
-    if (FAILED(hr))
-    {
-        VengcFree(pEncryptedRequest);
-        pEncryptedRequest = NULL;
-        goto cleanup;
-    }
-    *localNonce = nonce;
 
     // Success - transfer ownership to caller
     *encryptedRequest = pEncryptedRequest;
@@ -2622,7 +2604,8 @@ HRESULT CreateUserBoundKeyRequestForRetrieveAuthorizationContext(
     veil::vtl1::vtl0_functions::debug_print("DEBUG: CreateEncryptedRequestForRetrieveAuthorizationContext - Step 3: Handling nonce manipulation");
 
     // Handle nonce manipulation to prevent reuse
-    nonce = sessionNonce;
+    nonce = ConsumeNextSessionNonce(sessionHandle);
+    *localNonce = nonce;
     if (nonce >= Vtl1MutualAuth::c_maxRequestNonce)
     {
         hr = HRESULT_FROM_WIN32(ERROR_TOO_MANY_SECRETS);
@@ -2765,16 +2748,6 @@ HRESULT CreateUserBoundKeyRequestForRetrieveAuthorizationContext(
     }
 
     memcpy(pEncryptedRequest, pCiphertextBuffer, totalEncryptedSize);
-
-    // Update the session nonce on success
-    hr = UpdateUserBoundKeySessionNonce(sessionHandle);
-    if (FAILED(hr))
-    {
-        VengcFree(pEncryptedRequest);
-        pEncryptedRequest = NULL;
-        goto cleanup;
-    }
-    *localNonce = nonce;
 
     // Success - transfer ownership to caller
     *encryptedRequest = pEncryptedRequest;
