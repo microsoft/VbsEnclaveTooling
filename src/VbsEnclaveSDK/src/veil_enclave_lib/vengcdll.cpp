@@ -200,12 +200,23 @@ struct USER_BOUND_KEY_AUTH_CONTEXT_INTERNAL
 {
     BYTE* pDecryptedAuthContext;
     UINT32 decryptedSize;
+
+    // Destructor to clean up allocated memory
+    ~USER_BOUND_KEY_AUTH_CONTEXT_INTERNAL()
+    {
+        if (pDecryptedAuthContext != NULL && decryptedSize > 0)
+        {
+            VengcSecureFree(pDecryptedAuthContext, decryptedSize);
+            pDecryptedAuthContext = NULL;
+            decryptedSize = 0;
+        }
+    }
 };
 
 // Internal structure to hold session information (moved from header)
 struct USER_BOUND_KEY_SESSION_INTERNAL 
 {
-    UINT_PTR sessionKeyPtr;
+    wil::unique_bcrypt_key sessionKey;
     ULONG64 sessionNonce;
 };
 
@@ -261,7 +272,7 @@ GenerateSessionKey(
 
     // Allocate memory for key bytes
     veil::vtl1::vtl0_functions::debug_print("DEBUG: GenerateSessionKey - Allocating memory for key bytes");
-    pSessionKeyBytes = (PUCHAR)VengcAlloc(sessionKeySize);
+    pSessionKeyBytes = reinterpret_cast<PUCHAR>(VengcAlloc(sessionKeySize));
     if (pSessionKeyBytes == NULL)
     {
         veil::vtl1::vtl0_functions::debug_print("DEBUG: GenerateSessionKey - Memory allocation failed");
@@ -516,7 +527,7 @@ EncryptAttestationReport(
 
 // Creates a user bound key session handle from session key pointer and nonce
 HRESULT CreateUserBoundKeySessionHandle(
-    _In_ BCRYPT_KEY_HANDLE&& sessionKey,
+    _In_ BCRYPT_KEY_HANDLE sessionKey,
     _In_ ULONG64 sessionNonce,
     _Out_ USER_BOUND_KEY_SESSION_HANDLE* sessionHandle)
 {
@@ -531,11 +542,11 @@ HRESULT CreateUserBoundKeySessionHandle(
     }
 
     // Allocate internal session structure
-    USER_BOUND_KEY_SESSION_INTERNAL* pInternalSession = (USER_BOUND_KEY_SESSION_INTERNAL*)VengcAlloc(sizeof(USER_BOUND_KEY_SESSION_INTERNAL));
+    USER_BOUND_KEY_SESSION_INTERNAL* pInternalSession = reinterpret_cast<USER_BOUND_KEY_SESSION_INTERNAL*>(VengcAlloc(sizeof(USER_BOUND_KEY_SESSION_INTERNAL)));
     RETURN_IF_NULL_ALLOC(pInternalSession);
 
-    // Initialize the session data - move the session key
-    pInternalSession->sessionKeyPtr = reinterpret_cast<UINT_PTR>(std::move(sessionKey));
+    // Use placement new to properly initialize the wil::unique_bcrypt_key
+    new (&pInternalSession->sessionKey) wil::unique_bcrypt_key(sessionKey);
     pInternalSession->sessionNonce = sessionNonce;
 
     // Return the internal context as an opaque handle
@@ -558,7 +569,7 @@ HRESULT GetUserBoundKeySessionInfo(
     // Cast the handle to internal context
     USER_BOUND_KEY_SESSION_INTERNAL* pInternalSession = reinterpret_cast<USER_BOUND_KEY_SESSION_INTERNAL*>(sessionHandle);
 
-    *sessionKeyPtr = pInternalSession->sessionKeyPtr;
+    *sessionKeyPtr = reinterpret_cast<UINT_PTR>(pInternalSession->sessionKey.get());
 
     if (sessionNonce != nullptr)
     {
@@ -572,15 +583,9 @@ HRESULT GetUserBoundKeySessionInfo(
 HRESULT UpdateUserBoundKeySessionNonce(
     _In_ USER_BOUND_KEY_SESSION_HANDLE sessionHandle)
 {
-    if (sessionHandle == nullptr)
-    {
-        return E_INVALIDARG;
-    }
-
     // Cast the handle to internal context
-    USER_BOUND_KEY_SESSION_INTERNAL* pInternalSession = (USER_BOUND_KEY_SESSION_INTERNAL*)sessionHandle;
-    ULONG64 curNonce = pInternalSession->sessionNonce;
-    pInternalSession->sessionNonce = InterlockedIncrement64(reinterpret_cast<LONG64*>(&curNonce));
+    USER_BOUND_KEY_SESSION_INTERNAL* pInternalSession = reinterpret_cast<USER_BOUND_KEY_SESSION_INTERNAL*>(sessionHandle);
+    InterlockedIncrement64((volatile LONG64*)(&pInternalSession->sessionNonce));
 
     return S_OK;
 }
@@ -594,28 +599,10 @@ HRESULT CloseUserBoundKeySession(
         return E_INVALIDARG;
     }
 
-    HRESULT hrResult = S_OK;
-
-    // Cast the handle to internal context
-    USER_BOUND_KEY_SESSION_INTERNAL* pInternalSession = (USER_BOUND_KEY_SESSION_INTERNAL*)sessionHandle;
-
-    if (pInternalSession->sessionKeyPtr != 0)
-    {
-        BCRYPT_KEY_HANDLE hSessionKey = reinterpret_cast<BCRYPT_KEY_HANDLE>(pInternalSession->sessionKeyPtr);
-
-        // Destroy the BCrypt key handle
-        NTSTATUS status = BCryptDestroyKey(hSessionKey);
-        if (FAILED(HRESULT_FROM_NT(status)))
-        {
-            // Free the handle memory even if BCryptDestroyKey fails
-            hrResult = HRESULT_FROM_NT(status);
-        }
-    }
-
     // Free the handle memory itself
     VengcFree(sessionHandle);
 
-    return hrResult;
+    return S_OK;
 }
 
 // Attestation report generation API for user bound keys.
@@ -702,7 +689,7 @@ HRESULT InitializeUserBoundKeySession(
     *report = pEncryptedReport;
     *reportSize = encryptedReportSize;
     
-    hr = CreateUserBoundKeySessionHandle(std::move(hSessionKey.release()), 0 /*sessionNonce*/, sessionHandle); // Release ownership
+    hr = CreateUserBoundKeySessionHandle(hSessionKey.release(), 0 /*sessionNonce*/, sessionHandle); // Release ownership
     if (FAILED(hr))
     {
         veil::vtl1::vtl0_functions::debug_print("DEBUG: Step 5 - CreateUserBoundKeySessionHandle failed");
@@ -747,13 +734,8 @@ HRESULT CloseUserBoundKeyAuthContext(
     }
 
     // Cast to internal context to access internal data
-    USER_BOUND_KEY_AUTH_CONTEXT_INTERNAL* pInternalContext = (USER_BOUND_KEY_AUTH_CONTEXT_INTERNAL*)handle;
-
-    // Free the internal decrypted auth context data if it exists
-    if (pInternalContext->pDecryptedAuthContext != NULL && pInternalContext->decryptedSize > 0)
-    {
-        VengcSecureFree(pInternalContext->pDecryptedAuthContext, pInternalContext->decryptedSize);
-    }
+    USER_BOUND_KEY_AUTH_CONTEXT_INTERNAL* pInternalContext = reinterpret_cast<USER_BOUND_KEY_AUTH_CONTEXT_INTERNAL*>(handle);
+    pInternalContext->~USER_BOUND_KEY_AUTH_CONTEXT_INTERNAL(); // Call destructor to clean up decrypted data
 
     // Free the handle memory itself
     VengcFree(handle);
@@ -997,7 +979,7 @@ HRESULT GetUserBoundKeyAuthContext(
 
     if (pInternalContext != NULL)
     {
-        VengcFree(pInternalContext);
+        pInternalContext->~USER_BOUND_KEY_AUTH_CONTEXT_INTERNAL(); // Call destructor to clean up decrypted data
     }
 
     return hr;
@@ -1049,7 +1031,12 @@ ValidateAuthorizationContext(
     // Ensure the key name is null-terminated within the allocated space
     WCHAR tempKeyName[KCM_KEY_NAME_BUFFER_SIZE + 1] = {0}; // +1 for safety
     SIZE_T charsToCopy = min(keyNameChars, KCM_KEY_NAME_BUFFER_SIZE);
-    memcpy(tempKeyName, authCtx->keyName, charsToCopy * sizeof(WCHAR));
+
+    // Copy the key name using a loop instead of memcpy
+    for (SIZE_T i = 0; i < charsToCopy; i++)
+    {
+        tempKeyName[i] = authCtx->keyName[i];
+    }
     tempKeyName[charsToCopy] = L'\0'; // Ensure null termination
 
     // Compare the extracted key name with the provided key name
@@ -1810,8 +1797,6 @@ HRESULT CreateUserBoundKeyRequestForDeriveSharedSecret(
 
     // Handle nonce manipulation to prevent reuse
     nonce = sessionNonce;
-    // nonce = InterlockedIncrement64(reinterpret_cast<LONG64*>(&sessionNonce));
-
     if (nonce >= Vtl1MutualAuth::c_maxRequestNonce)
     {
         hr = HRESULT_FROM_WIN32(ERROR_TOO_MANY_SECRETS);
@@ -2638,7 +2623,6 @@ HRESULT CreateUserBoundKeyRequestForRetrieveAuthorizationContext(
 
     // Handle nonce manipulation to prevent reuse
     nonce = sessionNonce;
-
     if (nonce >= Vtl1MutualAuth::c_maxRequestNonce)
     {
         hr = HRESULT_FROM_WIN32(ERROR_TOO_MANY_SECRETS);
