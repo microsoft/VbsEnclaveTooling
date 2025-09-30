@@ -1029,7 +1029,7 @@ ValidateAuthorizationContext(
     }
 
     // Verify the key name length is valid
-    if (authCtx->keyNameLength == 0 || authCtx->keyNameLength > (sizeof(authCtx->keyName) * sizeof(WCHAR)))
+    if (authCtx->keyNameLength == 0 || authCtx->keyNameLength > sizeof(authCtx->keyName))
     {
         return E_INVALIDARG;
     }
