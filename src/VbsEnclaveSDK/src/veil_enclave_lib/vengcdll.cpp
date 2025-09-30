@@ -20,7 +20,7 @@
 #define AES_256_KEY_SIZE_BYTES 32           // AES-256 session key size in bytes
 
 // Buffer size constants
-#define KCM_KEY_NAME_BUFFER_SIZE 256        // Buffer size for key names
+#define KCM_KEY_NAME_MAX_LENGTH 256        // Buffer size for key names
 #define KCM_ATTESTATION_BUFFER_SIZE 256     // Buffer size for attestation data
 
 // KCM public key validation limits
@@ -42,7 +42,7 @@ struct NCRYPT_NGC_AUTHORIZATION_CONTEXT{
     BOOL isSecureIdOwnerId;
     KEY_CREDENTIAL_CACHE_CONFIG cacheConfig;
     DWORD keyNameLength;
-    WCHAR keyName[KCM_KEY_NAME_BUFFER_SIZE];
+    WCHAR keyName[KCM_KEY_NAME_MAX_LENGTH];
     DWORD publicKeyByteCount;
     BYTE publicKey[1];
 };
@@ -577,36 +577,20 @@ LONG64 ConsumeNextSessionNonce(
 }
 
 // Closes a user bound key session and destroys the associated BCRYPT_KEY_HANDLE
-HRESULT CloseUserBoundKeySession(
-    _In_ USER_BOUND_KEY_SESSION_HANDLE sessionHandle)
+HRESULT CloseUserBoundKeySession(_In_ USER_BOUND_KEY_SESSION_HANDLE sessionHandle)
 {
-    if (sessionHandle == nullptr)
-    {
-        return E_INVALIDARG;
-    }
-
-    HRESULT hrResult = S_OK;
+    RETURN_HR_IF(E_INVALIDARG, !sessionHandle);
 
     // Cast the handle to internal context
-    USER_BOUND_KEY_SESSION_INTERNAL* pInternalSession = reinterpret_cast<USER_BOUND_KEY_SESSION_INTERNAL*>(sessionHandle);
+    auto pInternalSession = reinterpret_cast<USER_BOUND_KEY_SESSION_INTERNAL*>(sessionHandle);
 
-    if (pInternalSession->sessionKey != 0)
-    {
-        BCRYPT_KEY_HANDLE hSessionKey = pInternalSession->sessionKey.get();
+    // Destruct the internal context (including all child members)
+    pInternalSession->~USER_BOUND_KEY_SESSION_INTERNAL();
 
-        // Destroy the BCrypt key handle
-        NTSTATUS status = BCryptDestroyKey(hSessionKey);
-        if (FAILED(HRESULT_FROM_NT(status)))
-        {
-            // Free the handle memory even if BCryptDestroyKey fails
-            hrResult = HRESULT_FROM_NT(status);
-        }
-    }
+    // Free the internal context memory itself
+    VengcFree(pInternalSession);
 
-    // Free the handle memory itself
-    VengcFree(sessionHandle);
-
-    return hrResult;
+    return S_OK;
 }
 
 // Attestation report generation API for user bound keys.
@@ -1029,17 +1013,17 @@ ValidateAuthorizationContext(
     }
 
     // Verify the key name length is valid
-    if (authCtx->keyNameLength == 0 || authCtx->keyNameLength > sizeof(authCtx->keyName))
+    if (authCtx->keyNameLength == 0 || (authCtx->keyNameLength * sizeof(wchar_t)) > sizeof(authCtx->keyName))
     {
         return E_INVALIDARG;
     }
 
     // Extract the key name from the structure
-    SIZE_T keyNameChars = authCtx->keyNameLength;
+    SIZE_T keyNameCharCount = authCtx->keyNameLength;
 
     // Ensure the key name is null-terminated within the allocated space
-    WCHAR tempKeyName[KCM_KEY_NAME_BUFFER_SIZE + 1] = {0}; // +1 for safety
-    SIZE_T charsToCopy = min(keyNameChars, KCM_KEY_NAME_BUFFER_SIZE);
+    WCHAR tempKeyName[KCM_KEY_NAME_MAX_LENGTH + 1] = {0}; // +1 for safety
+    SIZE_T charsToCopy = min(keyNameCharCount, KCM_KEY_NAME_MAX_LENGTH);
 
     // Copy the key name using a loop instead of memcpy
     for (SIZE_T i = 0; i < charsToCopy; i++)
