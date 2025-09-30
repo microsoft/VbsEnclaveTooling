@@ -291,7 +291,7 @@ GenerateSessionKey(
     veil::vtl1::vtl0_functions::debug_print("DEBUG: GenerateSessionKey - BCryptGenerateSymmetricKey succeeded");
 
     // Success - transfer ownership to caller
-    *phSessionKey = hSessionKey.release(); // Release ownership from WIL smart pointer
+    *phSessionKey = hSessionKey.release();  // Release ownership without destroying the handle
     *ppSessionKeyBytes = pSessionKeyBytes;
     pSessionKeyBytes = NULL;
 
@@ -535,7 +535,7 @@ HRESULT CreateUserBoundKeySessionHandle(
     RETURN_IF_NULL_ALLOC(pInternalSession);
 
     // Use placement new to properly initialize the wil::unique_bcrypt_key
-    new (&pInternalSession->sessionKey) wil::unique_bcrypt_key(sessionKey);
+    pInternalSession->sessionKey = wil::unique_bcrypt_key(sessionKey);
     pInternalSession->sessionNonce = sessionNonce;
 
     // Return the internal context as an opaque handle
@@ -585,10 +585,28 @@ HRESULT CloseUserBoundKeySession(
         return E_INVALIDARG;
     }
 
+    HRESULT hrResult = S_OK;
+
+    // Cast the handle to internal context
+    USER_BOUND_KEY_SESSION_INTERNAL* pInternalSession = reinterpret_cast<USER_BOUND_KEY_SESSION_INTERNAL*>(sessionHandle);
+
+    if (pInternalSession->sessionKey != 0)
+    {
+        BCRYPT_KEY_HANDLE hSessionKey = pInternalSession->sessionKey.get();
+
+        // Destroy the BCrypt key handle
+        NTSTATUS status = BCryptDestroyKey(hSessionKey);
+        if (FAILED(HRESULT_FROM_NT(status)))
+        {
+            // Free the handle memory even if BCryptDestroyKey fails
+            hrResult = HRESULT_FROM_NT(status);
+        }
+    }
+
     // Free the handle memory itself
     VengcFree(sessionHandle);
 
-    return S_OK;
+    return hrResult;
 }
 
 // Attestation report generation API for user bound keys.
@@ -1011,13 +1029,13 @@ ValidateAuthorizationContext(
     }
 
     // Verify the key name length is valid
-    if (authCtx->keyNameLength == 0 || authCtx->keyNameLength > sizeof(authCtx->keyName))
+    if (authCtx->keyNameLength == 0 || authCtx->keyNameLength > (sizeof(authCtx->keyName) * sizeof(WCHAR)))
     {
         return E_INVALIDARG;
     }
 
     // Extract the key name from the structure
-    SIZE_T keyNameChars = authCtx->keyNameLength / sizeof(WCHAR);
+    SIZE_T keyNameChars = authCtx->keyNameLength;
 
     // Ensure the key name is null-terminated within the allocated space
     WCHAR tempKeyName[KCM_KEY_NAME_BUFFER_SIZE + 1] = {0}; // +1 for safety
