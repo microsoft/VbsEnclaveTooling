@@ -577,20 +577,36 @@ LONG64 ConsumeNextSessionNonce(
 }
 
 // Closes a user bound key session and destroys the associated BCRYPT_KEY_HANDLE
-HRESULT CloseUserBoundKeySession(_In_ USER_BOUND_KEY_SESSION_HANDLE sessionHandle)
+HRESULT CloseUserBoundKeySession(
+    _In_ USER_BOUND_KEY_SESSION_HANDLE sessionHandle)
 {
-    RETURN_HR_IF(E_INVALIDARG, !sessionHandle);
+    if (sessionHandle == nullptr)
+    {
+        return E_INVALIDARG;
+    }
+
+    HRESULT hrResult = S_OK;
 
     // Cast the handle to internal context
-    auto pInternalSession = reinterpret_cast<USER_BOUND_KEY_SESSION_INTERNAL*>(sessionHandle);
+    USER_BOUND_KEY_SESSION_INTERNAL* pInternalSession = reinterpret_cast<USER_BOUND_KEY_SESSION_INTERNAL*>(sessionHandle);
 
-    // Destruct the internal context (including all child members)
-    pInternalSession->~USER_BOUND_KEY_SESSION_INTERNAL();
+    if (pInternalSession->sessionKey.get() != nullptr)
+    {
+        // Release the key handle from the smart pointer and destroy it manually
+        // This prevents the smart pointer destructor from being called
+        BCRYPT_KEY_HANDLE hSessionKey = pInternalSession->sessionKey.release();
+        NTSTATUS status = BCryptDestroyKey(hSessionKey);
+        if (FAILED(HRESULT_FROM_NT(status)))
+        {
+            // Continue with cleanup even if BCryptDestroyKey fails
+            hrResult = HRESULT_FROM_NT(status);
+        }
+    }
 
-    // Free the internal context memory itself
-    VengcFree(pInternalSession);
+    // Free the handle memory itself
+    VengcFree(sessionHandle);
 
-    return S_OK;
+    return hrResult;
 }
 
 // Attestation report generation API for user bound keys.
