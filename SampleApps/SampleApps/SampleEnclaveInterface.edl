@@ -3,6 +3,13 @@
 
 enclave
 {
+    struct keyCredentialCacheConfig
+    {
+        uint32_t cacheOption;
+        uint32_t cacheTimeoutInSeconds;
+        uint32_t cacheUsageCount;
+    };
+
     // Host to enclave functions
     trusted
     {
@@ -40,6 +47,36 @@ enclave
             [in, out] vector<uint8_t> tag2,
             [out] wstring decrypted_input_bytes_1,
             [out] wstring decrypted_input_bytes_2
+            );
+
+        HRESULT MyEnclaveCreateUserBoundKey(
+            wstring helloKeyName,
+            wstring pinMessage,
+            uintptr_t windowId,
+            keyCredentialCacheConfig keyCredentialCacheConfiguration,
+            [out] vector<uint8_t> securedEncryptionKeyBytes
+            );
+
+        HRESULT MyEnclaveLoadUserBoundKeyAndEncryptData(
+            wstring helloKeyName,
+            wstring pinMessage,
+            uintptr_t windowId,
+            keyCredentialCacheConfig keyCredentialCacheConfiguration,
+            vector<uint8_t> secured_encryption_key_bytes,
+            wstring inputData,
+            [out] vector<uint8_t> encryptedInputBytes,
+            [out] vector<uint8_t> tag
+            );
+
+        HRESULT MyEnclaveLoadUserBoundKeyAndDecryptData(
+            wstring helloKeyName,
+            wstring pinMessage,
+            uintptr_t windowId,
+            keyCredentialCacheConfig keyCredentialCacheConfiguration,
+            vector<uint8_t> secured_encryption_key_bytes,
+            vector<uint8_t> encryptedInputBytes,
+            vector<uint8_t> tag,
+            [out] wstring decryptedData
             );
     };
 };

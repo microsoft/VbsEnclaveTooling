@@ -3,12 +3,36 @@
 
 enclave
 {
+    struct keyCredentialCacheConfig
+    {
+        uint32_t cacheOption;
+        uint32_t cacheTimeoutInSeconds;
+        uint32_t cacheUsageCount;
+    };
+
+    struct attestationReportAndSessionInfo
+    {
+        vector<uint8_t> attestationReport;
+        uintptr_t sessionInfo;
+    };
+
+    struct credentialAndFormattedKeyNameAndSessionInfo
+    {
+        vector<uint8_t> credential;
+        wstring formattedKeyName;
+        uintptr_t sessionInfo;
+    };
+
     trusted
     {
         HRESULT taskpool_run_task(
             uint64_t taskpool_instance_vtl1,
             uint64_t task_id
         );
+
+        // hello user bound key
+        attestationReportAndSessionInfo userboundkey_get_attestation_report(
+            vector<uint8_t> challenge);
     };
 
     untrusted
@@ -44,6 +68,37 @@ enclave
             wstring log,
             wstring log_file_path
         );
-    };
 
+        // hello user bound key
+        credentialAndFormattedKeyNameAndSessionInfo userboundkey_establish_session_for_create(
+            uintptr_t enclave,
+            wstring key_name,
+            uintptr_t ecdh_protocol,
+            wstring message,
+            uintptr_t window_id,
+            keyCredentialCacheConfig cache_config
+        );
+
+        credentialAndFormattedKeyNameAndSessionInfo userboundkey_establish_session_for_load(
+            uintptr_t enclave,
+            wstring key_name,
+            wstring message,
+            uintptr_t window_id,
+            uint64_t nonce
+        );
+
+        vector<uint8_t> userboundkey_get_authorization_context_from_credential(
+            vector<uint8_t> credential_vector,
+            vector<uint8_t> encrypted_kcm_request_for_get_authorization_context,
+            wstring message,
+            uintptr_t window_id
+        );
+
+        vector<uint8_t> userboundkey_get_secret_from_credential(
+            vector<uint8_t> credential_vector,
+            vector<uint8_t> encrypted_kcm_request_for_derive_shared_secret,
+            wstring message,
+            uintptr_t window_id
+        );
+    };
 };

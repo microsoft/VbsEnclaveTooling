@@ -39,6 +39,9 @@
     <ClInclude Include="logger.vtl1.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="userboundkey.vtl1.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp">
@@ -48,6 +51,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="logger.vtl1.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="userboundkey.vtl1.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="vtl0_functions.vtl1.cpp">
