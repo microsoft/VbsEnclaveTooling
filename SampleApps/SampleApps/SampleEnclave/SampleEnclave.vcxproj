@@ -26,7 +26,7 @@
     <Keyword>Win32Proj</Keyword>
     <ProjectGuid>{d2c762e2-0de1-4f72-98c9-75f7bd69d17e}</ProjectGuid>
     <RootNamespace>SampleEnclave</RootNamespace>
-    <WindowsTargetPlatformVersion>10.0.26492.0</WindowsTargetPlatformVersion>
+    <WindowsTargetPlatformVersion>10.0.26499.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <Import Project="$(ProjectDir)..\SampleEnclave.props" />
@@ -63,11 +63,12 @@
 		"$(WindowsSDK_LibraryPath)\..\ucrt_enclave\$(Platform)"
 	</WindowsSDK_LibraryPath_Enclave>
     <VBS_Enclave_Dependencies>
-	  "C:\Program Files (x86)\Windows Kits\10\Lib\10.0.26492.0\um\x64\vertdll.lib";
+	  "C:\Program Files (x86)\Windows Kits\10\Lib\10.0.26499.0\um\x64\vertdll.lib";
+	  "C:\Program Files (x86)\Windows Kits\10\Lib\10.0.26499.0\um\x64\veinterop.lib";
 	  bcrypt.lib;
 	  $(VC_LibraryPath_Enclave)\libcmt.lib;
 	  $(VC_LibraryPath_Enclave)\libvcruntime.lib;
-	  "C:\Program Files (x86)\Windows Kits\10\Lib\10.0.26492.0\ucrt_enclave\x64\ucrt.lib";
+	  "C:\Program Files (x86)\Windows Kits\10\Lib\10.0.26499.0\ucrt_enclave\x64\ucrt.lib";
     </VBS_Enclave_Dependencies>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />

@@ -5,8 +5,7 @@
 #include <cstdint>
 #include <wil/resource.h>
 #include "future.vtl1.h"
-#include "vengcdll.h" // OS APIs
-// #include <veinterop_kcm.h>
+#include <veinterop_kcm.h>
 
 // Forward declarations for the auto-generated types
 namespace DeveloperTypes
