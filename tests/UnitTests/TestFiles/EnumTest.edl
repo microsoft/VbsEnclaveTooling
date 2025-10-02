@@ -20,8 +20,9 @@ enclave
     // Anonymous enum
     enum 
     {
-        Nine = 100,
-        Ten = 200
+        Nine = 9,
+        Ten = 10,
+        Fifteen = 15
     };
 
     trusted 

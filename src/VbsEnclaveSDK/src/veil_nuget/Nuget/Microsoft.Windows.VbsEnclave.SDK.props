@@ -1,4 +1,7 @@
 <Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
     <PropertyGroup>
+        <!-- Additional infrastructure props -->
+        <VbsEnclaveConsumeCppSupportLib>false</VbsEnclaveConsumeCppSupportLib>
+        <VbsEnclaveGeneratedFilesDir Condition="$(VbsEnclaveGeneratedFilesDir) == ''"></VbsEnclaveGeneratedFilesDir>
     </PropertyGroup>
 </Project>

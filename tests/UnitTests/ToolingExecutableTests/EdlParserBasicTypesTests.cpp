@@ -20,10 +20,6 @@ namespace VbsEnclaveToolingTests
 
 TEST_CLASS(EdlParserBasicTypesTests)
 {
-    private:
-
-    std::filesystem::path m_basic_edl_file_name = "BasicTypesTest.edl";
-
     public:
 
     // Trusted functions

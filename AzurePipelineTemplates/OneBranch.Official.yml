@@ -21,6 +21,9 @@ variables:
 
 trigger: none
 
+pool:
+  type: windows
+
 resources:
   repositories: 
     - repository: templates
@@ -64,8 +67,6 @@ extends:
       - stage: Build_codegen
         displayName: 'Build CodeGenerator'
         condition: eq('${{ parameters.BuildTarget }}', 'CodeGen')
-        pool:
-         type: windows
         jobs:
         - template: AzurePipelineTemplates/jobs/CodeGenBuildJob.yml@self
           parameters:
@@ -75,8 +76,6 @@ extends:
       - stage: Build_veil_sdk
         displayName: 'Build SDK'
         condition: eq('${{ parameters.BuildTarget }}', 'SDK')
-        pool:
-          type: windows
         jobs:
         - template: AzurePipelineTemplates/jobs/SdkBuildJob.yml@self
           parameters:

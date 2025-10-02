@@ -20,14 +20,14 @@ namespace CodeGeneration::Flatbuffers
 
     std::string GenerateFlatbufferSchema(
         std::string_view developer_namespace_name,
-        const std::vector<DeveloperType>& developer_types_insertion_list,
+        const OrderedMap<std::string, DeveloperType>& developer_types,
         const std::vector<DeveloperType>& abi_function_developer_types)
     {
         std::ostringstream schema {};
         auto schema_namespace = std::format(c_flatbuffer_namespace, developer_namespace_name);
         schema << c_autogen_header_string << schema_namespace;
 
-        for (auto& dev_type : developer_types_insertion_list)
+        for (const auto& dev_type : developer_types.values())
         {
             if (dev_type.IsEdlType(EdlTypeKind::Enum))
             {
@@ -59,22 +59,21 @@ namespace CodeGeneration::Flatbuffers
     {
         std::ostringstream enum_body {};
 
-        for (auto& [enum_value_name, enum_value] : enum_type.m_items)
+        for (auto& enum_value : enum_type.m_items.values())
         {
             if (enum_value.m_value)
             {
                 // Raw value will only ever be an numeric value.
-                Token value_token = enum_value.m_value.value();
-                enum_body << std::format("    {} = {},\n", enum_value_name, value_token.ToString());
+                enum_body << std::format("    {} = {},\n", enum_value.m_name, enum_value.m_value.value());
             }
             else
             {
-                enum_body << std::format("    {} = {},\n", enum_value_name, enum_value.m_declared_position);
+                enum_body << std::format("    {} = {},\n", enum_value.m_name, enum_value.m_declared_position);
             }
 
             if (enum_value.m_is_default_value)
             {
-                g_enum_data.emplace(enum_type.m_name, enum_value_name);
+                g_enum_data.emplace(enum_type.m_name, enum_value.m_name);
             }
         }
 

@@ -14,6 +14,8 @@ using namespace ToolingExceptions;
 
 namespace CodeGeneration
 {
+    static size_t c_type_definition_tab_count = 1;
+
     static inline std::string uint64_to_hex(uint64_t value)
     {
         std::stringstream string_stream;
@@ -93,18 +95,18 @@ namespace CodeGeneration
     }
 
     inline std::vector<DeveloperType> CreateDeveloperTypesForABIFunctions(
-       std::span<Function> trusted_functions,
-       std::span<Function> untrusted_functions)
+        const OrderedMap<std::string, Function>& trusted_functions,
+        const OrderedMap<std::string, Function>& untrusted_functions)
     {
         std::vector<DeveloperType> dev_types {};
 
-        for (const auto& function : trusted_functions)
+        for (auto& function: trusted_functions.values())
         {
             DeveloperType dev_type = GetDeveloperTypeStructForABI(function);
             dev_types.push_back(dev_type);
         }
 
-        for (const auto& function : untrusted_functions)
+        for (const auto& function : untrusted_functions.values())
         {
             DeveloperType dev_type = GetDeveloperTypeStructForABI(function);
             dev_types.push_back(dev_type);
@@ -300,7 +302,7 @@ namespace CodeGeneration
     
     inline bool ShouldFieldInReturnedStructBeMoved(
         const Declaration& declaration,
-        const std::unordered_map<std::string, DeveloperType>& developer_types)
+        const OrderedMap<std::string, DeveloperType>& developer_types)
     {
         if (declaration.IsPrimitiveType())
         {

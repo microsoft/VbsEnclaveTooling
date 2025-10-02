@@ -1,0 +1,54 @@
+// Copyright (c) Microsoft Corporation.
+// Licensed under the MIT License.
+// File used for testing purposes
+
+enclave
+{
+    // Anonymous enum
+    enum
+    {
+        value1 = 10,
+    };
+
+    // Hexidecimal enum example
+     enum HexEnum 
+     {
+        Hex_val1 = 0x01,
+        Hex_val2,
+        Hex_val3,
+        Hex_val4 = 0xFF
+    };
+
+    // Decimal enum example
+    enum DecimalEnum 
+     {
+        Deci_val1,
+        Deci_val2,
+        Deci_val3,
+    };
+
+    struct NestedStructNoPointers
+    {
+        int64_t value_in_nested_struct;
+    };
+
+    struct StructWithNoPointers
+    {
+        bool bool_val;
+        int8_t int8_val;
+        int16_t int16_val;
+        int32_t int32_val;
+        int64_t int64_val;
+        uint8_t uint8_val;
+        uint16_t uint16_val;
+        uint32_t uint32_val;
+        uint64_t uint64_val;
+
+        HexEnum hex_val;
+        DecimalEnum deci_val;
+
+        NestedStructNoPointers nested_struct_val;
+
+        HRESULT result;
+    };
+};

@@ -222,14 +222,19 @@ enclave
 * Right click the dll project and choose `Build`. This will generate the projection layer for the enclave dll. You should have a couple initial error messages after code generation due to lack of implementation. We will fix this in the next step.
 
 > [!Note]
->  To view the generated files, choose `Show All Files` in solution explorer and navigate to `Generated Files\VbsEnclave\Enclave`. Functions in the trusted scope of the .edl file will have a function declaration generated in `Generated Files\VbsEnclave\Enclave\Implementations.h`. For more information on code generation, view [CodeGeneration.md](./CodeGeneration.md).
+> To view the generated files, choose `Show All Files` in solution explorer and navigate to 
+> `Generated Files\VbsEnclave\Enclave`. Functions in the trusted scope of the .edl file will have a function
+> declaration generated in `Generated Files\VbsEnclave\Enclave\Implementation\Trusted.h`. For more information on
+> code generation, view [CodeGeneration.md](./CodeGeneration.md).
 
-* Add a cpp file to the dll project and name it `MySecretEnclaveExports.cpp`. This is where we will define the `DoSecretMath` function that we declared in the `MySecretEnclave.edl` file. You need to include the `Implementations.h` file, and then define the function:
+* Add a cpp file to the dll project and name it `MySecretEnclaveExports.cpp`. 
+  * This is where we will define the `DoSecretMath` function that we declared in the `MySecretEnclave.edl` file.
+* You need to include the `Generated Files\VbsEnclave\Enclave\Implementation\Trusted.h` file, and then define the function:
 ```cpp
 #include "pch.h"
-#include <VbsEnclave\Enclave\Implementations.h>
+#include <VbsEnclave\Enclave\Implementation\Trusted.h>
 
-uint32_t VbsEnclave::VTL1_Declarations::DoSecretMath(_In_  std::uint32_t val1, _In_  std::uint32_t val2)
+uint32_t VbsEnclave::Trusted::Implementation::DoSecretMath(_In_  std::uint32_t val1, _In_  std::uint32_t val2)
 {
     return val1 * val2;
 }
@@ -263,15 +268,15 @@ uint32_t VbsEnclave::VTL1_Declarations::DoSecretMath(_In_  std::uint32_t val1, _
 * Right-Click on the project and choose `Build`, it should succeed. 
 
 > [!Note]
->  To view generated files in the HostApp select `Show all files` in solution explorer. You should see the `Generated Files\VbsEnclave\HostApp` folder. The file of interest is the `Stubs.h` file. For more information on code generation, view [CodeGeneration.md](./CodeGeneration.md).
+>  To view generated files in the HostApp select `Show all files` in solution explorer. You should see the `Generated Files\VbsEnclave\HostApp` folder. The files of interest are in the `Implementation` and `Stubs` folders. For more information on code generation, view [CodeGeneration.md](./CodeGeneration.md).
 
 * In your `main` method, initialize the enclave and call its methods
-    * Add the host side include file from the SDK nuget package and the new Stubs.h code generated header.
+    * Add the host side include file from the SDK nuget package and the new `Stubs\Trusted.h` code generated header.
         ```c++
         #include <conio.h>
         #include <iostream>
         #include <veil\host\enclave_api.vtl0.h>
-        #include <VbsEnclave\HostApp\Stubs.h>
+        #include <VbsEnclave\HostApp\Stubs\Trusted.h>
         ```
     * Initialize the enclave and call its interface:
         ```cpp
@@ -300,7 +305,7 @@ uint32_t VbsEnclave::VTL1_Declarations::DoSecretMath(_In_  std::uint32_t val1, _
         veil::vtl0::enclave_api::register_callbacks(enclave.get());
     
         // Initialize enclave interface
-        auto enclaveInterface = VbsEnclave::VTL0_Stubs::MySecretEnclave(enclave.get());
+        auto enclaveInterface = VbsEnclave::Trusted::Stubs::MySecretEnclave(enclave.get());
         THROW_IF_FAILED(enclaveInterface.RegisterVtl0Callbacks());
     
         //Call into the enclave

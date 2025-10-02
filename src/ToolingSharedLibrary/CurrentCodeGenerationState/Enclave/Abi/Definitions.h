@@ -2,14 +2,14 @@
 // Changes to this file may be lost if the file is regenerated.
 
 #pragma once
-#include <VbsEnclave\Enclave\Trusted.h>
+#include <VbsEnclave\Enclave\Implementation\Trusted.h>
+#include <VbsEnclave\Enclave\Abi\TypeMetadata.h>
+
 
 namespace CodeGenTest
 {
-    namespace AbiDefinitions
+    namespace Abi::Runtime
     {
-        using namespace CodeGenTest::DeveloperTypes;
-        
         static void EnforceMemoryRestriction()
         {
             if (ENABLE_ENCLAVE_RESTRICT_CONTAINING_PROCESS_ACCESS)
@@ -17,14 +17,18 @@ namespace CodeGenTest
                 VbsEnclaveABI::Enclave::EnableEnclaveRestrictContainingProcessAccessOnce();
             }
         }
+    }
 
+    namespace Abi::Definitions
+    {
+        
         static inline void* FuncWithAllArgs_0_Generated_Stub(void* function_context)
         try
         {
-            using DevTypeT = FuncWithAllArgs_0_args;
-            using FlatBufferT = FlatbuffersDevTypes::FuncWithAllArgs_0_argsT;
-            EnforceMemoryRestriction();
-            HRESULT hr = VbsEnclaveABI::Enclave::CallVtl1ExportFromVtl1<DevTypeT, FlatBufferT>(Trusted::Implementation::FuncWithAllArgs, function_context);
+            using AbiTypeT = CodeGenTest::Abi::Types::FuncWithAllArgs_0_args;
+            using FlatBufferT = FlatbufferTypes::FuncWithAllArgs_0_argsT;
+            Abi::Runtime::EnforceMemoryRestriction();
+            HRESULT hr = VbsEnclaveABI::Enclave::CallVtl1ExportFromVtl1<AbiTypeT, FlatBufferT>(Trusted::Implementation::FuncWithAllArgs, function_context);
             LOG_IF_FAILED(hr);
             return ABI_HRESULT_TO_PVOID(hr);
         }
@@ -35,17 +39,11 @@ namespace CodeGenTest
             return ABI_HRESULT_TO_PVOID(hr);
         }
 
-        HRESULT RegisterVtl0Callbacks(const std::vector<std::uint64_t>& callback_addresses, const std::vector<std::string>& callback_names)
-        {
-            RETURN_IF_FAILED(VbsEnclaveABI::Enclave::VTL0CallBackHelpers::AddVtl0FunctionsToTable(callback_addresses, callback_names));
-            return S_OK;
-        }
-
         void* __AbiRegisterVtl0Callbacks_CodeGenTest__(void* function_context)
         try
         {
-            EnforceMemoryRestriction();
-            HRESULT hr = VbsEnclaveABI::Enclave::CallVtl1ExportFromVtl1<VbsEnclaveABI::Shared::Converters::AbiRegisterVtl0Callbacks_args, FlatbuffersDevTypes::AbiRegisterVtl0Callbacks_argsT>(RegisterVtl0Callbacks, function_context);
+            Abi::Runtime::EnforceMemoryRestriction();
+            HRESULT hr = VbsEnclaveABI::Enclave::CallVtl1ExportFromVtl1<VbsEnclaveABI::Shared::Converters::AbiRegisterVtl0Callbacks_args, FlatbufferTypes::AbiRegisterVtl0Callbacks_argsT>(VbsEnclaveABI::Enclave::RegisterVtl0Callbacks, function_context);
             LOG_IF_FAILED(hr);
             return ABI_HRESULT_TO_PVOID(hr);
         }

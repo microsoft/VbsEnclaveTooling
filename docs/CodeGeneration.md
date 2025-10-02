@@ -1,4 +1,4 @@
-## Code Generation
+# Code Generation
 
 Our code generation allows developers to call functions that live in either VTL1 or
 VTL0 in a natural way without having to interact with the `CallEnclave` API directly, nor deal with the unstructured `void *`
@@ -6,7 +6,7 @@ contract when passing data into/out-of an enclave. The generated code will packa
 across the VTL boundary, then forward them to your ultimate function implementation. This allows developers to focus only 
 on their business logic, instead of the logic around the trust boundary. 
 
-### How it works
+## How it works
 1. Create an .edl file like [example edl](../SampleApps/SampleApps/SampleEnclaveInterface.edl).
    See: [Edl format](./Edl.md) for more current support.
 1. Add the `Microsoft.Windows.VbsEnclave.CodeGenerator` nuget package to both your `enclave` and `hostApp` projects. 
@@ -14,16 +14,23 @@ on their business logic, instead of the logic around the trust boundary.
 1. Build your projects.
 
 Generated `enclave` project artifacts:
-   ```
-    <Namespace>/
+```
+    VbsEnclave/
     |
     |--- Enclave/
-    |       |--- Exports
-    |               |--- <Namespace>_Exports.cpp
-    |               |--- <Namespace>_StubsForExports.h
-    |       |--- Implementations.h
-    |       |--- Stubs.cpp
-    |       |--- DeveloperTypes.h
+            |--- Abi
+                  |--- AbiTypes.h
+                  |--- Definitions.h
+                  |--- Exports.<Edl-Filename>.cpp
+                  |--- FlatbufferTypes.fbs
+                  |--- FlatbufferTypes.h
+                  |--- LinkerPragmas.<Edl-Filename>.cpp
+                  |--- TypeMetadata.h
+            |--- Implementation
+                  |--- Trusted.h
+                  |--- Types.h
+            |--- Stubs
+                  |--- Untrusted.h
    ```
 
 Generated `hostApp` project artifacts:
@@ -31,44 +38,74 @@ Generated `hostApp` project artifacts:
     VbsEnclave/
     |
     |--- HostApp/
-            |--- Stubs.h
-            |--- DeveloperTypes.h
-
-   ```
+            |--- Abi
+                  |--- AbiTypes.h
+                  |--- Definitions.h
+                  |--- FlatbufferTypes.fbs
+                  |--- FlatbufferTypes.h
+                  |--- TypeMetadata.h
+            |--- Implementation
+                  |--- Types.h
+                  |--- Untrusted.h
+            |--- Stubs
+                  |--- Trusted.h
+```
 
   > [!NOTE]
   > - The default output directory is `$(ProjectDir)\Generated Files`
-  >  - During build time the files will automatically be added to the projects build so there is no need to
-             explicitly include them.
+  >  - If you're using the nuget package the files will automatically be added to the projects build so there is no need to explicitly include them.
 
-### Files Generated
+## Files Generated
 
-| File              | Generated for | Description                                                 |
-|-------------------|---------------|-------------------------------------------------------------|
-| `DeveloperTypes.h` | Both | Defines C++ parameter types developer can pass into `.edl`-specified functions. This is the `parameter currency' of the interfacing layer that the developer's app logic & enclave logic uses to speak to codegen'd functions. |
-| `Implementations.h` | Enclave | Contains all of the function declarations that the developer outlined in the `trusted` scope of the `.edl` file. The developer `must` implement these. If a developer adds functions to the `untrusted` scope of the .edl file, corresponding stub functions with a  `_callback` suffix will be generated. These `stubs` allow the enclave to invoke the respective `untrusted` functions implementation in the `hostApp`. |
-| `Stubs.cpp`        | Enclave | Contains all of the generated stub functions that will be exported by the enclave. |
-| `Stubs.h`          | HostApp | This contains a `class` that is constructed with a `void*` to an enclave instance, and includes stub functions for calling `trusted` enclave functions from the `hostApp`. It also defines static functions the developer must implement for any `untrusted` functions in the `.edl` file. |
+  > [!NOTE]
+  > The developer is only expected to interact with files generated in the `Implementation` and the `Stubs` directories.
 
-### ABI layer
+### ABI files
+| File              | Description                                                 |
+|-------------------|-------------------------------------------------------------|
+| `Abi\Abitypes.h` | Defines data structures for packaging function parameters for use with the VBS enclave codegen ABI. |
+| `Abi\Definitions.h` | Contains methods used to forward and return parameters to and from the vbs enclave codegen ABI. This is the glue code between the `hostApp` and the `enclave`.  |
+| `Abi\Exports.<Edl-Filename>.cpp` | Contains the generated functions that are exported by the enclave. These functions call into a sibling functions generated in `Abi\Definitions.h`. |
+| `Abi\FlatbufferTypes.h` | Defines a `Flatbuffer` type for each type defined in `Abi\AbiType.h` and `Implementation\Types.h`.  |
+| `Abi\FlatbufferTypes.fbs` | Defines a `Flatbuffer` schema that generates the types found in `Abi\FlatbufferTypes.h`.  |
+| `Abi\LinkerPragmas.<Edl-Filename>.cpp` | Contains a `#pragma comment(linker, /include)` for each generated function in `Abi\Exports.<Edl-Filename>.cpp`. This ensures that functions generated in a developer's static library are exported from the enclave dll.  |
+| `Abi\TypeMetadata.h` | Contains data needed to perform the conversion between `Flatbuffer types` and the types found in `Abi\AbiType.h` and `Implementation\Types.h`. |
 
-The `Microsoft.Windows.VbsEnclave.CodeGenerator` nuget package exports `6 non-generated .h files` that your codegen'd layer (above) relies on. You typically won't ever need to interact with these files explicitly.
+### Enclave files
+| File              | Description                                                 |
+|-------------------|-------------------------------------------------------------|
+| `Implementation\Trusted.h` | Contains all of the function declarations that the developer outlined in the `trusted` scope of the `.edl` file. The developer must implement these. |
+| `Implementation\Types.h` | Defines C++ parameter types the developer can pass into `.edl`-specified functions. This is the `parameter currency` of the interfacing layer that the developer's app logic & enclave logic uses to speak to codegen'd functions. |
+| `Stubs\Untrusted.h` | Contains stubs functions that the developer will call from inside the `enclave` to invoke the implementation in the `hostApp`. |
+
+### HostApp files
+| File              | Description                                                 |
+|-------------------|-------------------------------------------------------------|
+| `Implementation\Untrusted.h` | Contains all of the function declarations that the developer outlined in the `untrusted` scope of the `.edl` file. The developer must implement these. |
+| `Implementation\Types.h` | Defines C++ parameter types developer can pass into `.edl`-specified functions. This is the `parameter currency` of the interfacing layer that the developer's app logic & enclave logic uses to speak to codegen'd functions. |
+| `Stubs\Trusted.h` | Contains a `class` that is constructed with a `void*` to an enclave instance, and includes stub functions for invoking the implementation in the `enclave` from the `hostApp`. |
+
+## ABI layer
+
+The `Microsoft.Windows.VbsEnclave.CodeGenerator` nuget package exports `7 non-generated .h files` that your codegen'd layer (above) relies on. You typically won't ever need to interact with these files explicitly.
+
 ```C++
 #include <VbsEnclaveABI\Shared\VbsEnclaveAbiBase.h>
+#include <VbsEnclaveABI\Shared\ConversionHelpers.h>
 #include <VbsEnclaveABI\Enclave\EnclaveHelpers.h>
 #include <VbsEnclaveABI\Enclave\Vtl0Pointers.h>
 #include <VbsEnclaveABI\Enclave\MemoryAllocation.h>
 #include <VbsEnclaveABI\Enclave\MemoryChecks.h>
 #include <VbsEnclaveABI\Host\HostHelpers.h>
 ```
-to pass data into and out of the enclave securely.
 
-#### Shared by both Enclave and HostApp
+### Shared by both Enclave and HostApp
 
 1. `VbsEnclaveAbiBase.h` - Defines the core structures, macros and helper functions needed to support parameter packing
                            and unpacking.
+1. `ConversionHelpers.h` - defines Helper functions for translating `Flatbuffer` types to and from EDL code-generated types.
 
-#### Available only to Enclave
+### Available only to Enclave
 
 1. `EnclaveHelpers.h`    - Provides helper functions used by the generated functions to facilitate marshaling data into
                            and out of the `enclave`. These functions leverage the [EnclaveCopyIntoEnclave](https://learn.microsoft.com/windows/win32/api/winenclaveapi/nf-winenclaveapi-enclavecopyintoenclave) and [EnclaveCopyOutOfEnclave ](https://learn.microsoft.com/en-us/windows/win32/api/winenclaveapi/nf-winenclaveapi-enclavecopyoutofenclave) Win32 APIs.
@@ -77,7 +114,7 @@ to pass data into and out of the enclave securely.
 1. `MemoryAllocation.h`  - Contains functions to allocate and retrieve `hostApp` memory from inside an `enclave`.
 1. `MemoryChecks.h`      - Contains checks to verify that data is either in `hostApp` memory or `enclave` memory.
 
-#### Available only to HostApp
+### Available only to HostApp
 
 1. `HostHelpers.h`         - Provides helper functions used by the generated functions to facilitate marshaling data into
                            and out of the `hostApp`.
@@ -122,7 +159,7 @@ The following sections describe what will be generated and how the developer wil
 
 ### Trusted scope: HostApp -> Enclave
 
-The generated class contains stub function for every function the developer declares in the `trusted` scope of the .edl file.
+The generated class contains a stub function for every function the developer declares in the `trusted` scope of the .edl file.
 
 The expectation is for a developer to use the generated class in the following way:
 
@@ -130,7 +167,9 @@ The expectation is for a developer to use the generated class in the following w
 // This is in the hostApp, in a developer function where they want to call their enclave trusted function.
 // We have omitted the code to create, initialize and load the enclave's void* instance, but imagine we have a void* variable we 
 // called enclave_void_star after we created it.
-VbsEnclave::MyEnclave generated_class = VbsEnclave::MyEnclave(enclave_void_star);
+#include <VbsEnclave\HostApp\Stubs\Trusted.h> // generated file.
+
+auto generated_class = VbsEnclave::Trusted::Stubs::MyEnclave(enclave_void_star);
 THROW_IF_FAILED(generated_class.RegisterVtl0Callbacks()); // call RegisterVtl0Callbacks at least once.
 std::vector<int8_t> int8_vec {};
 int64_t some_int64 = 0;
@@ -170,16 +209,16 @@ parameter passing between hostApp and enclave, and must be called at least once 
 any of the class's methods. 
 
 Back in the `enclave` a declaration for the enclave function would have been generated in the
-`Implementations.h` file. The developer is expected to create a definition for this declaration. 
+`Implementation\Trusted.h` file. The developer is expected to create a definition for this declaration. 
 
 Using the example `.edl` above the following declaration would be generated.
 
 ```C++
 // The generated enclave function declarations are encapsulated
-// in the <Namespace provided>::VTL1_Declarations namespace.
+// in the <Namespace provided>::Trusted::Implementation namespace.
 namespace VbsEnclave
 {
-    namespace VTL1_Declarations
+    namespace Trusted::Implementation
     {
         std::string TrustedExample(
             _Out_ std::vector<int8_t>& int8_vec, 
@@ -190,15 +229,17 @@ namespace VbsEnclave
 ```
 
 > [!NOTE]
-> In the C++ case when the `out` annotation is used in tandom with a pointer,
+> In the C++ case when the `out` annotation is used in tandem with a pointer,
 the code generator will generate the parameter as a reference to a `unique_ptr`.
 
 
 Continuing on, the developer might implement the declaration like this:
 ```C++
+#include <VbsEnclave\Enclave\Implementation\Trusted.h> // generated file.
+
 using namespace VbsEnclave;
 
-std::string VTL1_Declarations::TrustedExample(
+std::string Trusted::Implementation::TrustedExample(
     _Out_ std::vector<int8_t>& int8_vec, 
     _In_ const std::int64_t* some_ptr,
     _Inout_ ExampleStruct& ex_struct)
@@ -236,55 +277,51 @@ the `CodeGen` layer.
 
 ### Untrusted scope: HostApp <- Enclave
 
-In the `untrusted` scenario, the function that the developer will implement
-is what we call a `callback`. These are implemented in the `hostApp` and the
-developer calls them via the generated stub functions inside the `enclave`.
+In the `untrusted` scenario, the function declarations are generated
+in `Implementation\Untrusted.h`. These are implemented in the `hostApp` by the developer
+and the developer calls them via the generated stub functions inside the `enclave`.
 
 This is how the developer might interact with it:
 
 ```C++
 // This is inside the enclave, in the developers business logic where they want
-// to call the hostApp callback function they declared in the untrusted scope of
-// the .edl file. 
+// to call the hostApp's implementation they defined.
+#include <VbsEnclave\Enclave\Stubs\Untrusted.h> // generated file.
+
 std::string str1 = "The quick brown";
 std::wstring wstr1{};
-HRESULT result = VbsEnclave::VTL0_Callbacks::UntrustedExample_callback(str1, wstr1);
+HRESULT result = VbsEnclave::Untrusted::Stubs::UntrustedExample(str1, wstr1);
 
-// Verifying expected str1 and wstr1 values post-callback
+// Verifying expected str1 and wstr1 values post call
 THROW_IF_FAILED(result);
 THROW_HR_IF(INVALIDARG, str1 != "The quick brown fox jumps over the lazy dog");
 THROW_HR_IF(INVALIDARG, wstr1 != L"HELLO WORLD FROM VTL0");
 
 ```
-
-In the `hostApp` there would have been a generated class method declaration for the
-`untrusted` function in the `Stubs.h` file. This would look like the following:
+In the `hostApp` there will be a generated function declaration for this
+stub function in `Implementation\Untrusted.h`. This would look like the following:
 
 ```C++
-// The generated class is encapsulated in the <Namespace provided>::VTL0_Stubs
-// namespace.
-
 namespace VbsEnclave
 {
-    namespace VTL0_Stubs
+    namespace Untrusted::Implementation
     {
-        struct MyEnclave
-        {
-        public:
-            static HRESULT UntrustedExample_callback(
-                _Inout_ std::string& some_string,
-                _Out_ std::wstring& some_wstring);
-        };
-    }
+        static HRESULT UntrustedExample(
+            _Inout_ std::string& some_string,
+            _Out_ std::wstring& some_wstring);
+    };
+    
 }
 ```
 
 The developer must implement this declaration. One way would be the following:
 
 ```C++
-using namespace VbsEnclave::VTL0_Stubs;
+#include <VbsEnclave\HostApp\Implementation\Untrusted.h> // generated file.
 
-HRESULT MyEnclave::UntrustedExample_callback(
+using namespace VbsEnclave;
+
+HRESULT Untrusted::Implementation::UntrustedExample(
         _Inout_ std::string& some_string,
         _Out_ std::wstring& some_wstring)
 {

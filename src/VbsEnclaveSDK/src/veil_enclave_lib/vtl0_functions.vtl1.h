@@ -13,8 +13,8 @@
 
 namespace veil::vtl1::implementation::vtl0_functions::callouts
 {
-    HRESULT printf_callback(_In_ const std::string& str);
-    HRESULT wprintf_callback(_In_ const std::wstring& str);
+    HRESULT printf(_In_ const std::string& str);
+    HRESULT wprintf(_In_ const std::wstring& str);
 }
 
 namespace veil::vtl1::vtl0_functions
@@ -31,7 +31,7 @@ namespace veil::vtl1::vtl0_functions
             template <typename... Args>
             static void call(const std::string& str)
             {
-                THROW_IF_FAILED(veil::vtl1::implementation::vtl0_functions::callouts::printf_callback(str));
+                THROW_IF_FAILED(veil::vtl1::implementation::vtl0_functions::callouts::printf(str));
             }
         };
 
@@ -41,7 +41,7 @@ namespace veil::vtl1::vtl0_functions
             template <typename... Args>
             static void call(const std::wstring& str)
             {
-                THROW_IF_FAILED(veil::vtl1::implementation::vtl0_functions::callouts::wprintf_callback(str));
+                THROW_IF_FAILED(veil::vtl1::implementation::vtl0_functions::callouts::wprintf(str));
             }
         };
 

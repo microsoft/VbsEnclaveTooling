@@ -29,9 +29,23 @@
 
 #define FormatMessageW DO_NOT_USE_FormatMessageW
 #define IsDebuggerPresent DO_NOT_USE_IsDebuggerPresent
+
 #include <winenclave.h>
 #include <evntprov.h>
+
+// Visual C++ 17.13.0 and later has a problem with certain intrinsic mismatches
+#if _MSC_VER >= 1943
+#pragma warning(push)
+#pragma warning(disable : 4392) // incorrect number of arguments for intrinsic function
+#endif
+
 #include <wchar.h>
+
+// Visual C++ 17.13.0 and later has a problem with certain intrinsic mismatches
+#if _MSC_VER >= 1943
+#pragma warning(pop)
+#endif
+
 #undef FormatMessageW
 #undef IsDebuggerPresent
 
