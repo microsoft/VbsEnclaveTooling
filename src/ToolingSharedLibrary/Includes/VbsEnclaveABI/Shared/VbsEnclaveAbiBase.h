@@ -2,15 +2,10 @@
 // Licensed under the MIT License.
 #pragma once 
 
-// Must be the first header included for enclave dll's
-#ifdef __ENCLAVE_PROJECT__
-#pragma warning(push)
-#pragma warning(disable : 5260) // the constant variable has external\internal linkage: wistd_functional.h(278,28)
-#include <wil/enclave/wil_for_enclaves.h>
-#pragma warning(pop)
-#endif
+#include <VbsEnclaveABI\Shared\Version.h>
 
-// end
+// Version to ensure all translation units are consuming a consistent version of the codegen
+#pragma detect_mismatch("__VBS_ENCLAVE_CODEGEN_VERSION__", __VBS_ENCLAVE_CODEGEN_VERSION__)
 
 #include <array>
 #include <atomic>

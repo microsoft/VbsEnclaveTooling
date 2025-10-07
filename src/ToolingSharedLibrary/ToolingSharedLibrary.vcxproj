@@ -192,10 +192,20 @@
     <ClInclude Include="Includes\CodeGeneration\Flatbuffers\BuilderHelpers.h" />
     <ClInclude Include="Includes\CodeGeneration\Flatbuffers\Contants.h" />
     <ClInclude Include="Includes\Utils\Helpers.h" />
-    <ClInclude Include="Includes\VbsEnclaveABI\Enclave\EnclaveHelpers.h" />
-    <ClInclude Include="Includes\VbsEnclaveABI\Enclave\MemoryAllocation.h" />
-    <ClInclude Include="Includes\VbsEnclaveABI\Enclave\MemoryChecks.h" />
-    <ClInclude Include="Includes\VbsEnclaveABI\Enclave\Vtl0Pointers.h" />
+    <ClInclude Include="Includes\VbsEnclaveABI\Enclave\EnclaveHelpers.h">
+      <!-- Eventually Includes MemoryChecks.h. See comment about MemoryChecks.h below. -->
+      <ExcludedFromBuild>true</ExcludedFromBuild>
+    </ClInclude>
+    <ClInclude Include="Includes\VbsEnclaveABI\Enclave\MemoryAllocation.h">
+      <!-- Eventually Includes MemoryChecks.h. See comment about MemoryChecks.h below. -->
+      <ExcludedFromBuild>true</ExcludedFromBuild>
+    </ClInclude>
+    <ClInclude Include="Includes\VbsEnclaveABI\Enclave\MemoryChecks.h">
+      <!-- Contains include statement for winenclaveapi.h which can't be included in non-enclave Windows builds. -->
+      <ExcludedFromBuild>true</ExcludedFromBuild>
+    </ClInclude>
+    <ClInclude Include="Includes\VbsEnclaveABI\Enclave\Vtl0Pointers.h">
+    </ClInclude>
     <ClInclude Include="Includes\VbsEnclaveABI\Host\HostHelpers.h" />
     <Text Include="Includes\Edl\LexicalAnalyzer.h">
       <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</DeploymentContent>
@@ -209,6 +219,7 @@
     <ClInclude Include="Includes\Edl\Utils.h" />
     <ClInclude Include="Includes\ErrorHelpers.h" />
     <ClInclude Include="Includes\Exceptions.h" />
+    <ClInclude Include="Includes\VbsEnclaveABI\Shared\Version.h" />
     <ClInclude Include="pch.h" />
   </ItemGroup>
   <ItemGroup>
@@ -229,13 +240,16 @@
     <ClCompile Include="ToolingExecutable\Edl\Parser.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="VersionHelper\helpers.targets" />
     <None Include="packages.config" />
     <None Include="README.md" />
     <None Include="vcpkg.json" />
+    <None Include="VersionHelper\Version.ps1" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
     <Import Project="..\..\packages\Microsoft.Windows.ImplementationLibrary.1.0.240803.1\build\native\Microsoft.Windows.ImplementationLibrary.targets" Condition="Exists('..\..\packages\Microsoft.Windows.ImplementationLibrary.1.0.240803.1\build\native\Microsoft.Windows.ImplementationLibrary.targets')" />
+    <Import Project="$(ProjectDir)VersionHelper\helpers.targets" />
   </ImportGroup>
   <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
     <PropertyGroup>
