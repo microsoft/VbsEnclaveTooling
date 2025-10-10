@@ -439,3 +439,8 @@ o/
 
 ## Ignore Guardian Local settings
 LocalSettings.gdn.json
+
+target/
+*.lock
+obj
+bin

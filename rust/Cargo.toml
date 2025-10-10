@@ -1,0 +1,18 @@
+[workspace]
+resolver = "3"
+members = [
+    "crates/libs/edlcodegen-core",
+    "crates/libs/edlcodegen-macros",
+    "crates/libs/edlcodegen-tools",
+    "crates/tests/edlcodegen-core",
+]
+
+[workspace.package]
+edition = "2024"
+
+[workspace.dependencies]
+flatbuffers = "25.9.23"
+windows-result = "0.4.1"
+edlcodegen-core = { version = "0.1.0", path = "crates/libs/edlcodegen-core", default-features = false }
+edlcodegen-macros = { version = "0.1.0", path = "crates/libs/edlcodegen-macros" }
+edlcodegen-tools = { version = "0.1.0", path = "crates/libs/edlcodegen-tools" }

@@ -1,0 +1,15 @@
+[package]
+name = "edlcodegen-core"
+version = "0.1.0"
+edition =  { workspace = true }
+
+[lib]
+crate-type = ["rlib"]
+
+[build-dependencies]
+edlcodegen-tools = { workspace = true }
+
+[dependencies]
+flatbuffers = { workspace = true }
+windows-result = { workspace = true }
+edlcodegen-macros = { workspace = true }

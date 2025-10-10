@@ -1,0 +1,81 @@
+// FlatBuffers schema that uses all of our supported types.
+
+// This would be added by edlcodegen.exe in a real scenario.
+include "edl_types_gen.fbs";
+
+namespace flatbuffer_test;
+
+enum Color : uint32 { Red = 0, Green = 1, Blue = 2 }
+
+table NestedData {
+  id: uint32;
+  name: string (required);
+  active: bool;
+  values: [float32] (required);
+  color: Color = Red;
+}
+
+table AllTypes {
+  // ----- Scalars -----
+  i8_field: int8;
+  i16_field: int16;
+  i32_field: int32;
+  i64_field: int64;
+
+  u8_field: uint8;
+  u16_field: uint16;
+  u32_field: uint32;
+  u64_field: uint64;
+
+  bool_field: bool;
+
+  f32_field: float32;
+  f64_field: float64;
+
+  // ----- String -----
+  str_field: string (required);
+
+  // ----- Enum -----
+  color_field: Color = Red;
+
+  // ----- Vectors of scalars -----
+  vec_i8: [int8] (required);
+  vec_i16: [int16] (required);
+  vec_i32: [int32] (required);
+  vec_i64: [int64] (required);
+
+  vec_u8: [uint8] (required);
+  vec_u16: [uint16] (required);
+  vec_u32: [uint32] (required);
+  vec_u64: [uint64] (required);
+
+  vec_f32: [float32] (required);
+  vec_f64: [float64] (required);
+  vec_bool: [bool] (required);
+
+  // ----- Vectors of strings and enums -----
+  vec_str: [string] (required);
+  vec_color: [Color] (required);
+
+  // ----- Optional fields -----
+  opt_i32: int32 = null;
+  opt_str: string;
+  opt_nested_struct: NestedData;
+  opt_vec_f64: [float64] ;
+  opt_vec_nested_struct: [NestedData] (native_inline);
+  opt_box_to_same_struct_type: AllTypes;
+
+  // ----- Nested table -----
+  nested_struct: NestedData (required);
+  vec_nested_struct: [NestedData] (native_inline, required);
+
+  // ----- WString -----
+  wstr: edl_types_gen.WString (required);
+  vec_wstr: [edl_types_gen.WString] (native_inline, required);
+
+  // ----- Array -----
+  str_arr: [string] (required);
+  nested_struct_arr: [NestedData] (required);
+}
+
+root_type AllTypes;
