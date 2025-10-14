@@ -3,9 +3,14 @@ name: rust_ci
 on:
   push:
     branches: [main]
-    paths: ['rust/**']
+    paths:
+      - 'rust/**'
+      - '.github/workflows/rust_ci.yml'
   pull_request:
-    paths: ['rust/**']
+    branches: [main]
+    paths:
+      - 'rust/**'
+      - '.github/workflows/rust_ci.yml'
 
 defaults:
   run:
