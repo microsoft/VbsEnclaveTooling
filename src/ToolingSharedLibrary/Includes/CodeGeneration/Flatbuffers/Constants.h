@@ -24,15 +24,15 @@ static inline constexpr std::string_view c_flatbuffer_namespace = "\nnamespace {
 static inline constexpr std::string_view c_flatbuffer_wstring_table =
 R"(
 table WString {
-  wchars:[int16];
+  wchars:[int16] (required);
 }
 )";
 
 static inline constexpr std::string_view c_flatbuffer_register_callback_tables =
 R"(
 table AbiRegisterVtl0Callbacks_args {
-  m_callback_addresses:[uint64];
-  m_callback_names:[string];
+  m_callback_addresses:[uint64] (required);
+  m_callback_names:[string] (required);
   m__return_value_:int32;
 }
 )";

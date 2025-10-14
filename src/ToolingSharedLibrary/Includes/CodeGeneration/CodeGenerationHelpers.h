@@ -5,9 +5,9 @@
 #include <pch.h>
 #include <Edl\Structures.h>
 #include <Edl\Utils.h>
-#include <CodeGeneration\Contants.h>
+#include <CodeGeneration\Constants.h>
 #include <Exceptions.h>
-#include "Flatbuffers\Contants.h"
+#include "Flatbuffers\Constants.h"
 
 using namespace EdlProcessor;
 using namespace ToolingExceptions;

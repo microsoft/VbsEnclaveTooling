@@ -22,6 +22,8 @@ namespace VbsEnclaveToolingTests
     static std::filesystem::path m_enum_edl_file_name = "TestFiles\\EnumTest.edl";
     static std::filesystem::path m_struct_edl_file_name = "TestFiles\\StructTest.edl";
     static std::filesystem::path c_edl_path_valid_input = "TestFiles\\BasicTypesTest.edl";
+    static std::filesystem::path c_optional_edl_file_name = "TestFiles\\OptionalTests.edl";
+    static std::filesystem::path c_optional_cycles_edl_file_name = "TestFiles\\OptionalTestWithCycles.edl";
 
     static const std::unordered_map<std::string, std::string> c_test_func_signatures =
     {
@@ -89,6 +91,24 @@ namespace VbsEnclaveToolingTests
 
         // D.edl function signatures where key is the function name and value is its signature
         { "DFunc", "DFunc()" },
+
+        // OptionalTests.edl function signatures where key is function name and value is its signature
+        {"TrustedWithOptionalTypes", "TrustedWithOptionalTypes(optional<char>,optional<wchar_t>,optional<float>,optional<double>,optional<size_t>,optional<int8_t>,optional<int16_t>,optional<int32_t>,optional<int64_t>,optional<uint8_t>,optional<uint16_t>,optional<uint32_t>,optional<uint64_t>,optional<MyStruct2>)"},
+        {"UntrustedWithOptionalTypes", "UntrustedWithOptionalTypes(optional<char>,optional<wchar_t>,optional<float>,optional<double>,optional<size_t>,optional<int8_t>,optional<int16_t>,optional<int32_t>,optional<int64_t>,optional<uint8_t>,optional<uint16_t>,optional<uint32_t>,optional<uint64_t>,optional<MyStruct2>)"},
+        {"RetOptionalChar", "RetOptionalChar()" },
+        {"RetOptionalWchar_t", "RetOptionalWchar_t()" },
+        { "RetOptionalFloat", "RetOptionalFloat()" },
+        { "RetOptionalDouble", "RetOptionalDouble()" },
+        { "RetOptionalSize_t", "RetOptionalSize_t()" },
+        { "RetOptionalInt8_t", "RetOptionalInt8_t()" },
+        { "RetOptionalInt16_t", "RetOptionalInt16_t()" },
+        { "RetOptionalInt32_t", "RetOptionalInt32_t()" },
+        { "RetOptionalInt64_t", "RetOptionalInt64_t()" },
+        { "RetOptionalUint8_t", "RetOptionalUint8_t()" },
+        { "RetOptionalUint16_t", "RetOptionalUint16_t()" },
+        { "RetOptionalUint32_t", "RetOptionalUint32_t()" },
+        { "RetOptionalUint64_t", "RetOptionalUint64_t()" },
+        { "RetOptionalMyStruct", "RetOptionalMyStruct()" },
     };
 
     enum class FunctionReturnKind

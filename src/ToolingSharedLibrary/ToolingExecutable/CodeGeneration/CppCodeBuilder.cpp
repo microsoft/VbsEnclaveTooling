@@ -5,10 +5,10 @@
 #include <pch.h>
 #include <Edl\Structures.h>
 #include <Edl\Utils.h>
-#include <CodeGeneration\Contants.h>
+#include <CodeGeneration\Constants.h>
 #include <CodeGeneration\CodeGeneration.h>
 #include <CodeGeneration\Flatbuffers\BuilderHelpers.h>
-#include <CodeGeneration\Flatbuffers\Contants.h>
+#include <CodeGeneration\Flatbuffers\Constants.h>
 #include <sstream>
 
 using namespace EdlProcessor;

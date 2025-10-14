@@ -46,7 +46,7 @@ namespace EdlProcessor
     // Special keyword for internal use for the anonymous enum value.
     constexpr const char* EDL_ANONYMOUS_ENUM_KEYWORD = "__anonymous_enum";
 
-    static const std::unordered_map<EdlTypeKind, std::string, EdlTypeToHash> c_edlTypes_to_string_map =
+    static const std::pair<EdlTypeKind, std::string> c_edl_type_string_pairs[] =
     {
         { EdlTypeKind::Bool, "bool" },
         { EdlTypeKind::Char, "char" },
@@ -72,35 +72,35 @@ namespace EdlProcessor
         { EdlTypeKind::WString, "wstring" },
         { EdlTypeKind::UIntPtr, "uintptr_t" },
         { EdlTypeKind::Vector, "vector" },
+        { EdlTypeKind::Optional, "optional" },
     };
 
-    static const std::unordered_map<std::string, EdlTypeKind> c_string_to_edltype_map =
+    static std::unordered_map<EdlTypeKind, std::string, EdlTypeToHash> MakeEdlKindToStringMap()
     {
-        { "bool", EdlTypeKind::Bool },
-        { "char", EdlTypeKind::Char },
-        { "float", EdlTypeKind::Float },
-        { "double", EdlTypeKind::Double },
-        { "int8_t", EdlTypeKind::Int8 },
-        { "int16_t", EdlTypeKind::Int16 },
-        { "int32_t", EdlTypeKind::Int32 },
-        { "int64_t", EdlTypeKind::Int64 },
-        { "uint8_t", EdlTypeKind::UInt8 },
-        { "uint16_t", EdlTypeKind::UInt16 },
-        { "uint32_t", EdlTypeKind::UInt32 },
-        { "uint64_t", EdlTypeKind::UInt64 },
-        { "wchar_t", EdlTypeKind::WChar },
-        { "void", EdlTypeKind::Void },
-        { "HRESULT", EdlTypeKind::HRESULT },
-        { "enum", EdlTypeKind::Enum },
-        { EDL_ANONYMOUS_ENUM_KEYWORD, EdlTypeKind::AnonymousEnum },
-        { "struct", EdlTypeKind::Struct },
-        { "string", EdlTypeKind::String },
-        { "wstring", EdlTypeKind::WString },
-        { "*", EdlTypeKind::Ptr },
-        { "size_t", EdlTypeKind::SizeT },
-        { "uintptr_t", EdlTypeKind::UIntPtr },
-        { "vector", EdlTypeKind::Vector },
-    };
+        std::unordered_map<EdlTypeKind, std::string, EdlTypeToHash> map;
+
+        for (const auto& pair : c_edl_type_string_pairs)
+        {
+            map[pair.first] = pair.second;
+        }
+
+        return map;
+    }
+
+    static std::unordered_map<std::string, EdlTypeKind> MakeStringToEdlKindMap()
+    {
+        std::unordered_map<std::string, EdlTypeKind> map;
+
+        for (const auto& pair : c_edl_type_string_pairs)
+        {
+            map[pair.second] = pair.first;
+        }
+
+        return map;
+    }
+
+    static const auto c_edlTypes_to_string_map = MakeEdlKindToStringMap();
+    static const auto c_string_to_edltype_map = MakeStringToEdlKindMap();
 
     static inline bool IsHexPrefix(const char* token_start)
     {

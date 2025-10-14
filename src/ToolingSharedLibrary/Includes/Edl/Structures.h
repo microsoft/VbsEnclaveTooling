@@ -8,6 +8,7 @@
 
 #pragma once
 #include <pch.h>
+#include <cassert>
 #include <unordered_set>
 #include <Utils\Helpers.h>
 
@@ -134,6 +135,7 @@ namespace EdlProcessor
         HRESULT,
         UIntPtr,
         Vector,
+        Optional,
     };
 
     struct EdlTypeToHash
@@ -409,6 +411,12 @@ namespace EdlProcessor
             for (auto& numeric_value : m_array_dimensions)
             {
                 info_string += std::format("[{}]", numeric_value);
+            }
+
+            if (m_edl_type_info.m_type_kind == EdlTypeKind::Optional)
+            {
+                assert(m_edl_type_info.inner_type != nullptr);
+                info_string = std::format("optional<{}>", m_edl_type_info.inner_type->m_name);
             }
             
             return info_string;

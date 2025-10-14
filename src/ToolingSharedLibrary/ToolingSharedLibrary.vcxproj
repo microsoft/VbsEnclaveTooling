@@ -190,7 +190,7 @@
     <ClInclude Include="Includes\CmdlineArgumentsParser.h" />
     <ClInclude Include="Includes\CmdlineParsingHelpers.h" />
     <ClInclude Include="Includes\CodeGeneration\Flatbuffers\BuilderHelpers.h" />
-    <ClInclude Include="Includes\CodeGeneration\Flatbuffers\Contants.h" />
+    <ClInclude Include="Includes\CodeGeneration\Flatbuffers\Constants.h" />
     <ClInclude Include="Includes\Utils\Helpers.h" />
     <ClInclude Include="Includes\VbsEnclaveABI\Enclave\EnclaveHelpers.h" />
     <ClInclude Include="Includes\VbsEnclaveABI\Enclave\MemoryAllocation.h" />
@@ -201,7 +201,7 @@
       <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</DeploymentContent>
     </Text>
     <ClInclude Include="Includes\CodeGeneration\CodeGeneration.h" />
-    <ClInclude Include="Includes\CodeGeneration\Contants.h" />
+    <ClInclude Include="Includes\CodeGeneration\Constants.h" />
     <ClInclude Include="Includes\VbsEnclaveABI\Shared\ConversionHelpers.h" />
     <ClInclude Include="Includes\VbsEnclaveABI\Shared\VbsEnclaveAbiBase.h" />
     <ClInclude Include="Includes\Edl\Parser.h" />
