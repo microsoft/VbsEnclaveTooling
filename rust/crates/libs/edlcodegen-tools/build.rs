@@ -1,4 +1,4 @@
-use std::{env, fs, io::Read, io::Cursor, path::Path};
+use std::{env, fs, io::Cursor, io::Read, path::Path};
 use zip::ZipArchive;
 
 fn main() {
@@ -14,26 +14,39 @@ fn main() {
 
     println!("Downloading Microsoft.Windows.VbsEnclave.CodeGenerator package from Azure feed...");
 
-    // Download the .nupkg file 
+    // Download the .nupkg file
     let response = ureq::get(&url)
         .call()
         .expect("failed to download NuGet package");
 
     let mut reader = response.into_body().into_reader();
     let mut bytes = Vec::new();
-    reader.read_to_end(&mut bytes).expect("failed to read response bytes");
+    reader
+        .read_to_end(&mut bytes)
+        .expect("failed to read response bytes");
 
     // Extract the NuGet package (ZIP format)
     let cursor = Cursor::new(bytes);
     let mut archive = ZipArchive::new(cursor).expect("invalid zip file");
-    archive.extract(&tool_dir).expect("failed to extract NuGet package");
+    archive
+        .extract(&tool_dir)
+        .expect("failed to extract NuGet package");
 
     // Verify expected binaries exist
     let edl_path = tool_dir.join("bin\\edlcodegen.exe");
     let flatc_path = tool_dir.join("vcpkg\\tools\\flatbuffers\\flatc.exe");
-    assert!(edl_path.exists(), "Missing bin\\edlcodegen.exe in NuGet package");
-    assert!(flatc_path.exists(), "Missing tools\\flatbuffers\\flatc.exe in NuGet package");
+    assert!(
+        edl_path.exists(),
+        "Missing bin\\edlcodegen.exe in NuGet package"
+    );
+    assert!(
+        flatc_path.exists(),
+        "Missing tools\\flatbuffers\\flatc.exe in NuGet package"
+    );
 
     // Export environment variables for dependents
-    println!("cargo:rustc-env=EDLCODEGEN_TOOL_PATH={}", tool_dir.display());
+    println!(
+        "cargo:rustc-env=EDLCODEGEN_TOOL_PATH={}",
+        tool_dir.display()
+    );
 }

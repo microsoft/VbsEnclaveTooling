@@ -3,7 +3,7 @@
 
 use proc_macro2::TokenStream as TokenStream2;
 use quote::quote;
-use syn::{Ident, Path, PathArguments, Type, TypePath, Attribute};
+use syn::{Attribute, Ident, Path, PathArguments, Type, TypePath};
 
 /// Indicates the conversion direction.
 #[derive(Copy, Clone)]
@@ -60,7 +60,7 @@ fn generate_conversion(expr: TokenStream2, typ: &Type, field: &FieldInfo) -> Tok
         .to_string();
 
     if name == "Option" {
-       return handle_option_to_option(expr, path, field);
+        return handle_option_to_option(expr, path, field);
     } else if name == "Vec" {
         return handle_vec_to_vec(expr, path, field);
     } else if name == "Box" {
@@ -75,12 +75,16 @@ fn generate_conversion(expr: TokenStream2, typ: &Type, field: &FieldInfo) -> Tok
         return handle_unboxed_to_boxed(expr, field);
     }
 
-    return  quote! { #expr.into() };
+    quote! { #expr.into() }
 }
 
-
 /// Converts `Option<T>`, `Vec<T>` generically using a provided closure pattern.
-fn convert_generic<F>(_expr: TokenStream2, path: &Path, field: &FieldInfo, wrapper: F) -> TokenStream2
+fn convert_generic<F>(
+    _expr: TokenStream2,
+    path: &Path,
+    field: &FieldInfo,
+    wrapper: F,
+) -> TokenStream2
 where
     F: Fn(TokenStream2) -> TokenStream2,
 {
@@ -127,12 +131,11 @@ fn extract_inner_type(path: &Path) -> Type {
     typ.clone()
 }
 
-fn handle_unboxed_to_boxed(expr: TokenStream2, field: &FieldInfo) -> TokenStream2
-{
+fn handle_unboxed_to_boxed(expr: TokenStream2, field: &FieldInfo) -> TokenStream2 {
     match field.dir {
-            Direction::ToTarget => quote! { Box::new(#expr.into()) },
-            Direction::FromTarget => quote! { (*#expr).into() },
-        }
+        Direction::ToTarget => quote! { Box::new(#expr.into()) },
+        Direction::FromTarget => quote! { (*#expr).into() },
+    }
 }
 
 fn handle_array_to_vec(expr: TokenStream2, field: &FieldInfo) -> TokenStream2 {

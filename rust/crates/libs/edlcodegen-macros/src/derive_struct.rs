@@ -1,12 +1,10 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
+use crate::utils::{Direction, FieldInfo, generate_field_assignment, parse_field_attr};
 use proc_macro::TokenStream;
 use quote::quote;
-use syn::{
-    Data, DeriveInput, Fields, Path
-};
-use crate::utils::{ Direction, FieldInfo, generate_field_assignment, parse_field_attr};
+use syn::{Data, DeriveInput, Fields, Path};
 
 pub fn derive_struct(input: DeriveInput, target_path: &Path) -> TokenStream {
     let Data::Struct(data_struct) = &input.data else {
@@ -19,7 +17,7 @@ pub fn derive_struct(input: DeriveInput, target_path: &Path) -> TokenStream {
 
     // This is the edl struct with the target_struct attribute.
     let edl_struct = input.ident.clone();
-    
+
     // This is the target struct inside the target_struct attribute.
     let target_struct = target_path;
 
@@ -61,4 +59,3 @@ pub fn derive_struct(input: DeriveInput, target_path: &Path) -> TokenStream {
 
     TokenStream::from(expanded)
 }
-

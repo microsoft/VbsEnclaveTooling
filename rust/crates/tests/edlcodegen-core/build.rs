@@ -1,16 +1,20 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
-use edlcodegen_tools::{flatc_path};
+use edlcodegen_tools::flatc_path;
 use std::{env, path::PathBuf, process::Command};
 
 fn main() {
     let manifest_dir = PathBuf::from(env::var("CARGO_MANIFEST_DIR").unwrap());
     let schema_path = manifest_dir.join("tests\\flatbuffer_test_schema.fbs");
-    assert!(schema_path.exists(), "Missing flatbuffer schema file: {}", schema_path.display());
+    assert!(
+        schema_path.exists(),
+        "Missing flatbuffer schema file: {}",
+        schema_path.display()
+    );
     let out_dir = std::env::var("OUT_DIR").unwrap();
     let gen_out_path = format!("{out_dir}/flatbuffer_gen");
-    
+
     // Tell Cargo to rebuild if we change our test .fbs file.
     println!("cargo:rerun-if-changed={}", schema_path.to_str().unwrap());
 

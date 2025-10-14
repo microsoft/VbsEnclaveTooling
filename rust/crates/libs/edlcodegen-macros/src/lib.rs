@@ -42,9 +42,9 @@
 
 use proc_macro::TokenStream;
 use syn::parse_macro_input;
-mod utils;
-mod derive_struct;
 mod derive_enum;
+mod derive_struct;
+mod utils;
 
 /// Entry point for `#[derive(EdlDerive)]`.
 ///
@@ -64,14 +64,17 @@ mod derive_enum;
 /// pub struct Foo {
 ///     #[boxed_inner_target]
 ///     pub opt_nested_struct: Option<NestedStruct>,
-/// 
+///
 ///     #[boxed_target]
 ///     pub nested_struct: NestedStruct,
-/// 
+///
 ///     pub flag: bool,
 /// }
 /// ```
-#[proc_macro_derive(EdlDerive, attributes(target_struct, target_enum, boxed_inner_target, boxed_target))]
+#[proc_macro_derive(
+    EdlDerive,
+    attributes(target_struct, target_enum, boxed_inner_target, boxed_target)
+)]
 pub fn edl_type_to_target_type(input: TokenStream) -> TokenStream {
     let input = parse_macro_input!(input as syn::DeriveInput);
 

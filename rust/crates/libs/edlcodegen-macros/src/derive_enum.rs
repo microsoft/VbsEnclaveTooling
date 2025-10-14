@@ -3,7 +3,7 @@
 
 use proc_macro::TokenStream;
 use quote::quote;
-use syn::{ DeriveInput, Data, Path};
+use syn::{Data, DeriveInput, Path};
 
 pub fn derive_enum(input: DeriveInput, target_path: &Path) -> TokenStream {
     let Data::Enum(data_enum) = &input.data else {
@@ -14,7 +14,7 @@ pub fn derive_enum(input: DeriveInput, target_path: &Path) -> TokenStream {
     let edl_enum = &input.ident;
 
     // This is the target enum inside the target_enum attribute.
-    let target_enum: &Path= target_path;
+    let target_enum: &Path = target_path;
 
     // Collect variant identifiers
     let variants = data_enum.variants.iter().map(|v| &v.ident);
