@@ -41,24 +41,15 @@ std::vector<uint8_t> ConvertBufferToVector(winrt::Windows::Storage::Streams::IBu
 std::wstring FormatUserHelloKeyName(PCWSTR name)
 {
     static constexpr wchar_t c_formatString[] = L"{}//{}//{}";
-    HANDLE tokenHandle = nullptr;
+    wil::unique_handle tokenHandle;
 
-    if (!OpenProcessToken(GetCurrentProcess(), TOKEN_QUERY, &tokenHandle))
-    {
-        // Handle error
-        return {};
-    }
+    THROW_LAST_ERROR_IF(!OpenProcessToken(GetCurrentProcess(), TOKEN_QUERY, &tokenHandle));
 
     DWORD tokenInfoLength = 0;
-    GetTokenInformation(tokenHandle, TokenUser, nullptr, 0, &tokenInfoLength);
+    GetTokenInformation(tokenHandle.get(), TokenUser, nullptr, 0, &tokenInfoLength);
     std::vector<BYTE> tokenInfoBuffer(tokenInfoLength);
 
-    if (!GetTokenInformation(tokenHandle, TokenUser, tokenInfoBuffer.data(), tokenInfoLength, &tokenInfoLength))
-    {
-        // Handle error
-        CloseHandle(tokenHandle);
-        return {};
-    }
+    THROW_LAST_ERROR_IF(!GetTokenInformation(tokenHandle.get(), TokenUser, tokenInfoBuffer.data(), tokenInfoLength, &tokenInfoLength));
 
     PTOKEN_USER tokenUser = reinterpret_cast<PTOKEN_USER>(tokenInfoBuffer.data());
 
@@ -66,21 +57,11 @@ std::wstring FormatUserHelloKeyName(PCWSTR name)
     PSID userSid = tokenUser->User.Sid;  // This is how you get the SID
 
     // Convert SID to string
-    LPWSTR userSidString = nullptr;
-    if (!ConvertSidToStringSidW(userSid, &userSidString))
-    {
-        // Handle error
-        CloseHandle(tokenHandle);
-        return {};
-    }
-
-    CloseHandle(tokenHandle);
+    wil::unique_hlocal_ptr<WCHAR[]> userSidString;
+    THROW_LAST_ERROR_IF(!ConvertSidToStringSidW(userSid, wil::out_param_ptr<LPWSTR*>(userSidString)));
 
     // Create the formatted key name
-    std::wstring result = std::format(c_formatString, userSidString, userSidString, name);
-
-    // Free the SID string allocated by ConvertSidToStringSidW
-    LocalFree(userSidString);
+    std::wstring result = std::format(c_formatString, userSidString.get(), userSidString.get(), name);
 
     return result;
 }
@@ -120,35 +101,11 @@ KeyCredentialCacheConfiguration ConvertCacheConfig(const DeveloperTypes::keyCred
     // Convert timeout from seconds to TimeSpan (100-nanosecond units)
     winrt::Windows::Foundation::TimeSpan timeout{ static_cast<int64_t>(cacheConfig.cacheTimeoutInSeconds) * 10000000LL };
 
-    // Use RoGetActivationFactory to get the factory for KeyCredentialCacheConfiguration
-    winrt::com_ptr<winrt::Windows::Security::Credentials::IKeyCredentialCacheConfigurationFactory> factory;
+    // Use WinRT's get_activation_factory for a more modern approach
+    auto factory = winrt::get_activation_factory<winrt::Windows::Security::Credentials::KeyCredentialCacheConfiguration, 
+                                                 winrt::Windows::Security::Credentials::IKeyCredentialCacheConfigurationFactory>();
 
-    // Create HSTRING for the runtime class name
-    winrt::hstring className = L"Windows.Security.Credentials.KeyCredentialCacheConfiguration";
-
-    // Get the activation factory using RoGetActivationFactory
-    HRESULT hr = RoGetActivationFactory(
-        reinterpret_cast<HSTRING>(winrt::get_abi(className)),
-        winrt::guid_of<winrt::Windows::Security::Credentials::IKeyCredentialCacheConfigurationFactory>(),
-        factory.put_void());
-
-    if (SUCCEEDED(hr))
-    {
-        winrt::com_ptr<winrt::Windows::Security::Credentials::IKeyCredentialCacheConfiguration> instance;
-        hr = factory->CreateInstance(
-            static_cast<int32_t>(cacheOption),
-            winrt::get_abi(timeout),
-            cacheConfig.cacheUsageCount,
-            reinterpret_cast<void**>(instance.put()));
-
-        return winrt::Windows::Security::Credentials::KeyCredentialCacheConfiguration {
-                    instance.detach(), winrt::take_ownership_from_abi
-        };
-    }
-
-    // If RoGetActivationFactory fails, throw an exception
-    THROW_HR(hr);
-
+    return factory.CreateInstance(cacheOption, timeout, cacheConfig.cacheUsageCount);
 }
 
 // Helper function to validate that a COM object is still valid
@@ -219,21 +176,7 @@ credentialAndFormattedKeyNameAndSessionInfo veil_abi::VTL0_Stubs::export_interfa
     auto cacheConfiguration = ConvertCacheConfig(cache_config);
 
     auto sessionInfo = std::make_shared<uintptr_t>(0);
-    auto enclaveptr = (void*)enclave;
-    
-    // Create the enclave interface directly with the VBS enclave handle
-    // The VBS Enclave framework will handle the module resolution internally
-    auto enclaveInterface = veil_abi::VTL0_Stubs::export_interface(enclaveptr);
-
-    std::wcout << L"DEBUG: Registering VTL0 callbacks..." << std::endl;
-    HRESULT hr = enclaveInterface.RegisterVtl0Callbacks();
-    if (FAILED(hr))
-    {
-        std::wcout << L"DEBUG: RegisterVtl0Callbacks failed with HRESULT: 0x" << std::hex << hr << std::endl;
-        THROW_HR(hr);
-    }
-    std::wcout << L"DEBUG: VTL0 callbacks registered successfully!" << std::endl;
-    
+    auto enclaveptr = (void*)enclave;    
     
     std::wcout << L"Calling RequestCreateAsync" << std::endl;
     auto credentialResult = KeyCredentialManager::RequestCreateAsync(
@@ -242,7 +185,7 @@ credentialAndFormattedKeyNameAndSessionInfo veil_abi::VTL0_Stubs::export_interfa
         algorithm,
         message,
         cacheConfiguration,
-        (winrt::Windows::UI::WindowId)window_id,
+        static_cast<winrt::Windows::UI::WindowId>(window_id),
         ChallengeResponseKind::VirtualizationBasedSecurityEnclave,
         [sessionInfo, enclaveptr] (const auto& challenge) mutable -> winrt::Windows::Storage::Streams::IBuffer
         {            
@@ -250,14 +193,6 @@ credentialAndFormattedKeyNameAndSessionInfo veil_abi::VTL0_Stubs::export_interfa
             
             try {
                 auto enclaveInterface = veil_abi::VTL0_Stubs::export_interface(enclaveptr);
-
-                std::wcout << L"DEBUG: Registering VTL0 callbacks inside lambda..." << std::endl;
-                HRESULT hr = enclaveInterface.RegisterVtl0Callbacks();
-                if (FAILED(hr)) {
-                    std::wcout << L"DEBUG: RegisterVtl0Callbacks failed inside lambda with HRESULT: 0x" << std::hex << hr << std::endl;
-                    THROW_HR(hr);
-                }
-                std::wcout << L"DEBUG: VTL0 callbacks registered successfully inside lambda!" << std::endl;
 
                 std::wcout << L"DEBUG: Converting challenge buffer..." << std::endl;
                 auto challengeVector = ConvertBufferToVector(challenge);
@@ -341,16 +276,7 @@ credentialAndFormattedKeyNameAndSessionInfo veil_abi::VTL0_Stubs::export_interfa
     uint64_t nonce)
 {
     auto sessionInfo = std::make_shared<uintptr_t>(0);
-
     auto enclaveptr = (void*)enclave;
-    auto enclaveInterface = veil_abi::VTL0_Stubs::export_interface(enclaveptr);
-    HRESULT hr = enclaveInterface.RegisterVtl0Callbacks();
-    if (FAILED(hr))
-    {
-        std::wcout << L"DEBUG: RegisterVtl0Callbacks failed inside lambda with HRESULT: 0x" << std::hex << hr << std::endl;
-        THROW_HR(hr);
-    }
-    std::wcout << L"DEBUG: VTL0 callbacks registered successfully inside lambda!" << std::endl;
 
     auto credentialResult = KeyCredentialManager::OpenAsync(
         key_name.c_str(),
@@ -361,12 +287,6 @@ credentialAndFormattedKeyNameAndSessionInfo veil_abi::VTL0_Stubs::export_interfa
         
         try {
             auto enclaveInterface = veil_abi::VTL0_Stubs::export_interface(enclaveptr);
-            HRESULT hr = enclaveInterface.RegisterVtl0Callbacks();
-            if (FAILED(hr)) {
-                std::wcout << L"DEBUG: RegisterVtl0Callbacks failed inside lambda with HRESULT: 0x" << std::hex << hr << std::endl;
-                THROW_HR(hr);
-            }
-            std::wcout << L"DEBUG: VTL0 callbacks registered successfully inside lambda!" << std::endl;
 
             std::wcout << L"DEBUG: Converting challenge buffer..." << std::endl;
             auto challengeVector = ConvertBufferToVector(challenge);
