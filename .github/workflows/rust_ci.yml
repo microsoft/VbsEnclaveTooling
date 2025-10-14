@@ -7,6 +7,10 @@ on:
   pull_request:
     paths: ['rust/**']
 
+defaults:
+  run:
+    working-directory: ./rust
+
 jobs:
 
   # Confirm Rust code formatting is ok.
@@ -29,11 +33,31 @@ jobs:
       # in the flatbuffer repo is checked in: https://github.com/google/flatbuffers/pull/8564
       - run: cargo clippy --workspace --all-targets
 
- # Confirm all Rust tests pass without errors.
+ # Confirm all Rust tests pass without errors on x64 and arm64.
   test:
-    runs-on: windows-latest
-    needs: [fmt, clippy]
+    strategy:
+      matrix:
+        include:
+          - version: stable
+            host: x86_64-pc-windows-msvc
+            target: x86_64-pc-windows-msvc
+            runner: windows-2025
+          - version: stable
+            host: aarch64-pc-windows-msvc
+            target: aarch64-pc-windows-msvc
+            runner: windows-11-arm
+
+    runs-on: ${{ matrix.runner }}
+
     steps:
-      - uses: actions/checkout@v5
-      - run: rustup update stable
+      - name: Checkout
+        uses: actions/checkout@v5
+      - name: Update toolchain
+        run: rustup update --no-self-update ${{ matrix.version }} && rustup default ${{ matrix.version }}-${{ matrix.host }}
+      - name: Add toolchain target
+        run: rustup target add ${{ matrix.target }}
+      - name: Install fmt, clippy
+        run: rustup component add clippy rustfmt
+      - name: Clean
+        run: cargo clean
       - run: cargo test --workspace
