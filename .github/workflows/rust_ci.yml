@@ -32,11 +32,7 @@ jobs:
     steps:
       - uses: actions/checkout@v5
       - run: rustup update stable
-
-      # We don't use -- -D warnings (treat warnings as error) due to flatbuffers generated
-      # files containing code that produces warnings. This should be fixed when this PR
-      # in the flatbuffer repo is checked in: https://github.com/google/flatbuffers/pull/8564
-      - run: cargo clippy --workspace --all-targets
+      - run: cargo clippy --workspace --all-targets -- -D warnings
 
  # Confirm all Rust tests pass without errors on x64 and arm64.
   test:
