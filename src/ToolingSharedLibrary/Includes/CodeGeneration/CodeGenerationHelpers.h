@@ -230,6 +230,14 @@ namespace CodeGeneration
         return std::format(c_array_initializer, type_name, dimensions.front());
     }
 
+    inline std::string AddOptionalEncapulation(const Declaration& optional_declaration)
+    {
+        auto inner_type = optional_declaration.m_edl_type_info.inner_type;
+        auto inner_type_name = EdlTypeToCppType(*inner_type);
+
+        return std::format("std::optional<{}>", inner_type_name);
+    }
+
     inline std::string GetFullDeclarationType(const Declaration& declaration)
     {
         EdlTypeKind type_kind = declaration.m_edl_type_info.m_type_kind;
@@ -243,6 +251,11 @@ namespace CodeGeneration
         if (!declaration.m_array_dimensions.empty())
         {
             return AddArrayEncapulation(type_name, declaration);
+        }
+
+        if (declaration.IsEdlType(EdlTypeKind::Optional))
+        {
+            return AddOptionalEncapulation(declaration);
         }
 
         if (declaration.HasPointer())
