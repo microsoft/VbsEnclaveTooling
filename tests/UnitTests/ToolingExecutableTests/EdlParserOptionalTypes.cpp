@@ -93,6 +93,16 @@ TEST_CLASS(EdlParserOptionalTypesTests)
         ParseAndValidateTestFunction(c_optional_edl_file_name, "RetOptionalUint64_t", FunctionKind::Trusted, EdlTypeKind::Optional);
     }
 
+    TEST_METHOD(Parse_RetOptionalMyStruct_Trusted_Function)
+    {
+        ParseAndValidateTestFunction(c_optional_edl_file_name, "RetOptionalMyStruct", FunctionKind::Trusted, EdlTypeKind::Optional);
+    }
+
+    TEST_METHOD(Parse_RetOptionalMyEnum_Trusted_Function)
+    {
+        ParseAndValidateTestFunction(c_optional_edl_file_name, "RetOptionalMyEnum", FunctionKind::Trusted, EdlTypeKind::Optional);
+    }
+
     // Untrusted functions
 
     TEST_METHOD(Parse_UntrustedWithOptionalTypes_Function)
@@ -163,6 +173,16 @@ TEST_CLASS(EdlParserOptionalTypesTests)
     TEST_METHOD(Parse_RetOptionalUint64_t_Untrusted_Function)
     {
         ParseAndValidateTestFunction(c_optional_edl_file_name, "RetOptionalUint64_t", FunctionKind::Untrusted, EdlTypeKind::Optional);
+    }
+
+    TEST_METHOD(Parse_RetOptionalMyStruct_Untrusted_Function)
+    {
+        ParseAndValidateTestFunction(c_optional_edl_file_name, "RetOptionalMyStruct", FunctionKind::Untrusted, EdlTypeKind::Optional);
+    }
+
+    TEST_METHOD(Parse_RetOptionalMyEnum_Untrusted_Function)
+    {
+        ParseAndValidateTestFunction(c_optional_edl_file_name, "RetOptionalMyEnum", FunctionKind::Untrusted, EdlTypeKind::Optional);
     }
 
     TEST_METHOD(Parse_Edl_With_Optional_Type_Cycle_Function)

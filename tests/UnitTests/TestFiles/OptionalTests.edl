@@ -3,10 +3,16 @@
 
 enclave
 {
+    enum MyEnum
+    {
+        value = 1,
+    };
+
     struct MyStruct1
     {
         optional<int32_t> x;
         vector<MyStruct2> my_struct2_vec;
+        optional<MyEnum> my_enum;
     };
 
     struct MyStruct2
@@ -31,7 +37,8 @@ enclave
             optional<uint16_t> arg11,
             optional<uint32_t> arg12,
             optional<uint64_t> arg13,
-            optional<MyStruct2> arg14
+            optional<MyStruct2> arg14,
+            optional<MyEnum> arg15
         );
 
         optional<char> RetOptionalChar();
@@ -48,6 +55,7 @@ enclave
         optional<uint32_t> RetOptionalUint32_t();
         optional<uint64_t> RetOptionalUint64_t();
         optional<MyStruct2> RetOptionalMyStruct();
+        optional<MyEnum> RetOptionalMyEnum();
     };
 
     untrusted 
@@ -66,7 +74,8 @@ enclave
             optional<uint16_t> arg11,
             optional<uint32_t> arg12,
             optional<uint64_t> arg13,
-            optional<MyStruct2> arg14
+            optional<MyStruct2> arg14,
+            optional<MyEnum> arg15
         );
 
         optional<char> RetOptionalChar();
@@ -83,5 +92,6 @@ enclave
         optional<uint32_t> RetOptionalUint32_t();
         optional<uint64_t> RetOptionalUint64_t();
         optional<MyStruct2> RetOptionalMyStruct();
+        optional<MyEnum> RetOptionalMyEnum();
     };
 };
