@@ -1,14 +1,9 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
-// Needed for the rust file generated via flatc.exe.
-// The unused imports along with unsafe warnings should be fixed once
-// https://github.com/google/flatbuffers/pull/8564 is checked in.
-#![allow(unused_imports)]
-
 // Import the generated flatbuffer_test module that was built via build.rs.
 // Note: Unfortunately the flatbuffers generated files contain code that produces warnings.
-// This should be fixed when these PRs in the flatbuffer repo are checked in:
+// These should be fixed when these PRs in the flatbuffer repo are checked in:
 // 1. https://github.com/google/flatbuffers/pull/8564
 // 2. https://github.com/google/flatbuffers/pull/8709
 #[allow(
