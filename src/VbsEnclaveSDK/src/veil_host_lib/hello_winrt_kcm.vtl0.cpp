@@ -23,9 +23,9 @@
 #include <winrt/Windows.Security.Cryptography.Certificates.h>
 #include <winrt/Windows.Storage.Streams.h>
 
-#include <VbsEnclave\HostApp\Stubs.h>
+#include <VbsEnclave\HostApp\Implementation\Untrusted.h>
+#include <VbsEnclave\HostApp\Stubs\Trusted.h>
 #include <veinterop_kcm.h>
-#include <VbsEnclave\HostApp\DeveloperTypes.h>
 #include <sddl.h>
 
 using namespace winrt::Windows::Security::Credentials;
@@ -80,8 +80,8 @@ winrt::hstring GetAlgorithm(uintptr_t ecdhAlgorithm)
     THROW_HR(E_INVALIDARG);
 }
 
-// Helper function to convert DeveloperTypes::keyCredentialCacheConfig to KeyCredentialCacheConfiguration
-KeyCredentialCacheConfiguration ConvertCacheConfig(const DeveloperTypes::keyCredentialCacheConfig& cacheConfig)
+// Helper function to convert veil_abi::Types::keyCredentialCacheConfig to KeyCredentialCacheConfiguration
+KeyCredentialCacheConfiguration ConvertCacheConfig(const veil_abi::Types::keyCredentialCacheConfig& cacheConfig)
 {
     // Map cacheOption to KeyCredentialCacheOption
     KeyCredentialCacheOption cacheOption;
@@ -161,13 +161,13 @@ std::vector<uint8_t> ConvertCredentialToVector(const KeyCredential& credential, 
     return credentialVector;
 }
 
-credentialAndFormattedKeyNameAndSessionInfo veil_abi::VTL0_Stubs::export_interface::userboundkey_establish_session_for_create_callback(
+veil_abi::Types::credentialAndFormattedKeyNameAndSessionInfo veil_abi::Untrusted::Implementation::userboundkey_establish_session_for_create(
     uintptr_t enclave,
     const std::wstring& key_name,
     uintptr_t ecdh_protocol,
     const std::wstring& message,
     uintptr_t window_id,
-    const DeveloperTypes::keyCredentialCacheConfig& cache_config)
+    const veil_abi::Types::keyCredentialCacheConfig& cache_config)
 {
     std::wcout << L"Inside userboundkey_establish_session_for_create_callback"<< std::endl;
     auto algorithm = GetAlgorithm(ecdh_protocol);
@@ -192,7 +192,7 @@ credentialAndFormattedKeyNameAndSessionInfo veil_abi::VTL0_Stubs::export_interfa
             std::wcout << L"DEBUG: Challenge callback invoked! Challenge size: " << challenge.Length() << std::endl;
             
             try {
-                auto enclaveInterface = veil_abi::VTL0_Stubs::export_interface(enclaveptr);
+                auto enclaveInterface = veil_abi::Trusted::Stubs::export_interface(enclaveptr);
 
                 std::wcout << L"DEBUG: Converting challenge buffer..." << std::endl;
                 auto challengeVector = ConvertBufferToVector(challenge);
@@ -268,7 +268,7 @@ KeyCredential ConvertVectorToCredential(const std::vector<uint8_t>& credentialVe
     return KeyCredential{ abi, winrt::take_ownership_from_abi };
 }
 
-credentialAndFormattedKeyNameAndSessionInfo veil_abi::VTL0_Stubs::export_interface::userboundkey_establish_session_for_load_callback(
+veil_abi::Types::credentialAndFormattedKeyNameAndSessionInfo veil_abi::Untrusted::Implementation::userboundkey_establish_session_for_load(
     uintptr_t enclave,
     const std::wstring& key_name,
     const std::wstring& message,
@@ -286,7 +286,7 @@ credentialAndFormattedKeyNameAndSessionInfo veil_abi::VTL0_Stubs::export_interfa
         std::wcout << L"DEBUG: Load callback challenge invoked! Challenge size: " << challenge.Length() << std::endl;
         
         try {
-            auto enclaveInterface = veil_abi::VTL0_Stubs::export_interface(enclaveptr);
+            auto enclaveInterface = veil_abi::Trusted::Stubs::export_interface(enclaveptr);
 
             std::wcout << L"DEBUG: Converting challenge buffer..." << std::endl;
             auto challengeVector = ConvertBufferToVector(challenge);
@@ -331,7 +331,7 @@ credentialAndFormattedKeyNameAndSessionInfo veil_abi::VTL0_Stubs::export_interfa
 }
 
 // New VTL0 function to extract authorization context from credential
-std::vector<uint8_t> veil_abi::VTL0_Stubs::export_interface::userboundkey_get_authorization_context_from_credential_callback(
+std::vector<uint8_t> veil_abi::Untrusted::Implementation::userboundkey_get_authorization_context_from_credential(
     const std::vector<uint8_t>& credential_vector,
     const std::vector<uint8_t>& encrypted_kcm_request_for_get_authorization_context,
     const std::wstring& message,
@@ -380,7 +380,7 @@ std::vector<uint8_t> veil_abi::VTL0_Stubs::export_interface::userboundkey_get_au
 }
 
 // New VTL0 function to extract secret from credential
-std::vector<uint8_t> veil_abi::VTL0_Stubs::export_interface::userboundkey_get_secret_from_credential_callback(
+std::vector<uint8_t> veil_abi::Untrusted::Implementation::userboundkey_get_secret_from_credential(
     const std::vector<uint8_t>& credential_vector,
     const std::vector<uint8_t>& encrypted_kcm_request_for_derive_shared_secret,
     const std::wstring& message,

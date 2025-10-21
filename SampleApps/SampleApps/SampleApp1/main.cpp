@@ -25,7 +25,7 @@
 
 #include "sample_utils.h"
 
-#include <VbsEnclave\HostApp\Trusted.h>
+#include <VbsEnclave\HostApp\Stubs\Trusted.h>
 
 namespace fs = std::filesystem;
 
@@ -125,7 +125,7 @@ std::vector<uint8_t> OnFirstRun(void* enclave, const std::filesystem::path& keyF
     auto securedEncryptionKeyBytes = std::vector<uint8_t> {};
     
     // Convert g_keyCredentialCacheConfig (WinRT type) to enclave keyCredentialCacheConfig (struct)
-    VbsEnclave::DeveloperTypes::keyCredentialCacheConfig cacheConfig{};
+    VbsEnclave::Types::keyCredentialCacheConfig cacheConfig{};
     if (g_keyCredentialCacheConfig.has_value())
     {
         cacheConfig.cacheOption = static_cast<uint32_t>(g_keyCredentialCacheConfig->CacheOption());
@@ -174,7 +174,7 @@ int NewEncryptFlow(
     auto securedEncryptionKeyBytes = LoadBinaryData(keyFilePath.string());
 
     // Convert g_keyCredentialCacheConfig (WinRT type) to enclave keyCredentialCacheConfig (struct)
-    VbsEnclave::DeveloperTypes::keyCredentialCacheConfig cacheConfig{};
+    VbsEnclave::Types::keyCredentialCacheConfig cacheConfig{};
     if (g_keyCredentialCacheConfig.has_value())
     {
         cacheConfig.cacheOption = static_cast<uint32_t>(g_keyCredentialCacheConfig->CacheOption());
@@ -236,7 +236,7 @@ int NewDecryptFlow(
     auto tag = LoadBinaryData(tagFilePath.string());
 
     // Convert g_keyCredentialCacheConfig (WinRT type) to enclave keyCredentialCacheConfig (struct)
-    VbsEnclave::DeveloperTypes::keyCredentialCacheConfig cacheConfig{};
+    VbsEnclave::Types::keyCredentialCacheConfig cacheConfig{};
     if (g_keyCredentialCacheConfig.has_value())
     {
         cacheConfig.cacheOption = static_cast<uint32_t>(g_keyCredentialCacheConfig->CacheOption());

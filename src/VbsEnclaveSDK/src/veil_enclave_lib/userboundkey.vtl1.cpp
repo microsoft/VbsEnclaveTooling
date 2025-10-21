@@ -2,7 +2,6 @@
 
 #define VEIL_IMPLEMENTATION
 
-#include <VbsEnclave\Enclave\Implementations.h>
 #include "crypto.vtl1.h"
 #include "utils.vtl1.h"
 #include <veinterop_kcm.h>
@@ -10,6 +9,9 @@
 #include "userboundkey.vtl1.h" // Function declarations
 #include "vtl0_functions.vtl1.h"
 #include "object_table.vtl1.h"
+#include <VbsEnclave\Enclave\Implementation\Trusted.h>
+#include <VbsEnclave\Enclave\Stubs\Untrusted.h>
+#include "DeveloperTypes.h" // Include the actual DeveloperTypes definition
 
 namespace veil::vtl1::userboundkey
 {
@@ -26,9 +28,19 @@ uintptr_t ConvertFromSessionHandle(unique_sessionhandle sessionHandle)
 {
     return reinterpret_cast<uintptr_t>(sessionHandle.release());
 }
+
+// Helper function to convert DeveloperTypes::keyCredentialCacheConfig to veil_abi::Types::keyCredentialCacheConfig
+veil_abi::Types::keyCredentialCacheConfig ConvertToAbiCacheConfig(const DeveloperTypes::keyCredentialCacheConfig& cache_config)
+{
+    veil_abi::Types::keyCredentialCacheConfig abi_cache_config;
+    abi_cache_config.cacheOption = cache_config.cacheOption;
+    abi_cache_config.cacheTimeoutInSeconds = cache_config.cacheTimeoutInSeconds;
+    abi_cache_config.cacheUsageCount = cache_config.cacheUsageCount;
+    return abi_cache_config;
+}
 }
 
-namespace veil_abi::VTL1_Declarations
+namespace veil_abi::Trusted::Implementation
 {
 // RAII wrapper using WIL for heap-allocated memory to prevent resource leaks
 namespace
@@ -51,7 +63,7 @@ using unique_heap_ptr = wil::unique_any<
     nullptr
 >;
 
-DeveloperTypes::attestationReportAndSessionInfo userboundkey_get_attestation_report(_In_ const std::vector<std::uint8_t>& challenge)
+veil_abi::Types::attestationReportAndSessionInfo userboundkey_get_attestation_report(_In_ const std::vector<std::uint8_t>& challenge)
 {
 
     // DEBUG: Log that the enclave function has been called
@@ -100,13 +112,13 @@ DeveloperTypes::attestationReportAndSessionInfo userboundkey_get_attestation_rep
     veil::vtl1::vtl0_functions::debug_print(L"DEBUG: userboundkey_get_attestation_report returning successfully");
 
     auto sessionInfo = veil::vtl1::userboundkey::ConvertFromSessionHandle(std::move(sessionHandle));
-    return DeveloperTypes::attestationReportAndSessionInfo {std::move(report), sessionInfo};
+    return veil_abi::Types::attestationReportAndSessionInfo {std::move(report), sessionInfo};
 }
 }
 
 namespace veil::vtl1::implementation::userboundkey::callouts
 {
-    DeveloperTypes::credentialAndFormattedKeyNameAndSessionInfo userboundkey_establish_session_for_create_callback(
+    veil_abi::Types::credentialAndFormattedKeyNameAndSessionInfo userboundkey_establish_session_for_create(
         _In_ const void* enclave, 
         _In_ const std::wstring& key_name, 
         _In_ const uintptr_t ecdh_protocol, 
@@ -114,23 +126,26 @@ namespace veil::vtl1::implementation::userboundkey::callouts
         _In_ const uintptr_t window_id, 
         _In_ const DeveloperTypes::keyCredentialCacheConfig& cache_config)
     {
-        return veil_abi::VTL0_Callbacks::userboundkey_establish_session_for_create_callback(
+        // Convert cache_config to the correct type
+        auto abi_cache_config = veil::vtl1::userboundkey::ConvertToAbiCacheConfig(cache_config);
+
+        return veil_abi::Untrusted::Stubs::userboundkey_establish_session_for_create(
             reinterpret_cast<uintptr_t>(enclave),
             key_name,
             ecdh_protocol,
             message,
             window_id,
-            cache_config);
+            abi_cache_config);
     }
 
-    DeveloperTypes::credentialAndFormattedKeyNameAndSessionInfo userboundkey_establish_session_for_load_callback(
+    veil_abi::Types::credentialAndFormattedKeyNameAndSessionInfo userboundkey_establish_session_for_load(
         _In_ const void* enclave,
         _In_ const std::wstring& key_name,
         _In_ const std::wstring& message, 
         _In_ const uintptr_t window_id,
         _In_ const uint64_t nonce)
     {
-        return veil_abi::VTL0_Callbacks::userboundkey_establish_session_for_load_callback(
+        return veil_abi::Untrusted::Stubs::userboundkey_establish_session_for_load(
             reinterpret_cast<uintptr_t>(enclave),
             key_name,
             message,
@@ -139,26 +154,26 @@ namespace veil::vtl1::implementation::userboundkey::callouts
     }
 
     // New function to extract secret and authorization context from credential
-    std::vector<std::uint8_t> userboundkey_get_authorization_context_from_credential_callback(
+    std::vector<std::uint8_t> userboundkey_get_authorization_context_from_credential(
         _In_ const std::vector<std::uint8_t>& credential_vector,
         _In_ const std::vector<std::uint8_t>& public_key,
         _In_ const std::wstring& message,
         _In_ const uintptr_t window_id)
     {
-        return veil_abi::VTL0_Callbacks::userboundkey_get_authorization_context_from_credential_callback(
+        return veil_abi::Untrusted::Stubs::userboundkey_get_authorization_context_from_credential(
             credential_vector,
             public_key,
             message,
             window_id);
     }
 
-    std::vector<std::uint8_t> userboundkey_get_secret_from_credential_callback(
+    std::vector<std::uint8_t> userboundkey_get_secret_from_credential(
         _In_ const std::vector<std::uint8_t>& credential_vector,
         _In_ const std::vector<std::uint8_t>& public_key,
         _In_ const std::wstring& message,
         _In_ const uintptr_t window_id)
     {
-        return veil_abi::VTL0_Callbacks::userboundkey_get_secret_from_credential_callback(
+        return veil_abi::Untrusted::Stubs::userboundkey_get_secret_from_credential(
             credential_vector,
             public_key,
             message,
@@ -269,20 +284,21 @@ wil::secure_vector<uint8_t> enclave_create_user_bound_key(
     try
     {
         // Convert cacheConfig to the type expected by the callback
-        auto devCacheConfig = cacheConfig;
-        veil_abi::VTL1_Declarations::unique_heap_ptr encryptedKcmRequestRac; // RAII wrapper for automatic cleanup
+        // Convert cache_config to the correct type
+        auto abi_cache_config = veil::vtl1::userboundkey::ConvertToAbiCacheConfig(cacheConfig);
+        veil_abi::Trusted::Implementation::unique_heap_ptr encryptedKcmRequestRac; // RAII wrapper for automatic cleanup
         uint32_t encryptedKcmRequestRacSize = 0;
         uint64_t localNonce = 0; // captures the nonce used in the encrypted request, will be used in the corresponding decrypt call
 
         // SESSION
         void* enclave = veil::vtl1::enclave_information().BaseAddress;
-        auto credentialAndFormattedKeyNameAndSessionInfoResult = veil_abi::VTL0_Callbacks::userboundkey_establish_session_for_create_callback(
+        auto credentialAndFormattedKeyNameAndSessionInfoResult = veil_abi::Untrusted::Stubs::userboundkey_establish_session_for_create(
             reinterpret_cast<uint64_t>(enclave),
             keyName,
             reinterpret_cast<uintptr_t>(BCRYPT_ECDH_P384_ALG_HANDLE),
             message,
             windowId,
-            devCacheConfig);
+            abi_cache_config);
 
         veil::vtl1::vtl0_functions::debug_print(L"DEBUG: enclave_create_user_bound_key - Received credentialAndFormattedKeyNameAndSessionInfo");
 
@@ -315,7 +331,7 @@ wil::secure_vector<uint8_t> enclave_create_user_bound_key(
         // Second call to extract secret from credential
         veil::vtl1::vtl0_functions::debug_print(L"DEBUG: enclave_create_user_bound_key - About to call userboundkey_get_authorization_context_from_credential_callback");
 
-        auto authContextBlob = veil_abi::VTL0_Callbacks::userboundkey_get_authorization_context_from_credential_callback(
+        auto authContextBlob = veil_abi::Untrusted::Stubs::userboundkey_get_authorization_context_from_credential(
             credentialVector,
             encryptedKcmRequestForRetrieveAuthorizationContext,
             message,
@@ -353,7 +369,7 @@ wil::secure_vector<uint8_t> enclave_create_user_bound_key(
         veil::vtl1::vtl0_functions::debug_print(L"DEBUG: enclave_create_user_bound_key - Generated user key bytes");
 
         // ENCRYPT USERKEY - CORRECTED VERSION  
-        veil_abi::VTL1_Declarations::unique_heap_ptr boundKey;
+        veil_abi::Trusted::Implementation::unique_heap_ptr boundKey;
         uint32_t boundKeySize = 0;
         veil::vtl1::vtl0_functions::debug_print(L"DEBUG: enclave_create_user_bound_key - About to call ProtectUserBoundKey");
         THROW_IF_FAILED(ProtectUserBoundKey(
@@ -422,7 +438,7 @@ std::vector<uint8_t> enclave_load_user_bound_key(
         veil::vtl1::vtl0_functions::debug_print(L"DEBUG: enclave_load_user_bound_key - About to call establish_session_for_load_callback");
 
         void* enclave = veil::vtl1::enclave_information().BaseAddress;
-        auto credentialAndFormattedKeyNameAndSessionInfoResult = veil::vtl1::implementation::userboundkey::callouts::userboundkey_establish_session_for_load_callback(
+        auto credentialAndFormattedKeyNameAndSessionInfoResult = veil::vtl1::implementation::userboundkey::callouts::userboundkey_establish_session_for_load(
             enclave,
             keyName,
             message,
@@ -439,11 +455,11 @@ std::vector<uint8_t> enclave_load_user_bound_key(
         veil::vtl1::vtl0_functions::debug_print((L"DEBUG: enclave_load_user_bound_key - credentialVector size: " + std::to_wstring(credentialVector.size())).c_str());
 
         // Call to veinterop to create the encrypted KCM request for RetrieveAuthorizationContext
-        veil_abi::VTL1_Declarations::unique_heap_ptr encryptedKcmRequestRac;
+        veil_abi::Trusted::Implementation::unique_heap_ptr encryptedKcmRequestRac;
         uint32_t encryptedKcmRequestRacSize = 0;
 
         // Call to veinterop to create the encrypted KCM request for DeriveSharedSecret
-        veil_abi::VTL1_Declarations::unique_heap_ptr encryptedKcmRequestDss; 
+        veil_abi::Trusted::Implementation::unique_heap_ptr encryptedKcmRequestDss;
         uint32_t encryptedKcmRequestDssSize = 0;
 
         // DEBUG: Print formattedKeyName and keyNameSizeBytes
@@ -467,7 +483,7 @@ std::vector<uint8_t> enclave_load_user_bound_key(
         // Second call to extract secret from credential
         veil::vtl1::vtl0_functions::debug_print(L"DEBUG: enclave_load_user_bound_key - About to call userboundkey_get_authorization_context_from_credential_callback");
 
-        auto authContextBlob = veil_abi::VTL0_Callbacks::userboundkey_get_authorization_context_from_credential_callback(
+        auto authContextBlob = veil_abi::Untrusted::Stubs::userboundkey_get_authorization_context_from_credential(
             credentialVector,
             encryptedKcmRequestForRetrieveAuthorizationContext,
             message,
@@ -520,7 +536,7 @@ std::vector<uint8_t> enclave_load_user_bound_key(
         // Second call to extract secret from credential
         veil::vtl1::vtl0_functions::debug_print(L"DEBUG: enclave_load_user_bound_key - About to call userboundkey_get_secret_from_credential_callback");
 
-        auto secret = veil_abi::VTL0_Callbacks::userboundkey_get_secret_from_credential_callback(
+        auto secret = veil_abi::Untrusted::Stubs::userboundkey_get_secret_from_credential(
             credentialVector,
             encryptedKcmRequestForDeriveSharedSecret,
             message,

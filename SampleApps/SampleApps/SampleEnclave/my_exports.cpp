@@ -12,8 +12,9 @@
 #include <veil\enclave\userboundkey.vtl1.h>
 #include <veinterop_kcm.h>
 #include <veil\enclave\vtl0_functions.vtl1.h>
-#include <VbsEnclave\Enclave\Trusted.h>
 #include <veil\enclave\DeveloperTypes.h>
+#include <VbsEnclave\Enclave\Implementation\Trusted.h>
+#include <VbsEnclave\Enclave\Implementation\Types.h>
 
 // Store the actual key object, not just the handle
 wil::unique_bcrypt_key g_encryptionKey;

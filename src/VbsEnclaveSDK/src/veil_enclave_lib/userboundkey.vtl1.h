@@ -6,13 +6,12 @@
 #include <wil/resource.h>
 #include "future.vtl1.h"
 #include <veinterop_kcm.h>
+#include <VbsEnclave\Enclave\Implementation\Types.h>
 
 // Forward declarations for the auto-generated types
 namespace DeveloperTypes
 {
     struct keyCredentialCacheConfig;
-    struct credentialAndFormattedKeyNameAndSessionInfo;
-    struct sessionInfo; // This is auto-generated, don't redefine it
 }
 
 namespace veil::vtl1::userboundkey
