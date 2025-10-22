@@ -28,6 +28,7 @@ Here is the general structure and grammar of our .edl format.
 
 enclave 
 {
+    import "<path_to_edl_file.edl>"; // Importing another edl file
 
     enum // Anonymous enum
     {
@@ -68,13 +69,15 @@ enclave
 | `parameter_type`                | Defines a parameter's `type`. Must be one of the supported types. |
 | `parameter_name`                | Defines a parameter's `name`. |
 | `attr`                          | Directives describing the parameter's direction (e.g., `[in]`, `[in, out]`, `[out]`).             |
-| `EnclaveMethod`                 | Methods exposed from the secure `enclave` to the unsecure `hostApp`.<br> The `hostApp` calls stub functions, while the implementation is inside the enclave`.|                                                                      |
+| `EnclaveMethod`                 | Methods exposed from the secure `enclave` to the unsecure `hostApp`.<br> The `hostApp` calls stub functions, while the implementation is inside the enclave.|                                                                      |
 | `HostappMethod`                 | Methods exposed from the unsecure `hostApp` to the secure `enclave`.<br> The `enclave` calls stub functions, while the implementation is inside the `hostApp`. |
 
 A simple example of a `.edl` file.
 
 ```edl
 enclave {
+    import "EdlFiles\Crypto\Types.edl";
+
     struct ExampleStruct
     {
         int32_t int_field;
@@ -120,7 +123,7 @@ enclave {
 > [!NOTE]
 > - `vectors`, `arrays` and `structs` only support the types outlined above. `vectors` and `arrays`
 can be used as internal struct fields or function parameters.
- - `arrays` can contain a non-numeric value within the edl file. The only value it supports other than
+> - `arrays` can contain a non-numeric value within the edl file. The only value it supports other than
 numeric values is a value from an anonymous enum. `arrays` are considered fixed-sized, and in `C++`
 are generated as a `std::array` during code generation.
 
@@ -133,9 +136,58 @@ enum
 
 struct
 {
-    uint32_t[my_number] my_array; // This also works in a function declaration.
+    uint32_t my_array[my_number]; // This also works in a function declaration.
 };
 ```
+
+### Edl Generated Type Rules
+
+#### Struct Fields
+
+| Applies To | C++ Generated Type |
+|------------|----------------|
+| Pointer types (`*`) | `std::unique_ptr<Type>` |
+| All non-pointer types | `<Type>` |
+
+#### Function Parameters
+
+*With `[in]` attribute*  
+
+| Applies To | C++ Generated Type |
+|------------|----------------|
+| Pointer types (`*`) | `const <Type>*` |
+| `string`, `wstring`, `array`, `vector`, `struct` | `const <Type>&` |
+| `basic`, `integer`, `enum` | `<Type>` |
+
+*With `[in, out]` attribute* 
+
+| Applies To | C++ Generated Type |
+|------------|--------------------|
+| Pointer types (`*`)   | `<Type>*` |
+| All non-pointer types | `<Type>&` |
+
+*With `[out]` attribute*  
+
+| Applies To | C++ Generated Type |
+|------------|----------------|
+| Pointer types (`*`) | `std::unique_ptr<Type>&` |
+| All non-pointer types | `<Type>&` |
+
+#### Function Return Values
+
+| Applies To | C++ Generated Type |
+|------------|----------------|
+| Pointer types (`*`) | `std::unique_ptr<Type>` |
+| All non-pointer types | `<Type>` |
+
+
+### Importing other .edl files
+You can import other `.edl` files into your `.edl` file using the `import` keyword. This allows you to reuse types and function declarations across multiple `.edl` files.
+
+> [!NOTE]
+> The `edlcodegen.exe` provides the `--ImportDirectories` option to specify the directories where it should look for imported `.edl` files. 
+> The paths inside `--ImportDirectories` must be absolute paths to directories that exist.
+> You can specify multiple directories by separating them with a semicolon (`;`).
 
 ### Unsupported functionality
 
@@ -150,12 +202,10 @@ While our `.edl` parser is based on Open Enclave's implementation of Intel's .ed
 - Only the following attributes are supported `[in]`, `[in, out]`, `[out]`.
 - Pointers in function declarations are expected to have an `[in]`, `[in, out]` or `[out]` direction attribute. `[in]` means the parameter is expected to only be used in 
   the function as input, `[out]` means the parameter is expected to be used as output and lastly `[in, out]` means the parameter can be used for both.
+- `void*` is not supported in `struct fields` or `function parameters`. Use `uintptr_t` for arbitrary pointers or handles, and manually cast and manage the memory when moving data into or out of the enclave.
 
 > [!NOTE]
 > If no attributes are specified, parameters default to `[in]`.
 
 - The `const` keyword is not supported. In code generation, all non-struct/non-container `[in]` parameters won't have the `const` qualifier; all struct/container
   `[in]` parameters will have the `const` qualifier. All other attributes (`[in, out]` and `[out]`) are generated without the const qualifier, regardless of type.
-- Functions are not permitted to return raw pointers; use `[out]` with `*` to return a smart pointer.
-- The ability to compose `.edl` files with the `import` or `include` keywords is not supported.
-

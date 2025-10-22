@@ -2,21 +2,23 @@
 // Changes to this file may be lost if the file is regenerated.
 
 #pragma once
-#include <VbsEnclave\HostApp\Untrusted.h>
+#include <VbsEnclave\HostApp\Implementation\Untrusted.h>
+#include <VbsEnclave\HostApp\Abi\TypeMetadata.h>
+
 
 namespace CodeGenTest
 {
-    namespace AbiDefinitions
+    
+    namespace Abi::Definitions
     {
-        using namespace CodeGenTest::DeveloperTypes;
         
         static inline void* FuncWithAllArgs_1_Generated_Stub(void* function_context)
         try
         {
-            using DevTypeT = FuncWithAllArgs_1_args;
-            using FlatBufferT = FlatbuffersDevTypes::FuncWithAllArgs_1_argsT;
+            using AbiTypeT = CodeGenTest::Abi::Types::FuncWithAllArgs_1_args;
+            using FlatBufferT = FlatbufferTypes::FuncWithAllArgs_1_argsT;
             
-            HRESULT hr = VbsEnclaveABI::HostApp::CallVtl0CallbackImplFromVtl0<DevTypeT, FlatBufferT>(Untrusted::Implementation::FuncWithAllArgs, function_context);
+            HRESULT hr = VbsEnclaveABI::HostApp::CallVtl0CallbackImplFromVtl0<AbiTypeT, FlatBufferT>(Untrusted::Implementation::FuncWithAllArgs, function_context);
             LOG_IF_FAILED(hr);
             return ABI_HRESULT_TO_PVOID(hr);
         }

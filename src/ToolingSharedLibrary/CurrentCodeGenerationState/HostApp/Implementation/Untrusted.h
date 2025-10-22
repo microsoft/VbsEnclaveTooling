@@ -2,14 +2,14 @@
 // Changes to this file may be lost if the file is regenerated.
 
 #pragma once
-#include <VbsEnclaveABI\Enclave\EnclaveHelpers.h>
-#include "DeveloperTypes.h"
+#include <VbsEnclave\HostApp\Implementation\Types.h>
+#include <VbsEnclaveABI\Host\HostHelpers.h>
 
 namespace CodeGenTest
 {
-    namespace Trusted::Implementation
+    namespace Untrusted::Implementation
     {
-        using namespace CodeGenTest::DeveloperTypes;
+        using namespace CodeGenTest::Types;
         
         HRESULT FuncWithAllArgs(_In_  bool arg1, _In_ const uint32_t* arg2, _Inout_  int32_t* arg3, _Out_  std::unique_ptr<uint64_t>& arg4, _Inout_  TestStruct1& arg5, _Out_  std::unique_ptr<TestStruct2>& arg6, _Inout_  std::vector<TestStruct2>& arg7, _Out_  std::vector<std::int16_t>& arg8, _Out_  std::array<std::wstring, 2>& arg9);
 

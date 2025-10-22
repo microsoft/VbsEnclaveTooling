@@ -58,6 +58,7 @@
   </PropertyGroup>
   <PropertyGroup>
     <VbsEnclaveVirtualTrustLayer>Enclave</VbsEnclaveVirtualTrustLayer>
+    <VbsEnclaveConsumeCppSupportLib>true</VbsEnclaveConsumeCppSupportLib>
   </PropertyGroup>
   <!-- Undocked UCRT configuration. -->
   <PropertyGroup>
@@ -91,6 +92,13 @@
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
       <AdditionalIncludeDirectories>$(WindowsSdk_EnclaveIncludes_Path)\um;$(WindowsSdk_EnclaveIncludes_Path)\shared;$(WindowsSdk_EnclaveIncludes_Path)\ucrt;$(SolutionDir)..\..\Common\veil_enclave_wil_inc;$(MSBUILDThisFileDirectory)..\veil_enclave_inc;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp20</LanguageStandard>
+      <GuardEHContMetadata>true</GuardEHContMetadata>
+      <!-- 
+          Add /FS to enable file-based locking on .pdb files. Without this, parallel cl.exe processes
+          (as used by vcpkg builds) can collide when writing debug info, causing error 
+          C1041 ("cannot open program database").
+        -->
+      <AdditionalOptions>/FS %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -110,6 +118,9 @@
     <Lib />
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="..\..\..\..\Common\veil_enclave_wil_inc\wil\enclave\pop_enable_wil_logging.h" />
+    <ClInclude Include="..\..\..\..\Common\veil_enclave_wil_inc\wil\enclave\push_disable_wil_logging.h" />
+    <ClInclude Include="..\..\..\..\Common\veil_enclave_wil_inc\wil\enclave\wil_for_enclaves.h" />
     <ClInclude Include="crypto.vtl1.h" />
     <ClInclude Include="DeveloperTypes.h" />
     <ClInclude Include="future.vtl1.h" />

@@ -33,8 +33,11 @@ in the `VbsEnclaveSdk\_build` folder inside your hostApp or enclave project.
 In a `<PropertyGroup />` in your *enclave* projects .vcxproj or .props file use:
 `<VbsEnclaveVirtualTrustLayer>Enclave</VbsEnclaveVirtualTrustLayer>`
 
-- This will add the `veil_enclave_lib` and `veil_enclave_cpp_support_lib` static libs to your 
-enclaves dll at build time.
+- This will add the `veil_enclave_lib.lib` static lib to your enclaves dll at build time.
+
+> [!Note]
+> If you wish to add the `veil_enclave_cpp_support_lib.lib` static lib to your enclaves build add `<VbsEnclaveConsumeCppSupportLib>true</VbsEnclaveConsumeCppSupportLib>` to a `<PropertyGroup />` in your projects `.vcxproj` or `.props` file.
+
 
 In a `<PropertyGroup />` your *hostApp* projects .vcxproj or .props file use:
 `<VbsEnclaveVirtualTrustLayer>HostApp</VbsEnclaveVirtualTrustLayer>`

@@ -50,6 +50,7 @@ namespace veil::vtl0::implementation::callins
     {
         // Initialize enclave interface
         auto enclaveInterface = veil_abi::Trusted::Stubs::export_interface(enclave);
+
         THROW_IF_FAILED(enclaveInterface.RegisterVtl0Callbacks());
 
         THROW_IF_FAILED(enclaveInterface.taskpool_run_task(taskpool_instance_vtl1, task_id));

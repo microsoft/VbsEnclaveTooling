@@ -20,10 +20,6 @@ namespace VbsEnclaveToolingTests
 
 TEST_CLASS(EdlParserArrayTests)
 {
-    private:
-
-       std::filesystem::path m_array_edl_file_name = "ArrayTest.edl";
-
     public:
 
     // Trusted functions

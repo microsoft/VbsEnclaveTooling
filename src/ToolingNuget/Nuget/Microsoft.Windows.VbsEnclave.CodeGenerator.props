@@ -12,6 +12,12 @@
         <VbsEnclaveVirtualTrustLayer Condition="'$(VbsEnclaveVirtualTrustLayer)' == ''">HostApp</VbsEnclaveVirtualTrustLayer>
         <VbsEnclaveVtl0ClassName></VbsEnclaveVtl0ClassName>
         <VbsEnclaveNamespace></VbsEnclaveNamespace>
+        <VbsEnclaveImportDirectories></VbsEnclaveImportDirectories>
+        <VbsEnclaveGeneratedFilesDir Condition="$(VbsEnclaveGeneratedFilesDir) == ''"></VbsEnclaveGeneratedFilesDir>
+
         <!-- End -->
+        
+        <!-- Additional infrastructure props -->
+        <VbsEnclaveConsumeCppSupportLib>false</VbsEnclaveConsumeCppSupportLib>
     </PropertyGroup>
 </Project>

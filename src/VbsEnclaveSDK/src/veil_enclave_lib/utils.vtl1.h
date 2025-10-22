@@ -74,6 +74,15 @@ namespace veil::vtl1
         THROW_WIN32_IF(ERROR_INCORRECT_SIZE, destination.size() != source.size());
         std::copy(source.begin(), source.end(), destination.begin());
     }
+
+    // We only need narrow_cast from Microsoft GSL, not the entire dependency. So, we reimplement it here
+    // to avoid pulling in all of GSL.
+    // See narrow_cast implementation: https://github.com/microsoft/GSL/blob/7e0943d20d3082b4f350a7e0c3088d2388e934de/include/gsl/util#L129
+    template <class T, class U>
+    constexpr T narrow_cast(U&& u) noexcept
+    {
+        return static_cast<T>(std::forward<U>(u));
+    }
 }
 
 namespace veil::vtl1

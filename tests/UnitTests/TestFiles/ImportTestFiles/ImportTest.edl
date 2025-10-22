@@ -1,0 +1,40 @@
+// Copyright (c) Microsoft Corporation.
+// Licensed under the MIT License.
+
+enclave
+{
+    import "TestFiles\ArrayTest.edl";
+    import "TestFiles\StructTest.edl";
+    import "TestFiles\BasicTypesTest.edl";
+    import "TestFiles\EnumTest.edl";
+   
+   enum 
+    {
+         Eleven,
+    };
+
+    enum NonImportEnum
+    {
+         value,
+    };
+
+    struct NonImportStruct
+    {
+        int32_t value;
+        MyStruct2 *mystruct2_ptr;
+        Color color;
+        int32_t arr[Eleven];
+    };
+
+    trusted
+    {
+        void NonImportFunc1();
+        void NonImportFuncWithArrayArgs1(int32_t value[Nine], MyStruct2 my_struct);
+    };
+
+    untrusted
+    {
+        void NonImportFunc1();
+        void NonImportFuncWithArrayArgs2(int32_t value[Fifteen]);
+    };
+};

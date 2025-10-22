@@ -98,7 +98,7 @@ enclave
             [out] char arg3[3]
         );
 
-        void ArrayQchar_t(
+        void ArrayWchar_t(
             [in] wchar_t arg1[2],
             [in, out] wchar_t arg2[2],
             [out] wchar_t arg3[3]

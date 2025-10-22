@@ -56,7 +56,7 @@ namespace VbsEnclaveABI::Enclave
                 }
 
                 auto vtl0_func = reinterpret_cast<LPENCLAVE_ROUTINE>(stub_function_addresses[i]);
-                HRESULT hr = CheckForVTL0Function(vtl0_func);
+                HRESULT hr = AbiCheckForVTL0Function(vtl0_func);
 
                 if (FAILED_LOG(hr))
                 {

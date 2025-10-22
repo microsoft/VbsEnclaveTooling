@@ -7,7 +7,7 @@
 #include <wil\resource.h>
 #include "TestHelpers.h"
 #include "HostTestHelpers.h"
-#include <VbsEnclave\HostApp\Untrusted.h>
+#include <VbsEnclave\HostApp\Implementation\Untrusted.h>
 
 using namespace VbsEnclave;
 
