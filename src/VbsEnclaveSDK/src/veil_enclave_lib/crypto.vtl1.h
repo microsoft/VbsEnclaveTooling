@@ -3,6 +3,7 @@
 
 #pragma once
 
+#include <array>
 #include <span>
 #include <wil/stl.h>
 #include "utils.vtl1.h"
