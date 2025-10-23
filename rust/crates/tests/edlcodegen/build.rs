@@ -6,7 +6,7 @@ use std::{env, path::PathBuf, process::Command};
 
 fn main() {
     let manifest_dir = PathBuf::from(env::var("CARGO_MANIFEST_DIR").unwrap());
-    let schema_path = manifest_dir.join("tests\\flatbuffer_test_schema.fbs");
+    let schema_path = manifest_dir.join("tests\\flatbuffer_schemas\\flatbuffer_test_schema.fbs");
     assert!(
         schema_path.exists(),
         "Missing flatbuffer schema file: {}",

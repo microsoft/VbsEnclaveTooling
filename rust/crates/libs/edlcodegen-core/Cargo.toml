@@ -10,6 +10,6 @@ crate-type = ["rlib"]
 edlcodegen-tools = { workspace = true }
 
 [dependencies]
+edlcodegen-macros = { workspace = true }
 flatbuffers = { workspace = true }
 windows-result = { workspace = true }
-edlcodegen-macros = { workspace = true }
