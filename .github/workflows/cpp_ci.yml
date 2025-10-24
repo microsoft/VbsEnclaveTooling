@@ -3,12 +3,15 @@ name: cpp_ci
 on:
   pull_request:
   push:
-    branches: [main]
+    branches:
+      - main
+      - 'feature/**'
+      - 'feat/**'
 
 jobs:
   build-edl-code-gen:
     name: Build EdlCodeGen
-    runs-on: windows-2025
+    runs-on: windows-latest
 
     strategy:
       matrix:
@@ -45,11 +48,9 @@ jobs:
           name: edlcodegen-${{ matrix.platform }}-${{ matrix.configuration }}
           path: |
             _build/${{ matrix.platform }}/${{ matrix.configuration }}/
-
-  # Unit tests are only in x64 since the EdlCodeGen executable is only in x64.
   run-edl-code-gen-tests:
-    name: Run EdlCodeGen Unit Tests
-    runs-on: windows-2025
+    name: Test EdlCodeGen
+    runs-on: windows-latest
     needs: build-edl-code-gen
 
     strategy:
@@ -66,16 +67,16 @@ jobs:
       - name: Setup MSBuild
         uses: microsoft/setup-msbuild@v2
 
+      # Unit tests are only in x64 since the EdlCodeGen executable is only in x64.
       - name: Run EdlCodeGen unit tests
         shell: pwsh
         run: |
           $vsTestInstallPath = & "${env:ProgramFiles(x86)}/Microsoft Visual Studio/Installer/vswhere.exe" -latest -products * -requires Microsoft.VisualStudio.Workload.ManagedDesktop Microsoft.VisualStudio.Workload.Web -requiresAny -property installationPath
           $vstestConsoleExe = join-path $vsTestInstallPath 'Common7/IDE/CommonExtensions/Microsoft/TestWindow/vstest.console.exe'
           & $vstestConsoleExe "_build/x64/${{ matrix.configuration }}/UnitTests.dll"
-
   build-sdk:
     name: Build SDK
-    runs-on: windows-2025
+    runs-on: windows-latest
 
     strategy:
       matrix:
