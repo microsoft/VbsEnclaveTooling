@@ -12,11 +12,11 @@ namespace CodeGenTest::Abi::Types
     struct FuncWithAllArgs_0_args
     {
         bool m_arg1 {};
-        std::unique_ptr<uint32_t> m_arg2 {};
-        std::unique_ptr<int32_t> m_arg3 {};
-        std::unique_ptr<uint64_t> m_arg4 {};
+        std::optional<std::uint32_t> m_arg2 {};
+        std::optional<std::int32_t> m_arg3 {};
+        std::optional<std::uint64_t> m_arg4 {};
         TestStruct1 m_arg5 {};
-        std::unique_ptr<TestStruct2> m_arg6 {};
+        std::optional<TestStruct2> m_arg6 {};
         std::vector<TestStruct2> m_arg7 {};
         std::vector<std::int16_t> m_arg8 {};
         std::array<std::wstring, 2> m_arg9 {};
@@ -26,11 +26,11 @@ namespace CodeGenTest::Abi::Types
     struct FuncWithAllArgs_1_args
     {
         bool m_arg1 {};
-        std::unique_ptr<uint32_t> m_arg2 {};
-        std::unique_ptr<int32_t> m_arg3 {};
-        std::unique_ptr<uint64_t> m_arg4 {};
+        std::optional<std::uint32_t> m_arg2 {};
+        std::optional<std::int32_t> m_arg3 {};
+        std::optional<std::uint64_t> m_arg4 {};
         TestStruct1 m_arg5 {};
-        std::unique_ptr<TestStruct2> m_arg6 {};
+        std::optional<TestStruct2> m_arg6 {};
         std::vector<TestStruct2> m_arg7 {};
         std::vector<std::int16_t> m_arg8 {};
         std::array<std::wstring, 2> m_arg9 {};
