@@ -75,7 +75,7 @@ jobs:
           $vstestConsoleExe = join-path $vsTestInstallPath 'Common7/IDE/CommonExtensions/Microsoft/TestWindow/vstest.console.exe'
           & $vstestConsoleExe "_build/x64/${{ matrix.configuration }}/UnitTests.dll"
   build-sdk:
-    name: Build SDK
+    name: Build Veil SDK
     runs-on: windows-latest
 
     strategy:
