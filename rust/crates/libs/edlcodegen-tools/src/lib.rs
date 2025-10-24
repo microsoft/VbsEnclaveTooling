@@ -9,7 +9,7 @@ pub fn exes_path() -> PathBuf {
 }
 /// Returns the full path to `edlcodegen.exe`.
 pub fn edlcodegen_path() -> PathBuf {
-    exes_path().join("edlcodgen/edlcodegen.exe")
+    exes_path().join("edlcodegen/edlcodegen.exe")
 }
 
 /// Returns the full path to `flatc.exe`.
