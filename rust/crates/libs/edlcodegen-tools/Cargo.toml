@@ -3,6 +3,3 @@ name = "edlcodegen-tools"
 version = "0.1.0"
 edition =  { workspace = true }
 
-[build-dependencies]
-ureq = "3.1.2" 
-zip = "6.0.0"
