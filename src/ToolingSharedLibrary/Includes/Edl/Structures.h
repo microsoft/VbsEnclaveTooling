@@ -8,7 +8,6 @@
 
 #pragma once
 #include <pch.h>
-#include <cassert>
 #include <unordered_set>
 #include <Utils\Helpers.h>
 
@@ -415,7 +414,6 @@ namespace EdlProcessor
 
             if (m_edl_type_info.m_type_kind == EdlTypeKind::Optional)
             {
-                assert(m_edl_type_info.inner_type != nullptr);
                 info_string = std::format("optional<{}>", m_edl_type_info.inner_type->m_name);
             }
             

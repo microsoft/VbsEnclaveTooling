@@ -923,6 +923,7 @@ namespace EdlProcessor
             {
                 auto edl_type = c_string_to_edltype_map.at(token_name);
 
+                // Only allow primitive types and developer types within optionals.
                 if (edl_type == EdlTypeKind::Vector || edl_type == EdlTypeKind::Optional)
                 {
                     throw EdlAnalysisException(
@@ -1069,7 +1070,7 @@ namespace EdlProcessor
             auto type_info_ptr = &declaration.m_edl_type_info;
             auto type_name_found = declaration.m_edl_type_info.m_name;
 
-            // Cover vector<type> case.
+            // Cover vector<type> and optional<type> cases.
             if (type_info_ptr->inner_type)
             {
                 type_info_ptr = type_info_ptr->inner_type.get();
@@ -1093,7 +1094,7 @@ namespace EdlProcessor
         }
     }
 
-    bool CheckOptionalCycle(
+    bool HasOptionalCycle(
         const std::string& start_type,
         const std::string& current_type,
         const OrderedMap<std::string, DeveloperType>& developer_types,
@@ -1112,7 +1113,7 @@ namespace EdlProcessor
             const auto& info = field.m_edl_type_info;
             const bool is_optional = info.m_type_kind == EdlTypeKind::Optional;
 
-            if (!is_optional || !info.inner_type)
+            if (!is_optional)
             {
                 continue;
             }
@@ -1123,32 +1124,19 @@ namespace EdlProcessor
                 continue;
             }
 
-            // Found optional<start_type> which indicates a cycle.
+            // Found optional<start_type> which indicates a cycle back to the original type.
             if (inner.m_name == start_type)
             {
                 return true;
             }
 
-            if (CheckOptionalCycle(start_type, inner.m_name, developer_types, visited))
+            if (HasOptionalCycle(start_type, inner.m_name, developer_types, visited))
             {
                 return true;
             }
         }
 
         return false;
-    }
-
-    bool HasOptionalCycle(
-        const DeveloperType& type,
-        const OrderedMap<std::string, DeveloperType>& developer_types)
-    {
-        if (type.m_type_kind != EdlTypeKind::Struct)
-        {
-            return false;
-        }
-
-        std::unordered_set<std::string> visited;
-        return CheckOptionalCycle(type.m_name, type.m_name, developer_types, visited);
     }
 
     void EdlParser::PerformFinalValidations()
@@ -1185,7 +1173,14 @@ namespace EdlProcessor
         // Check for cycles of T inside optional<T> fields within structs.
         for (auto& dev_type : m_edl.m_developer_types.values())
         {
-            if (HasOptionalCycle(dev_type, m_edl.m_developer_types))
+            if (dev_type.m_type_kind != EdlTypeKind::Struct)
+            {
+                continue;
+            }
+
+            std::unordered_set<std::string> visited;
+
+            if (HasOptionalCycle(dev_type.m_name, dev_type.m_name, m_edl.m_developer_types, visited))
             {
                 throw EdlAnalysisException(
                     ErrorId::EdlOptionalCycle,

@@ -3,8 +3,6 @@
         <VbsEnclaveExeFilePath>$(OutDir)edlcodegen.exe</VbsEnclaveExeFilePath>
         <VbsEnclaveEdlPath>$(SolutionDir)src\ToolingSharedLibrary\CurrentCodeGenerationState\CodeGenerationState.edl</VbsEnclaveEdlPath>
         <VbsEnclaveGeneratedFilesDir>$(SolutionDir)src\ToolingSharedLibrary\CurrentCodeGenerationState</VbsEnclaveGeneratedFilesDir>
-        <VbsEnclaveErrorHandling>ErrorCode</VbsEnclaveErrorHandling>
-        <VbsEnclaveVirtualTrustLayer>Enclave</VbsEnclaveVirtualTrustLayer>
         <VbsEnclaveNamespace>CodeGenTest</VbsEnclaveNamespace>
         <VbsEnclaveVtl0ClassName>CodeGenTestClass</VbsEnclaveVtl0ClassName>
         <FlatbuffersCompiler>$(SolutionDir)src\ToolingSharedLibrary\vcpkg_installed\x64-windows-static-cfg\x64-windows\tools\flatbuffers\flatc.exe</FlatbuffersCompiler>
@@ -24,15 +22,16 @@
 
         <!-- Generate the codegen files for Cpp -->
         <PropertyGroup>
-            <EdlCodeGenCppForEnclaveCommand>
-                "$(VbsEnclaveExeFilePath)" --Language C++ --EdlPath "$(VbsEnclaveEdlPath)" --ErrorHandling "$(VbsEnclaveErrorHandling)" --OutputDirectory "$(VbsEnclaveGeneratedFilesDir)\Cpp" --VirtualTrustLayer "Enclave" --Vtl0ClassName "$(VbsEnclaveVtl0ClassName)" --Namespace "$(VbsEnclaveNamespace)" --FlatbuffersCompilerPath "$(FlatbuffersCompiler)"
-            </EdlCodeGenCppForEnclaveCommand>
-            <EdlCodeGenCppForHostAppCommand>
-                "$(VbsEnclaveExeFilePath)" --Language C++ --EdlPath "$(VbsEnclaveEdlPath)" --ErrorHandling "$(VbsEnclaveErrorHandling)" --OutputDirectory "$(VbsEnclaveGeneratedFilesDir)\Cpp" --VirtualTrustLayer "HostApp" --Vtl0ClassName "$(VbsEnclaveVtl0ClassName)" --Namespace "$(VbsEnclaveNamespace)" --FlatbuffersCompilerPath "$(FlatbuffersCompiler)"
-            </EdlCodeGenCppForHostAppCommand>
+            <CppCodeGenForEnclaveCommand>
+                "$(VbsEnclaveExeFilePath)" --Language C++ --EdlPath "$(VbsEnclaveEdlPath)" --ErrorHandling "Exception" --OutputDirectory "$(VbsEnclaveGeneratedFilesDir)\Cpp" --VirtualTrustLayer "Enclave" --Vtl0ClassName "$(VbsEnclaveVtl0ClassName)" --Namespace "$(VbsEnclaveNamespace)" --FlatbuffersCompilerPath "$(FlatbuffersCompiler)"
+            </CppCodeGenForEnclaveCommand>
+            
+            <CppCodeGenForHostAppCommand>
+                "$(VbsEnclaveExeFilePath)" --Language C++ --EdlPath "$(VbsEnclaveEdlPath)" --ErrorHandling "Exception" --OutputDirectory "$(VbsEnclaveGeneratedFilesDir)\Cpp" --VirtualTrustLayer "HostApp" --Vtl0ClassName "$(VbsEnclaveVtl0ClassName)" --Namespace "$(VbsEnclaveNamespace)" --FlatbuffersCompilerPath "$(FlatbuffersCompiler)"
+            </CppCodeGenForHostAppCommand>
         </PropertyGroup>
 
-        <Exec Command="$(EdlCodeGenCppForEnclaveCommand)" />
-        <Exec Command="$(EdlCodeGenCppForHostAppCommand)" />
+        <Exec Command="$(CppCodeGenForEnclaveCommand)" />
+        <Exec Command="$(CppCodeGenForHostAppCommand)" />
     </Target>
 </Project>
