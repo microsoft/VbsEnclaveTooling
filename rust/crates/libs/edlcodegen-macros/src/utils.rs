@@ -43,8 +43,8 @@ pub fn generate_field_assignment(field: FieldInfo) -> TokenStream2 {
 /// and the target type.
 fn generate_conversion(expr: TokenStream2, typ: &Type, field: &FieldInfo) -> TokenStream2 {
     // handle edl type is array [T; N] but target type is Vec<T>
-    if let Type::Array(_) = typ {
-        return handle_array_to_vec(expr, field);
+    if let Type::Array(arr_info) = typ {
+        return handle_array_to_vec(expr, field, arr_info);
     };
 
     let Type::Path(TypePath { path, .. }) = typ else {
@@ -138,7 +138,11 @@ fn handle_unboxed_to_boxed(expr: TokenStream2, field: &FieldInfo) -> TokenStream
     }
 }
 
-fn handle_array_to_vec(expr: TokenStream2, field: &FieldInfo) -> TokenStream2 {
+fn handle_array_to_vec(
+    expr: TokenStream2,
+    field: &FieldInfo,
+    type_array: &syn::TypeArray,
+) -> TokenStream2 {
     match field.dir {
         // edl type: [T; N] → target: Vec<T>
         Direction::ToTarget => {
@@ -146,15 +150,21 @@ fn handle_array_to_vec(expr: TokenStream2, field: &FieldInfo) -> TokenStream2 {
         }
 
         // Target: Vec<T> → edl type: [T; N]
+        // If the lengths don't match then something went wrong during conversion.
+        // We expect these lengths to be exactly the same.
         Direction::FromTarget => {
+            let field_name = field.name.to_string();
+            let array_len: &syn::Expr = &type_array.len;
             quote! {{
-                core::array::from_fn(|i| {
-                    if i < #expr.len() {
-                        #expr[i].clone().into()
-                    } else {
-                        Default::default()
-                    }
-                })
+                if #expr.len() != #array_len {
+                    panic!(
+                        "Array and vector length mismatch for field {}. array len: {}, vector len: {}",
+                        #field_name,
+                        #array_len,
+                        #expr.len()
+                    );
+                }
+                core::array::from_fn(|i| {#expr[i].clone().into()})
             }}
         }
     }
