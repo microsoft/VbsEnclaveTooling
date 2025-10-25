@@ -18,6 +18,7 @@
 #include <winrt/base.h>
 #include <winrt/Windows.Foundation.h>
 #include <winrt/Windows.Security.Credentials.h>
+#include <winrt/Windows.Storage.Streams.h>
 #include <roapi.h>
 
 #include <veil\host\enclave_api.vtl0.h>
@@ -26,6 +27,8 @@
 #include "sample_utils.h"
 
 #include <VbsEnclave\HostApp\Stubs\Trusted.h>
+
+using namespace winrt::Windows::Security::Credentials;
 
 namespace fs = std::filesystem;
 
@@ -545,37 +548,43 @@ int mainEncryptDecrpyt(uint32_t activityLevel)
     veilLog.AddTimestampedLog(L"[Host] Starting from host", veil::any::logger::eventLevel::EVENT_LEVEL_CRITICAL);
 
     /******************************* Enclave setup *******************************/
-    // Create app+user enclave identity - use the implemented owner_id function instead of NGC
+    // Create app+user enclave identity - use the new GetSecureId API from IKeyCredentialManagerStatics2
     std::vector<uint8_t> ownerId;
 
     try 
     {
-        wil::unique_ncrypt_prov ngcKsp;
-        HRESULT hr = NCryptOpenStorageProvider(&ngcKsp, MS_NGC_KEY_STORAGE_PROVIDER, 0);
-        if (SUCCEEDED(hr))
+        // Call the GetSecureId API directly on the static class
+        auto secureIdBuffer = KeyCredentialManager::GetSecureId();
+        
+        if (secureIdBuffer && secureIdBuffer.Length() > 0)
         {
-            DWORD resultSize {};
-            hr = NCryptGetProperty(
-                ngcKsp.get(), L"NgcContainerSecureId", nullptr, 0, &resultSize, 0);
-                
-            if (SUCCEEDED(hr) && resultSize > 0)
-            {
-                std::vector<BYTE> ngcOwnerId(resultSize);
-                hr = NCryptGetProperty(
-                    ngcKsp.get(), L"NgcContainerSecureId", ngcOwnerId.data(), resultSize, &resultSize, 0);
-                    
-                if (SUCCEEDED(hr))
-                {
-                    ownerId = ngcOwnerId;
-                }
-            }
+            // Convert IBuffer to std::vector<uint8_t>
+            auto reader = winrt::Windows::Storage::Streams::DataReader::FromBuffer(secureIdBuffer);
+            ownerId.resize(secureIdBuffer.Length());
+            reader.ReadBytes(ownerId);
         }
+        else
+        {
+            std::wcout << L"Warning: GetSecureId returned empty buffer." << std::endl;
+        }
+    }
+    catch (winrt::hresult_error const& ex)
+    {
+        // If the new API is not available or fails, log the error and continue with default
+        std::wcout << L"Warning: Failed to get secure ID using GetSecureId API (HRESULT: 0x" 
+                   << std::hex << ex.code() << L"). Using default owner_id." << std::endl;
     }
     catch (...)
     {
-        // If NGC approach fails, continue with the default owner_id from the function
+        // If any other exception occurs, continue with default
+        std::wcout << L"Warning: Exception occurred while getting secure ID. Using default owner_id." << std::endl;
     }
-        
+
+    // Fallback to the default owner_id if the new API failed or returned empty result
+    if (ownerId.empty())
+    {
+        ownerId = veil::vtl0::appmodel::owner_id();
+    }
 
     // Load enclave
     auto flags = ENCLAVE_VBS_FLAG_DEBUG;
