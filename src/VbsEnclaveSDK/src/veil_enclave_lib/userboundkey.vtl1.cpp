@@ -29,8 +29,8 @@ uintptr_t ConvertFromSessionHandle(unique_sessionhandle sessionHandle)
     return reinterpret_cast<uintptr_t>(sessionHandle.release());
 }
 
-// Helper function to convert DeveloperTypes::keyCredentialCacheConfig to veil_abi::Types::keyCredentialCacheConfig
-veil_abi::Types::keyCredentialCacheConfig ConvertToAbiCacheConfig(const DeveloperTypes::keyCredentialCacheConfig& cache_config)
+// Helper function to convert veil::vtl1::developer_types::keyCredentialCacheConfig to veil_abi::Types::keyCredentialCacheConfig
+veil_abi::Types::keyCredentialCacheConfig ConvertCacheConfig(const veil::vtl1::developer_types::keyCredentialCacheConfig& cache_config)
 {
     veil_abi::Types::keyCredentialCacheConfig abi_cache_config;
     abi_cache_config.cacheOption = cache_config.cacheOption;
@@ -124,10 +124,10 @@ namespace veil::vtl1::implementation::userboundkey::callouts
         _In_ const uintptr_t ecdh_protocol, 
         _In_ const std::wstring& message, 
         _In_ const uintptr_t window_id, 
-        _In_ const DeveloperTypes::keyCredentialCacheConfig& cache_config)
+        _In_ const veil::vtl1::developer_types::keyCredentialCacheConfig& cache_config)
     {
         // Convert cache_config to the correct type
-        auto abi_cache_config = veil::vtl1::userboundkey::ConvertToAbiCacheConfig(cache_config);
+        auto abi_cache_config = veil::vtl1::userboundkey::ConvertCacheConfig(cache_config);
 
         return veil_abi::Untrusted::Stubs::userboundkey_establish_session_for_create(
             reinterpret_cast<uintptr_t>(enclave),
@@ -274,7 +274,7 @@ std::vector<uint8_t> GetEphemeralPublicKeyBytesFromBoundKeyBytes(wil::secure_vec
 
 wil::secure_vector<uint8_t> enclave_create_user_bound_key(
     const std::wstring& keyName,
-    DeveloperTypes::keyCredentialCacheConfig& cacheConfig,
+    veil::vtl1::developer_types::keyCredentialCacheConfig& cacheConfig,
     const std::wstring& message,
     uintptr_t windowId,
     ENCLAVE_SEALING_IDENTITY_POLICY sealingPolicy)
@@ -285,7 +285,7 @@ wil::secure_vector<uint8_t> enclave_create_user_bound_key(
     {
         // Convert cacheConfig to the type expected by the callback
         // Convert cache_config to the correct type
-        auto abi_cache_config = veil::vtl1::userboundkey::ConvertToAbiCacheConfig(cacheConfig);
+        auto abi_cache_config = ConvertCacheConfig(cacheConfig);
         veil_abi::Trusted::Implementation::unique_heap_ptr encryptedKcmRequestRac; // RAII wrapper for automatic cleanup
         uint32_t encryptedKcmRequestRacSize = 0;
         uint64_t localNonce = 0; // captures the nonce used in the encrypted request, will be used in the corresponding decrypt call
@@ -409,7 +409,7 @@ wil::secure_vector<uint8_t> enclave_create_user_bound_key(
 
 std::vector<uint8_t> enclave_load_user_bound_key(
     const std::wstring& keyName,
-    DeveloperTypes::keyCredentialCacheConfig& cacheConfig,
+    veil::vtl1::developer_types::keyCredentialCacheConfig& cacheConfig,
     const std::wstring& message,
     uintptr_t windowId,
     std::vector<uint8_t>& sealedBoundKeyBytes)

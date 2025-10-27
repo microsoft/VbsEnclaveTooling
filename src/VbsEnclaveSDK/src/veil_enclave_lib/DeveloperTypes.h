@@ -2,9 +2,9 @@
 
 #include <stdexcept>
 
-// Define the global DeveloperTypes namespace structure BEFORE including VbsEnclave headers
+// Define the global developer types namespace structure BEFORE including VbsEnclave headers
 // to ensure it doesn't conflict with the VbsEnclave types
-namespace DeveloperTypes
+namespace veil::vtl1::developer_types
 {
     struct keyCredentialCacheConfig
     {

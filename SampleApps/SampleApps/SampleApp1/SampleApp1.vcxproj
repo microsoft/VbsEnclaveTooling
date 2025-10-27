@@ -2,7 +2,6 @@
 <Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="..\packages\Microsoft.Windows.VbsEnclave.SDK.0.0.0\build\native\Microsoft.Windows.VbsEnclave.SDK.props" Condition="Exists('..\packages\Microsoft.Windows.VbsEnclave.SDK.0.0.0\build\native\Microsoft.Windows.VbsEnclave.SDK.props')" />
   <Import Project="..\packages\Microsoft.Windows.VbsEnclave.CodeGenerator.0.1.2-prerelease.250820.1\build\native\Microsoft.Windows.VbsEnclave.CodeGenerator.props" Condition="Exists('..\packages\Microsoft.Windows.VbsEnclave.CodeGenerator.0.1.2-prerelease.250820.1\build\native\Microsoft.Windows.VbsEnclave.CodeGenerator.props')" />
-  <Import Project="..\packages\MsGsl.3.1.0.2\build\native\MsGsl.props" Condition="Exists('..\packages\MsGsl.3.1.0.2\build\native\MsGsl.props')" />
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Debug|ARM64">
       <Configuration>Debug</Configuration>
@@ -164,7 +163,6 @@
       <ErrorText>This project references NuGet package(s) that are missing on this computer. Use NuGet Package Restore to download them.  For more information, see http://go.microsoft.com/fwlink/?LinkID=322105. The missing file is {0}.</ErrorText>
     </PropertyGroup>
     <Error Condition="!Exists('..\packages\Microsoft.Windows.ImplementationLibrary.1.0.240803.1\build\native\Microsoft.Windows.ImplementationLibrary.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\Microsoft.Windows.ImplementationLibrary.1.0.240803.1\build\native\Microsoft.Windows.ImplementationLibrary.targets'))" />
-    <Error Condition="!Exists('..\packages\MsGsl.3.1.0.2\build\native\MsGsl.props')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\MsGsl.3.1.0.2\build\native\MsGsl.props'))" />
     <Error Condition="!Exists('..\packages\Microsoft.Windows.VbsEnclave.CodeGenerator.0.1.2-prerelease.250820.1\build\native\Microsoft.Windows.VbsEnclave.CodeGenerator.props')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\Microsoft.Windows.VbsEnclave.CodeGenerator.0.1.2-prerelease.250820.1\build\native\Microsoft.Windows.VbsEnclave.CodeGenerator.props'))" />
     <Error Condition="!Exists('..\packages\Microsoft.Windows.VbsEnclave.CodeGenerator.0.1.2-prerelease.250820.1\build\native\Microsoft.Windows.VbsEnclave.CodeGenerator.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\Microsoft.Windows.VbsEnclave.CodeGenerator.0.1.2-prerelease.250820.1\build\native\Microsoft.Windows.VbsEnclave.CodeGenerator.targets'))" />
     <Error Condition="!Exists('..\packages\Microsoft.Windows.VbsEnclave.SDK.0.0.0\build\native\Microsoft.Windows.VbsEnclave.SDK.props')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\Microsoft.Windows.VbsEnclave.SDK.0.0.0\build\native\Microsoft.Windows.VbsEnclave.SDK.props'))" />

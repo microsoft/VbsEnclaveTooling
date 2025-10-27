@@ -64,13 +64,6 @@ void Initialize()
         
         if (SUCCEEDED(hr))
         {
-            // Create the KeyCredentialCacheConfiguration instance using the factory
-            /*
-            auto cacheOption = winrt::Windows::Security::Credentials::KeyCredentialCacheOption::CacheWhenUnlocked;
-            winrt::Windows::Foundation::TimeSpan timeout{std::chrono::seconds(300)}; // 5 minutes
-            uint32_t usageCount = 5;
-            */
-
             auto cacheOption = winrt::Windows::Security::Credentials::KeyCredentialCacheOption::NoCache;
             winrt::Windows::Foundation::TimeSpan timeout {std::chrono::seconds(0)}; // 5 minutes
             uint32_t usageCount = 0;
@@ -621,7 +614,6 @@ int mainEncryptDecrpyt(uint32_t activityLevel)
                 std::cout << "Enter the string to encrypt: ";
                 std::cin.ignore();
                 std::getline(std::wcin, input);
-                // EncryptFlow(enclave.get(), input, keyFilePath, encryptedInputFilePath, tagFilePath, veilLog);
                 OnFirstRun(enclave.get(), keyFilePath); // Ensure the key is created on first run
                 NewEncryptFlow(enclave.get(), input, keyFilePath, encryptedInputFilePath, tagFilePath);
                 std::wcout << L"Encryption in Enclave completed. \n Encrypted bytes are saved to disk in " << encryptedInputFilePath << std::endl;
@@ -632,7 +624,6 @@ int mainEncryptDecrpyt(uint32_t activityLevel)
                 break;
 
             case 2:
-                // DecryptFlow(enclave.get(), keyFilePath, encryptedInputFilePath, tagFilePath, veilLog);
                 NewDecryptFlow(enclave.get(), keyFilePath, encryptedInputFilePath, tagFilePath);
                 std::filesystem::remove(keyFilePath);
                 std::filesystem::remove(encryptedInputFilePath);

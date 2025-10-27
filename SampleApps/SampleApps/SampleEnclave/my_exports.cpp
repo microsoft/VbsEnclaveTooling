@@ -312,7 +312,7 @@ HRESULT VbsEnclave::Trusted::Implementation::MyEnclaveCreateUserBoundKey(
         debug_print(L"Start MyEnclaveCreateUserBoundKey");
 
         // Convert to the expected DeveloperTypes struct
-        ::DeveloperTypes::keyCredentialCacheConfig convertedConfig;
+        veil::vtl1::developer_types::keyCredentialCacheConfig convertedConfig;
         convertedConfig.cacheOption = keyCredentialCacheConfiguration.cacheOption;
         convertedConfig.cacheTimeoutInSeconds = keyCredentialCacheConfiguration.cacheTimeoutInSeconds;
         convertedConfig.cacheUsageCount = keyCredentialCacheConfiguration.cacheUsageCount;
@@ -368,7 +368,7 @@ HRESULT VbsEnclave::Trusted::Implementation::MyEnclaveLoadUserBoundKeyAndEncrypt
             debug_print(L"UBK not loaded, loading user-bound key");
 
             // Convert to the expected DeveloperTypes struct
-            ::DeveloperTypes::keyCredentialCacheConfig convertedConfig;
+            veil::vtl1::developer_types::keyCredentialCacheConfig convertedConfig;
             convertedConfig.cacheOption = keyCredentialCacheConfiguration.cacheOption;
             convertedConfig.cacheTimeoutInSeconds = keyCredentialCacheConfiguration.cacheTimeoutInSeconds;
             convertedConfig.cacheUsageCount = keyCredentialCacheConfiguration.cacheUsageCount;
@@ -443,7 +443,7 @@ HRESULT VbsEnclave::Trusted::Implementation::MyEnclaveLoadUserBoundKeyAndDecrypt
             debug_print(L"UBK not loaded, loading user-bound key");
 
             // Convert to the expected DeveloperTypes struct
-            ::DeveloperTypes::keyCredentialCacheConfig convertedConfig;
+            veil::vtl1::developer_types::keyCredentialCacheConfig convertedConfig;
             convertedConfig.cacheOption = keyCredentialCacheConfiguration.cacheOption;
             convertedConfig.cacheTimeoutInSeconds = keyCredentialCacheConfiguration.cacheTimeoutInSeconds;
             convertedConfig.cacheUsageCount = keyCredentialCacheConfiguration.cacheUsageCount;
