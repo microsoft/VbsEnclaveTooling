@@ -86,7 +86,7 @@ static HRESULT ResolveObject(_In_ USER_BOUND_KEY_AUTH_CONTEXT_HANDLE publicHandl
         return E_INVALIDARG;
     }
 
-    auto handle = ObjectTable::Handle<NCRYPT_NGC_AUTHORIZATION_CONTEXT> {publicHandle->unused};
+    auto handle = ObjectTable::Handle {reinterpret_cast<uintptr_t>(publicHandle)};
     auto* object = s_authContextTable.ResolveObject(handle);
     if (!object)
     {
@@ -101,15 +101,16 @@ static HRESULT InsertObject(
     wil_raw::unique_ptr<NCRYPT_NGC_AUTHORIZATION_CONTEXT>&& object,
     _Out_ USER_BOUND_KEY_AUTH_CONTEXT_HANDLE* handle) noexcept
 {
-    ObjectTable::Handle<NCRYPT_NGC_AUTHORIZATION_CONTEXT> tempHandle;
+    ObjectTable::Handle tempHandle;
     RETURN_IF_FAILED(s_authContextTable.InsertObject(wil_raw::move(object), &tempHandle));
-    *handle = reinterpret_cast<USER_BOUND_KEY_AUTH_CONTEXT_HANDLE>(tempHandle.value);
+    *handle = reinterpret_cast<USER_BOUND_KEY_AUTH_CONTEXT_HANDLE>(tempHandle);
+    //*handle = reinterpret_cast<USER_BOUND_KEY_AUTH_CONTEXT_HANDLE>(static_cast<uintptr_t>(tempHandle.value));
     return S_OK;
 }
 
 static HRESULT CloseHandle(_In_ USER_BOUND_KEY_AUTH_CONTEXT_HANDLE publicHandle) noexcept
 {
-    auto handle = ObjectTable::Handle<NCRYPT_NGC_AUTHORIZATION_CONTEXT> {publicHandle->unused};
+    auto handle = ObjectTable::Handle {reinterpret_cast<uintptr_t>(publicHandle)};
     wil_raw::unique_ptr<NCRYPT_NGC_AUTHORIZATION_CONTEXT> object;
     RETURN_IF_FAILED(s_authContextTable.RemoveObject(handle, &object));
     object.reset();
@@ -363,7 +364,7 @@ static HRESULT ResolveObject(_In_ USER_BOUND_KEY_SESSION_HANDLE publicHandle, _O
         return E_INVALIDARG;
     }
 
-    auto handle = ObjectTable::Handle<USER_BOUND_KEY_SESSION_INTERNAL> {publicHandle->unused};
+    auto handle = ObjectTable::Handle {reinterpret_cast<uintptr_t>(publicHandle)};
     auto* object = s_sessionTable.ResolveObject(handle);
     if (!object)
     {
@@ -378,15 +379,16 @@ static HRESULT InsertObject(
     wil_raw::unique_ptr<USER_BOUND_KEY_SESSION_INTERNAL>&& object,
     _Out_ USER_BOUND_KEY_SESSION_HANDLE* handle) noexcept
 {
-    ObjectTable::Handle<USER_BOUND_KEY_SESSION_INTERNAL> tempHandle;
+    ObjectTable::Handle tempHandle;
     RETURN_IF_FAILED(s_sessionTable.InsertObject(wil_raw::move(object), &tempHandle));
-    *handle = reinterpret_cast<USER_BOUND_KEY_SESSION_HANDLE>(tempHandle.value);
+    *handle = reinterpret_cast<USER_BOUND_KEY_SESSION_HANDLE>(tempHandle);
+    // *handle = reinterpret_cast<USER_BOUND_KEY_SESSION_HANDLE>(static_cast<uintptr_t>(tempHandle.value));
     return S_OK;
 }
 
 static HRESULT CloseHandle(_In_ USER_BOUND_KEY_SESSION_HANDLE publicHandle) noexcept
 {
-    auto handle = ObjectTable::Handle<USER_BOUND_KEY_SESSION_INTERNAL> {publicHandle->unused};
+    auto handle = ObjectTable::Handle {reinterpret_cast<uintptr_t>(publicHandle)};
     wil_raw::unique_ptr<USER_BOUND_KEY_SESSION_INTERNAL> object;
     RETURN_IF_FAILED(s_sessionTable.RemoveObject(handle, &object));
     object.reset();
@@ -440,7 +442,10 @@ GenerateSessionKey(
 {
     // Allocate secure memory for key bytes using RAII
     auto sessionKeyBytes = make_unique_secure_blob(sessionKeySize);
-    RETURN_IF_NULL_ALLOC(sessionKeyBytes);
+    if (!sessionKeyBytes) 
+    {
+        return E_OUTOFMEMORY;
+    }
 
     // Generate cryptographically secure random key bytes
     RETURN_IF_FAILED(HRESULT_FROM_NT(BCryptGenRandom(NULL, sessionKeyBytes.get(), sessionKeySize, BCRYPT_USE_SYSTEM_PREFERRED_RNG)));
@@ -496,7 +501,10 @@ GenerateAttestationReport(
 
     // Allocate secure buffer for the actual attestation report using RAII
     auto attestationReport = make_unique_secure_blob(attestationReportSize);
-    RETURN_IF_NULL_ALLOC(attestationReport);
+    if (!attestationReport)
+    {
+        return E_OUTOFMEMORY;
+    }
 
     // Get the actual attestation report
     RETURN_IF_FAILED(EnclaveGetAttestationReport(enclaveData, attestationReport.get(), attestationReportSize, &attestationReportSize));
@@ -539,7 +547,10 @@ EncryptAttestationReport(
 
     // Allocate secure buffer for encrypted report using RAII
     auto encryptedReport = make_unique_secure_blob(tempEncryptedSize);
-    RETURN_IF_NULL_ALLOC(encryptedReport);
+    if (!encryptedReport)
+    {
+        return E_OUTOFMEMORY;
+    }
 
     // Perform the actual encryption
     RETURN_IF_FAILED(EnclaveEncryptDataForTrustlet(
@@ -696,7 +707,10 @@ DecryptAuthContextBlob(
 
     // Allocate secure buffer for decrypted data using RAII
     auto decryptedBlob = make_unique_secure_blob(encryptedDataSize);
-    RETURN_IF_NULL_ALLOC(decryptedBlob);
+    if (!decryptedBlob)
+    {
+        return E_OUTOFMEMORY;
+    }
 
     // Perform AES-GCM decryption using VTL1 format
     ULONG bytesDecrypted = 0;
@@ -884,7 +898,11 @@ PerformECDHKeyEstablishment(
 
     // Allocate secure buffer for the actual shared secret using RAII
     auto tmpSharedSecret = make_unique_secure_blob(derivedKeySize);
-    RETURN_IF_NULL_ALLOC(tmpSharedSecret);
+
+    if (!tmpSharedSecret)
+    {
+        return E_OUTOFMEMORY;
+    }
 
     // Actually derive the shared secret into the buffer
     RETURN_IF_FAILED(HRESULT_FROM_NT(BCryptDeriveKey(ecdhSecret.get(), BCRYPT_KDF_RAW_SECRET, NULL, tmpSharedSecret.get(), derivedKeySize, &derivedKeySize, 0)));
@@ -933,7 +951,10 @@ ComputeKEKFromSharedSecret(
         0)));
 
     auto enclavePublicKeyBytes = make_unique_sized_blob(enclavePublicKeyBlobSize);
-    RETURN_IF_NULL_ALLOC(enclavePublicKeyBytes);
+    if (!enclavePublicKeyBytes)
+    {
+        return E_OUTOFMEMORY;
+    }
 
     RETURN_IF_FAILED(HRESULT_FROM_NT(BCryptExportKey(
         ecdhKeyPair,
@@ -977,7 +998,10 @@ CreateBoundKeyStructure(
         bytesEncrypted + AES_GCM_TAG_SIZE;
 
     auto tmpBoundKeyMaterial = make_unique_sized_blob(actualBoundKeySize);
-    RETURN_IF_NULL_ALLOC(tmpBoundKeyMaterial);
+    if (!tmpBoundKeyMaterial)
+    {
+        return E_OUTOFMEMORY;
+    }
 
     BYTE* pCurrentPos = static_cast<BYTE*>(tmpBoundKeyMaterial.get());
 
@@ -1036,7 +1060,10 @@ EncryptUserKeyWithKEK(
     // Allocate secure buffer for encrypted user key using RAII
     UINT32 encryptedUserKeySize = userKeySize;
     auto encryptedUserKey = make_unique_secure_blob(encryptedUserKeySize);
-    RETURN_IF_NULL_ALLOC(encryptedUserKey);
+    if (!encryptedUserKey)
+    {
+        return E_OUTOFMEMORY;
+    }
 
     BYTE authTag[AES_GCM_TAG_SIZE];
     authInfo.pbTag = authTag;
@@ -1193,7 +1220,10 @@ HRESULT CreateUserBoundKeyRequestForDeriveSharedSecret(
 
     // Allocate secure buffer for plaintext using RAII
     auto plaintextBuffer = make_unique_secure_blob(plaintextSize);
-    RETURN_IF_NULL_ALLOC(plaintextBuffer);
+    if (!plaintextBuffer)
+    {
+        return E_OUTOFMEMORY;
+    }
 
     // Build the plaintext buffer
     BYTE* pCurrentPos = plaintextBuffer.get();
@@ -1251,7 +1281,10 @@ HRESULT CreateUserBoundKeyRequestForDeriveSharedSecret(
 
     // Allocate buffer for encrypted data using RAII
     auto encryptedData = make_unique_sized_blob(plaintextSize);
-    RETURN_IF_NULL_ALLOC(encryptedData);
+    if (!encryptedData)
+    {
+        return E_OUTOFMEMORY;
+    }
 
     // Encrypt the plaintext using BCrypt
     // In AES-GCM ciphertext and plaintext lengths are the same
@@ -1278,7 +1311,10 @@ HRESULT CreateUserBoundKeyRequestForDeriveSharedSecret(
 
     // Allocate ciphertext buffer using RAII
     auto ciphertextBuffer = make_unique_sized_blob(totalEncryptedSize);
-    RETURN_IF_NULL_ALLOC(ciphertextBuffer);
+    if (!ciphertextBuffer)
+    {
+        return E_OUTOFMEMORY;
+    }
 
     // Build the ciphertext buffer
     pCurrentPos = ciphertextBuffer.get();
@@ -1316,6 +1352,12 @@ struct PARSED_BOUND_KEY_COMPONENTS
     const BYTE* pEncryptedUserKey;          // Non-owning
     UINT32 encryptedUserKeySize;
     const BYTE* pAuthTag;                   // Non-owning
+
+    // Default constructor
+    PARSED_BOUND_KEY_COMPONENTS() : pEncryptedUserKey(nullptr), encryptedUserKeySize(0), pAuthTag(nullptr)
+    {
+        memset(nonce, 0, sizeof(nonce));
+    }
 
     //
     // Because this containts non-owning memory...
@@ -1366,7 +1408,10 @@ ParseBoundKeyStructure(
 
     // Extract and allocate enclave public key blob
     auto tmpEnclavePublicKeyBlob = make_unique_sized_blob(enclavePublicKeyBlobSize);
-    RETURN_IF_NULL_ALLOC(tmpEnclavePublicKeyBlob);
+    if (!tmpEnclavePublicKeyBlob)
+    {
+        return E_OUTOFMEMORY;
+    }
 
     memcpy(tmpEnclavePublicKeyBlob.get(), pCurrentPos, tmpEnclavePublicKeyBlob.size());
     pCurrentPos += enclavePublicKeyBlobSize;
@@ -1469,7 +1514,10 @@ DecryptAndUntagSecret(
 
     // Allocate buffer for decrypted data using RAII
     auto decryptedSecret = make_unique_secure_blob(encryptedDataSize);
-    RETURN_IF_NULL_ALLOC(decryptedSecret);
+    if (!decryptedSecret)
+    {
+        return E_OUTOFMEMORY;
+    }
 
     // Perform AES-GCM decryption using VTL1 format
     ULONG bytesDecrypted = 0;
@@ -1564,7 +1612,10 @@ HRESULT UnprotectUserBoundKey(
 
     // Allocate secure buffer for decrypted user key using RAII
     auto decryptedUserKey = make_unique_secure_blob(boundKeyComponents.encryptedUserKeySize);
-    RETURN_IF_NULL_ALLOC(decryptedUserKey);
+    if (!decryptedUserKey)
+    {
+        return E_OUTOFMEMORY;
+    }
 
     // Set up AES-GCM authentication info
     BCRYPT_AUTHENTICATED_CIPHER_MODE_INFO authInfo;
@@ -1649,7 +1700,10 @@ HRESULT CreateUserBoundKeyRequestForRetrieveAuthorizationContext(
 
     // Allocate plaintext buffer using RAII
     auto plaintextBuffer = make_unique_sized_blob(plaintextSize);
-    RETURN_IF_NULL_ALLOC(plaintextBuffer);
+    if (!plaintextBuffer)
+    {
+        return E_OUTOFMEMORY;
+    }
 
     // Build the plaintext buffer
     BYTE* pCurrentPos = plaintextBuffer.get();
@@ -1730,7 +1784,10 @@ HRESULT CreateUserBoundKeyRequestForRetrieveAuthorizationContext(
 
     // Allocate ciphertext buffer using RAII
     auto ciphertextBuffer = make_unique_sized_blob(totalEncryptedSize);
-    RETURN_IF_NULL_ALLOC(ciphertextBuffer);
+    if (!ciphertextBuffer)
+    {
+        return E_OUTOFMEMORY;
+    }
 
     // Build the ciphertext buffer
     pCurrentPos = ciphertextBuffer.get();

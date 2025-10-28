@@ -189,7 +189,7 @@
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableUAC>false</EnableUAC>
-      <AdditionalDependencies>$(VBS_Enclave_Dependencies)</AdditionalDependencies>
+      <AdditionalDependencies>$(VBS_Enclave_Dependencies);</AdditionalDependencies>
       <AdditionalOptions>/INTEGRITYCHECK /ENCLAVE /GUARD:MIXED</AdditionalOptions>
       <ModuleDefinitionFile>sample_enclave.def</ModuleDefinitionFile>
       <CETCompat Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</CETCompat>
