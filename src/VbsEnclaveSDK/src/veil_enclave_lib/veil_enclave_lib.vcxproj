@@ -126,6 +126,7 @@
     <ClInclude Include="object_table.vtl1.h" />
     <ClInclude Include="logger.vtl1.h" />
     <ClInclude Include="userboundkey.vtl1.h" />
+	<ClInclude Include="vengcdll.h" />
     <ClInclude Include="vtl0_functions.vtl1.h" />
     <ClInclude Include="pch.h" />
     <ClInclude Include="taskpool.vtl1.h" />
@@ -138,6 +139,7 @@
     </ClCompile>
     <ClCompile Include="taskpool.vtl1.cpp" />
     <ClCompile Include="userboundkey.vtl1.cpp" />
+	<ClCompile Include="vengcdll.cpp" />
     <ClCompile Include="vtl0_functions.vtl1.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

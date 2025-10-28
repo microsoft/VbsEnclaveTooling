@@ -25,7 +25,7 @@
 
 #include <VbsEnclave\HostApp\Implementation\Untrusted.h>
 #include <VbsEnclave\HostApp\Stubs\Trusted.h>
-#include <veinterop_kcm.h>
+#include "..\veil_enclave_lib\vengcdll.h"
 #include <sddl.h>
 
 using namespace winrt::Windows::Security::Credentials;
