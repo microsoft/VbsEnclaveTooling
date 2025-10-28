@@ -53,15 +53,6 @@ namespace
         }
     }
 }
-using unique_heap_ptr = wil::unique_any<
-    void*,
-    decltype(&heap_deleter),
-    heap_deleter,
-    wil::details::pointer_access_all,
-    void*,
-    decltype(nullptr),
-    nullptr
->;
 
 veil_abi::Types::attestationReportAndSessionInfo userboundkey_get_attestation_report(_In_ const std::vector<std::uint8_t>& challenge)
 {
@@ -81,7 +72,7 @@ veil_abi::Types::attestationReportAndSessionInfo userboundkey_get_attestation_re
     }
     veil::vtl1::vtl0_functions::debug_print(challengeHex.c_str());
     
-    unique_heap_ptr reportPtr; // RAII wrapper for automatic cleanup
+    wil::unique_process_heap_ptr<void> reportPtr; // RAII wrapper for automatic cleanup
     size_t reportSize = 0;
 
     // DEBUG: Log before calling InitializeUserBoundKeySession
@@ -97,7 +88,7 @@ veil_abi::Types::attestationReportAndSessionInfo userboundkey_get_attestation_re
     THROW_IF_FAILED(InitializeUserBoundKeySession(
         challenge.data(),
         static_cast<uint32_t>(challenge.size()),
-        reportPtr.put(), // RAII wrapper handles cleanup automatically
+        wil::out_param(reportPtr), // RAII wrapper handles cleanup automatically
         reinterpret_cast<uint32_t*>(&reportSize),
         &sessionHandle)); // OS CALL
 
@@ -286,7 +277,7 @@ wil::secure_vector<uint8_t> enclave_create_user_bound_key(
         // Convert cacheConfig to the type expected by the callback
         // Convert cache_config to the correct type
         auto abi_cache_config = ConvertCacheConfig(cacheConfig);
-        veil_abi::Trusted::Implementation::unique_heap_ptr encryptedKcmRequestRac; // RAII wrapper for automatic cleanup
+        wil::unique_process_heap_ptr<void> encryptedKcmRequestRac; // RAII wrapper for automatic cleanup
         uint32_t encryptedKcmRequestRacSize = 0;
         uint64_t localNonce = 0; // captures the nonce used in the encrypted request, will be used in the corresponding decrypt call
 
@@ -318,7 +309,7 @@ wil::secure_vector<uint8_t> enclave_create_user_bound_key(
             sessionHandle.get(),  // Pass session handle - nonce manipulation is handled internally
             formattedKeyName.c_str(),
             &localNonce,
-            encryptedKcmRequestRac.put(),
+            wil::out_param(encryptedKcmRequestRac),
             &encryptedKcmRequestRacSize)); // OS CALL
 
         // Convert the result to vector for the callback
@@ -369,14 +360,14 @@ wil::secure_vector<uint8_t> enclave_create_user_bound_key(
         veil::vtl1::vtl0_functions::debug_print(L"DEBUG: enclave_create_user_bound_key - Generated user key bytes");
 
         // ENCRYPT USERKEY - CORRECTED VERSION  
-        veil_abi::Trusted::Implementation::unique_heap_ptr boundKey;
+        wil::unique_process_heap_ptr<void> boundKey;
         uint32_t boundKeySize = 0;
         veil::vtl1::vtl0_functions::debug_print(L"DEBUG: enclave_create_user_bound_key - About to call ProtectUserBoundKey");
         THROW_IF_FAILED(ProtectUserBoundKey(
             authContext.get(),
             userkeyBytes.data(),
             static_cast<uint32_t>(userkeyBytes.size()),
-            boundKey.put(),
+            wil::out_param(boundKey),
             &boundKeySize   // Will be set to actual size by ProtectUserBoundKey
         )); // OS CALL
         veil::vtl1::vtl0_functions::debug_print((L"DEBUG: enclave_create_user_bound_key - ProtectUserBoundKey returned boundKey size: " + std::to_wstring(boundKeySize)).c_str());
@@ -455,11 +446,11 @@ std::vector<uint8_t> enclave_load_user_bound_key(
         veil::vtl1::vtl0_functions::debug_print((L"DEBUG: enclave_load_user_bound_key - credentialVector size: " + std::to_wstring(credentialVector.size())).c_str());
 
         // Call to veinterop to create the encrypted KCM request for RetrieveAuthorizationContext
-        veil_abi::Trusted::Implementation::unique_heap_ptr encryptedKcmRequestRac;
+        wil::unique_process_heap_ptr<void> encryptedKcmRequestRac;
         uint32_t encryptedKcmRequestRacSize = 0;
 
         // Call to veinterop to create the encrypted KCM request for DeriveSharedSecret
-        veil_abi::Trusted::Implementation::unique_heap_ptr encryptedKcmRequestDss;
+        wil::unique_process_heap_ptr<void> encryptedKcmRequestDss;
         uint32_t encryptedKcmRequestDssSize = 0;
 
         // DEBUG: Print formattedKeyName and keyNameSizeBytes
@@ -470,7 +461,7 @@ std::vector<uint8_t> enclave_load_user_bound_key(
             sessionHandle.get(),  // Pass session handle - nonce manipulation is handled internally
             formattedKeyName.c_str(),
             &localNonce,
-            encryptedKcmRequestRac.put(), 
+            wil::out_param(encryptedKcmRequestRac), 
             &encryptedKcmRequestRacSize)); // OS CALL
 
         // Convert the result to vector for the callback
@@ -523,7 +514,7 @@ std::vector<uint8_t> enclave_load_user_bound_key(
             ephemeralPublicKeyBytes.data(),
             static_cast<uint32_t>(ephemeralPublicKeyBytes.size()),
             &localNonce,
-            encryptedKcmRequestDss.put(),
+            wil::out_param(encryptedKcmRequestDss),
             &encryptedKcmRequestDssSize)); // OS CALL
 
         // Convert the result to vector for the callback

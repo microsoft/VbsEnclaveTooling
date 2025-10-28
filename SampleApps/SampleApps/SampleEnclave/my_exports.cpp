@@ -333,14 +333,10 @@ HRESULT VbsEnclave::Trusted::Implementation::MyEnclaveCreateUserBoundKey(
         
         // Do NOT try to create a symmetric key here - user-bound keys must be loaded properly
         // g_encryptionKey will be set in the load functions
-    }
-    catch (const std::exception& e)
-    {
-        debug_print(L"Exception caught in MyEnclaveCreateUserBoundKey: %hs", e.what());
-        return E_FAIL;
-    }
 
-    return S_OK;
+        return S_OK;
+    }
+    CATCH_RETURN();
 }
 
 //
@@ -409,11 +405,7 @@ HRESULT VbsEnclave::Trusted::Implementation::MyEnclaveLoadUserBoundKeyAndEncrypt
         encryptedInputBytes.assign(encryptedText.begin(), encryptedText.end());
         tag.assign(encryptionTag.begin(), encryptionTag.end());
     }
-    catch (const std::exception& e)
-    {
-        debug_print(L"Exception caught in MyEnclaveLoadUserBoundKeyAndEncryptData: %hs", e.what());
-        return E_FAIL;
-    }
+    CATCH_RETURN();
 
     return S_OK;
 }
@@ -485,11 +477,7 @@ HRESULT VbsEnclave::Trusted::Implementation::MyEnclaveLoadUserBoundKeyAndDecrypt
         
         debug_print(L"Decryption completed, decrypted string: %ws", decryptedData.c_str());
     }
-    catch (const std::exception& e)
-    {
-        debug_print(L"Exception caught in MyEnclaveLoadUserBoundKeyAndDecryptData: %hs", e.what());
-        return E_FAIL;
-    }
+    CATCH_RETURN();
 
     return S_OK;
 }

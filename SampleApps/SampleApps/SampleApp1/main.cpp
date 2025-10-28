@@ -61,41 +61,25 @@ void Initialize()
             winrt::guid_of<winrt::Windows::Security::Credentials::IKeyCredentialCacheConfigurationFactory>(),
             factory.put_void()
         );
-        
-        if (SUCCEEDED(hr))
-        {
-            auto cacheOption = winrt::Windows::Security::Credentials::KeyCredentialCacheOption::NoCache;
-            winrt::Windows::Foundation::TimeSpan timeout {std::chrono::seconds(0)}; // 5 minutes
-            uint32_t usageCount = 0;
+        THROW_IF_FAILED(hr);
+
+        auto cacheOption = winrt::Windows::Security::Credentials::KeyCredentialCacheOption::NoCache;
+        winrt::Windows::Foundation::TimeSpan timeout {std::chrono::seconds(0)};
+        uint32_t usageCount = 0;
             
-            // Use the factory ABI method with proper parameter types
-            winrt::com_ptr<winrt::Windows::Security::Credentials::IKeyCredentialCacheConfiguration> instance;
-            hr = factory->CreateInstance(
-                static_cast<int32_t>(cacheOption),
-                winrt::get_abi(timeout),
-                usageCount,
-                reinterpret_cast<void**>(instance.put())
-            );
-            
-            if (SUCCEEDED(hr))
-            {
-                g_keyCredentialCacheConfig = winrt::Windows::Security::Credentials::KeyCredentialCacheConfiguration{ 
-                    instance.detach(), winrt::take_ownership_from_abi 
-                };
-            }
-            else
-            {
-                std::wcout << L"Warning: Failed to create KeyCredentialCacheConfiguration instance (HRESULT: 0x"
-                           << std::hex << hr << L"). Using default cache configuration." << std::endl;
-                g_keyCredentialCacheConfig = std::nullopt;
-            }
-        }
-        else
-        {
-            std::wcout << L"Warning: Failed to get KeyCredentialCacheConfiguration factory (HRESULT: 0x"
-                       << std::hex << hr << L"). Using default cache configuration." << std::endl;
-            g_keyCredentialCacheConfig = std::nullopt;
-        }
+        // Use the factory ABI method with proper parameter types
+        winrt::com_ptr<winrt::Windows::Security::Credentials::IKeyCredentialCacheConfiguration> instance;
+        hr = factory->CreateInstance(
+            static_cast<int32_t>(cacheOption),
+            winrt::get_abi(timeout),
+            usageCount,
+            reinterpret_cast<void**>(instance.put())
+        );
+        THROW_IF_FAILED(hr);
+
+        g_keyCredentialCacheConfig = winrt::Windows::Security::Credentials::KeyCredentialCacheConfiguration{ 
+            instance.detach(), winrt::take_ownership_from_abi 
+        };
     }
     catch (winrt::hresult_error const& ex)
     {
@@ -109,7 +93,7 @@ void Initialize()
     g_hCurWnd = GetForegroundWindow();
 }
 
-std::vector<uint8_t> OnFirstRun(void* enclave, const std::filesystem::path& keyFilePath)
+void CreateEncryptionKeyOnFirstRun(void* enclave, const std::filesystem::path& keyFilePath)
 {
     Initialize();
 
@@ -145,15 +129,13 @@ std::vector<uint8_t> OnFirstRun(void* enclave, const std::filesystem::path& keyF
 
     // *** securedEncryptionKeyBytes persisted to disk
     SaveBinaryData(keyFilePath.string(), securedEncryptionKeyBytes);
-
-    return securedEncryptionKeyBytes;
 }
 
-int NewEncryptFlow(
+void NewEncryptFlow(
     void* enclave,
     const std::wstring& input,
     const std::filesystem::path& keyFilePath,
-    const std::filesystem::path& encryptedInputFilePath,
+    const std::filesystem::path& encryptedOutputFilePath,
     const std::filesystem::path& tagFilePath)
 {
     // Initialize enclave interface
@@ -186,7 +168,7 @@ int NewEncryptFlow(
     }
 
     // Call into enclave
-    auto encryptedInputBytes = std::vector<uint8_t> {};
+    auto encryptedOutputBytes = std::vector<uint8_t> {};
     auto tag = std::vector<uint8_t> {};
 
     THROW_IF_FAILED(enclaveInterface.MyEnclaveLoadUserBoundKeyAndEncryptData(
@@ -196,18 +178,16 @@ int NewEncryptFlow(
         cacheConfig,
         securedEncryptionKeyBytes,
         input,
-        encryptedInputBytes,
+        encryptedOutputBytes,
         tag
     ));
 
     // Save encrypted data to disk
-    SaveBinaryData(encryptedInputFilePath.string(), encryptedInputBytes);
+    SaveBinaryData(encryptedOutputFilePath.string(), encryptedOutputBytes);
     SaveBinaryData(tagFilePath.string(), tag);
-
-    return 0;
 }
 
-int NewDecryptFlow(
+void NewDecryptFlow(
     void* enclave,
     const std::filesystem::path& keyFilePath,
     const std::filesystem::path& encryptedInputFilePath,
@@ -263,8 +243,6 @@ int NewDecryptFlow(
 
     // Display the decrypted result
     std::wcout << L"Decryption completed in Enclave. Decrypted string: " << decryptedData << std::endl;
-
-    return 0;
 }
 
 
@@ -523,13 +501,13 @@ int DecryptFlowThreadpool(
     return 0;
 }
 
-int mainEncryptDecrpyt(uint32_t activityLevel)
+int mainEncryptDecrypt(uint32_t activityLevel)
 {
     int choice;
     std::wstring input;
     const std::wstring encryptedKeyDirPath = std::filesystem::current_path().wstring();
     const std::wstring encryptedDataDirPath = std::filesystem::current_path().wstring();
-    std::wstring encryptedInputFilePath = encryptedDataDirPath + L"\\encrypted";
+    std::wstring encryptedOutputFilePath = encryptedDataDirPath + L"\\encrypted";
     std::wstring tagFilePath = encryptedKeyDirPath + L"\\tag";
     bool programExecuted = false;
 
@@ -559,6 +537,7 @@ int mainEncryptDecrpyt(uint32_t activityLevel)
         else
         {
             std::wcout << L"Warning: GetSecureId returned empty buffer." << std::endl;
+            THROW_HR(E_UNEXPECTED);
         }
     }
     catch (winrt::hresult_error const& ex)
@@ -614,19 +593,21 @@ int mainEncryptDecrpyt(uint32_t activityLevel)
                 std::cout << "Enter the string to encrypt: ";
                 std::cin.ignore();
                 std::getline(std::wcin, input);
-                OnFirstRun(enclave.get(), keyFilePath); // Ensure the key is created on first run
-                NewEncryptFlow(enclave.get(), input, keyFilePath, encryptedInputFilePath, tagFilePath);
-                std::wcout << L"Encryption in Enclave completed. \n Encrypted bytes are saved to disk in " << encryptedInputFilePath << std::endl;
+                // EncryptFlow(enclave.get(), input, keyFilePath, encryptedOutputFilePath, tagFilePath, veilLog);
+                CreateEncryptionKeyOnFirstRun(enclave.get(), keyFilePath); // Ensure the key is created on first run
+                NewEncryptFlow(enclave.get(), input, keyFilePath, encryptedOutputFilePath, tagFilePath);
+                std::wcout << L"Encryption in Enclave completed. \n Encrypted bytes are saved to disk in " << encryptedOutputFilePath << std::endl;
                 veilLog.AddTimestampedLog(
-                    L"[Host] Encryption in Enclave completed. Encrypted bytes are saved to disk in " + encryptedInputFilePath,
+                    L"[Host] Encryption in Enclave completed. Encrypted bytes are saved to disk in " + encryptedOutputFilePath,
                     veil::any::logger::eventLevel::EVENT_LEVEL_CRITICAL);
                 programExecuted = true;
                 break;
 
             case 2:
-                NewDecryptFlow(enclave.get(), keyFilePath, encryptedInputFilePath, tagFilePath);
+                // DecryptFlow(enclave.get(), keyFilePath, encryptedOutputFilePath, tagFilePath, veilLog);
+                NewDecryptFlow(enclave.get(), keyFilePath, encryptedOutputFilePath, tagFilePath);
                 std::filesystem::remove(keyFilePath);
-                std::filesystem::remove(encryptedInputFilePath);
+                std::filesystem::remove(encryptedOutputFilePath);
                 std::filesystem::remove(tagFilePath);
                 programExecuted = true;
                 break;
@@ -680,7 +661,7 @@ int mainThreadPool(uint32_t /*activityLevel*/)
     return 0;
 }
 
-int mainEncryptDecrpytThreadpool(uint32_t activityLevel)
+int mainEncryptDecryptThreadpool(uint32_t activityLevel)
 {
     std::wcout << L"Running sample: Encrypt decrypt in taskpool..." << std::endl;
 
@@ -813,7 +794,7 @@ int main(int argc, char* argv[])
         switch (choice)
         {
             case 1:
-                mainEncryptDecrpyt(activityLevel);
+                mainEncryptDecrypt(activityLevel);
                 programExecuted = true;
                 break;
 
@@ -823,7 +804,7 @@ int main(int argc, char* argv[])
                 break;
 
             case 3:
-                mainEncryptDecrpytThreadpool(activityLevel);
+                mainEncryptDecryptThreadpool(activityLevel);
                 programExecuted = true;
                 break;
 
