@@ -65,7 +65,6 @@ enclave
             vector<uint8_t> secured_encryption_key_bytes,
             wstring inputData,
             [out] vector<uint8_t> encryptedInputBytes,
-            [out] vector<uint8_t> tag
             );
 
         HRESULT MyEnclaveLoadUserBoundKeyAndDecryptData(
@@ -75,7 +74,6 @@ enclave
             keyCredentialCacheConfig keyCredentialCacheConfiguration,
             vector<uint8_t> secured_encryption_key_bytes,
             vector<uint8_t> encryptedInputBytes,
-            vector<uint8_t> tag,
             [out] wstring decryptedData
             );
     };

@@ -135,8 +135,7 @@ void NewEncryptFlow(
     void* enclave,
     const std::wstring& input,
     const std::filesystem::path& keyFilePath,
-    const std::filesystem::path& encryptedOutputFilePath,
-    const std::filesystem::path& tagFilePath)
+    const std::filesystem::path& encryptedOutputFilePath)
 {
     // Initialize enclave interface
     auto enclaveInterface = VbsEnclave::Trusted::Stubs::SampleEnclave(enclave);
@@ -167,9 +166,8 @@ void NewEncryptFlow(
         cacheConfig.cacheUsageCount = 5;
     }
 
-    // Call into enclave
-    auto encryptedOutputBytes = std::vector<uint8_t> {};
-    auto tag = std::vector<uint8_t> {};
+    // Call into enclave - the enclave will return combined data (encrypted + tag + tag_size)
+    auto combinedOutputData = std::vector<uint8_t> {};
 
     THROW_IF_FAILED(enclaveInterface.MyEnclaveLoadUserBoundKeyAndEncryptData(
         g_helloKeyName,
@@ -178,20 +176,17 @@ void NewEncryptFlow(
         cacheConfig,
         securedEncryptionKeyBytes,
         input,
-        encryptedOutputBytes,
-        tag
+        combinedOutputData
     ));
 
-    // Save encrypted data to disk
-    SaveBinaryData(encryptedOutputFilePath.string(), encryptedOutputBytes);
-    SaveBinaryData(tagFilePath.string(), tag);
+    // Save combined data directly to disk (enclave handles the tag appending)
+    SaveBinaryData(encryptedOutputFilePath.string(), combinedOutputData);
 }
 
 void NewDecryptFlow(
     void* enclave,
     const std::filesystem::path& keyFilePath,
-    const std::filesystem::path& encryptedInputFilePath,
-    const std::filesystem::path& tagFilePath)
+    const std::filesystem::path& encryptedInputFilePath)
 {
     // Initialize global variables
     Initialize();
@@ -203,13 +198,12 @@ void NewDecryptFlow(
     //
     // [Load flow]
     // 
-    //  Load the (encrypted) key bytes and encrypted data from disk, then pass into enclave to decrypt
+    //  Load the (encrypted) key bytes and combined data from disk, then pass into enclave to decrypt
     //
 
     // Load data from disk
     auto securedEncryptionKeyBytes = LoadBinaryData(keyFilePath.string());
-    auto encryptedInputBytes = LoadBinaryData(encryptedInputFilePath.string());
-    auto tag = LoadBinaryData(tagFilePath.string());
+    auto combinedInputData = LoadBinaryData(encryptedInputFilePath.string());
 
     // Convert g_keyCredentialCacheConfig (WinRT type) to enclave keyCredentialCacheConfig (struct)
     VbsEnclave::Types::keyCredentialCacheConfig cacheConfig{};
@@ -227,7 +221,7 @@ void NewDecryptFlow(
         cacheConfig.cacheUsageCount = 5;
     }
 
-    // Call into enclave for decryption
+    // Call into enclave for decryption - pass combined data, enclave will extract tag internally
     auto decryptedData = std::wstring {};
 
     THROW_IF_FAILED(enclaveInterface.MyEnclaveLoadUserBoundKeyAndDecryptData(
@@ -236,8 +230,7 @@ void NewDecryptFlow(
         reinterpret_cast<uintptr_t>(g_hCurWnd),
         cacheConfig,
         securedEncryptionKeyBytes,
-        encryptedInputBytes,
-        tag,
+        combinedInputData,
         decryptedData
     ));
 
@@ -595,7 +588,7 @@ int mainEncryptDecrypt(uint32_t activityLevel)
                 std::getline(std::wcin, input);
                 // EncryptFlow(enclave.get(), input, keyFilePath, encryptedOutputFilePath, tagFilePath, veilLog);
                 CreateEncryptionKeyOnFirstRun(enclave.get(), keyFilePath); // Ensure the key is created on first run
-                NewEncryptFlow(enclave.get(), input, keyFilePath, encryptedOutputFilePath, tagFilePath);
+                NewEncryptFlow(enclave.get(), input, keyFilePath, encryptedOutputFilePath);
                 std::wcout << L"Encryption in Enclave completed. \n Encrypted bytes are saved to disk in " << encryptedOutputFilePath << std::endl;
                 veilLog.AddTimestampedLog(
                     L"[Host] Encryption in Enclave completed. Encrypted bytes are saved to disk in " + encryptedOutputFilePath,
@@ -605,7 +598,7 @@ int mainEncryptDecrypt(uint32_t activityLevel)
 
             case 2:
                 // DecryptFlow(enclave.get(), keyFilePath, encryptedOutputFilePath, tagFilePath, veilLog);
-                NewDecryptFlow(enclave.get(), keyFilePath, encryptedOutputFilePath, tagFilePath);
+                NewDecryptFlow(enclave.get(), keyFilePath, encryptedOutputFilePath);
                 std::filesystem::remove(keyFilePath);
                 std::filesystem::remove(encryptedOutputFilePath);
                 std::filesystem::remove(tagFilePath);
