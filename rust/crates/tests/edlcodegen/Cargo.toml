@@ -1,5 +1,5 @@
 [package]
-name = "edlcodegen-core-test"
+name = "edlcodegen"
 version = "0.0.0"
 edition.workspace = true
 publish = false
@@ -13,4 +13,7 @@ edlcodegen-tools = { workspace = true }
 
 [dependencies]
 edlcodegen-core = { workspace = true }
+edlcodegen-enclave = { workspace = true, features = ["testing"] }
 flatbuffers = { workspace = true }
+windows-result = { workspace = true }
+windows-sys = { workspace = true, features = ["Win32_System", "Win32_System_Memory"] }

@@ -1,0 +1,14 @@
+[package]
+name = "edlcodegen-enclave"
+version = "0.1.0"
+edition =  { workspace = true }
+
+[dependencies]
+edlcodegen-core = { workspace = true }
+spin = { workspace = true }
+windows-link = { workspace = true }
+windows-result = { workspace = true }
+windows-sys = { workspace = true, features = ["Win32_System"] }
+
+[features]
+testing = []
