@@ -539,8 +539,7 @@ HRESULT InitializeUserBoundKeySession(
     USER_BOUND_KEY_SESSION_HANDLE tmpSessionHandle;
     RETURN_IF_FAILED(SessionInfo::InsertObject(wil_raw::move(sessionInfo), &tmpSessionHandle));
 
-    *report = encryptedReport.release();
-    *reportSize = encryptedReport.size();
+    *report = encryptedReport.release(reportSize);
     *sessionHandle = tmpSessionHandle;
 
     return S_OK;
@@ -1042,8 +1041,7 @@ HRESULT ProtectUserBoundKey(
     RETURN_IF_FAILED(EncryptUserKeyWithKEK(hDerivedKey.get(), userKey, userKeySize, enclavePublicKeyBlob.get(), enclavePublicKeyBlob.size(), &tmpBoundKey));
 
     // Return the bound key - Transfer ownership
-    *boundKey = tmpBoundKey.release();
-    *boundKeySize = tmpBoundKey.size();
+    *boundKey = tmpBoundKey.release(boundKeySize);
 
     return S_OK;
 }
@@ -1203,8 +1201,7 @@ HRESULT CreateUserBoundKeyRequestForDeriveSharedSecret(
     memcpy(pCurrentPos, authTag, AES_GCM_TAG_SIZE);
 
     // Return
-    *encryptedRequest = ciphertextBuffer.release();
-    *encryptedRequestSize = ciphertextBuffer.size();
+    *encryptedRequest = ciphertextBuffer.release(encryptedRequestSize);
     *localNonce = nonce;
 
     return S_OK;
@@ -1509,8 +1506,7 @@ HRESULT UnprotectUserBoundKey(
     }
 
     // Return the decrypted user key
-    *userKey = decryptedUserKey.release();
-    *userKeySize = decryptedUserKey.size();
+    *userKey = decryptedUserKey.release(userKeySize);
 
     return S_OK;
 }
@@ -1659,8 +1655,7 @@ HRESULT CreateUserBoundKeyRequestForRetrieveAuthorizationContext(
 
     // Return
     *localNonce = nonce;
-    *encryptedRequest = ciphertextBuffer.release();
-    *encryptedRequestSize = totalEncryptedSize;
+    *encryptedRequest = ciphertextBuffer.release(encryptedRequestSize);
 
     return S_OK;
 }

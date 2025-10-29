@@ -90,6 +90,12 @@ class unique_sized_blob
         m_size = 0;
         return m_blob.release();
     }
+    BYTE* release(_Out_ UINT32* size)
+    {
+        *size = m_size;
+        m_size = 0;
+        return m_blob.release();
+    }
 
     private:
     unique_blob m_blob {};
@@ -169,8 +175,9 @@ class unique_secure_blob
         reset(nullptr, 0);
     }
 
-    BYTE* release()
+    BYTE* release(_Out_ UINT32* size)
     {
+        *size = m_blob.size();
         return m_blob.release();
     }
 
