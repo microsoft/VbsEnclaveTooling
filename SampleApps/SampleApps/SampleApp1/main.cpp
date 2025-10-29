@@ -494,6 +494,25 @@ int DecryptFlowThreadpool(
     return 0;
 }
 
+std::vector<uint8_t> secureid()
+{
+    std::vector<uint8_t> ownerId;
+
+    wil::unique_ncrypt_prov ngcKsp;
+    THROW_IF_NTSTATUS_FAILED(NCryptOpenStorageProvider(&ngcKsp, MS_NGC_KEY_STORAGE_PROVIDER, 0));
+
+    DWORD resultSize {};
+    THROW_IF_NTSTATUS_FAILED(NCryptGetProperty(
+        ngcKsp.get(), L"NgcContainerSecureId", nullptr, 0, &resultSize, 0));
+
+    std::vector<BYTE> ngcOwnerId(resultSize);
+    THROW_IF_NTSTATUS_FAILED(NCryptGetProperty(
+        ngcKsp.get(), L"NgcContainerSecureId", ngcOwnerId.data(), resultSize, &resultSize, 0));
+
+    ownerId = ngcOwnerId;
+    return ownerId;
+}
+
 int mainEncryptDecrypt(uint32_t activityLevel)
 {
     int choice;
@@ -513,7 +532,7 @@ int mainEncryptDecrypt(uint32_t activityLevel)
 
     /******************************* Enclave setup *******************************/
     // Create app+user enclave identity - use the new GetSecureId API from IKeyCredentialManagerStatics2
-    std::vector<uint8_t> ownerId {0};
+    std::vector<uint8_t> ownerId = secureid();
 
         /*
     try 

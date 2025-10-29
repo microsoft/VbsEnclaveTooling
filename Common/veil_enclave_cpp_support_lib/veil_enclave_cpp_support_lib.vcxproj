@@ -73,6 +73,7 @@
       </AdditionalIncludeDirectories>
       <GuardEHContMetadata>true</GuardEHContMetadata>
       <BrowseInformation Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</BrowseInformation>
+      <Optimization Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Disabled</Optimization>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>

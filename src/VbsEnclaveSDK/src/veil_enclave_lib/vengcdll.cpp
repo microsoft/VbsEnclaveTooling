@@ -208,9 +208,17 @@ namespace AuthorizationContext
             return E_INVALIDARG;
         }
     
+        /*
         // Verify the public key data doesn't exceed the buffer
         auto publicKeySize = bufferSize - offsetof(NCRYPT_NGC_AUTHORIZATION_CONTEXT, publicKey);
         if (context->publicKeyByteCount != publicKeySize)
+        {
+            return E_INVALIDARG;
+        }
+        */
+        // Verify the public key data doesn't exceed the buffer
+        SIZE_T maxPublicKeySize = bufferSize - offsetof(NCRYPT_NGC_AUTHORIZATION_CONTEXT, publicKey);
+        if (context->publicKeyByteCount > maxPublicKeySize)
         {
             return E_INVALIDARG;
         }
@@ -674,6 +682,8 @@ ValidateAuthorizationContext(
     _In_ const USER_BOUND_KEY_AUTH_CONTEXT_PROPERTY* authctxproperties
 )
 {
+    __debugbreak();
+
     // Compare the extracted key name with the provided key name
     if (CompareNullTerminatedWideStrings(keyName, authCtx->keyName) != 0)
     {

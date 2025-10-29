@@ -98,6 +98,7 @@
           C1041 ("cannot open program database").
         -->
       <AdditionalOptions>/FS %(AdditionalOptions)</AdditionalOptions>
+      <Optimization Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Disabled</Optimization>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>

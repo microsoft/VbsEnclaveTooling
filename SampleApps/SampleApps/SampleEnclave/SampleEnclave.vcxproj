@@ -253,6 +253,9 @@
       <DebugInformationFormat Condition="'$(Configuration)|$(Platform)'=='Debug|ARM64'">ProgramDatabase</DebugInformationFormat>
       <BasicRuntimeChecks Condition="'$(Configuration)|$(Platform)'=='Debug|ARM64'">Default</BasicRuntimeChecks>
     </ClCompile>
+    <ClCompile>
+      <Optimization Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Disabled</Optimization>
+    </ClCompile>
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />
