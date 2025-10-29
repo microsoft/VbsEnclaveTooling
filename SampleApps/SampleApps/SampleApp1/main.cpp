@@ -513,8 +513,9 @@ int mainEncryptDecrypt(uint32_t activityLevel)
 
     /******************************* Enclave setup *******************************/
     // Create app+user enclave identity - use the new GetSecureId API from IKeyCredentialManagerStatics2
-    std::vector<uint8_t> ownerId;
+    std::vector<uint8_t> ownerId {0};
 
+        /*
     try 
     {
         // Call the GetSecureId API directly on the static class
@@ -544,6 +545,7 @@ int mainEncryptDecrypt(uint32_t activityLevel)
         // If any other exception occurs, continue with default
         std::wcout << L"Warning: Exception occurred while getting secure ID. Using default owner_id." << std::endl;
     }
+        */
 
     // Fallback to the default owner_id if the new API failed or returned empty result
     if (ownerId.empty())
