@@ -40,6 +40,15 @@ Abstract:
 
 #include "vengc.extra.h"
 
+
+
+
+
+
+
+
+//================================================================================
+
 // AES-GCM constants
 constexpr UINT32 AES_GCM_NONCE_SIZE = 12;
 constexpr UINT32 AES_GCM_TAG_SIZE = 16;
@@ -90,12 +99,12 @@ struct NCRYPT_NGC_AUTHORIZATION_CONTEXT
         return authContext;
     }
 
-    private:
-        // Private constructor for placement new
-    NCRYPT_NGC_AUTHORIZATION_CONTEXT()
+private:
+    // Private constructor for placement new
+    NCRYPT_NGC_AUTHORIZATION_CONTEXT() 
         : structSize(0)
         , isSecureIdOwnerId(FALSE)
-        , cacheConfig {0}
+        , cacheConfig{0}
         , keyNameLength(0)
         , publicKeyByteCount(0)
     {
@@ -122,7 +131,7 @@ struct NCRYPT_NGC_AUTHORIZATION_CONTEXT
 
         structSize = 0;
         isSecureIdOwnerId = FALSE;
-        cacheConfig = {0};
+        cacheConfig = { 0 };
         keyNameLength = 0;
         publicKeyByteCount = 0;
     }
@@ -133,141 +142,141 @@ namespace AuthorizationContext
     //
     // Object table
     //
-ObjectTable::Table<NCRYPT_NGC_AUTHORIZATION_CONTEXT> s_authContextTable;
-
-static HRESULT ResolveObject(_In_ USER_BOUND_KEY_AUTH_CONTEXT_HANDLE publicHandle, _Out_ NCRYPT_NGC_AUTHORIZATION_CONTEXT** ppObject) noexcept
-{
-    if (!publicHandle || !ppObject)
+    ObjectTable::Table<NCRYPT_NGC_AUTHORIZATION_CONTEXT> s_authContextTable;
+    
+    static HRESULT ResolveObject(_In_ USER_BOUND_KEY_AUTH_CONTEXT_HANDLE publicHandle, _Out_ NCRYPT_NGC_AUTHORIZATION_CONTEXT** ppObject) noexcept
     {
-        return E_INVALIDARG;
+        if (!publicHandle || !ppObject)
+        {
+            return E_INVALIDARG;
+        }
+
+        auto handle = ObjectTable::Handle { reinterpret_cast<uintptr_t>(publicHandle) };
+        auto* object = s_authContextTable.ResolveObject(handle);
+        if (!object)
+        {
+            return HRESULT_FROM_WIN32(ERROR_NOT_FOUND);
+        }
+
+        *ppObject = object;
+        return S_OK;
     }
 
-    auto handle = ObjectTable::Handle {reinterpret_cast<uintptr_t>(publicHandle)};
-    auto* object = s_authContextTable.ResolveObject(handle);
-    if (!object)
+    static HRESULT InsertObject(
+        wil_raw::unique_ptr<NCRYPT_NGC_AUTHORIZATION_CONTEXT>&& object,
+        _Out_ USER_BOUND_KEY_AUTH_CONTEXT_HANDLE* handle) noexcept
     {
-        return HRESULT_FROM_WIN32(ERROR_NOT_FOUND);
+        ObjectTable::Handle tempHandle;
+        RETURN_IF_FAILED(s_authContextTable.InsertObject(wil_raw::move(object), &tempHandle));
+        *handle = reinterpret_cast<USER_BOUND_KEY_AUTH_CONTEXT_HANDLE>(tempHandle);
+        return S_OK;
     }
 
-    *ppObject = object;
-    return S_OK;
-}
-
-static HRESULT InsertObject(
-    wil_raw::unique_ptr<NCRYPT_NGC_AUTHORIZATION_CONTEXT>&& object,
-    _Out_ USER_BOUND_KEY_AUTH_CONTEXT_HANDLE* handle) noexcept
-{
-    ObjectTable::Handle tempHandle;
-    RETURN_IF_FAILED(s_authContextTable.InsertObject(wil_raw::move(object), &tempHandle));
-    *handle = reinterpret_cast<USER_BOUND_KEY_AUTH_CONTEXT_HANDLE>(tempHandle);
-    return S_OK;
-}
-
-static HRESULT CloseHandle(_In_ USER_BOUND_KEY_AUTH_CONTEXT_HANDLE publicHandle) noexcept
-{
-    auto handle = ObjectTable::Handle {reinterpret_cast<uintptr_t>(publicHandle)};
-    wil_raw::unique_ptr<NCRYPT_NGC_AUTHORIZATION_CONTEXT> object;
-    RETURN_IF_FAILED(s_authContextTable.RemoveObject(handle, &object));
-    object.reset();
-    return S_OK;
-}
-
-// Allocate an NCRYPT_NGC_AUTHORIZATION_CONTEXT
-static wil_raw::unique_ptr<NCRYPT_NGC_AUTHORIZATION_CONTEXT> Allocate(_In_ SIZE_T bufferSize)
-{
-    // Sanity check buffer size
-    if (bufferSize < sizeof(NCRYPT_NGC_AUTHORIZATION_CONTEXT))
+    static HRESULT CloseHandle(_In_ USER_BOUND_KEY_AUTH_CONTEXT_HANDLE publicHandle) noexcept
     {
-        return wil_raw::unique_ptr<NCRYPT_NGC_AUTHORIZATION_CONTEXT>{ nullptr };
+        auto handle = ObjectTable::Handle{ reinterpret_cast<uintptr_t>(publicHandle) };
+        wil_raw::unique_ptr<NCRYPT_NGC_AUTHORIZATION_CONTEXT> object;
+        RETURN_IF_FAILED(s_authContextTable.RemoveObject(handle, &object));
+        object.reset();
+        return S_OK;
     }
 
-    // Allocate raw memory for the variable-length structure
-    void* buffer = VengcAlloc(bufferSize);
-    if (buffer == nullptr)
+    // Allocate an NCRYPT_NGC_AUTHORIZATION_CONTEXT
+    static wil_raw::unique_ptr<NCRYPT_NGC_AUTHORIZATION_CONTEXT> Allocate(_In_ SIZE_T bufferSize)
     {
-        return wil_raw::unique_ptr<NCRYPT_NGC_AUTHORIZATION_CONTEXT>{ nullptr };
+        // Sanity check buffer size
+        if (bufferSize < sizeof(NCRYPT_NGC_AUTHORIZATION_CONTEXT))
+        {
+            return wil_raw::unique_ptr<NCRYPT_NGC_AUTHORIZATION_CONTEXT>{ nullptr };
+        }
+        
+        // Allocate raw memory for the variable-length structure
+        void* buffer = VengcAlloc(bufferSize);
+        if (buffer == nullptr)
+        {
+            return wil_raw::unique_ptr<NCRYPT_NGC_AUTHORIZATION_CONTEXT>{ nullptr };
+        }
+        
+        // Use placement new to construct the object in the allocated memory
+        NCRYPT_NGC_AUTHORIZATION_CONTEXT* ptrAuthContext = NCRYPT_NGC_AUTHORIZATION_CONTEXT::CreateInPlace(buffer);
+        return wil_raw::unique_ptr<NCRYPT_NGC_AUTHORIZATION_CONTEXT>(ptrAuthContext);
     }
-
-    // Use placement new to construct the object in the allocated memory
-    NCRYPT_NGC_AUTHORIZATION_CONTEXT* ptrAuthContext = NCRYPT_NGC_AUTHORIZATION_CONTEXT::CreateInPlace(buffer);
-    return wil_raw::unique_ptr<NCRYPT_NGC_AUTHORIZATION_CONTEXT>(ptrAuthContext);
-}
-
-// Validate integrity of auth context buffer
-static HRESULT ValidateSerialData(
-    _In_ const BYTE* buffer,
-    _In_ SIZE_T bufferSize)
-{
-    if (bufferSize < sizeof(NCRYPT_NGC_AUTHORIZATION_CONTEXT))
+    
+    // Validate integrity of auth context buffer
+    static HRESULT ValidateSerialData(
+        _In_ const BYTE* buffer,
+        _In_ SIZE_T bufferSize)
     {
-        return E_INVALIDARG;
+        if (bufferSize < sizeof(NCRYPT_NGC_AUTHORIZATION_CONTEXT))
+        {
+            return E_INVALIDARG;
+        }
+    
+        auto context = reinterpret_cast<const NCRYPT_NGC_AUTHORIZATION_CONTEXT*>(buffer);
+    
+        // Validate the integrity of the decryptedAuthContext
+        if (bufferSize < context->structSize)
+        {
+            return E_INVALIDARG;
+        }
+    
+        // Verify the structure size field
+        if (context->structSize != sizeof(NCRYPT_NGC_AUTHORIZATION_CONTEXT))
+        {
+            return E_INVALIDARG;
+        }
+    
+        // Validate the trustlet data size is reasonable
+        if (context->publicKeyByteCount < NGC_PUBLIC_KEY_MIN_SIZE || context->publicKeyByteCount > NGC_PUBLIC_KEY_MAX_SIZE)
+        {
+            return E_INVALIDARG;
+        }
+    
+        // Verify the public key data doesn't exceed the buffer
+        auto publicKeySize = bufferSize - offsetof(NCRYPT_NGC_AUTHORIZATION_CONTEXT, publicKey);
+        if (context->publicKeyByteCount != publicKeySize)
+        {
+            return E_INVALIDARG;
+        }
+    
+        // Verify the key name length is valid
+        if (context->keyNameLength == 0 || (context->keyNameLength * sizeof(wchar_t)) > sizeof(context->keyName))
+        {
+            return E_INVALIDARG;
+        }
+    
+        return S_OK;
     }
-
-    auto context = reinterpret_cast<const NCRYPT_NGC_AUTHORIZATION_CONTEXT*>(buffer);
-
-    // Validate the integrity of the decryptedAuthContext
-    if (bufferSize < context->structSize)
+    
+    // Deserialize buffer to NCRYPT_NGC_AUTHORIZATION_CONTEXT
+    static HRESULT Deserialize(
+        _In_ const BYTE* buffer,
+        _In_ SIZE_T bufferSize,
+        _Out_ wil_raw::unique_ptr<NCRYPT_NGC_AUTHORIZATION_CONTEXT>* authContext)
     {
-        return E_INVALIDARG;
+        // Validate the data structure
+        RETURN_IF_FAILED(ValidateSerialData(buffer, bufferSize));
+    
+        // Allocate the auth context
+        auto tmpAuthContext = AuthorizationContext::Allocate(bufferSize);
+        if (!tmpAuthContext)
+        {
+            return E_OUTOFMEMORY;
+        }
+    
+        // Copy the data into the allocated structure
+        memcpy(tmpAuthContext.get(), buffer, bufferSize);
+
+        *authContext = wil_raw::move(tmpAuthContext);
+        return S_OK;
     }
-
-    // Verify the structure size field
-    if (context->structSize != sizeof(NCRYPT_NGC_AUTHORIZATION_CONTEXT))
-    {
-        return E_INVALIDARG;
-    }
-
-    // Validate the trustlet data size is reasonable
-    if (context->publicKeyByteCount < NGC_PUBLIC_KEY_MIN_SIZE || context->publicKeyByteCount > NGC_PUBLIC_KEY_MAX_SIZE)
-    {
-        return E_INVALIDARG;
-    }
-
-    // Verify the public key data doesn't exceed the buffer
-    auto publicKeySize = bufferSize - offsetof(NCRYPT_NGC_AUTHORIZATION_CONTEXT, publicKey);
-    if (context->publicKeyByteCount != publicKeySize)
-    {
-        return E_INVALIDARG;
-    }
-
-    // Verify the key name length is valid
-    if (context->keyNameLength == 0 || (context->keyNameLength * sizeof(wchar_t)) > sizeof(context->keyName))
-    {
-        return E_INVALIDARG;
-    }
-
-    return S_OK;
-}
-
-// Deserialize buffer to NCRYPT_NGC_AUTHORIZATION_CONTEXT
-static HRESULT Deserialize(
-    _In_ const BYTE* buffer,
-    _In_ SIZE_T bufferSize,
-    _Out_ wil_raw::unique_ptr<NCRYPT_NGC_AUTHORIZATION_CONTEXT>* authContext)
-{
-    // Validate the data structure
-    RETURN_IF_FAILED(ValidateSerialData(buffer, bufferSize));
-
-    // Allocate the auth context
-    auto tmpAuthContext = AuthorizationContext::Allocate(bufferSize);
-    if (!tmpAuthContext)
-    {
-        return E_OUTOFMEMORY;
-    }
-
-    // Copy the data into the allocated structure
-    memcpy(tmpAuthContext.get(), buffer, bufferSize);
-
-    *authContext = wil_raw::move(tmpAuthContext);
-    return S_OK;
-}
 }
 
 // Internal structure to hold session information (moved from header)
 struct USER_BOUND_KEY_SESSION_INTERNAL
 {
-    unique_bcrypt_key sessionKey {};
-    volatile LONG64 sessionNonce {};
+    unique_bcrypt_key sessionKey{};
+    volatile LONG64 sessionNonce{};
 };
 
 namespace SessionInfo
@@ -275,69 +284,69 @@ namespace SessionInfo
     //
     // Object table
     //
-ObjectTable::Table<USER_BOUND_KEY_SESSION_INTERNAL> s_sessionTable;
-
-static HRESULT ResolveObject(_In_ USER_BOUND_KEY_SESSION_HANDLE publicHandle, _Out_ USER_BOUND_KEY_SESSION_INTERNAL** ppObject) noexcept
-{
-    if (!publicHandle || !ppObject)
+    ObjectTable::Table<USER_BOUND_KEY_SESSION_INTERNAL> s_sessionTable;
+    
+    static HRESULT ResolveObject(_In_ USER_BOUND_KEY_SESSION_HANDLE publicHandle, _Out_ USER_BOUND_KEY_SESSION_INTERNAL** ppObject) noexcept
     {
-        return E_INVALIDARG;
+        if (!publicHandle || !ppObject)
+        {
+            return E_INVALIDARG;
+        }
+
+        auto handle = ObjectTable::Handle { reinterpret_cast<uintptr_t>(publicHandle) };
+        auto* object = s_sessionTable.ResolveObject(handle);
+        if (!object)
+        {
+            return HRESULT_FROM_WIN32(ERROR_NOT_FOUND);
+        }
+
+        *ppObject = object;
+        return S_OK;
     }
 
-    auto handle = ObjectTable::Handle {reinterpret_cast<uintptr_t>(publicHandle)};
-    auto* object = s_sessionTable.ResolveObject(handle);
-    if (!object)
+    static HRESULT InsertObject(
+        wil_raw::unique_ptr<USER_BOUND_KEY_SESSION_INTERNAL>&& object,
+        _Out_ USER_BOUND_KEY_SESSION_HANDLE* handle) noexcept
     {
-        return HRESULT_FROM_WIN32(ERROR_NOT_FOUND);
+        ObjectTable::Handle tempHandle;
+        RETURN_IF_FAILED(s_sessionTable.InsertObject(wil_raw::move(object), &tempHandle));
+        *handle = reinterpret_cast<USER_BOUND_KEY_SESSION_HANDLE>(tempHandle);
+        return S_OK;
     }
 
-    *ppObject = object;
-    return S_OK;
-}
-
-static HRESULT InsertObject(
-    wil_raw::unique_ptr<USER_BOUND_KEY_SESSION_INTERNAL>&& object,
-    _Out_ USER_BOUND_KEY_SESSION_HANDLE* handle) noexcept
-{
-    ObjectTable::Handle tempHandle;
-    RETURN_IF_FAILED(s_sessionTable.InsertObject(wil_raw::move(object), &tempHandle));
-    *handle = reinterpret_cast<USER_BOUND_KEY_SESSION_HANDLE>(tempHandle);
-    return S_OK;
-}
-
-static HRESULT CloseHandle(_In_ USER_BOUND_KEY_SESSION_HANDLE publicHandle) noexcept
-{
-    auto handle = ObjectTable::Handle {reinterpret_cast<uintptr_t>(publicHandle)};
-    wil_raw::unique_ptr<USER_BOUND_KEY_SESSION_INTERNAL> object;
-    RETURN_IF_FAILED(s_sessionTable.RemoveObject(handle, &object));
-    object.reset();
-    return S_OK;
-}
-
-// Make a session info object
-static wil_raw::unique_ptr<USER_BOUND_KEY_SESSION_INTERNAL> Create(unique_bcrypt_key&& sessionKey)
-{
-    auto buffer = reinterpret_cast<USER_BOUND_KEY_SESSION_INTERNAL*>(VengcAlloc(sizeof(USER_BOUND_KEY_SESSION_INTERNAL)));
-    if (!buffer)
+    static HRESULT CloseHandle(_In_ USER_BOUND_KEY_SESSION_HANDLE publicHandle) noexcept
     {
-        return wil_raw::unique_ptr<USER_BOUND_KEY_SESSION_INTERNAL>{ nullptr };
+        auto handle = ObjectTable::Handle{ reinterpret_cast<uintptr_t>(publicHandle) };
+        wil_raw::unique_ptr<USER_BOUND_KEY_SESSION_INTERNAL> object;
+        RETURN_IF_FAILED(s_sessionTable.RemoveObject(handle, &object));
+        object.reset();
+        return S_OK;
     }
 
-    auto sessionInfo = wil_raw::unique_ptr<USER_BOUND_KEY_SESSION_INTERNAL>(buffer);
-    sessionInfo->sessionKey = wil_raw::move(sessionKey);
-
-    return sessionInfo;
-}
-
-static HRESULT ConsumeNextSessionNonce(_In_ USER_BOUND_KEY_SESSION_INTERNAL* sessionInfo, _Out_ LONG64* nonce)
-{
-    if (sessionInfo->sessionNonce >= MAX_REQUEST_NONCE)
+    // Make a session info object
+    static wil_raw::unique_ptr<USER_BOUND_KEY_SESSION_INTERNAL> Create(unique_bcrypt_key&& sessionKey)
     {
-        return HRESULT_FROM_WIN32(ERROR_TOO_MANY_SECRETS);
+        auto buffer = reinterpret_cast<USER_BOUND_KEY_SESSION_INTERNAL*>(VengcAlloc(sizeof(USER_BOUND_KEY_SESSION_INTERNAL)));
+        if (!buffer)
+        {
+            return wil_raw::unique_ptr<USER_BOUND_KEY_SESSION_INTERNAL>{ nullptr };
+        }
+
+        auto sessionInfo = wil_raw::unique_ptr<USER_BOUND_KEY_SESSION_INTERNAL>(buffer);
+        sessionInfo->sessionKey = wil_raw::move(sessionKey);
+
+        return sessionInfo;
     }
-    *nonce = InterlockedIncrement64(&sessionInfo->sessionNonce);
-    return S_OK;
-}
+
+    static HRESULT ConsumeNextSessionNonce(_In_ USER_BOUND_KEY_SESSION_INTERNAL* sessionInfo, _Out_ LONG64* nonce)
+    {
+        if (sessionInfo->sessionNonce >= MAX_REQUEST_NONCE)
+        {
+            return HRESULT_FROM_WIN32(ERROR_TOO_MANY_SECRETS);
+        }
+        *nonce = InterlockedIncrement64(&sessionInfo->sessionNonce);
+        return S_OK;
+    }
 }
 
 static int CompareNullTerminatedWideStrings(const wchar_t* s1, const wchar_t* s2)
@@ -367,10 +376,10 @@ GenerateSessionKey(
     // Allocate secure memory for key bytes using RAII
     auto sessionKeyBytes = make_unique_secure_blob(sessionKeySize);
     RETURN_IF_NULL_ALLOC(sessionKeyBytes);
-
+    
     // Generate cryptographically secure random key bytes
     RETURN_IF_FAILED(HRESULT_FROM_NT(BCryptGenRandom(NULL, sessionKeyBytes.get(), sessionKeySize, BCRYPT_USE_SYSTEM_PREFERRED_RNG)));
-
+    
     // Create symmetric key from the generated bytes using AES-GCM algorithm
     unique_bcrypt_key hSessionKey;
     RETURN_IF_FAILED(HRESULT_FROM_NT(BCryptGenerateSymmetricKey(BCRYPT_AES_GCM_ALG_HANDLE, &hSessionKey, NULL, 0, sessionKeyBytes.get(), sessionKeySize, 0)));
@@ -397,25 +406,25 @@ GenerateAttestationReport(
     // Parse the NGC session challenge using SessionChallenge directly
     Vtl1MutualAuthNoStd::SessionChallenge sessionChallenge {};
     RETURN_IF_FAILED(Vtl1MutualAuthNoStd::SessionChallenge::FromVector(challenge, challengeSize, &sessionChallenge));
-
+    
     // Create AttestationData using the standard Vtl1MutualAuthNoStd structure
     // Copy challenge bytes (guaranteed to be exactly 24 bytes)
     Vtl1MutualAuthNoStd::AttestationData attestationData {};
     memcpy(attestationData.challenge, sessionChallenge.challenge, sizeof(attestationData.challenge));
-
+    
     // Copy session key as symmetric secret (both are 32 bytes)
     // static_assert(sizeof(attestationData.symmetricSecret) == sessionKeySize, "Session key size mismatch");
     memcpy(attestationData.symmetricSecret, pSessionKeyBytes, sessionKeySize);
-
+    
     // Convert to vector for enclave data
     BYTE attestationVector[Vtl1MutualAuthNoStd::AttestationData::c_attestationDataVectorSize];
     RETURN_IF_FAILED(attestationData.ToVector(attestationVector));
-
+    
     // Prepare enclaveData buffer
     static_assert(Vtl1MutualAuthNoStd::AttestationData::c_attestationDataVectorSize <= ENCLAVE_REPORT_DATA_LENGTH);
     BYTE enclaveData[ENCLAVE_REPORT_DATA_LENGTH] = {0};
     memcpy(enclaveData, attestationVector, Vtl1MutualAuthNoStd::AttestationData::c_attestationDataVectorSize);
-
+    
     // Call Windows enclave attestation API to get size
     UINT32 attestationReportSize = 0;
     RETURN_IF_FAILED(EnclaveGetAttestationReport(enclaveData, NULL, 0, &attestationReportSize));
@@ -462,7 +471,7 @@ EncryptAttestationReport(
         0,
         &tempEncryptedSize
     ));
-
+    
     // Allocate secure buffer for encrypted report using RAII
     auto encryptedReport = make_unique_secure_blob(tempEncryptedSize);
     RETURN_IF_NULL_ALLOC(encryptedReport);
@@ -511,8 +520,8 @@ HRESULT InitializeUserBoundKeySession(
 )
 {
     const UINT32 SESSION_KEY_SIZE = AES_256_KEY_SIZE_BYTES; // 256-bit AES key
-    PS_TRUSTLET_TKSESSION_ID sessionId = {0};
-
+    PS_TRUSTLET_TKSESSION_ID sessionId = { 0 };
+    
     //
     // Step 1: Validate input parameters
     //
@@ -533,11 +542,11 @@ HRESULT InitializeUserBoundKeySession(
     //
     unique_secure_blob attestationReport;
     RETURN_IF_FAILED(GenerateAttestationReport(reinterpret_cast<const BYTE*>(challenge), challengeSize, sessionKeyBytes.get(), SESSION_KEY_SIZE,
-        &attestationReport, &sessionId));
+                                  &attestationReport, &sessionId));
 
-//
-// Step 4: Encrypt attestation report using EnclaveEncryptDataForTrustlet
-//
+    //
+    // Step 4: Encrypt attestation report using EnclaveEncryptDataForTrustlet
+    //
     unique_secure_blob encryptedReport;
     RETURN_IF_FAILED(EncryptAttestationReport(attestationReport.get(), attestationReport.size(), sessionId, &encryptedReport));
 
@@ -549,7 +558,7 @@ HRESULT InitializeUserBoundKeySession(
     {
         return E_OUTOFMEMORY;
     }
-
+    
     // Store in object table
     USER_BOUND_KEY_SESSION_HANDLE tmpSessionHandle;
     RETURN_IF_FAILED(SessionInfo::InsertObject(wil_raw::move(sessionInfo), &tmpSessionHandle));
@@ -586,7 +595,7 @@ DecryptAuthContextBlob(
 {
     constexpr UINT32 VTL1_TAG_SIZE = AES_GCM_TAG_SIZE;       // AES-GCM auth tag at end
     constexpr ULONG64 c_responderBitFlip = 0x80000000ULL;
-
+    
     // The auth context blob was encrypted using ClientAuth::EncryptResponse which uses
     // VTL1 mutual authentication protocol with AES-GCM format.
     // IMPORTANT: EncryptResponse (new protocol) format is: [encrypted data][16-byte auth tag]
@@ -638,7 +647,7 @@ DecryptAuthContextBlob(
         &bytesDecrypted,
         0
     )));
-
+    
     if (bytesDecrypted != decryptedBlob.size())
     {
         return E_UNEXPECTED;
@@ -663,13 +672,13 @@ HRESULT GetUserBoundKeyAuthContext(
     {
         return E_INVALIDARG;
     }
-
+    
     USER_BOUND_KEY_SESSION_INTERNAL* sessionInfo;
     RETURN_IF_FAILED(SessionInfo::ResolveObject(sessionHandle, &sessionInfo));
 
     // Decrypt the auth context blob using BCrypt APIs
-    wil_raw::unique_ptr<NCRYPT_NGC_AUTHORIZATION_CONTEXT> decryptedAuthContext {};
-    RETURN_IF_FAILED(DecryptAuthContextBlob(sessionInfo->sessionKey.get(), localNonce, reinterpret_cast<const BYTE*>(authContextBlob), authContextBlobSize, & decryptedAuthContext));
+    wil_raw::unique_ptr<NCRYPT_NGC_AUTHORIZATION_CONTEXT> decryptedAuthContext{};
+    RETURN_IF_FAILED(DecryptAuthContextBlob(sessionInfo->sessionKey.get(), localNonce, reinterpret_cast<const BYTE*>(authContextBlob), authContextBlobSize,& decryptedAuthContext));
 
     // Store in object table and return handle
     RETURN_IF_FAILED(AuthorizationContext::InsertObject(wil_raw::move(decryptedAuthContext), authContextHandle));
@@ -755,7 +764,7 @@ HRESULT ValidateUserBoundKeyAuthContext(
 
     NCRYPT_NGC_AUTHORIZATION_CONTEXT* authContext;
     RETURN_IF_FAILED(AuthorizationContext::ResolveObject(authContextHandle, &authContext));
-
+    
     // Verify properties against authorization context
     return ValidateAuthorizationContext(keyName, authContext, count, values);
 }
@@ -793,7 +802,7 @@ PerformECDHKeyEstablishment(
 
     // Finalize the enclave key pair
     RETURN_IF_FAILED(HRESULT_FROM_NT(BCryptFinalizeKeyPair(ecdhKeyPair.get(), 0)));
-
+    
     // Derive a key to use as a Key-Encryption-Key (KEK)
     // Perform ECDH secret agreement
     unique_bcrypt_secret ecdhSecret;
@@ -946,19 +955,19 @@ EncryptUserKeyWithKEK(
     // Generate nonce using BCryptGenRandom
     BYTE nonce[AES_GCM_NONCE_SIZE];
     RETURN_IF_FAILED(HRESULT_FROM_NT(BCryptGenRandom(NULL, nonce, AES_GCM_NONCE_SIZE, BCRYPT_USE_SYSTEM_PREFERRED_RNG)));
-
+    
     // Set up AES-GCM authentication info
     BCRYPT_AUTHENTICATED_CIPHER_MODE_INFO authInfo;
     BCRYPT_INIT_AUTH_MODE_INFO(authInfo);
     authInfo.pbNonce = nonce;
     authInfo.cbNonce = AES_GCM_NONCE_SIZE;
     authInfo.cbTag = AES_GCM_TAG_SIZE;
-
+    
     // Allocate secure buffer for encrypted user key using RAII
     UINT32 encryptedUserKeySize = userKeySize;
     auto encryptedUserKey = make_unique_secure_blob(encryptedUserKeySize);
     RETURN_IF_NULL_ALLOC(encryptedUserKey);
-
+    
     BYTE authTag[AES_GCM_TAG_SIZE];
     authInfo.pbTag = authTag;
 
@@ -1007,7 +1016,7 @@ HRESULT ProtectUserBoundKey(
 )
 {
     const BYTE* userKey = reinterpret_cast<const BYTE*>(userKeyBlob);
-
+    
     //
     // Step 1: Validate input parameters
     //
@@ -1019,7 +1028,7 @@ HRESULT ProtectUserBoundKey(
     // Resolve the handle to internal context
     NCRYPT_NGC_AUTHORIZATION_CONTEXT* authCtx;
     RETURN_IF_FAILED(AuthorizationContext::ResolveObject(authContextHandle, &authCtx));
-
+    
     //
     // Step 2: Extract NGC public key and perform key establishment
     //
@@ -1028,7 +1037,7 @@ HRESULT ProtectUserBoundKey(
     unique_bcrypt_secret ecdhSecret;
     unique_secure_blob sharedSecret;
     RETURN_IF_FAILED(PerformECDHKeyEstablishment(authCtx, &ecdhKeyPair, &helloPublicKeyHandle, &ecdhSecret, &sharedSecret));
-
+    
     //
     // Step 3: Compute KEK (hDerivedKey)
     //
@@ -1251,6 +1260,7 @@ struct PARSED_BOUND_KEY_COMPONENTS
     PARSED_BOUND_KEY_COMPONENTS& operator=(PARSED_BOUND_KEY_COMPONENTS&&) = delete;
 };
 
+
 //
 // Parse the bound key structure and extract all components
 //
@@ -1358,7 +1368,7 @@ DecryptAndUntagSecret(
 {
     constexpr UINT32 VTL1_TAG_SIZE = AES_GCM_TAG_SIZE;       // AES-GCM auth tag at end
     constexpr ULONG64 c_responderBitFlip = 0x80000000;
-
+    
     // The auth context blob was encrypted using ClientAuth::EncryptResponse which uses
     // VTL1 mutual authentication protocol with AES-GCM format.
     // IMPORTANT: EncryptResponse (new protocol) format is: [encrypted data][16-byte auth tag]
@@ -1369,9 +1379,9 @@ DecryptAndUntagSecret(
     {
         return NTE_BAD_DATA;
     }
-
+    
     ULONG64 nonce = nonceNumber ^ c_responderBitFlip;  // Apply responder bit flip as per VTL1 protocol
-
+    
     // Create nonce buffer manually (instead of using crypto utility)
     BYTE nonceBuffer[AES_GCM_NONCE_SIZE] = {0}; // Fill with 0s
     memcpy(&nonceBuffer[AES_GCM_NONCE_SIZE - sizeof(nonce)], &nonce, sizeof(nonce));
@@ -1381,7 +1391,7 @@ DecryptAndUntagSecret(
     BYTE* pEncryptedData = const_cast<BYTE*>(secretBlob);
     UINT32 encryptedDataSize = secretBlobSize - VTL1_TAG_SIZE;
     BYTE* pAuthTag = pEncryptedData + encryptedDataSize;
-
+    
     // Set up AES-GCM authentication info for VTL1 format
     BCRYPT_AUTHENTICATED_CIPHER_MODE_INFO authInfo;
     BCRYPT_INIT_AUTH_MODE_INFO(authInfo);
@@ -1393,7 +1403,7 @@ DecryptAndUntagSecret(
     // Allocate buffer for decrypted data using RAII
     auto decryptedSecret = make_unique_secure_blob(encryptedDataSize);
     RETURN_IF_NULL_ALLOC(decryptedSecret);
-
+    
     // Perform AES-GCM decryption using VTL1 format
     ULONG bytesDecrypted = 0;
     RETURN_IF_FAILED(HRESULT_FROM_NT(BCryptDecrypt(
@@ -1408,7 +1418,7 @@ DecryptAndUntagSecret(
         &bytesDecrypted,
         0
     )));
-
+    
     if (bytesDecrypted != decryptedSecret.size())
     {
         return E_UNEXPECTED;
@@ -1433,7 +1443,7 @@ HRESULT UnprotectUserBoundKey(
 )
 {
     const BYTE* sessionEncryptedDerivedSecret = reinterpret_cast<const BYTE*>(sessionEncryptedDerivedSecretBlob);
-
+    
     //
     // Step 1: Validate input parameters
     //
@@ -1458,10 +1468,10 @@ HRESULT UnprotectUserBoundKey(
     RETURN_IF_FAILED(DecryptAndUntagSecret(
         sessionInfo->sessionKey.get(),
         sessionEncryptedDerivedSecret,
-        sessionEncryptedDerivedSecretSize,
+        sessionEncryptedDerivedSecretSize, 
         &decryptedSharedSecret,
         localNonce));
-
+        
     //
     // Step 3: Generate KEK using the shared secret as key material
     //
@@ -1478,7 +1488,7 @@ HRESULT UnprotectUserBoundKey(
     //
     // Step 4: Parse the bound key structure
     //
-    PARSED_BOUND_KEY_COMPONENTS boundKeyComponents {};
+    PARSED_BOUND_KEY_COMPONENTS boundKeyComponents{};
     RETURN_IF_FAILED(ParseBoundKeyStructure(reinterpret_cast<const BYTE*>(encryptedUserBoundKey), encryptedUserBoundKeySize, &boundKeyComponents));
 
     //
@@ -1488,7 +1498,7 @@ HRESULT UnprotectUserBoundKey(
     // Allocate secure buffer for decrypted user key using RAII
     auto decryptedUserKey = make_unique_secure_blob(boundKeyComponents.encryptedUserKeySize);
     RETURN_IF_NULL_ALLOC(decryptedUserKey);
-
+    
     // Set up AES-GCM authentication info
     BCRYPT_AUTHENTICATED_CIPHER_MODE_INFO authInfo;
     BCRYPT_INIT_AUTH_MODE_INFO(authInfo);
@@ -1536,7 +1546,7 @@ HRESULT CreateUserBoundKeyRequestForRetrieveAuthorizationContext(
 {
     constexpr char header[] = "NgcReq"; // 7 bytes including null terminator
     constexpr UINT32 OPERATION_RETRIEVE_AUTHORIZATION_CONTEXT = 9; // Different operation ID
-
+    
     //
     // Step 1: Validate input parameters and get session info
     //
