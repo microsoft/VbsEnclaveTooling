@@ -2,6 +2,9 @@
 
 #pragma once
 
+#define RETURN_IF_NULL_ALLOC(x) if (!(x)) { return E_OUTOFMEMORY; }
+#define RETURN_IF_FAILED(x) { auto hr = (x); if (FAILED(hr)) { return hr; } }
+
 namespace wil_raw
 {
 

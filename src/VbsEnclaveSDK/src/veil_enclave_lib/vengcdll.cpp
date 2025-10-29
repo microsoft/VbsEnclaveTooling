@@ -1,39 +1,67 @@
-// Copyright (c) Microsoft Corporation.
-//
+/*++
 
-#include "pch.h"
+Copyright (c) Microsoft Corporation
+
+Module Name:
+
+    vengc.cpp
+
+Abstract:
+
+    Implementation of VTL1 APIs user bound key services.
+    This module provides a comprehensive set of APIs for secure user bound key operations
+    running in VTL1 context, including:
+
+    - Attestation report generation with session key establishment
+    - Auth context decryption and validation
+    - ECDH P-384 key establishment with NGC public keys
+    - AES-GCM encryption of user keys with derived KEKs
+    - Bound key structure creation for secure storage
+
+    The APIs support the full lifecycle of user bound keys from initial session
+    establishment through key protection and storage preparation.
+
+--*/
 #include "..\veil_enclave_lib\vengcdll.h"
-#include "vtl0_functions.vtl1.h"  // Add this include for debug_print
+
+#include <winenclave.h>
+#include <winenclaveapi.h>
+#include <ncrypt.h>
+#include <sal.h>
+#include <bcrypt.h>
+#include <stddef.h>
+#include <new>
+//#include <iumtypes.h>
+#include <ntenclv.h>
+#include "vtl1mutualauth.nostd.h"
+#include <veinterop_kcm.h>
 #include "wil_raw.h"
 #include "memory.h"
 
-// KCM Trustlet Identity constant
-#ifndef TRUSTLETIDENTITY_KCM
-#define TRUSTLETIDENTITY_KCM 6
-#endif
+#include "vengc.extra.h"
 
 // AES-GCM constants
-#define AES_GCM_NONCE_SIZE 12
-#define AES_GCM_TAG_SIZE 16
+constexpr UINT32 AES_GCM_NONCE_SIZE = 12;
+constexpr UINT32 AES_GCM_TAG_SIZE = 16;
 
 // Cryptographic constants
-#define ECDH_P384_KEY_SIZE_BITS 384         // ECDH P-384 key size in bits
-#define AES_256_KEY_SIZE_BYTES 32           // AES-256 session key size in bytes
+constexpr UINT32 ECDH_P384_KEY_SIZE_BITS = 384;         // ECDH P-384 key size in bits
+constexpr UINT32 AES_256_KEY_SIZE_BYTES = 32;           // AES-256 session key size in bytes
 
 // Buffer size constants
-#define KCM_KEY_NAME_MAX_LENGTH 256        // Buffer size for key names
-#define KCM_ATTESTATION_BUFFER_SIZE 256     // Buffer size for attestation data
+constexpr UINT32 NGC_KEY_NAME_MAX_LENGTH = 256;        // Buffer size for key names
 
-// KCM public key validation limits
-#define KCM_PUBLIC_KEY_MIN_SIZE 32          // Minimum allowed KCM public key size
-#define KCM_PUBLIC_KEY_MAX_SIZE 1024        // Maximum allowed KCM public key size
+// NGC public key validation limits
+constexpr UINT32 NGC_PUBLIC_KEY_MIN_SIZE = 32;          // Minimum allowed NGC public key size
+constexpr UINT32 NGC_PUBLIC_KEY_MAX_SIZE = 1024;        // Maximum allowed NGC public key size
 
-#define MAX_REQUEST_NONCE 100000            // Maximum allowed nonce value for request generation
-#define MAX_ENCRYPTED_USER_KEY_SIZE 1024    // Maximum allowed encrypted user key size
+constexpr UINT32 MAX_REQUEST_NONCE = 100000;            // Maximum allowed nonce value for request generation
+constexpr UINT32 MAX_ENCRYPTED_USER_KEY_SIZE = 1024;    // Maximum allowed encrypted user key size
 
 // RAII types
 using unique_bcrypt_key = wil_raw::unique_any<BCRYPT_KEY_HANDLE, decltype(&::BCryptDestroyKey), ::BCryptDestroyKey>;
 using unique_bcrypt_secret = wil_raw::unique_any<BCRYPT_SECRET_HANDLE, decltype(&::BCryptDestroySecret), ::BCryptDestroySecret>;
+
 
 struct KEY_CREDENTIAL_CACHE_CONFIG
 {
@@ -46,8 +74,36 @@ struct KEY_CREDENTIAL_CACHE_CONFIG
 // Structure to return values for NCRYPT_NGC_AUTHORIZATION_CONTEXT_PROPERTY
 struct NCRYPT_NGC_AUTHORIZATION_CONTEXT
 {
-    // Disable constructor and copy constructor
-    NCRYPT_NGC_AUTHORIZATION_CONTEXT() = delete;
+    DWORD structSize;
+    BOOL isSecureIdOwnerId;
+    KEY_CREDENTIAL_CACHE_CONFIG cacheConfig;
+    DWORD keyNameLength;
+    WCHAR keyName[NGC_KEY_NAME_MAX_LENGTH];
+    DWORD publicKeyByteCount = 0;
+    BYTE publicKey[1];
+
+    // Public make for placement new
+    static NCRYPT_NGC_AUTHORIZATION_CONTEXT* CreateInPlace(_In_ void* buffer)
+    {
+        // Use placement new to construct the object in the allocated memory
+        auto authContext = new (buffer) NCRYPT_NGC_AUTHORIZATION_CONTEXT();
+        return authContext;
+    }
+
+    private:
+        // Private constructor for placement new
+    NCRYPT_NGC_AUTHORIZATION_CONTEXT()
+        : structSize(0)
+        , isSecureIdOwnerId(FALSE)
+        , cacheConfig {0}
+        , keyNameLength(0)
+        , publicKeyByteCount(0)
+    {
+        keyName[0] = L'\0';
+        publicKey[0] = 0;
+    }
+
+    // Disable copy constructor and copy assignment
     NCRYPT_NGC_AUTHORIZATION_CONTEXT(const NCRYPT_NGC_AUTHORIZATION_CONTEXT&) = delete;
     NCRYPT_NGC_AUTHORIZATION_CONTEXT& operator=(const NCRYPT_NGC_AUTHORIZATION_CONTEXT&) = delete;
 
@@ -58,18 +114,18 @@ struct NCRYPT_NGC_AUTHORIZATION_CONTEXT
     // Destructor that zeroes out all bytes and the "trailing array"
     ~NCRYPT_NGC_AUTHORIZATION_CONTEXT()
     {
-        // Zero-out the struct and the "trailing array"
-        auto sizeToZero = sizeof(NCRYPT_NGC_AUTHORIZATION_CONTEXT) + publicKeyByteCount - sizeof(BYTE);
-        RtlSecureZeroMemory(this, sizeToZero);
-    }
+        // Zero out key name
+        RtlSecureZeroMemory(keyName, NGC_KEY_NAME_MAX_LENGTH * sizeof(WCHAR));
 
-    DWORD structSize;
-    BOOL isSecureIdOwnerId;
-    KEY_CREDENTIAL_CACHE_CONFIG cacheConfig;
-    DWORD keyNameLength;
-    WCHAR keyName[KCM_KEY_NAME_MAX_LENGTH];
-    DWORD publicKeyByteCount;
-    BYTE publicKey[1];
+        // Zero out public key
+        RtlSecureZeroMemory(publicKey, publicKeyByteCount);
+
+        structSize = 0;
+        isSecureIdOwnerId = FALSE;
+        cacheConfig = {0};
+        keyNameLength = 0;
+        publicKeyByteCount = 0;
+    }
 };
 
 namespace AuthorizationContext
@@ -104,7 +160,6 @@ static HRESULT InsertObject(
     ObjectTable::Handle tempHandle;
     RETURN_IF_FAILED(s_authContextTable.InsertObject(wil_raw::move(object), &tempHandle));
     *handle = reinterpret_cast<USER_BOUND_KEY_AUTH_CONTEXT_HANDLE>(tempHandle);
-    //*handle = reinterpret_cast<USER_BOUND_KEY_AUTH_CONTEXT_HANDLE>(static_cast<uintptr_t>(tempHandle.value));
     return S_OK;
 }
 
@@ -120,15 +175,22 @@ static HRESULT CloseHandle(_In_ USER_BOUND_KEY_AUTH_CONTEXT_HANDLE publicHandle)
 // Allocate an NCRYPT_NGC_AUTHORIZATION_CONTEXT
 static wil_raw::unique_ptr<NCRYPT_NGC_AUTHORIZATION_CONTEXT> Allocate(_In_ SIZE_T bufferSize)
 {
-    auto buffer = reinterpret_cast<NCRYPT_NGC_AUTHORIZATION_CONTEXT*>(VengcAlloc(bufferSize));
+    // Sanity check buffer size
+    if (bufferSize < sizeof(NCRYPT_NGC_AUTHORIZATION_CONTEXT))
+    {
+        return wil_raw::unique_ptr<NCRYPT_NGC_AUTHORIZATION_CONTEXT>{ nullptr };
+    }
+
+    // Allocate raw memory for the variable-length structure
+    void* buffer = VengcAlloc(bufferSize);
     if (buffer == nullptr)
     {
         return wil_raw::unique_ptr<NCRYPT_NGC_AUTHORIZATION_CONTEXT>{ nullptr };
     }
 
-    wil_raw::unique_ptr<NCRYPT_NGC_AUTHORIZATION_CONTEXT> authContext {buffer};
-    authContext->structSize = static_cast<DWORD>(bufferSize);
-    return authContext;
+    // Use placement new to construct the object in the allocated memory
+    NCRYPT_NGC_AUTHORIZATION_CONTEXT* ptrAuthContext = NCRYPT_NGC_AUTHORIZATION_CONTEXT::CreateInPlace(buffer);
+    return wil_raw::unique_ptr<NCRYPT_NGC_AUTHORIZATION_CONTEXT>(ptrAuthContext);
 }
 
 // Validate integrity of auth context buffer
@@ -156,7 +218,7 @@ static HRESULT ValidateSerialData(
     }
 
     // Validate the trustlet data size is reasonable
-    if (context->publicKeyByteCount < KCM_PUBLIC_KEY_MIN_SIZE || context->publicKeyByteCount > KCM_PUBLIC_KEY_MAX_SIZE)
+    if (context->publicKeyByteCount < NGC_PUBLIC_KEY_MIN_SIZE || context->publicKeyByteCount > NGC_PUBLIC_KEY_MAX_SIZE)
     {
         return E_INVALIDARG;
     }
@@ -164,15 +226,6 @@ static HRESULT ValidateSerialData(
     // Verify the public key data doesn't exceed the buffer
     auto publicKeySize = bufferSize - offsetof(NCRYPT_NGC_AUTHORIZATION_CONTEXT, publicKey);
     if (context->publicKeyByteCount != publicKeySize)
-    {
-        return E_INVALIDARG;
-    }
-
-    constexpr UINT32 EXPECTED_NONCE_SIZE = 8;
-
-    // The publicKey format is: [nonce (usually 16 bytes)][actual public key data]
-    // For P-384, we expect the nonce to be 16 bytes followed by the public key in BCRYPT_ECCPUBLIC_BLOB format
-    if (context->publicKeyByteCount <= EXPECTED_NONCE_SIZE)
     {
         return E_INVALIDARG;
     }
@@ -208,139 +261,6 @@ static HRESULT Deserialize(
     *authContext = wil_raw::move(tmpAuthContext);
     return S_OK;
 }
-}
-
-namespace Vtl1MutualAuth
-{
-    // Header constants used throughout the namespace - defined once to eliminate duplication
-static constexpr BYTE CHALLENGE_HEADER[10] = {'c','h','a','l','l','e','n','g','e','\0'};
-static constexpr BYTE ATTESTATION_HEADER[8] = {'a','t','t','e','s','t','\0','\0'};
-static constexpr SIZE_T c_challengeSize = 24;
-static constexpr ULONG64 c_maxRequestNonce = 100000;  // Maximum allowed nonce value for request generation
-static constexpr UINT32 c_maxEncryptedUserKeySize = 1024;  // Maximum allowed encrypted user key size
-
-struct SessionChallenge
-{
-    static constexpr SIZE_T c_sessionChallengeVectorSize = sizeof(CHALLENGE_HEADER) + c_challengeSize + sizeof(PS_TRUSTLET_TKSESSION_ID);
-    BYTE challenge[c_challengeSize];
-    PS_TRUSTLET_TKSESSION_ID sessionId;
-
-    HRESULT ToVector(_Out_writes_bytes_(c_sessionChallengeVectorSize) BYTE* buffer) const
-    {
-        if (buffer == NULL)
-        {
-            return E_INVALIDARG;
-        }
-
-        SIZE_T index = 0;
-
-        memcpy(buffer + index, CHALLENGE_HEADER, sizeof(CHALLENGE_HEADER));
-        index += sizeof(CHALLENGE_HEADER);
-
-        memcpy(buffer + index, challenge, c_challengeSize);
-        index += c_challengeSize;
-
-        memcpy(buffer + index, &sessionId, sizeof(sessionId));
-        index += sizeof(sessionId);
-
-        return S_OK;
-    }
-
-    static HRESULT FromVector(const BYTE* buffer, UINT32 bufferSize, _Out_ SessionChallenge* result)
-    {
-        if (buffer == NULL || result == NULL)
-        {
-            return E_INVALIDARG;
-        }
-
-        SIZE_T expectedSize = sizeof(CHALLENGE_HEADER) + c_challengeSize + sizeof(result->sessionId);
-        if (bufferSize < expectedSize)
-        {
-            return NTE_BAD_DATA;
-        }
-
-        SIZE_T index = 0;
-
-        // Check if buffer starts with the expected challenge header
-        if (0 != memcmp(CHALLENGE_HEADER, buffer, sizeof(CHALLENGE_HEADER)))
-        {
-            return NTE_BAD_TYPE;
-        }
-        index += sizeof(CHALLENGE_HEADER);
-
-        // Copy challenge data
-        memcpy(result->challenge, buffer + index, c_challengeSize);
-        index += c_challengeSize;
-
-        // Copy session ID
-        memcpy(&result->sessionId, buffer + index, sizeof(result->sessionId));
-        index += sizeof(result->sessionId);
-
-        return S_OK;
-    }
-};
-
-struct AttestationData
-{
-    static constexpr SIZE_T c_symmetricSecretSize = 32;
-    static constexpr SIZE_T c_attestationDataVectorSize = sizeof(ATTESTATION_HEADER) + c_challengeSize + c_symmetricSecretSize;
-    BYTE challenge[c_challengeSize];
-    BYTE symmetricSecret[c_symmetricSecretSize];
-
-    HRESULT ToVector(_Out_writes_bytes_(c_attestationDataVectorSize) BYTE* buffer) const
-    {
-        if (buffer == NULL)
-        {
-            return E_INVALIDARG;
-        }
-
-        SIZE_T index = 0;
-
-        memcpy(buffer + index, ATTESTATION_HEADER, sizeof(ATTESTATION_HEADER));
-        index += sizeof(ATTESTATION_HEADER);
-
-        memcpy(buffer + index, challenge, c_challengeSize);
-        index += c_challengeSize;
-
-        memcpy(buffer + index, symmetricSecret, c_symmetricSecretSize);
-        index += c_symmetricSecretSize;
-
-        return S_OK;
-    }
-
-    static HRESULT FromVector(const BYTE* buffer, UINT32 bufferSize, _Out_ AttestationData* result)
-    {
-        if (buffer == NULL || result == NULL)
-        {
-            return E_INVALIDARG;
-        }
-
-        SIZE_T expectedSize = sizeof(ATTESTATION_HEADER) + c_challengeSize + c_symmetricSecretSize;
-        if (bufferSize < expectedSize)
-        {
-            return NTE_BAD_DATA;
-        }
-
-        SIZE_T index = 0;
-
-        // Check if buffer starts with the expected attestation header
-        if (0 != memcmp(ATTESTATION_HEADER, buffer, sizeof(ATTESTATION_HEADER)))
-        {
-            return NTE_BAD_TYPE;
-        }
-        index += sizeof(ATTESTATION_HEADER);
-
-        // Copy challenge data
-        memcpy(result->challenge, buffer + index, c_challengeSize);
-        index += c_challengeSize;
-
-        // Copy symmetric secret
-        memcpy(result->symmetricSecret, buffer + index, c_symmetricSecretSize);
-        index += c_symmetricSecretSize;
-
-        return S_OK;
-    }
-};
 }
 
 // Internal structure to hold session information (moved from header)
@@ -382,7 +302,6 @@ static HRESULT InsertObject(
     ObjectTable::Handle tempHandle;
     RETURN_IF_FAILED(s_sessionTable.InsertObject(wil_raw::move(object), &tempHandle));
     *handle = reinterpret_cast<USER_BOUND_KEY_SESSION_HANDLE>(tempHandle);
-    // *handle = reinterpret_cast<USER_BOUND_KEY_SESSION_HANDLE>(static_cast<uintptr_t>(tempHandle.value));
     return S_OK;
 }
 
@@ -410,9 +329,14 @@ static wil_raw::unique_ptr<USER_BOUND_KEY_SESSION_INTERNAL> Create(unique_bcrypt
     return sessionInfo;
 }
 
-static LONG64 ConsumeNextSessionNonce(_In_ USER_BOUND_KEY_SESSION_INTERNAL* sessionInfo)
+static HRESULT ConsumeNextSessionNonce(_In_ USER_BOUND_KEY_SESSION_INTERNAL* sessionInfo, _Out_ LONG64* nonce)
 {
-    return InterlockedIncrement64(&sessionInfo->sessionNonce);
+    if (sessionInfo->sessionNonce >= MAX_REQUEST_NONCE)
+    {
+        return HRESULT_FROM_WIN32(ERROR_TOO_MANY_SECRETS);
+    }
+    *nonce = InterlockedIncrement64(&sessionInfo->sessionNonce);
+    return S_OK;
 }
 }
 
@@ -442,10 +366,7 @@ GenerateSessionKey(
 {
     // Allocate secure memory for key bytes using RAII
     auto sessionKeyBytes = make_unique_secure_blob(sessionKeySize);
-    if (!sessionKeyBytes) 
-    {
-        return E_OUTOFMEMORY;
-    }
+    RETURN_IF_NULL_ALLOC(sessionKeyBytes);
 
     // Generate cryptographically secure random key bytes
     RETURN_IF_FAILED(HRESULT_FROM_NT(BCryptGenRandom(NULL, sessionKeyBytes.get(), sessionKeySize, BCRYPT_USE_SYSTEM_PREFERRED_RNG)));
@@ -474,12 +395,12 @@ GenerateAttestationReport(
 )
 {
     // Parse the NGC session challenge using SessionChallenge directly
-    Vtl1MutualAuth::SessionChallenge sessionChallenge {};
-    RETURN_IF_FAILED(Vtl1MutualAuth::SessionChallenge::FromVector(challenge, challengeSize, &sessionChallenge));
+    Vtl1MutualAuthNoStd::SessionChallenge sessionChallenge {};
+    RETURN_IF_FAILED(Vtl1MutualAuthNoStd::SessionChallenge::FromVector(challenge, challengeSize, &sessionChallenge));
 
     // Create AttestationData using the standard Vtl1MutualAuthNoStd structure
     // Copy challenge bytes (guaranteed to be exactly 24 bytes)
-    Vtl1MutualAuth::AttestationData attestationData {};
+    Vtl1MutualAuthNoStd::AttestationData attestationData {};
     memcpy(attestationData.challenge, sessionChallenge.challenge, sizeof(attestationData.challenge));
 
     // Copy session key as symmetric secret (both are 32 bytes)
@@ -487,13 +408,13 @@ GenerateAttestationReport(
     memcpy(attestationData.symmetricSecret, pSessionKeyBytes, sessionKeySize);
 
     // Convert to vector for enclave data
-    BYTE attestationVector[Vtl1MutualAuth::AttestationData::c_attestationDataVectorSize];
+    BYTE attestationVector[Vtl1MutualAuthNoStd::AttestationData::c_attestationDataVectorSize];
     RETURN_IF_FAILED(attestationData.ToVector(attestationVector));
 
     // Prepare enclaveData buffer
-    static_assert(Vtl1MutualAuth::AttestationData::c_attestationDataVectorSize <= ENCLAVE_REPORT_DATA_LENGTH);
+    static_assert(Vtl1MutualAuthNoStd::AttestationData::c_attestationDataVectorSize <= ENCLAVE_REPORT_DATA_LENGTH);
     BYTE enclaveData[ENCLAVE_REPORT_DATA_LENGTH] = {0};
-    memcpy(enclaveData, attestationVector, Vtl1MutualAuth::AttestationData::c_attestationDataVectorSize);
+    memcpy(enclaveData, attestationVector, Vtl1MutualAuthNoStd::AttestationData::c_attestationDataVectorSize);
 
     // Call Windows enclave attestation API to get size
     UINT32 attestationReportSize = 0;
@@ -501,10 +422,7 @@ GenerateAttestationReport(
 
     // Allocate secure buffer for the actual attestation report using RAII
     auto attestationReport = make_unique_secure_blob(attestationReportSize);
-    if (!attestationReport)
-    {
-        return E_OUTOFMEMORY;
-    }
+    RETURN_IF_NULL_ALLOC(attestationReport);
 
     // Get the actual attestation report
     RETURN_IF_FAILED(EnclaveGetAttestationReport(enclaveData, attestationReport.get(), attestationReportSize, &attestationReportSize));
@@ -528,7 +446,7 @@ EncryptAttestationReport(
 {
     // Set up trustlet binding data
     TRUSTLET_BINDING_DATA trustletData;
-    trustletData.TrustletIdentity = TRUSTLETIDENTITY_KCM;
+    trustletData.TrustletIdentity = TRUSTLETIDENTITY_NGC;
     trustletData.TrustletSessionId = sessionId;
     trustletData.TrustletSvn = 0;
     trustletData.Reserved1 = 0;
@@ -547,10 +465,7 @@ EncryptAttestationReport(
 
     // Allocate secure buffer for encrypted report using RAII
     auto encryptedReport = make_unique_secure_blob(tempEncryptedSize);
-    if (!encryptedReport)
-    {
-        return E_OUTOFMEMORY;
-    }
+    RETURN_IF_NULL_ALLOC(encryptedReport);
 
     // Perform the actual encryption
     RETURN_IF_FAILED(EnclaveEncryptDataForTrustlet(
@@ -707,10 +622,7 @@ DecryptAuthContextBlob(
 
     // Allocate secure buffer for decrypted data using RAII
     auto decryptedBlob = make_unique_secure_blob(encryptedDataSize);
-    if (!decryptedBlob)
-    {
-        return E_OUTOFMEMORY;
-    }
+    RETURN_IF_NULL_ALLOC(decryptedBlob);
 
     // Perform AES-GCM decryption using VTL1 format
     ULONG bytesDecrypted = 0;
@@ -863,11 +775,6 @@ PerformECDHKeyEstablishment(
     _Out_ unique_secure_blob* sharedSecret
 )
 {
-    // Skip the nonce to get to the actual public key data
-    constexpr UINT32 EXPECTED_NONCE_SIZE = 8;
-    BYTE* pNgcPublicKeyData = authCtx->publicKey + EXPECTED_NONCE_SIZE;
-    UINT32 ngcPublicKeySize = authCtx->publicKeyByteCount - EXPECTED_NONCE_SIZE;
-
     // Import NGC public key for ECDH
     // The public key data (after skipping header) should be in BCRYPT_ECCPUBLIC_BLOB format
     unique_bcrypt_key helloPublicKeyHandle;
@@ -876,8 +783,8 @@ PerformECDHKeyEstablishment(
         NULL,
         BCRYPT_ECCPUBLIC_BLOB,
         &helloPublicKeyHandle,
-        pNgcPublicKeyData,
-        ngcPublicKeySize,
+        authCtx->publicKey,
+        authCtx->publicKeyByteCount,
         0)));
 
     // Generate enclave key pair for ECDH (384-bit for P-384)
@@ -898,11 +805,7 @@ PerformECDHKeyEstablishment(
 
     // Allocate secure buffer for the actual shared secret using RAII
     auto tmpSharedSecret = make_unique_secure_blob(derivedKeySize);
-
-    if (!tmpSharedSecret)
-    {
-        return E_OUTOFMEMORY;
-    }
+    RETURN_IF_NULL_ALLOC(tmpSharedSecret);
 
     // Actually derive the shared secret into the buffer
     RETURN_IF_FAILED(HRESULT_FROM_NT(BCryptDeriveKey(ecdhSecret.get(), BCRYPT_KDF_RAW_SECRET, NULL, tmpSharedSecret.get(), derivedKeySize, &derivedKeySize, 0)));
@@ -951,10 +854,7 @@ ComputeKEKFromSharedSecret(
         0)));
 
     auto enclavePublicKeyBytes = make_unique_sized_blob(enclavePublicKeyBlobSize);
-    if (!enclavePublicKeyBytes)
-    {
-        return E_OUTOFMEMORY;
-    }
+    RETURN_IF_NULL_ALLOC(enclavePublicKeyBytes);
 
     RETURN_IF_FAILED(HRESULT_FROM_NT(BCryptExportKey(
         ecdhKeyPair,
@@ -998,10 +898,7 @@ CreateBoundKeyStructure(
         bytesEncrypted + AES_GCM_TAG_SIZE;
 
     auto tmpBoundKeyMaterial = make_unique_sized_blob(actualBoundKeySize);
-    if (!tmpBoundKeyMaterial)
-    {
-        return E_OUTOFMEMORY;
-    }
+    RETURN_IF_NULL_ALLOC(tmpBoundKeyMaterial);
 
     BYTE* pCurrentPos = static_cast<BYTE*>(tmpBoundKeyMaterial.get());
 
@@ -1060,10 +957,7 @@ EncryptUserKeyWithKEK(
     // Allocate secure buffer for encrypted user key using RAII
     UINT32 encryptedUserKeySize = userKeySize;
     auto encryptedUserKey = make_unique_secure_blob(encryptedUserKeySize);
-    if (!encryptedUserKey)
-    {
-        return E_OUTOFMEMORY;
-    }
+    RETURN_IF_NULL_ALLOC(encryptedUserKey);
 
     BYTE authTag[AES_GCM_TAG_SIZE];
     authInfo.pbTag = authTag;
@@ -1220,10 +1114,7 @@ HRESULT CreateUserBoundKeyRequestForDeriveSharedSecret(
 
     // Allocate secure buffer for plaintext using RAII
     auto plaintextBuffer = make_unique_secure_blob(plaintextSize);
-    if (!plaintextBuffer)
-    {
-        return E_OUTOFMEMORY;
-    }
+    RETURN_IF_NULL_ALLOC(plaintextBuffer);
 
     // Build the plaintext buffer
     BYTE* pCurrentPos = plaintextBuffer.get();
@@ -1256,11 +1147,8 @@ HRESULT CreateUserBoundKeyRequestForDeriveSharedSecret(
     //
 
     // Handle nonce manipulation to prevent reuse
-    ULONG64 nonce = SessionInfo::ConsumeNextSessionNonce(sessionInfo);
-    if (nonce >= MAX_REQUEST_NONCE)
-    {
-        return HRESULT_FROM_WIN32(ERROR_TOO_MANY_SECRETS);
-    }
+    LONG64 nonce;
+    RETURN_IF_FAILED(SessionInfo::ConsumeNextSessionNonce(sessionInfo, &nonce));
 
     // Create nonce buffer manually (instead of using crypto utility)
     BYTE nonceBuffer[AES_GCM_NONCE_SIZE] = {0};
@@ -1281,10 +1169,7 @@ HRESULT CreateUserBoundKeyRequestForDeriveSharedSecret(
 
     // Allocate buffer for encrypted data using RAII
     auto encryptedData = make_unique_sized_blob(plaintextSize);
-    if (!encryptedData)
-    {
-        return E_OUTOFMEMORY;
-    }
+    RETURN_IF_NULL_ALLOC(encryptedData);
 
     // Encrypt the plaintext using BCrypt
     // In AES-GCM ciphertext and plaintext lengths are the same
@@ -1311,10 +1196,7 @@ HRESULT CreateUserBoundKeyRequestForDeriveSharedSecret(
 
     // Allocate ciphertext buffer using RAII
     auto ciphertextBuffer = make_unique_sized_blob(totalEncryptedSize);
-    if (!ciphertextBuffer)
-    {
-        return E_OUTOFMEMORY;
-    }
+    RETURN_IF_NULL_ALLOC(ciphertextBuffer);
 
     // Build the ciphertext buffer
     pCurrentPos = ciphertextBuffer.get();
@@ -1347,20 +1229,19 @@ HRESULT CreateUserBoundKeyRequestForDeriveSharedSecret(
 //
 struct PARSED_BOUND_KEY_COMPONENTS
 {
-    unique_sized_blob enclavePublicKeyBlob; // Owning
+    unique_sized_blob enclavePublicKeyBlob{}; // Owning
     BYTE nonce[AES_GCM_NONCE_SIZE];
-    const BYTE* pEncryptedUserKey;          // Non-owning
-    UINT32 encryptedUserKeySize;
-    const BYTE* pAuthTag;                   // Non-owning
+    const BYTE* pEncryptedUserKey{};          // Non-owning
+    UINT32 encryptedUserKeySize{};
+    const BYTE* pAuthTag{};                   // Non-owning
 
-    // Default constructor
-    PARSED_BOUND_KEY_COMPONENTS() : pEncryptedUserKey(nullptr), encryptedUserKeySize(0), pAuthTag(nullptr)
+    PARSED_BOUND_KEY_COMPONENTS()
     {
-        memset(nonce, 0, sizeof(nonce));
+        memset(nonce, NULL, sizeof(nonce));
     }
 
     //
-    // Because this containts non-owning memory...
+    // Because this contraints non-owning memory...
     //
     // - Delete copy
     PARSED_BOUND_KEY_COMPONENTS(const PARSED_BOUND_KEY_COMPONENTS&) = delete;
@@ -1395,7 +1276,7 @@ ParseBoundKeyStructure(
 
     // Validate enclave public key blob size
     if (enclavePublicKeyBlobSize == 0 ||
-        enclavePublicKeyBlobSize > KCM_PUBLIC_KEY_MAX_SIZE)
+        enclavePublicKeyBlobSize > NGC_PUBLIC_KEY_MAX_SIZE)
     {
         return NTE_BAD_DATA;
     }
@@ -1408,10 +1289,7 @@ ParseBoundKeyStructure(
 
     // Extract and allocate enclave public key blob
     auto tmpEnclavePublicKeyBlob = make_unique_sized_blob(enclavePublicKeyBlobSize);
-    if (!tmpEnclavePublicKeyBlob)
-    {
-        return E_OUTOFMEMORY;
-    }
+    RETURN_IF_NULL_ALLOC(tmpEnclavePublicKeyBlob);
 
     memcpy(tmpEnclavePublicKeyBlob.get(), pCurrentPos, tmpEnclavePublicKeyBlob.size());
     pCurrentPos += enclavePublicKeyBlobSize;
@@ -1514,10 +1392,7 @@ DecryptAndUntagSecret(
 
     // Allocate buffer for decrypted data using RAII
     auto decryptedSecret = make_unique_secure_blob(encryptedDataSize);
-    if (!decryptedSecret)
-    {
-        return E_OUTOFMEMORY;
-    }
+    RETURN_IF_NULL_ALLOC(decryptedSecret);
 
     // Perform AES-GCM decryption using VTL1 format
     ULONG bytesDecrypted = 0;
@@ -1603,7 +1478,7 @@ HRESULT UnprotectUserBoundKey(
     //
     // Step 4: Parse the bound key structure
     //
-    PARSED_BOUND_KEY_COMPONENTS boundKeyComponents{};
+    PARSED_BOUND_KEY_COMPONENTS boundKeyComponents {};
     RETURN_IF_FAILED(ParseBoundKeyStructure(reinterpret_cast<const BYTE*>(encryptedUserBoundKey), encryptedUserBoundKeySize, &boundKeyComponents));
 
     //
@@ -1612,10 +1487,7 @@ HRESULT UnprotectUserBoundKey(
 
     // Allocate secure buffer for decrypted user key using RAII
     auto decryptedUserKey = make_unique_secure_blob(boundKeyComponents.encryptedUserKeySize);
-    if (!decryptedUserKey)
-    {
-        return E_OUTOFMEMORY;
-    }
+    RETURN_IF_NULL_ALLOC(decryptedUserKey);
 
     // Set up AES-GCM authentication info
     BCRYPT_AUTHENTICATED_CIPHER_MODE_INFO authInfo;
@@ -1700,10 +1572,7 @@ HRESULT CreateUserBoundKeyRequestForRetrieveAuthorizationContext(
 
     // Allocate plaintext buffer using RAII
     auto plaintextBuffer = make_unique_sized_blob(plaintextSize);
-    if (!plaintextBuffer)
-    {
-        return E_OUTOFMEMORY;
-    }
+    RETURN_IF_NULL_ALLOC(plaintextBuffer);
 
     // Build the plaintext buffer
     BYTE* pCurrentPos = plaintextBuffer.get();
@@ -1728,11 +1597,8 @@ HRESULT CreateUserBoundKeyRequestForRetrieveAuthorizationContext(
     //
 
     // Handle nonce manipulation to prevent reuse
-    ULONG64 nonce = SessionInfo::ConsumeNextSessionNonce(sessionInfo);
-    if (nonce >= MAX_REQUEST_NONCE)
-    {
-        return HRESULT_FROM_WIN32(ERROR_TOO_MANY_SECRETS);
-    }
+    LONG64 nonce;
+    RETURN_IF_FAILED(SessionInfo::ConsumeNextSessionNonce(sessionInfo, &nonce));
 
     // Create nonce buffer manually (instead of using crypto utility)
     BYTE nonceBuffer[AES_GCM_NONCE_SIZE] = {0};
@@ -1784,10 +1650,7 @@ HRESULT CreateUserBoundKeyRequestForRetrieveAuthorizationContext(
 
     // Allocate ciphertext buffer using RAII
     auto ciphertextBuffer = make_unique_sized_blob(totalEncryptedSize);
-    if (!ciphertextBuffer)
-    {
-        return E_OUTOFMEMORY;
-    }
+    RETURN_IF_NULL_ALLOC(ciphertextBuffer);
 
     // Build the ciphertext buffer
     pCurrentPos = ciphertextBuffer.get();
@@ -1810,4 +1673,3 @@ HRESULT CreateUserBoundKeyRequestForRetrieveAuthorizationContext(
 
     return S_OK;
 }
-

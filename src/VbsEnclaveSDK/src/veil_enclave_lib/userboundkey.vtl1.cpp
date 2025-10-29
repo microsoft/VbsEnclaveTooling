@@ -2,6 +2,7 @@
 
 #define VEIL_IMPLEMENTATION
 
+#include "veinterop_kcm.h"
 #include "crypto.vtl1.h"
 #include "utils.vtl1.h"
 #include "vengcdll.h" // OS APIs
