@@ -182,21 +182,19 @@ veil_abi::Types::credentialAndFormattedKeyNameAndSessionInfo veil_abi::Untrusted
     std::wcout << L"Calling RequestCreateAsync" << std::endl;
     std::wcout << L"Calling testing" << std::endl;
 
-    /*
+    
     try
     {
         auto op = KeyCredentialManager::DeleteAsync(key_name);
         std::wcout << "Deletion worked" << std::endl;
-        //HRESULT result = op.get();
-        //THROW_IF_FAILED(result);
         op.get();
     }
     catch (...)
     {
         std::wcout << "Deletion failed" << std::endl;
     }
-    */
 
+    /*
     // delete
     wil::unique_ncrypt_prov m_helloProv;
     THROW_IF_FAILED(NCryptOpenStorageProvider(&m_helloProv, MS_NGC_KEY_STORAGE_PROVIDER, 0));
@@ -209,6 +207,7 @@ veil_abi::Types::credentialAndFormattedKeyNameAndSessionInfo veil_abi::Untrusted
             THROW_IF_FAILED(NCryptDeleteKey(helloKey.get(), 0));
         }
     }
+    */
 
     auto credentialResult = KeyCredentialManager::RequestCreateAsync(
         key_name,

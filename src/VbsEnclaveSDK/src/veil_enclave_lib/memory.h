@@ -30,7 +30,7 @@ using unique_blob = wil_raw::unique_any<BYTE*, decltype(&::VengcFree), ::VengcFr
 
 unique_blob make_unique_blob(size_t size)
 {
-    return unique_blob {VengcAlloc<BYTE>(size)};
+    return unique_blob{ VengcAlloc<BYTE>(size) };
 }
 
 
@@ -39,8 +39,8 @@ unique_blob make_unique_blob(size_t size)
 //
 class unique_sized_blob
 {
-    public:
-        // Constructors
+public:
+    // Constructors
     unique_sized_blob() {}
     unique_sized_blob(BYTE* ptr, UINT32 size) : m_blob(ptr), m_size(size) {}
 
@@ -85,11 +85,6 @@ class unique_sized_blob
         m_blob.reset(ptr);
     }
 
-    BYTE* release()
-    {
-        m_size = 0;
-        return m_blob.release();
-    }
     BYTE* release(_Out_ UINT32* size)
     {
         *size = m_size;
@@ -97,9 +92,9 @@ class unique_sized_blob
         return m_blob.release();
     }
 
-    private:
-    unique_blob m_blob {};
-    UINT32 m_size {};
+private:
+    unique_blob m_blob{};
+    UINT32 m_size{};
 };
 
 inline unique_sized_blob make_unique_sized_blob(UINT32 size)
@@ -107,7 +102,7 @@ inline unique_sized_blob make_unique_sized_blob(UINT32 size)
     auto blob = make_unique_blob(size);
     if (!blob)
     {
-        return unique_sized_blob {};
+        return unique_sized_blob{};
     }
     return unique_sized_blob(blob.release(), size);
 }
@@ -118,10 +113,10 @@ inline unique_sized_blob make_unique_sized_blob(UINT32 size)
 //
 class unique_secure_blob
 {
-    public:
-        // Constructors
+public:
+    // Constructors
     unique_secure_blob() {}
-    unique_secure_blob(BYTE* ptr, UINT32 size) : m_blob(unique_sized_blob {ptr, size}) {}
+    unique_secure_blob(BYTE* ptr, UINT32 size) : m_blob(unique_sized_blob{ ptr, size }) {}
     unique_secure_blob(unique_sized_blob&& other) noexcept
         : m_blob(wil_raw::move(other))
     {
@@ -169,7 +164,7 @@ class unique_secure_blob
         }
         m_blob.reset(ptr, size);
     }
-
+    
     void reset()
     {
         reset(nullptr, 0);
@@ -177,11 +172,10 @@ class unique_secure_blob
 
     BYTE* release(_Out_ UINT32* size)
     {
-        *size = m_blob.size();
-        return m_blob.release();
+        return m_blob.release(size);
     }
 
-    private:
+private:
     unique_sized_blob m_blob;
 };
 
@@ -197,101 +191,101 @@ inline unique_secure_blob make_unique_secure_blob(UINT32 size)
 namespace ObjectTable
 {
     // Object table locking using SRW (Slim Reader-Writer) locks
-inline PSRWLOCK AcquireTableLock(_In_ PSRWLOCK tableLock) noexcept
-{
-    AcquireSRWLockExclusive(tableLock);
-    return tableLock;
-}
-
-using unique_table_lock = wil_raw::unique_any<PSRWLOCK, decltype(&ReleaseSRWLockExclusive), ReleaseSRWLockExclusive>;
-
-// Object table
-constexpr UINT32 MAX_ENTRIES = 64;
-
-using Handle = uintptr_t;
-
-template <typename T>
-struct Entry
-{
-    wil_raw::unique_ptr<T> object;
-    bool inUse = false;
-};
-
-template <typename T>
-struct Table
-{
-    // Simple object table implementation
-    Entry<T> s_table[MAX_ENTRIES];
-
-    // SRW lock for thread safety - much more efficient than spinlock
-    SRWLOCK s_tableLock = SRWLOCK_INIT;
-
-    T* ResolveObject(_In_ Handle handle) noexcept
+    inline PSRWLOCK AcquireTableLock(_In_ PSRWLOCK tableLock) noexcept
     {
-        // Convert handle to index (handles are 1-based, array is 0-based)
-        if (handle == 0 || handle > MAX_ENTRIES)
+        AcquireSRWLockExclusive(tableLock);
+        return tableLock;
+    }
+
+    using unique_table_lock = wil_raw::unique_any<PSRWLOCK, decltype(&ReleaseSRWLockExclusive), ReleaseSRWLockExclusive>;
+
+    // Object table
+    constexpr UINT32 MAX_ENTRIES = 64;
+
+    using Handle = uintptr_t;
+
+    template <typename T>
+    struct Entry
+    {
+        wil_raw::unique_ptr<T> object;
+        bool inUse = false;
+    };
+
+    template <typename T>
+    struct Table
+    {
+        // Simple object table implementation
+        Entry<T> s_table[MAX_ENTRIES];
+
+        // SRW lock for thread safety - much more efficient than spinlock
+        SRWLOCK s_tableLock = SRWLOCK_INIT;
+
+        T* ResolveObject(_In_ Handle handle) noexcept
         {
+            // Convert handle to index (handles are 1-based, array is 0-based)
+            if (handle == 0 || handle > MAX_ENTRIES)
+            {
+                return nullptr;
+            }
+
+            UINT32 index = static_cast<UINT32>(handle - 1);
+
+            auto lock = unique_table_lock{ AcquireTableLock(&s_tableLock) };
+
+            if (s_table[index].inUse)
+            {
+                return s_table[index].object.get();
+            }
+
             return nullptr;
         }
 
-        UINT32 index = static_cast<UINT32>(handle - 1);
-
-        auto lock = unique_table_lock {AcquireTableLock(&s_tableLock)};
-
-        if (s_table[index].inUse)
+        HRESULT InsertObject(wil_raw::unique_ptr<T>&& object, Handle* handle) noexcept
         {
-            return s_table[index].object.get();
-        }
-
-        return nullptr;
-    }
-
-    HRESULT InsertObject(wil_raw::unique_ptr<T>&& object, Handle* handle) noexcept
-    {
-        if (!object || !handle)
-        {
-            return E_INVALIDARG;
-        }
-
-        auto lock = unique_table_lock {AcquireTableLock(&s_tableLock)};
-
-        // Find an empty slot
-        for (int i = 0; i < MAX_ENTRIES; ++i)
-        {
-            if (!s_table[i].inUse)
+            if (!object || !handle)
             {
-                s_table[i].object = wil_raw::move(object);
-                s_table[i].inUse = true;
-
-                // Convert index to handle (1-based)
-                *handle = Handle {static_cast<uintptr_t>(i + 1)};
-                return S_OK;
+                return E_INVALIDARG;
             }
+
+            auto lock = unique_table_lock{ AcquireTableLock(&s_tableLock) };
+            
+            // Find an empty slot
+            for (int i = 0; i < MAX_ENTRIES; ++i)
+            {
+                if (!s_table[i].inUse)
+                {
+                    s_table[i].object = wil_raw::move(object);
+                    s_table[i].inUse = true;
+
+                    // Convert index to handle (1-based)
+                    *handle = Handle{ static_cast<uintptr_t>(i + 1) };
+                    return S_OK;
+                }
+            }
+            
+            return E_OUTOFMEMORY; // Table is full
         }
 
-        return E_OUTOFMEMORY; // Table is full
-    }
-
-    HRESULT RemoveObject(_In_ Handle handle, _Out_ wil_raw::unique_ptr<T>* object) noexcept
-    {
-        // Convert handle to index
-        if (handle == 0 || handle > MAX_ENTRIES)
+        HRESULT RemoveObject(_In_ Handle handle, _Out_ wil_raw::unique_ptr<T>* object) noexcept
         {
-            return E_INVALIDARG;
+            // Convert handle to index
+            if (handle == 0 || handle > MAX_ENTRIES)
+            {
+                return E_INVALIDARG;
+            }
+
+            UINT32 index = static_cast<UINT32>(handle - 1);
+
+            auto lock = unique_table_lock{ AcquireTableLock(&s_tableLock) };
+
+            if (!s_table[index].inUse)
+            {
+                return HRESULT_FROM_WIN32(ERROR_NOT_FOUND);
+            }
+
+            *object = wil_raw::move(s_table[index].object);
+            s_table[index].inUse = false;
+            return S_OK;
         }
-
-        UINT32 index = static_cast<UINT32>(handle - 1);
-
-        auto lock = unique_table_lock {AcquireTableLock(&s_tableLock)};
-
-        if (!s_table[index].inUse)
-        {
-            return HRESULT_FROM_WIN32(ERROR_NOT_FOUND);
-        }
-
-        *object = wil_raw::move(s_table[index].object);
-        s_table[index].inUse = false;
-        return S_OK;
-    }
-};
+    };
 }

@@ -682,8 +682,6 @@ ValidateAuthorizationContext(
     _In_ const USER_BOUND_KEY_AUTH_CONTEXT_PROPERTY* authctxproperties
 )
 {
-    __debugbreak();
-
     // Compare the extracted key name with the provided key name
     if (CompareNullTerminatedWideStrings(keyName, authCtx->keyName) != 0)
     {
