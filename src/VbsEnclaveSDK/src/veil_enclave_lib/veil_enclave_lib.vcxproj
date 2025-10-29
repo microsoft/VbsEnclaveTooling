@@ -127,7 +127,7 @@
     <ClInclude Include="object_table.vtl1.h" />
     <ClInclude Include="logger.vtl1.h" />
     <ClInclude Include="userboundkey.vtl1.h" />
-    <ClInclude Include="vengc.extra.h" />
+    <ClInclude Include="vengc.inc.h" />
     <ClInclude Include="vengcdll.h" />
     <ClInclude Include="vtl0_functions.vtl1.h" />
     <ClInclude Include="pch.h" />

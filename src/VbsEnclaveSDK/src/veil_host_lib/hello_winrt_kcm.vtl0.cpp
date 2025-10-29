@@ -16,6 +16,7 @@
 #include <winstring.h>
 #include <unknwn.h>  // For IUnknown interface
 
+#include <wil/cppwinrt.h>
 #include <winrt/base.h>
 #include <winrt/Windows.Foundation.h>
 #include <winrt/Windows.Security.Credentials.h>
@@ -167,7 +168,7 @@ veil_abi::Types::credentialAndFormattedKeyNameAndSessionInfo veil_abi::Untrusted
     uintptr_t ecdh_protocol,
     const std::wstring& message,
     uintptr_t window_id,
-    const veil_abi::Types::keyCredentialCacheConfig& cache_config)
+    const veil_abi::Types::keyCredentialCacheConfig& cache_config) try
 {
     std::wcout << L"Inside userboundkey_establish_session_for_create_callback"<< std::endl;
     auto algorithm = GetAlgorithm(ecdh_protocol);
@@ -179,6 +180,36 @@ veil_abi::Types::credentialAndFormattedKeyNameAndSessionInfo veil_abi::Untrusted
     auto enclaveptr = (void*)enclave;    
     
     std::wcout << L"Calling RequestCreateAsync" << std::endl;
+    std::wcout << L"Calling testing" << std::endl;
+
+    /*
+    try
+    {
+        auto op = KeyCredentialManager::DeleteAsync(key_name);
+        std::wcout << "Deletion worked" << std::endl;
+        //HRESULT result = op.get();
+        //THROW_IF_FAILED(result);
+        op.get();
+    }
+    catch (...)
+    {
+        std::wcout << "Deletion failed" << std::endl;
+    }
+    */
+
+    // delete
+    wil::unique_ncrypt_prov m_helloProv;
+    THROW_IF_FAILED(NCryptOpenStorageProvider(&m_helloProv, MS_NGC_KEY_STORAGE_PROVIDER, 0));
+
+    wil::unique_ncrypt_key helloKey;
+    if (SUCCEEDED(NCryptOpenKey(m_helloProv.get(), &helloKey, key_name.c_str(), 0, 0)))
+    {
+        if (helloKey)
+        {
+            THROW_IF_FAILED(NCryptDeleteKey(helloKey.get(), 0));
+        }
+    }
+
     auto credentialResult = KeyCredentialManager::RequestCreateAsync(
         key_name,
         KeyCredentialCreationOption::ReplaceExisting,
@@ -204,6 +235,8 @@ veil_abi::Types::credentialAndFormattedKeyNameAndSessionInfo veil_abi::Untrusted
 
                 *sessionInfo = attestationReportAndSessionInfo.sessionInfo;
                 std::wcout << L"DEBUG: Session key stored: " << *sessionInfo << std::endl;
+
+                std::wcout << L"DEBUGNEW: attestationReportAndSessionInfo.attestationReport: " << attestationReportAndSessionInfo.attestationReport.size() << std::endl;
             
                 // Convert std::vector<uint8_t> back to IBuffer for return
                 std::wcout << L"DEBUG: Converting attestation report back to IBuffer..." << std::endl;
@@ -240,6 +273,16 @@ veil_abi::Types::credentialAndFormattedKeyNameAndSessionInfo veil_abi::Untrusted
     result.sessionInfo = *sessionInfo; // Store session info
 
     return result;
+}
+catch (std::exception const& ex)
+{
+    std::cout << "EXCEPTION1: " << ex.what() << std::endl;
+    return {};
+}
+catch (...)
+{
+    std::cout << "EXCEPTION2: " << std::endl;
+    return {};
 }
 
 // Helper function to convert vector<uint8_t> back to KeyCredential

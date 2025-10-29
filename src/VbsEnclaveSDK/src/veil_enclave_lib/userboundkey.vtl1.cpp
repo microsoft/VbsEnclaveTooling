@@ -320,6 +320,9 @@ wil::secure_vector<uint8_t> enclave_create_user_bound_key(
             static_cast<uint8_t*>(encryptedKcmRequestRac.get()),
             static_cast<uint8_t*>(encryptedKcmRequestRac.get()) + encryptedKcmRequestRacSize);
 
+        veil::vtl1::vtl0_functions::debug_print(L"DEBUGNEW: message = %ws", message.c_str());
+        veil::vtl1::vtl0_functions::debug_print(L"DEBUGNEW: encryptedKcmRequestRacSize = %d", encryptedKcmRequestRacSize);
+
         // Second call to extract secret from credential
         veil::vtl1::vtl0_functions::debug_print(L"DEBUG: enclave_create_user_bound_key - About to call userboundkey_get_authorization_context_from_credential_callback");
 

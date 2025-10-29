@@ -22,32 +22,8 @@ Abstract:
     establishment through key protection and storage preparation.
 
 --*/
-#include "..\veil_enclave_lib\vengcdll.h"
 
-#include <winenclave.h>
-#include <winenclaveapi.h>
-#include <ncrypt.h>
-#include <sal.h>
-#include <bcrypt.h>
-#include <stddef.h>
-#include <new>
-//#include <iumtypes.h>
-#include <ntenclv.h>
-#include "vtl1mutualauth.nostd.h"
-#include <veinterop_kcm.h>
-#include "wil_raw.h"
-#include "memory.h"
-
-#include "vengc.extra.h"
-
-
-
-
-
-
-
-
-//================================================================================
+#include "vengc.inc.h"
 
 // AES-GCM constants
 constexpr UINT32 AES_GCM_NONCE_SIZE = 12;
@@ -784,6 +760,11 @@ PerformECDHKeyEstablishment(
     _Out_ unique_secure_blob* sharedSecret
 )
 {
+        // Skip the nonce to get to the actual public key data
+    constexpr UINT32 EXPECTED_NONCE_SIZE = 8;
+    BYTE* pNgcPublicKeyData = authCtx->publicKey + EXPECTED_NONCE_SIZE;
+    UINT32 ngcPublicKeySize = authCtx->publicKeyByteCount - EXPECTED_NONCE_SIZE;
+
     // Import NGC public key for ECDH
     // The public key data (after skipping header) should be in BCRYPT_ECCPUBLIC_BLOB format
     unique_bcrypt_key helloPublicKeyHandle;
@@ -792,8 +773,8 @@ PerformECDHKeyEstablishment(
         NULL,
         BCRYPT_ECCPUBLIC_BLOB,
         &helloPublicKeyHandle,
-        authCtx->publicKey,
-        authCtx->publicKeyByteCount,
+        pNgcPublicKeyData,
+        ngcPublicKeySize,
         0)));
 
     // Generate enclave key pair for ECDH (384-bit for P-384)
