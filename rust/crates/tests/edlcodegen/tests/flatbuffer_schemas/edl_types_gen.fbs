@@ -1,0 +1,14 @@
+// FlatBuffers schema for any abi types that get
+// produced as part of the developers code generation.
+
+namespace edl_types_gen;
+
+table WString {
+  wchars:[uint16] (required);
+}
+
+table AbiTable
+{
+}
+
+root_type AbiTable;

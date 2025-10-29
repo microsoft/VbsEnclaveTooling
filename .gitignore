@@ -440,5 +440,10 @@ o/
 ## Ignore Guardian Local settings
 LocalSettings.gdn.json
 
+target/
+*.lock
+obj
+bin
+
 # Ignore flatbuffer generated files in the shared tooling directory
 src/ToolingSharedLibrary/CurrentCodeGenerationState/**/flatbufferTypes.h
