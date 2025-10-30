@@ -120,8 +120,7 @@ namespace AuthorizationContext
     //
     static ObjectTable::Table<NCRYPT_NGC_AUTHORIZATION_CONTEXT>* GetAuthContextTable()
     {
-        __debugbreak();
-        static ObjectTable::Table<NCRYPT_NGC_AUTHORIZATION_CONTEXT>* s_table = nullptr;
+        static ObjectTable::Table<NCRYPT_NGC_AUTHORIZATION_CONTEXT>* volatile s_table = nullptr;
         return InitOnceAndAcquire(&s_table);
     }
 
@@ -276,8 +275,7 @@ namespace SessionInfo
     //
     static ObjectTable::Table<USER_BOUND_KEY_SESSION_INTERNAL>* GetSessionTable()
     {
-        __debugbreak();
-        static ObjectTable::Table<USER_BOUND_KEY_SESSION_INTERNAL>* s_table = nullptr;
+        static ObjectTable::Table<USER_BOUND_KEY_SESSION_INTERNAL>* volatile s_table = nullptr;
         return InitOnceAndAcquire(&s_table);
     }
 
