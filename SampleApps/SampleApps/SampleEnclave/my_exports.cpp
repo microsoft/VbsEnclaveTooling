@@ -43,6 +43,25 @@ void SetEncryptionKey(wil::unique_bcrypt_key&& newKey)
     g_encryptionKey = std::move(newKey);
 }
 
+// VTL1 function to create secure cache configuration
+// This ensures VTL0 has no influence over cache configuration values
+veil::vtl1::userboundkey::keyCredentialCacheConfig CreateSecureKeyCredentialCacheConfig()
+{
+    using namespace veil::vtl1::vtl0_functions;
+    
+    veil::vtl1::userboundkey::keyCredentialCacheConfig secureConfig;
+    
+    // VTL1 sets secure cache configuration values
+    // VTL0 cannot influence these security-critical settings
+    secureConfig.cacheOption = 0; // NoCache - most secure option
+    secureConfig.cacheTimeoutInSeconds = 0; // No timeout when not caching
+    secureConfig.cacheUsageCount = 0; // No usage count when not caching
+    
+    debug_print(L"VTL1 created secure cache config - NoCache policy for maximum security");
+    
+    return secureConfig;
+}
+
 namespace RunTaskpoolExamples
 {
     void Test_Dont_WaitForAllTasksToFinish(uint32_t threadCount)
@@ -320,7 +339,6 @@ HRESULT VbsEnclave::Trusted::Implementation::MyEnclaveCreateUserBoundKey(
     _In_ const std::wstring& helloKeyName,
     _In_ const std::wstring& pinMessage,
     _In_ const uintptr_t windowId,
-    _In_ const keyCredentialCacheConfig& keyCredentialCacheConfiguration,
     _Out_ std::vector<std::uint8_t>& securedEncryptionKeyBytes)
 {
     using namespace veil::vtl1::vtl0_functions;
@@ -329,17 +347,14 @@ HRESULT VbsEnclave::Trusted::Implementation::MyEnclaveCreateUserBoundKey(
     {
         debug_print(L"Start MyEnclaveCreateUserBoundKey");
 
-        // Convert to the expected DeveloperTypes struct
-        veil::vtl1::userboundkey::keyCredentialCacheConfig convertedConfig;
-        convertedConfig.cacheOption = keyCredentialCacheConfiguration.cacheOption;
-        convertedConfig.cacheTimeoutInSeconds = keyCredentialCacheConfiguration.cacheTimeoutInSeconds;
-        convertedConfig.cacheUsageCount = keyCredentialCacheConfiguration.cacheUsageCount;
+        // VTL1 creates secure cache configuration - VTL0 input is ignored
+        auto secureConfig = CreateSecureKeyCredentialCacheConfig();
 
-        debug_print(L"Created mutableKeyCredentialCacheConfig");
+        debug_print(L"Created secure cache configuration in VTL1");
 
         auto keyBytes = veil::vtl1::userboundkey::create_user_bound_key(
             helloKeyName,
-            convertedConfig,
+            secureConfig,
             pinMessage,
             windowId,
             ENCLAVE_SEALING_IDENTITY_POLICY::ENCLAVE_IDENTITY_POLICY_SEAL_SAME_IMAGE,
@@ -365,7 +380,6 @@ HRESULT VbsEnclave::Trusted::Implementation::MyEnclaveLoadUserBoundKeyAndEncrypt
     _In_ const std::wstring& helloKeyName,
     _In_ const std::wstring& pinMessage,
     _In_ const uintptr_t windowId,
-    _In_ const keyCredentialCacheConfig& keyCredentialCacheConfiguration,
     _In_ const std::vector<std::uint8_t>& securedEncryptionKeyBytes,
     _In_ const std::wstring& inputData,
     _Out_ std::vector<std::uint8_t>& combinedOutputData)
@@ -381,19 +395,16 @@ HRESULT VbsEnclave::Trusted::Implementation::MyEnclaveLoadUserBoundKeyAndEncrypt
         {
             debug_print(L"UBK not loaded, loading user-bound key");
 
-            // Convert to the expected DeveloperTypes struct
-            veil::vtl1::userboundkey::keyCredentialCacheConfig convertedConfig;
-            convertedConfig.cacheOption = keyCredentialCacheConfiguration.cacheOption;
-            convertedConfig.cacheTimeoutInSeconds = keyCredentialCacheConfiguration.cacheTimeoutInSeconds;
-            convertedConfig.cacheUsageCount = keyCredentialCacheConfiguration.cacheUsageCount;
+            // VTL1 creates secure cache configuration - VTL0 input is ignored
+            auto secureConfig = CreateSecureKeyCredentialCacheConfig();
 
-            debug_print(L"Created mutableKeyCredentialCacheConfig");
+            debug_print(L"Created secure cache configuration in VTL1");
 
             // Load the user-bound key from secured encryption key bytes
             // Note: securedEncryptionKeyBytes contains the user-bound key data, not raw key material
             auto loadedKeyBytes = veil::vtl1::userboundkey::load_user_bound_key(
                 helloKeyName,
-                convertedConfig,
+                secureConfig,
                 pinMessage,
                 windowId,
                 securedEncryptionKeyBytes);
@@ -461,7 +472,6 @@ HRESULT VbsEnclave::Trusted::Implementation::MyEnclaveLoadUserBoundKeyAndDecrypt
     _In_ const std::wstring& helloKeyName,
     _In_ const std::wstring& pinMessage,
     _In_ const uintptr_t windowId,
-    _In_ const keyCredentialCacheConfig& keyCredentialCacheConfiguration,
     _In_ const std::vector<std::uint8_t>& securedEncryptionKeyBytes,
     _In_ const std::vector<std::uint8_t>& combinedInputData,
     _Out_ std::wstring& decryptedData)
@@ -512,20 +522,17 @@ HRESULT VbsEnclave::Trusted::Implementation::MyEnclaveLoadUserBoundKeyAndDecrypt
         {
             debug_print(L"UBK not loaded, loading user-bound key");
 
-            // Convert to the expected DeveloperTypes struct
-            veil::vtl1::userboundkey::keyCredentialCacheConfig convertedConfig;
-            convertedConfig.cacheOption = keyCredentialCacheConfiguration.cacheOption;
-            convertedConfig.cacheTimeoutInSeconds = keyCredentialCacheConfiguration.cacheTimeoutInSeconds;
-            convertedConfig.cacheUsageCount = keyCredentialCacheConfiguration.cacheUsageCount;
+            // VTL1 creates secure cache configuration - VTL0 input is ignored
+            auto secureConfig = CreateSecureKeyCredentialCacheConfig();
 
-            debug_print(L"Created mutableKeyCredentialCacheConfig");
+            debug_print(L"Created secure cache configuration in VTL1");
             debug_print(L"securedEncryptionKeyBytes size: %d", securedEncryptionKeyBytes.size());
 
             // Load the user-bound key from secured encryption key bytes
             // Note: securedEncryptionKeyBytes contains the user-bound key data, not raw key material
             auto loadedKeyBytes = veil::vtl1::userboundkey::load_user_bound_key(
                 helloKeyName,
-                convertedConfig,
+                secureConfig,
                 pinMessage,
                 windowId,
                 securedEncryptionKeyBytes);

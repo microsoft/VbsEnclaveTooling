@@ -26,6 +26,7 @@
 #include <VbsEnclave\HostApp\Implementation\Untrusted.h>
 #include <VbsEnclave\HostApp\Stubs\Trusted.h>
 #include <veinterop_kcm.h>
+#include <wil/token_helpers.h>
 #include <sddl.h>
 
 using namespace winrt::Windows::Security::Credentials;
@@ -38,23 +39,58 @@ std::vector<uint8_t> ConvertBufferToVector(winrt::Windows::Storage::Streams::IBu
     return std::vector<uint8_t>(byteArray.begin(), byteArray.end());
 }
 
+// Helper function for common challenge callback logic
+std::function<winrt::Windows::Storage::Streams::IBuffer(const winrt::Windows::Storage::Streams::IBuffer&)> 
+CreateChallengeCallback(std::shared_ptr<uintptr_t> sessionInfo, void* enclaveptr, const std::wstring& callbackType)
+{
+    return [sessionInfo, enclaveptr, callbackType](const auto& challenge) mutable -> winrt::Windows::Storage::Streams::IBuffer
+    {
+        std::wcout << L"DEBUG: " << callbackType << L" callback challenge invoked! Challenge size: " << challenge.Length() << std::endl;
+        
+        try {
+            auto enclaveInterface = veil_abi::Trusted::Stubs::export_interface(enclaveptr);
+
+            std::wcout << L"DEBUG: Converting challenge buffer..." << std::endl;
+            auto challengeVector = ConvertBufferToVector(challenge);
+            std::wcout << L"DEBUG: Challenge vector size: " << challengeVector.size() << std::endl;
+
+            std::wcout << L"DEBUG: About to call userboundkey_get_attestation_report (" << callbackType << L" callback)..." << std::endl;
+            auto attestationReportAndSessionInfo = enclaveInterface.userboundkey_get_attestation_report(challengeVector);
+            std::wcout << L"DEBUG: userboundkey_get_attestation_report returned successfully (" << callbackType << L" callback)!" << std::endl;
+
+            *sessionInfo = attestationReportAndSessionInfo.sessionInfo;
+            if (callbackType == L"Challenge") {
+                std::wcout << L"DEBUG: Session stored: " << *sessionInfo << std::endl;
+            }
+        
+            // Convert std::vector<uint8_t> back to IBuffer for return
+            std::wcout << L"DEBUG: Converting attestation report back to IBuffer..." << std::endl;
+            auto result = winrt::Windows::Security::Cryptography::CryptographicBuffer::CreateFromByteArray(attestationReportAndSessionInfo.attestationReport);
+            std::wcout << L"DEBUG: " << callbackType << L" callback completed successfully!" << std::endl;
+            return result;
+        }
+        catch (const std::exception& e) {
+            std::wcout << L"DEBUG: Exception in " << callbackType << L" callback: " << e.what() << std::endl;
+            throw;
+        }
+        catch (...) {
+            std::wcout << L"DEBUG: Unknown exception in " << callbackType << L" callback!" << std::endl;
+            throw;
+        }
+    };
+}
+
 std::wstring FormatUserHelloKeyName(PCWSTR name)
 {
     static constexpr wchar_t c_formatString[] = L"{}//{}//{}";
-    wil::unique_handle tokenHandle;
+    
+    wil::unique_handle processToken;
+    THROW_LAST_ERROR_IF(!OpenProcessToken(GetCurrentProcess(), TOKEN_QUERY, &processToken));
 
-    THROW_LAST_ERROR_IF(!OpenProcessToken(GetCurrentProcess(), TOKEN_QUERY, &tokenHandle));
-
-    DWORD tokenInfoLength = 0;
-    GetTokenInformation(tokenHandle.get(), TokenUser, nullptr, 0, &tokenInfoLength);
-    std::vector<BYTE> tokenInfoBuffer(tokenInfoLength);
-
-    THROW_LAST_ERROR_IF(!GetTokenInformation(tokenHandle.get(), TokenUser, tokenInfoBuffer.data(), tokenInfoLength, &tokenInfoLength));
-
-    PTOKEN_USER tokenUser = reinterpret_cast<PTOKEN_USER>(tokenInfoBuffer.data());
+    auto tokenUser = wil::get_token_information<TOKEN_USER>(processToken.get());
 
     // Extract the SID from the TOKEN_USER structure
-    PSID userSid = tokenUser->User.Sid;  // This is how you get the SID
+    PSID userSid = tokenUser->User.Sid;
 
     // Convert SID to string
     wil::unique_hlocal_ptr<WCHAR[]> userSidString;
@@ -166,39 +202,7 @@ veil_abi::Types::credentialAndFormattedKeyNameAndSessionInfo veil_abi::Untrusted
         cacheConfiguration,
         static_cast<winrt::Windows::UI::WindowId>(window_id),
         ChallengeResponseKind::VirtualizationBasedSecurityEnclave,
-        [sessionInfo, enclaveptr] (const auto& challenge) mutable -> winrt::Windows::Storage::Streams::IBuffer
-        {            
-            std::wcout << L"DEBUG: Challenge callback invoked! Challenge size: " << challenge.Length() << std::endl;
-            
-            try {
-                auto enclaveInterface = veil_abi::Trusted::Stubs::export_interface(enclaveptr);
-
-                std::wcout << L"DEBUG: Converting challenge buffer..." << std::endl;
-                auto challengeVector = ConvertBufferToVector(challenge);
-                std::wcout << L"DEBUG: Challenge vector size: " << challengeVector.size() << std::endl;
-
-                std::wcout << L"DEBUG: About to call userboundkey_get_attestation_report..." << std::endl;
-                auto attestationReportAndSessionInfo = enclaveInterface.userboundkey_get_attestation_report(challengeVector);
-                std::wcout << L"DEBUG: userboundkey_get_attestation_report returned successfully!" << std::endl;
-
-                *sessionInfo = attestationReportAndSessionInfo.sessionInfo;
-                std::wcout << L"DEBUG: Session stored: " << *sessionInfo << std::endl;
-            
-                // Convert std::vector<uint8_t> back to IBuffer for return
-                std::wcout << L"DEBUG: Converting attestation report back to IBuffer..." << std::endl;
-                auto result = winrt::Windows::Security::Cryptography::CryptographicBuffer::CreateFromByteArray(attestationReportAndSessionInfo.attestationReport);
-                std::wcout << L"DEBUG: Challenge callback completed successfully!" << std::endl;
-                return result;
-            }
-            catch (const std::exception& e) {
-                std::wcout << L"DEBUG: Exception in challenge callback: " << e.what() << std::endl;
-                throw;
-            }
-            catch (...) {
-                std::wcout << L"DEBUG: Unknown exception in challenge callback!" << std::endl;
-                throw;
-            }
-        }
+        CreateChallengeCallback(sessionInfo, enclaveptr, L"Challenge")
     ).get();
 
     std::wcout << L"RequestCreateAsync returned" << std::endl;
@@ -253,35 +257,7 @@ veil_abi::Types::credentialAndFormattedKeyNameAndSessionInfo veil_abi::Untrusted
     auto credentialResult = KeyCredentialManager::OpenAsync(
         key_name.c_str(),
         ChallengeResponseKind::VirtualizationBasedSecurityEnclave,
-        [sessionInfo, enclaveptr] (const auto& challenge) mutable -> winrt::Windows::Storage::Streams::IBuffer
-    {
-        std::wcout << L"DEBUG: Load callback challenge invoked! Challenge size: " << challenge.Length() << std::endl;
-        
-        try {
-            auto enclaveInterface = veil_abi::Trusted::Stubs::export_interface(enclaveptr);
-
-            std::wcout << L"DEBUG: Converting challenge buffer..." << std::endl;
-            auto challengeVector = ConvertBufferToVector(challenge);
-            std::wcout << L"DEBUG: Challenge vector size: " << challengeVector.size() << std::endl;
-
-            std::wcout << L"DEBUG: About to call userboundkey_get_attestation_report (load callback)..." << std::endl;
-            auto attestationReportAndSessionInfo = enclaveInterface.userboundkey_get_attestation_report(challengeVector);
-            std::wcout << L"DEBUG: userboundkey_get_attestation_report returned successfully (load callback)!" << std::endl;
-
-            *sessionInfo = attestationReportAndSessionInfo.sessionInfo;
-
-            // Convert std::vector<uint8_t> back to IBuffer for return
-            return winrt::Windows::Security::Cryptography::CryptographicBuffer::CreateFromByteArray(attestationReportAndSessionInfo.attestationReport);
-        }
-        catch (const std::exception& e) {
-            std::wcout << L"DEBUG: Exception in load callback: " << e.what() << std::endl;
-            throw;
-        }
-        catch (...) {
-            std::wcout << L"DEBUG: Unknown exception in load callback!" << std::endl;
-            throw;
-        }
-    }
+        CreateChallengeCallback(sessionInfo, enclaveptr, L"Load")
     ).get();
 
     // Check if the operation was successful
