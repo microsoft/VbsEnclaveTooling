@@ -108,44 +108,11 @@ KeyCredentialCacheConfiguration ConvertCacheConfig(const veil_abi::Types::keyCre
     return factory.CreateInstance(cacheOption, timeout, cacheConfig.cacheUsageCount);
 }
 
-// Helper function to validate that a COM object is still valid
-bool IsValidCOMObject(void* abi)
-{
-    if (abi == nullptr)
-        return false;
-
-    try
-    {
-        // Try to QueryInterface for IUnknown - this will fail if the object is invalid
-        IUnknown* unknown = nullptr;
-        HRESULT hr = static_cast<IUnknown*>(abi)->QueryInterface(IID_IUnknown, reinterpret_cast<void**>(&unknown));
-        if (SUCCEEDED(hr) && unknown != nullptr)
-        {
-            unknown->Release(); // Release the extra reference from QueryInterface
-            return true;
-        }
-    }
-    catch (...)
-    {
-        // Any exception means the object is invalid
-        return false;
-    }
-
-    return false;
-}
-
 // Helper function to convert a KeyCredential to vector<uint8_t> for transmission to VTL1
 std::vector<uint8_t> ConvertCredentialToVector(const KeyCredential& credential, int expectedUsageCount = 1)
 {
     // Get the ABI pointer and AddRef to keep the COM object alive
     auto abi = winrt::get_abi(credential);
-
-    // Validate the COM object before proceeding
-    if (!IsValidCOMObject(abi))
-    {
-        std::wcout << L"ERROR: ConvertCredentialToVector - Invalid COM object" << std::endl;
-        THROW_HR(E_INVALIDARG);
-    }
 
     // Add references based on expected Usage count
     for (int i = 0; i < expectedUsageCount; ++i)
@@ -215,7 +182,7 @@ veil_abi::Types::credentialAndFormattedKeyNameAndSessionInfo veil_abi::Untrusted
                 std::wcout << L"DEBUG: userboundkey_get_attestation_report returned successfully!" << std::endl;
 
                 *sessionInfo = attestationReportAndSessionInfo.sessionInfo;
-                std::wcout << L"DEBUG: Session key stored: " << *sessionInfo << std::endl;
+                std::wcout << L"DEBUG: Session stored: " << *sessionInfo << std::endl;
             
                 // Convert std::vector<uint8_t> back to IBuffer for return
                 std::wcout << L"DEBUG: Converting attestation report back to IBuffer..." << std::endl;
@@ -267,13 +234,6 @@ KeyCredential ConvertVectorToCredential(const std::vector<uint8_t>& credentialVe
     void* abi = reinterpret_cast<void*>(credentialPtr);
     
     std::wcout << L"DEBUG: ConvertVectorToCredential - Retrieved credential ABI: 0x" << std::hex << credentialPtr << std::dec << std::endl;
-    
-    // Validate the COM object before creating the KeyCredential
-    if (!IsValidCOMObject(abi))
-    {
-        std::wcout << L"ERROR: ConvertVectorToCredential - Invalid COM object, likely destroyed" << std::endl;
-        THROW_HR(E_INVALIDARG);
-    }
     
     // Create KeyCredential and transfer ownership (this will handle the Release)
     // The take_ownership_from_abi will NOT AddRef, so our earlier AddRef is consumed
@@ -352,13 +312,11 @@ std::vector<uint8_t> veil_abi::Untrusted::Implementation::userboundkey_get_autho
     std::wcout << L"DEBUG: userboundkey_get_authorization_context_from_credential_callback called" << std::endl;
 
     KeyCredential credential{ nullptr };
-    bool credentialValid = false;
     
     try
     {
         // Convert the credential vector back to KeyCredential
         credential = ConvertVectorToCredential(credential_vector);
-        credentialValid = true;
         
         std::wcout << L"DEBUG: Converting credential vector back to KeyCredential" << std::endl;
 
@@ -401,17 +359,15 @@ std::vector<uint8_t> veil_abi::Untrusted::Implementation::userboundkey_get_secre
     std::wcout << L"DEBUG: userboundkey_get_secret_from_credential_callback called" << std::endl;
 
     KeyCredential credential {nullptr};
-    bool credentialValid = false;
 
     try
     {
         // Convert the credential vector back to KeyCredential
         credential = ConvertVectorToCredential(credential_vector);
-        credentialValid = true;
 
         std::wcout << L"DEBUG: Converting credential vector back to KeyCredential" << std::endl;
 
-        // Derive shared secret
+        // Derive shared secret. This prompts for the hello PIN.
         auto secret = credential.RequestDeriveSharedSecretAsync(
             (winrt::Windows::UI::WindowId)window_id,
             message,

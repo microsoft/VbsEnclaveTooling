@@ -6,27 +6,30 @@
 #include <wil/resource.h>
 #include "future.vtl1.h"
 #include <veinterop_kcm.h>
+#include <stdexcept>
 #include <VbsEnclave\Enclave\Implementation\Types.h>
-
-// Forward declarations for the auto-generated types
-namespace veil::vtl1::developer_types
-{
-    struct keyCredentialCacheConfig;
-}
 
 namespace veil::vtl1::userboundkey
 {
-    wil::secure_vector<uint8_t> enclave_create_user_bound_key(
-        const std::wstring& keyName,
-        veil::vtl1::developer_types::keyCredentialCacheConfig& cacheConfig,
-        const std::wstring& message,
-        uintptr_t windowId,
-        ENCLAVE_SEALING_IDENTITY_POLICY sealingPolicy);
+    struct keyCredentialCacheConfig
+    {
+        std::uint32_t cacheOption {};
+        std::uint32_t cacheTimeoutInSeconds {};
+        std::uint32_t cacheUsageCount {};
+    };
 
-    std::vector<uint8_t> enclave_load_user_bound_key(
+    wil::secure_vector<uint8_t> create_user_bound_key(
         const std::wstring& keyName,
-        veil::vtl1::developer_types::keyCredentialCacheConfig& cacheConfig,
+        veil::vtl1::userboundkey::keyCredentialCacheConfig& cacheConfig,
         const std::wstring& message,
         uintptr_t windowId,
-        std::vector<uint8_t>& sealedBoundKeyBytes);
+        ENCLAVE_SEALING_IDENTITY_POLICY sealingPolicy,
+        uint32_t runtimePolicy);
+
+    std::vector<uint8_t> load_user_bound_key(
+        const std::wstring& keyName,
+        veil::vtl1::userboundkey::keyCredentialCacheConfig& cacheConfig,
+        const std::wstring& message,
+        uintptr_t windowId,
+        const std::vector<uint8_t>& sealedBoundKeyBytes);
 }

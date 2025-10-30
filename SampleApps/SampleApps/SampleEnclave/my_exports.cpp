@@ -12,17 +12,35 @@
 #include <veil\enclave\userboundkey.vtl1.h>
 #include <veinterop_kcm.h>
 #include <veil\enclave\vtl0_functions.vtl1.h>
-#include <veil\enclave\DeveloperTypes.h>
 #include <VbsEnclave\Enclave\Implementation\Trusted.h>
 #include <VbsEnclave\Enclave\Implementation\Types.h>
 
 // Store the actual key object, not just the handle
 wil::unique_bcrypt_key g_encryptionKey;
 
+// SRW lock to protect access to g_encryptionKey (enclave-compatible)
+wil::srwlock g_encryptionKeyLock;
+
 bool IsUBKLoaded()
 {
-    // Check if the key object is valid
+    // Thread-safe check if the key object is valid
+    auto lock = g_encryptionKeyLock.lock_shared();
     return static_cast<bool>(g_encryptionKey);
+}
+
+// Helper function to safely get a copy of the key handle for use in crypto operations
+// Returns nullptr if key is not loaded
+BCRYPT_KEY_HANDLE GetEncryptionKeyHandle()
+{
+    auto lock = g_encryptionKeyLock.lock_shared();
+    return g_encryptionKey.get();
+}
+
+// Helper function to safely set the encryption key
+void SetEncryptionKey(wil::unique_bcrypt_key&& newKey)
+{
+    auto lock = g_encryptionKeyLock.lock_exclusive();
+    g_encryptionKey = std::move(newKey);
 }
 
 namespace RunTaskpoolExamples
@@ -312,21 +330,22 @@ HRESULT VbsEnclave::Trusted::Implementation::MyEnclaveCreateUserBoundKey(
         debug_print(L"Start MyEnclaveCreateUserBoundKey");
 
         // Convert to the expected DeveloperTypes struct
-        veil::vtl1::developer_types::keyCredentialCacheConfig convertedConfig;
+        veil::vtl1::userboundkey::keyCredentialCacheConfig convertedConfig;
         convertedConfig.cacheOption = keyCredentialCacheConfiguration.cacheOption;
         convertedConfig.cacheTimeoutInSeconds = keyCredentialCacheConfiguration.cacheTimeoutInSeconds;
         convertedConfig.cacheUsageCount = keyCredentialCacheConfiguration.cacheUsageCount;
 
         debug_print(L"Created mutableKeyCredentialCacheConfig");
 
-        auto keyBytes = veil::vtl1::userboundkey::enclave_create_user_bound_key(
+        auto keyBytes = veil::vtl1::userboundkey::create_user_bound_key(
             helloKeyName,
             convertedConfig,
             pinMessage,
             windowId,
-            ENCLAVE_SEALING_IDENTITY_POLICY::ENCLAVE_IDENTITY_POLICY_SEAL_SAME_IMAGE);
+            ENCLAVE_SEALING_IDENTITY_POLICY::ENCLAVE_IDENTITY_POLICY_SEAL_SAME_IMAGE,
+            ENCLAVE_RUNTIME_POLICY_ALLOW_FULL_DEBUG);
 
-        debug_print(L"enclave_create_user_bound_key returned");
+        debug_print(L"create_user_bound_key returned");
 
         // Store the user-bound key bytes directly - do NOT try to create a symmetric key from them
         securedEncryptionKeyBytes.assign(keyBytes.begin(), keyBytes.end());
@@ -363,7 +382,7 @@ HRESULT VbsEnclave::Trusted::Implementation::MyEnclaveLoadUserBoundKeyAndEncrypt
             debug_print(L"UBK not loaded, loading user-bound key");
 
             // Convert to the expected DeveloperTypes struct
-            veil::vtl1::developer_types::keyCredentialCacheConfig convertedConfig;
+            veil::vtl1::userboundkey::keyCredentialCacheConfig convertedConfig;
             convertedConfig.cacheOption = keyCredentialCacheConfiguration.cacheOption;
             convertedConfig.cacheTimeoutInSeconds = keyCredentialCacheConfiguration.cacheTimeoutInSeconds;
             convertedConfig.cacheUsageCount = keyCredentialCacheConfiguration.cacheUsageCount;
@@ -372,17 +391,18 @@ HRESULT VbsEnclave::Trusted::Implementation::MyEnclaveLoadUserBoundKeyAndEncrypt
 
             // Load the user-bound key from secured encryption key bytes
             // Note: securedEncryptionKeyBytes contains the user-bound key data, not raw key material
-            auto loadedKeyBytes = veil::vtl1::userboundkey::enclave_load_user_bound_key(
+            auto loadedKeyBytes = veil::vtl1::userboundkey::load_user_bound_key(
                 helloKeyName,
                 convertedConfig,
                 pinMessage,
                 windowId,
-                const_cast<std::vector<std::uint8_t>&>(securedEncryptionKeyBytes));
+                securedEncryptionKeyBytes);
 
-            debug_print(L"enclave_load_user_bound_key returned, key size: %d", loadedKeyBytes.size());
+            debug_print(L"load_user_bound_key returned, key size: %d", loadedKeyBytes.size());
 
             // NOW we can create a symmetric key from the loaded raw key material
-            g_encryptionKey = veil::vtl1::crypto::create_symmetric_key(loadedKeyBytes);
+            auto newEncryptionKey = veil::vtl1::crypto::create_symmetric_key(loadedKeyBytes);
+            SetEncryptionKey(std::move(newEncryptionKey));
             debug_print(L"Created symmetric key from loaded user-bound key material");
         }
         else
@@ -392,8 +412,15 @@ HRESULT VbsEnclave::Trusted::Implementation::MyEnclaveLoadUserBoundKeyAndEncrypt
 
         // Use the global key for encryption
         debug_print(L"Encrypting input data");
+        auto keyHandle = GetEncryptionKeyHandle();
+        if (!keyHandle)
+        {
+            debug_print(L"ERROR: Encryption key handle is null");
+            return E_UNEXPECTED;
+        }
+
         auto [encryptedText, encryptionTag] = veil::vtl1::crypto::encrypt(
-            g_encryptionKey.get(), 
+            keyHandle, 
             veil::vtl1::as_data_span(inputData.c_str()), 
             veil::vtl1::crypto::zero_nonce);
 
@@ -486,7 +513,7 @@ HRESULT VbsEnclave::Trusted::Implementation::MyEnclaveLoadUserBoundKeyAndDecrypt
             debug_print(L"UBK not loaded, loading user-bound key");
 
             // Convert to the expected DeveloperTypes struct
-            veil::vtl1::developer_types::keyCredentialCacheConfig convertedConfig;
+            veil::vtl1::userboundkey::keyCredentialCacheConfig convertedConfig;
             convertedConfig.cacheOption = keyCredentialCacheConfiguration.cacheOption;
             convertedConfig.cacheTimeoutInSeconds = keyCredentialCacheConfiguration.cacheTimeoutInSeconds;
             convertedConfig.cacheUsageCount = keyCredentialCacheConfiguration.cacheUsageCount;
@@ -496,17 +523,18 @@ HRESULT VbsEnclave::Trusted::Implementation::MyEnclaveLoadUserBoundKeyAndDecrypt
 
             // Load the user-bound key from secured encryption key bytes
             // Note: securedEncryptionKeyBytes contains the user-bound key data, not raw key material
-            auto loadedKeyBytes = veil::vtl1::userboundkey::enclave_load_user_bound_key(
+            auto loadedKeyBytes = veil::vtl1::userboundkey::load_user_bound_key(
                 helloKeyName,
                 convertedConfig,
                 pinMessage,
                 windowId,
-                const_cast<std::vector<std::uint8_t>&>(securedEncryptionKeyBytes));
+                securedEncryptionKeyBytes);
 
-            debug_print(L"enclave_load_user_bound_key returned, key size: %d", loadedKeyBytes.size());
+            debug_print(L"load_user_bound_key returned, key size: %d", loadedKeyBytes.size());
 
             // NOW we can create a symmetric key from the loaded raw key material
-            g_encryptionKey = veil::vtl1::crypto::create_symmetric_key(loadedKeyBytes);
+            auto newEncryptionKey = veil::vtl1::crypto::create_symmetric_key(loadedKeyBytes);
+            SetEncryptionKey(std::move(newEncryptionKey));
             debug_print(L"Created symmetric key from loaded user-bound key material");
         }
         else
@@ -518,8 +546,16 @@ HRESULT VbsEnclave::Trusted::Implementation::MyEnclaveLoadUserBoundKeyAndDecrypt
         debug_print(L"Decrypting input data, encrypted size: %u, tag size: %u", 
                    static_cast<uint32_t>(encryptedInputBytes.size()), 
                    static_cast<uint32_t>(tag.size()));
+        
+        auto keyHandle = GetEncryptionKeyHandle();
+        if (!keyHandle)
+        {
+            debug_print(L"ERROR: Encryption key handle is null");
+            return E_UNEXPECTED;
+        }
+
         auto decryptedBytes = veil::vtl1::crypto::decrypt(
-            g_encryptionKey.get(), 
+            keyHandle, 
             encryptedInputBytes, 
             veil::vtl1::crypto::zero_nonce, 
             tag);

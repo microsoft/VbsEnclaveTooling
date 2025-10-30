@@ -32,17 +32,21 @@ using namespace winrt::Windows::Security::Credentials;
 
 namespace fs = std::filesystem;
 
-// Global variables (declared but not initialized, need to be encapsulated)
-std::wstring g_helloKeyName;
-std::wstring g_pinMessage;
-std::optional<winrt::Windows::Security::Credentials::KeyCredentialCacheConfiguration> g_keyCredentialCacheConfig;
-HWND g_hCurWnd;
-
-// Initialize function to set up global variables
-void Initialize()
+// Configuration structure to configuration parameters for the app
+struct EncryptionConfig
 {
-    g_helloKeyName = L"MyEncryptionKey-001";
-    g_pinMessage = L"Please enter your PIN to access the encryption key.";
+    std::wstring helloKeyName;
+    std::wstring pinMessage;
+    std::optional<winrt::Windows::Security::Credentials::KeyCredentialCacheConfiguration> keyCredentialCacheConfig;
+    HWND hCurWnd;
+};
+
+// Initialize function to set up configuration
+EncryptionConfig InitializeConfig(bool areUserBindingApisAvailable)
+{
+    EncryptionConfig config;
+    config.helloKeyName = L"MyEncryptionKey-001";
+    config.pinMessage = L"Please enter your PIN to access the encryption key.";
     
     // Initialize COM for WinRT
     winrt::init_apartment();
@@ -77,26 +81,26 @@ void Initialize()
         );
         THROW_IF_FAILED(hr);
 
-        g_keyCredentialCacheConfig = winrt::Windows::Security::Credentials::KeyCredentialCacheConfiguration{ 
+        config.keyCredentialCacheConfig = winrt::Windows::Security::Credentials::KeyCredentialCacheConfiguration{ 
             instance.detach(), winrt::take_ownership_from_abi 
         };
     }
     catch (winrt::hresult_error const& ex)
     {
         // If KeyCredentialCacheConfiguration is not available (e.g., older Windows versions),
-        // leave g_keyCredentialCacheConfig as nullopt and handle gracefully
+        // leave keyCredentialCacheConfig as nullopt and handle gracefully
         std::wcout << L"Warning: KeyCredentialCacheConfiguration not available (HRESULT: 0x" 
                    << std::hex << ex.code() << L"). Using default cache configuration." << std::endl;
-        g_keyCredentialCacheConfig = std::nullopt;
+        config.keyCredentialCacheConfig = std::nullopt;
+        areUserBindingApisAvailable = false;
     }
     
-    g_hCurWnd = GetForegroundWindow();
+    config.hCurWnd = GetForegroundWindow();
+    return config;
 }
 
-void CreateEncryptionKeyOnFirstRun(void* enclave, const std::filesystem::path& keyFilePath)
+EncryptionConfig CreateEncryptionKeyOnFirstRun(void* enclave, const std::filesystem::path& keyFilePath, const EncryptionConfig& config)
 {
-    Initialize();
-
     // Initialize enclave interface
     auto enclaveInterface = VbsEnclave::Trusted::Stubs::SampleEnclave(enclave);
     THROW_IF_FAILED(enclaveInterface.RegisterVtl0Callbacks());
@@ -104,13 +108,13 @@ void CreateEncryptionKeyOnFirstRun(void* enclave, const std::filesystem::path& k
     // Call into enclave
     auto securedEncryptionKeyBytes = std::vector<uint8_t> {};
     
-    // Convert g_keyCredentialCacheConfig (WinRT type) to enclave keyCredentialCacheConfig (struct)
+    // Convert keyCredentialCacheConfig (WinRT type) to enclave keyCredentialCacheConfig (struct)
     VbsEnclave::Types::keyCredentialCacheConfig cacheConfig{};
-    if (g_keyCredentialCacheConfig.has_value())
+    if (config.keyCredentialCacheConfig.has_value())
     {
-        cacheConfig.cacheOption = static_cast<uint32_t>(g_keyCredentialCacheConfig->CacheOption());
-        cacheConfig.cacheTimeoutInSeconds = static_cast<uint32_t>(g_keyCredentialCacheConfig->Timeout().count() / 10'000'000); // TimeSpan is in 100ns units
-        cacheConfig.cacheUsageCount = static_cast<uint32_t>(g_keyCredentialCacheConfig->UsageCount());
+        cacheConfig.cacheOption = static_cast<uint32_t>(config.keyCredentialCacheConfig->CacheOption());
+        cacheConfig.cacheTimeoutInSeconds = static_cast<uint32_t>(config.keyCredentialCacheConfig->Timeout().count() / 10'000'000); // TimeSpan is in 100ns units
+        cacheConfig.cacheUsageCount = static_cast<uint32_t>(config.keyCredentialCacheConfig->UsageCount());
     }
     else
     {
@@ -121,21 +125,25 @@ void CreateEncryptionKeyOnFirstRun(void* enclave, const std::filesystem::path& k
     }
 
     THROW_IF_FAILED(enclaveInterface.MyEnclaveCreateUserBoundKey(
-        g_helloKeyName,
-        g_pinMessage,
-        reinterpret_cast<uintptr_t>(g_hCurWnd), // <-- Fix: cast HWND to uintptr_t
+        config.helloKeyName,
+        config.pinMessage,
+        reinterpret_cast<uintptr_t>(config.hCurWnd), // <-- Fix: cast HWND to uintptr_t
         cacheConfig,
         securedEncryptionKeyBytes));
 
     // *** securedEncryptionKeyBytes persisted to disk
     SaveBinaryData(keyFilePath.string(), securedEncryptionKeyBytes);
+    
+    // Return the config so it can be used by subsequent functions
+    return config;
 }
 
 void NewEncryptFlow(
     void* enclave,
     const std::wstring& input,
     const std::filesystem::path& keyFilePath,
-    const std::filesystem::path& encryptedOutputFilePath)
+    const std::filesystem::path& encryptedOutputFilePath,
+    const EncryptionConfig& config)
 {
     // Initialize enclave interface
     auto enclaveInterface = VbsEnclave::Trusted::Stubs::SampleEnclave(enclave);
@@ -150,13 +158,13 @@ void NewEncryptFlow(
     // Load secured encryption key bytes from disk
     auto securedEncryptionKeyBytes = LoadBinaryData(keyFilePath.string());
 
-    // Convert g_keyCredentialCacheConfig (WinRT type) to enclave keyCredentialCacheConfig (struct)
+    // Convert keyCredentialCacheConfig (WinRT type) to enclave keyCredentialCacheConfig (struct)
     VbsEnclave::Types::keyCredentialCacheConfig cacheConfig{};
-    if (g_keyCredentialCacheConfig.has_value())
+    if (config.keyCredentialCacheConfig.has_value())
     {
-        cacheConfig.cacheOption = static_cast<uint32_t>(g_keyCredentialCacheConfig->CacheOption());
-        cacheConfig.cacheTimeoutInSeconds = static_cast<uint32_t>(g_keyCredentialCacheConfig->Timeout().count() / 10'000'000); // TimeSpan is in 100ns units
-        cacheConfig.cacheUsageCount = static_cast<uint32_t>(g_keyCredentialCacheConfig->UsageCount());
+        cacheConfig.cacheOption = static_cast<uint32_t>(config.keyCredentialCacheConfig->CacheOption());
+        cacheConfig.cacheTimeoutInSeconds = static_cast<uint32_t>(config.keyCredentialCacheConfig->Timeout().count() / 10'000'000); // TimeSpan is in 100ns units
+        cacheConfig.cacheUsageCount = static_cast<uint32_t>(config.keyCredentialCacheConfig->UsageCount());
     }
     else
     {
@@ -170,9 +178,9 @@ void NewEncryptFlow(
     auto combinedOutputData = std::vector<uint8_t> {};
 
     THROW_IF_FAILED(enclaveInterface.MyEnclaveLoadUserBoundKeyAndEncryptData(
-        g_helloKeyName,
-        g_pinMessage,
-        reinterpret_cast<uintptr_t>(g_hCurWnd),
+        config.helloKeyName,
+        config.pinMessage,
+        reinterpret_cast<uintptr_t>(config.hCurWnd),
         cacheConfig,
         securedEncryptionKeyBytes,
         input,
@@ -186,11 +194,9 @@ void NewEncryptFlow(
 void NewDecryptFlow(
     void* enclave,
     const std::filesystem::path& keyFilePath,
-    const std::filesystem::path& encryptedInputFilePath)
+    const std::filesystem::path& encryptedInputFilePath,
+    const EncryptionConfig& config)
 {
-    // Initialize global variables
-    Initialize();
-    
     // Initialize enclave interface
     auto enclaveInterface = VbsEnclave::Trusted::Stubs::SampleEnclave(enclave);
     THROW_IF_FAILED(enclaveInterface.RegisterVtl0Callbacks());
@@ -205,13 +211,13 @@ void NewDecryptFlow(
     auto securedEncryptionKeyBytes = LoadBinaryData(keyFilePath.string());
     auto combinedInputData = LoadBinaryData(encryptedInputFilePath.string());
 
-    // Convert g_keyCredentialCacheConfig (WinRT type) to enclave keyCredentialCacheConfig (struct)
+    // Convert keyCredentialCacheConfig (WinRT type) to enclave keyCredentialCacheConfig (struct)
     VbsEnclave::Types::keyCredentialCacheConfig cacheConfig{};
-    if (g_keyCredentialCacheConfig.has_value())
+    if (config.keyCredentialCacheConfig.has_value())
     {
-        cacheConfig.cacheOption = static_cast<uint32_t>(g_keyCredentialCacheConfig->CacheOption());
-        cacheConfig.cacheTimeoutInSeconds = static_cast<uint32_t>(g_keyCredentialCacheConfig->Timeout().count() / 10'000'000); // TimeSpan is in 100ns units
-        cacheConfig.cacheUsageCount = static_cast<uint32_t>(g_keyCredentialCacheConfig->UsageCount());
+        cacheConfig.cacheOption = static_cast<uint32_t>(config.keyCredentialCacheConfig->CacheOption());
+        cacheConfig.cacheTimeoutInSeconds = static_cast<uint32_t>(config.keyCredentialCacheConfig->Timeout().count() / 10'000'000); // TimeSpan is in 100ns units
+        cacheConfig.cacheUsageCount = static_cast<uint32_t>(config.keyCredentialCacheConfig->UsageCount());
     }
     else
     {
@@ -225,9 +231,9 @@ void NewDecryptFlow(
     auto decryptedData = std::wstring {};
 
     THROW_IF_FAILED(enclaveInterface.MyEnclaveLoadUserBoundKeyAndDecryptData(
-        g_helloKeyName,
-        g_pinMessage,
-        reinterpret_cast<uintptr_t>(g_hCurWnd),
+        config.helloKeyName,
+        config.pinMessage,
+        reinterpret_cast<uintptr_t>(config.hCurWnd),
         cacheConfig,
         securedEncryptionKeyBytes,
         combinedInputData,
@@ -504,6 +510,10 @@ int mainEncryptDecrypt(uint32_t activityLevel)
     std::wstring tagFilePath = encryptedKeyDirPath + L"\\tag";
     bool programExecuted = false;
 
+    // Initialize configuration (replaces global variables)
+    bool areUserBindingApisAvailable = true;
+    auto config = InitializeConfig(areUserBindingApisAvailable);
+
     veil::vtl0::logger::logger veilLog(
         L"VeilSampleApp",
         L"70F7212C-1F84-4B86-B550-3D5AE82EC779" /*Generated GUID*/,
@@ -515,34 +525,37 @@ int mainEncryptDecrypt(uint32_t activityLevel)
     // Create app+user enclave identity - use the new GetSecureId API from IKeyCredentialManagerStatics2
     std::vector<uint8_t> ownerId;
 
-    try 
+    if (areUserBindingApisAvailable)
     {
-        // Call the GetSecureId API directly on the static class
-        auto secureIdBuffer = KeyCredentialManager::GetSecureId();
-        
-        if (secureIdBuffer && secureIdBuffer.Length() > 0)
+        try
         {
-            // Convert IBuffer to std::vector<uint8_t>
-            auto reader = winrt::Windows::Storage::Streams::DataReader::FromBuffer(secureIdBuffer);
-            ownerId.resize(secureIdBuffer.Length());
-            reader.ReadBytes(ownerId);
+            // Call the GetSecureId API directly on the static class
+            auto secureIdBuffer = KeyCredentialManager::GetSecureId();
+
+            if (secureIdBuffer && secureIdBuffer.Length() > 0)
+            {
+                // Convert IBuffer to std::vector<uint8_t>
+                auto reader = winrt::Windows::Storage::Streams::DataReader::FromBuffer(secureIdBuffer);
+                ownerId.resize(secureIdBuffer.Length());
+                reader.ReadBytes(ownerId);
+            }
+            else
+            {
+                std::wcout << L"Warning: GetSecureId returned empty buffer." << std::endl;
+                THROW_HR(E_UNEXPECTED);
+            }
         }
-        else
+        catch (winrt::hresult_error const& ex)
         {
-            std::wcout << L"Warning: GetSecureId returned empty buffer." << std::endl;
-            THROW_HR(E_UNEXPECTED);
+            // If the new API is not available or fails, log the error and continue with default
+            std::wcout << L"Warning: Failed to get secure ID using GetSecureId API (HRESULT: 0x"
+                << std::hex << ex.code() << L"). Using default owner_id." << std::endl;
         }
-    }
-    catch (winrt::hresult_error const& ex)
-    {
-        // If the new API is not available or fails, log the error and continue with default
-        std::wcout << L"Warning: Failed to get secure ID using GetSecureId API (HRESULT: 0x" 
-                   << std::hex << ex.code() << L"). Using default owner_id." << std::endl;
-    }
-    catch (...)
-    {
-        // If any other exception occurs, continue with default
-        std::wcout << L"Warning: Exception occurred while getting secure ID. Using default owner_id." << std::endl;
+        catch (...)
+        {
+            // If any other exception occurs, continue with default
+            std::wcout << L"Warning: Exception occurred while getting secure ID. Using default owner_id." << std::endl;
+        }
     }
 
     // Fallback to the default owner_id if the new API failed or returned empty result
@@ -586,9 +599,16 @@ int mainEncryptDecrypt(uint32_t activityLevel)
                 std::cout << "Enter the string to encrypt: ";
                 std::cin.ignore();
                 std::getline(std::wcin, input);
-                // EncryptFlow(enclave.get(), input, keyFilePath, encryptedOutputFilePath, tagFilePath, veilLog);
-                CreateEncryptionKeyOnFirstRun(enclave.get(), keyFilePath); // Ensure the key is created on first run
-                NewEncryptFlow(enclave.get(), input, keyFilePath, encryptedOutputFilePath);
+                if (!areUserBindingApisAvailable)
+                {
+                    EncryptFlow(enclave.get(), input, keyFilePath, encryptedOutputFilePath, tagFilePath, veilLog);
+                }
+                else
+                {
+                    CreateEncryptionKeyOnFirstRun(enclave.get(), keyFilePath, config); // Pass config as parameter
+                    NewEncryptFlow(enclave.get(), input, keyFilePath, encryptedOutputFilePath, config); // Pass config
+                }
+
                 std::wcout << L"Encryption in Enclave completed. \n Encrypted bytes are saved to disk in " << encryptedOutputFilePath << std::endl;
                 veilLog.AddTimestampedLog(
                     L"[Host] Encryption in Enclave completed. Encrypted bytes are saved to disk in " + encryptedOutputFilePath,
@@ -597,8 +617,15 @@ int mainEncryptDecrypt(uint32_t activityLevel)
                 break;
 
             case 2:
-                // DecryptFlow(enclave.get(), keyFilePath, encryptedOutputFilePath, tagFilePath, veilLog);
-                NewDecryptFlow(enclave.get(), keyFilePath, encryptedOutputFilePath);
+                if (!areUserBindingApisAvailable)
+                {
+                    DecryptFlow(enclave.get(), keyFilePath, encryptedOutputFilePath, tagFilePath, veilLog);
+                }
+                else
+                {
+                    NewDecryptFlow(enclave.get(), keyFilePath, encryptedOutputFilePath, config); // Pass config
+                }
+
                 std::filesystem::remove(keyFilePath);
                 std::filesystem::remove(encryptedOutputFilePath);
                 std::filesystem::remove(tagFilePath);

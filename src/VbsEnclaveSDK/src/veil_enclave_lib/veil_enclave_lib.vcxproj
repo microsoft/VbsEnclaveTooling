@@ -121,7 +121,6 @@
     <ClInclude Include="..\..\..\..\Common\veil_enclave_wil_inc\wil\enclave\push_disable_wil_logging.h" />
     <ClInclude Include="..\..\..\..\Common\veil_enclave_wil_inc\wil\enclave\wil_for_enclaves.h" />
     <ClInclude Include="crypto.vtl1.h" />
-    <ClInclude Include="DeveloperTypes.h" />
     <ClInclude Include="future.vtl1.h" />
     <ClInclude Include="object_table.vtl1.h" />
     <ClInclude Include="logger.vtl1.h" />
