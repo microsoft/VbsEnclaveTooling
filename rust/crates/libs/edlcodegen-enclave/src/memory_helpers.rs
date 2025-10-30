@@ -124,7 +124,9 @@ impl Vtl0FunctionMap {
 
     /// Calls into the host’s allocation routine through CallEnclave.
     pub fn allocate_vtl0_memory<T>(&self, size: usize) -> Result<Vtl0MemoryPtr<T>, AbiError> {
-        let func = self.alloc_func.ok_or(AbiError::Hresult(edl_core_ffi::E_INVALIDARG))?;
+        let func = self
+            .alloc_func
+            .ok_or(AbiError::Hresult(edl_core_ffi::E_INVALIDARG))?;
         let mut memory_output: *mut c_void = ptr::null_mut();
 
         unsafe {
@@ -161,7 +163,9 @@ impl Vtl0FunctionMap {
     /// The unsafe block exists because `CallEnclave` is an external C API that
     /// cannot be memory- or type-checked by the Rust compiler.
     pub unsafe fn deallocate_vtl0_memory(&self, ptr: *mut c_void) -> Result<(), AbiError> {
-        let func = self.dealloc_func.ok_or(AbiError::Hresult(edl_core_ffi::E_INVALIDARG))?;
+        let func = self
+            .dealloc_func
+            .ok_or(AbiError::Hresult(edl_core_ffi::E_INVALIDARG))?;
         let mut returned_hr_ptr: *mut c_void = ptr::null_mut();
 
         unsafe {

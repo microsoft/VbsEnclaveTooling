@@ -1,7 +1,7 @@
 // The below code is used so rust code can call into the C Apis in vertdll. There is
 // only a minimal amount of enclave specific Win32 apis needed by this crate.
 #![allow(non_camel_case_types, non_snake_case, unused_imports)]
-use edlcodegen_core::edl_core_ffi::{HEAP_ZERO_MEMORY, HANDLE, HEAP_FLAGS, WIN32_ERROR};
+use edlcodegen_core::edl_core_ffi::{HANDLE, HEAP_FLAGS, HEAP_ZERO_MEMORY, WIN32_ERROR};
 use windows_sys::core::{BOOL, HRESULT};
 
 #[repr(C, packed(1))]

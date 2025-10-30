@@ -46,8 +46,8 @@ where
     enclave_copy_buffer_in(local_in.as_mut_ptr(), in_buf, in_size)?;
 
     // Unpack flatbuffer byte array into its native struct type and convert it to a developer type.
-    let fb_input: FlatbufferT =
-        FlatbufferT::unpack(&local_in).map_err(|_| AbiError::Hresult(edl_core_ffi::E_INVALIDARG))?;
+    let fb_input: FlatbufferT = FlatbufferT::unpack(&local_in)
+        .map_err(|_| AbiError::Hresult(edl_core_ffi::E_INVALIDARG))?;
     let mut dev_input: DevTypeT = fb_input.into();
 
     // Call developer implementation.
@@ -172,8 +172,8 @@ where
     enclave_copy_buffer_in(local_buf.as_mut_ptr(), ret_buf, ret_size)?;
 
     // Unpack the flatbuffer and return updated developer type back to the caller.
-    let fb_result: FlatbufferT =
-        FlatbufferT::unpack(&local_buf).map_err(|_| AbiError::Hresult(edl_core_ffi::E_INVALIDARG))?;
+    let fb_result: FlatbufferT = FlatbufferT::unpack(&local_buf)
+        .map_err(|_| AbiError::Hresult(edl_core_ffi::E_INVALIDARG))?;
 
     let dev_result: DevTypeT = fb_result.into();
 

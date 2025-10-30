@@ -1,7 +1,7 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
-use crate::edl_core_ffi::{E_FAIL, S_OK, HEAP_ZERO_MEMORY, GetProcessHeap, HeapAlloc, HeapFree};
+use crate::edl_core_ffi::{E_FAIL, GetProcessHeap, HEAP_ZERO_MEMORY, HeapAlloc, HeapFree, S_OK};
 use core::ffi::c_void;
 
 pub fn abi_func_to_address(func_ptr: extern "system" fn(*mut c_void) -> *mut c_void) -> u64 {
