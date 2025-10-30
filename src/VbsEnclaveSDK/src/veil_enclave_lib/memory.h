@@ -186,6 +186,54 @@ inline unique_secure_blob make_unique_secure_blob(UINT32 size)
 
 
 //
+// Init once
+//
+template <typename T>
+static T* InitOnceAndAcquire(_In_ T* objectPtr)
+{
+    // Fast path: if already initialized, return immediately
+    {
+        // Use acquire semantics to ensure we see a fully constructed object
+        T* obj = reinterpret_cast<T*>(InterlockedCompareExchangePointer(reinterpret_cast<PVOID volatile*>(objectPtr), nullptr, nullptr));
+        if (obj != nullptr)
+        {
+            return obj;
+        }
+    }
+
+    // Slow path: need to initialize
+    {
+        // Allocate memory
+        void* buffer = VengcAlloc(sizeof(T));
+        if (buffer == nullptr)
+        {
+            return nullptr;
+        }
+        
+        // Use placement new to construct the object in the allocated memory
+        auto newObject = new (buffer) T();
+
+        // Try to atomically set the global pointer with release semantics
+        // This ensures all constructor writes are visible before the pointer becomes visible
+        T* expected = nullptr;
+        T* actual = reinterpret_cast<T*>(InterlockedCompareExchangePointer(reinterpret_cast<PVOID volatile*>(objectPtr), newObject, expected));    
+        if (actual == nullptr)
+        {
+            // We successfully set the pointer, return our new table
+            return newObject;
+        }
+        else
+        {
+            // Another thread beat us to it, clean up
+            newObject->T::~T();
+            VengcFree(buffer);
+            return actual;
+        }
+    }
+}
+
+
+//
 // Table of handles
 //
 namespace ObjectTable
@@ -223,7 +271,7 @@ namespace ObjectTable
         T* ResolveObject(_In_ Handle handle) noexcept
         {
             // Convert handle to index (handles are 1-based, array is 0-based)
-            if (handle == 0 || handle > MAX_ENTRIES)
+            if (handle <= 0 || handle > MAX_ENTRIES)
             {
                 return nullptr;
             }

@@ -118,8 +118,12 @@ namespace AuthorizationContext
     //
     // Object table
     //
-    ObjectTable::Table<NCRYPT_NGC_AUTHORIZATION_CONTEXT> s_authContextTable;
-    
+    static ObjectTable::Table<NCRYPT_NGC_AUTHORIZATION_CONTEXT>* GetAuthContextTable()
+    {
+        static ObjectTable::Table<NCRYPT_NGC_AUTHORIZATION_CONTEXT>* volatile s_table = nullptr;
+        return InitOnceAndAcquire(s_table);
+    }
+
     static HRESULT ResolveObject(_In_ USER_BOUND_KEY_AUTH_CONTEXT_HANDLE publicHandle, _Out_ NCRYPT_NGC_AUTHORIZATION_CONTEXT** ppObject) noexcept
     {
         if (!publicHandle || !ppObject)
@@ -127,8 +131,11 @@ namespace AuthorizationContext
             return E_INVALIDARG;
         }
 
+        auto table = GetAuthContextTable();
+        RETURN_IF_NULL_ALLOC(table);
+
         auto handle = ObjectTable::Handle { reinterpret_cast<uintptr_t>(publicHandle) };
-        auto* object = s_authContextTable.ResolveObject(handle);
+        auto* object = table->ResolveObject(handle);
         if (!object)
         {
             return HRESULT_FROM_WIN32(ERROR_NOT_FOUND);
@@ -142,17 +149,23 @@ namespace AuthorizationContext
         wil_raw::unique_ptr<NCRYPT_NGC_AUTHORIZATION_CONTEXT>&& object,
         _Out_ USER_BOUND_KEY_AUTH_CONTEXT_HANDLE* handle) noexcept
     {
+        auto table = GetAuthContextTable();
+        RETURN_IF_NULL_ALLOC(table);
+        
         ObjectTable::Handle tempHandle;
-        RETURN_IF_FAILED(s_authContextTable.InsertObject(wil_raw::move(object), &tempHandle));
+        RETURN_IF_FAILED(table->InsertObject(wil_raw::move(object), &tempHandle));
         *handle = reinterpret_cast<USER_BOUND_KEY_AUTH_CONTEXT_HANDLE>(tempHandle);
         return S_OK;
     }
 
     static HRESULT CloseHandle(_In_ USER_BOUND_KEY_AUTH_CONTEXT_HANDLE publicHandle) noexcept
     {
+        auto table = GetAuthContextTable();
+        RETURN_IF_NULL_ALLOC(table);
+        
         auto handle = ObjectTable::Handle{ reinterpret_cast<uintptr_t>(publicHandle) };
         wil_raw::unique_ptr<NCRYPT_NGC_AUTHORIZATION_CONTEXT> object;
-        RETURN_IF_FAILED(s_authContextTable.RemoveObject(handle, &object));
+        RETURN_IF_FAILED(table->RemoveObject(handle, &object));
         object.reset();
         return S_OK;
     }
@@ -207,15 +220,7 @@ namespace AuthorizationContext
         {
             return E_INVALIDARG;
         }
-    
-        /*
-        // Verify the public key data doesn't exceed the buffer
-        auto publicKeySize = bufferSize - offsetof(NCRYPT_NGC_AUTHORIZATION_CONTEXT, publicKey);
-        if (context->publicKeyByteCount != publicKeySize)
-        {
-            return E_INVALIDARG;
-        }
-        */
+        
         // Verify the public key data doesn't exceed the buffer
         SIZE_T maxPublicKeySize = bufferSize - offsetof(NCRYPT_NGC_AUTHORIZATION_CONTEXT, publicKey);
         if (context->publicKeyByteCount > maxPublicKeySize)
@@ -268,8 +273,12 @@ namespace SessionInfo
     //
     // Object table
     //
-    ObjectTable::Table<USER_BOUND_KEY_SESSION_INTERNAL> s_sessionTable;
-    
+    static ObjectTable::Table<USER_BOUND_KEY_SESSION_INTERNAL>* GetSessionTable()
+    {
+        static ObjectTable::Table<USER_BOUND_KEY_SESSION_INTERNAL>* volatile s_table = nullptr;
+        return InitOnceAndAcquire(s_table);
+    }
+
     static HRESULT ResolveObject(_In_ USER_BOUND_KEY_SESSION_HANDLE publicHandle, _Out_ USER_BOUND_KEY_SESSION_INTERNAL** ppObject) noexcept
     {
         if (!publicHandle || !ppObject)
@@ -277,8 +286,11 @@ namespace SessionInfo
             return E_INVALIDARG;
         }
 
+        auto table = GetSessionTable();
+        RETURN_IF_NULL_ALLOC(table);
+
         auto handle = ObjectTable::Handle { reinterpret_cast<uintptr_t>(publicHandle) };
-        auto* object = s_sessionTable.ResolveObject(handle);
+        auto* object = table->ResolveObject(handle);
         if (!object)
         {
             return HRESULT_FROM_WIN32(ERROR_NOT_FOUND);
@@ -292,17 +304,23 @@ namespace SessionInfo
         wil_raw::unique_ptr<USER_BOUND_KEY_SESSION_INTERNAL>&& object,
         _Out_ USER_BOUND_KEY_SESSION_HANDLE* handle) noexcept
     {
+        auto table = GetSessionTable();
+        RETURN_IF_NULL_ALLOC(table);
+        
         ObjectTable::Handle tempHandle;
-        RETURN_IF_FAILED(s_sessionTable.InsertObject(wil_raw::move(object), &tempHandle));
+        RETURN_IF_FAILED(table->InsertObject(wil_raw::move(object), &tempHandle));
         *handle = reinterpret_cast<USER_BOUND_KEY_SESSION_HANDLE>(tempHandle);
         return S_OK;
     }
 
     static HRESULT CloseHandle(_In_ USER_BOUND_KEY_SESSION_HANDLE publicHandle) noexcept
     {
+        auto table = GetSessionTable();
+        RETURN_IF_NULL_ALLOC(table);
+        
         auto handle = ObjectTable::Handle{ reinterpret_cast<uintptr_t>(publicHandle) };
         wil_raw::unique_ptr<USER_BOUND_KEY_SESSION_INTERNAL> object;
-        RETURN_IF_FAILED(s_sessionTable.RemoveObject(handle, &object));
+        RETURN_IF_FAILED(table->RemoveObject(handle, &object));
         object.reset();
         return S_OK;
     }
@@ -767,7 +785,7 @@ PerformECDHKeyEstablishment(
     _Out_ unique_secure_blob* sharedSecret
 )
 {
-        // Skip the nonce to get to the actual public key data
+    // Skip the nonce to get to the actual public key data
     constexpr UINT32 EXPECTED_NONCE_SIZE = 8;
     BYTE* pNgcPublicKeyData = authCtx->publicKey + EXPECTED_NONCE_SIZE;
     UINT32 ngcPublicKeySize = authCtx->publicKeyByteCount - EXPECTED_NONCE_SIZE;
@@ -1245,7 +1263,6 @@ struct PARSED_BOUND_KEY_COMPONENTS
     PARSED_BOUND_KEY_COMPONENTS(PARSED_BOUND_KEY_COMPONENTS&&) = delete;
     PARSED_BOUND_KEY_COMPONENTS& operator=(PARSED_BOUND_KEY_COMPONENTS&&) = delete;
 };
-
 
 //
 // Parse the bound key structure and extract all components
