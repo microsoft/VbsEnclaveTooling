@@ -120,8 +120,9 @@ namespace AuthorizationContext
     //
     static ObjectTable::Table<NCRYPT_NGC_AUTHORIZATION_CONTEXT>* GetAuthContextTable()
     {
-        static ObjectTable::Table<NCRYPT_NGC_AUTHORIZATION_CONTEXT>* volatile s_table = nullptr;
-        return InitOnceAndAcquire(s_table);
+        __debugbreak();
+        static ObjectTable::Table<NCRYPT_NGC_AUTHORIZATION_CONTEXT>* s_table = nullptr;
+        return InitOnceAndAcquire(&s_table);
     }
 
     static HRESULT ResolveObject(_In_ USER_BOUND_KEY_AUTH_CONTEXT_HANDLE publicHandle, _Out_ NCRYPT_NGC_AUTHORIZATION_CONTEXT** ppObject) noexcept
@@ -275,8 +276,9 @@ namespace SessionInfo
     //
     static ObjectTable::Table<USER_BOUND_KEY_SESSION_INTERNAL>* GetSessionTable()
     {
-        static ObjectTable::Table<USER_BOUND_KEY_SESSION_INTERNAL>* volatile s_table = nullptr;
-        return InitOnceAndAcquire(s_table);
+        __debugbreak();
+        static ObjectTable::Table<USER_BOUND_KEY_SESSION_INTERNAL>* s_table = nullptr;
+        return InitOnceAndAcquire(&s_table);
     }
 
     static HRESULT ResolveObject(_In_ USER_BOUND_KEY_SESSION_HANDLE publicHandle, _Out_ USER_BOUND_KEY_SESSION_INTERNAL** ppObject) noexcept

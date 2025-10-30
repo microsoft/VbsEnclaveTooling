@@ -189,7 +189,7 @@ inline unique_secure_blob make_unique_secure_blob(UINT32 size)
 // Init once
 //
 template <typename T>
-static T* InitOnceAndAcquire(_In_ T* objectPtr)
+static T* InitOnceAndAcquire(_In_ T** objectPtr)
 {
     // Fast path: if already initialized, return immediately
     {
