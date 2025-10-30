@@ -176,7 +176,19 @@ veil_abi::Types::credentialAndFormattedKeyNameAndSessionInfo veil_abi::Untrusted
     auto cacheConfiguration = ConvertCacheConfig(cache_config);
 
     auto sessionInfo = std::make_shared<uintptr_t>(0);
-    auto enclaveptr = (void*)enclave;    
+    auto enclaveptr = (void*)enclave;   
+
+    try
+    {
+        auto op = KeyCredentialManager::DeleteAsync(key_name);
+        std::wcout << "Deletion worked" << std::endl;
+
+        op.get();
+    }
+    catch (...)
+    {
+        std::wcout << "Deletion failed" << std::endl;
+    }
     
     std::wcout << L"Calling RequestCreateAsync" << std::endl;
     auto credentialResult = KeyCredentialManager::RequestCreateAsync(
