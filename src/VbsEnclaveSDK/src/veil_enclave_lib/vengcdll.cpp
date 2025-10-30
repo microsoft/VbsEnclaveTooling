@@ -118,7 +118,7 @@ namespace AuthorizationContext
     //
     // Object table
     //
-    static ObjectTable::Table<NCRYPT_NGC_AUTHORIZATION_CONTEXT>* GetAuthContextTable()
+    static ObjectTable::Table<NCRYPT_NGC_AUTHORIZATION_CONTEXT>* TryGetAuthContextTable()
     {
         static ObjectTable::Table<NCRYPT_NGC_AUTHORIZATION_CONTEXT>* volatile s_table = nullptr;
         return InitOnceAndAcquire(&s_table);
@@ -131,7 +131,7 @@ namespace AuthorizationContext
             return E_INVALIDARG;
         }
 
-        auto table = GetAuthContextTable();
+        auto table = TryGetAuthContextTable();
         RETURN_IF_NULL_ALLOC(table);
 
         auto handle = ObjectTable::Handle { reinterpret_cast<uintptr_t>(publicHandle) };
@@ -149,7 +149,7 @@ namespace AuthorizationContext
         wil_raw::unique_ptr<NCRYPT_NGC_AUTHORIZATION_CONTEXT>&& object,
         _Out_ USER_BOUND_KEY_AUTH_CONTEXT_HANDLE* handle) noexcept
     {
-        auto table = GetAuthContextTable();
+        auto table = TryGetAuthContextTable();
         RETURN_IF_NULL_ALLOC(table);
         
         ObjectTable::Handle tempHandle;
@@ -160,7 +160,7 @@ namespace AuthorizationContext
 
     static HRESULT CloseHandle(_In_ USER_BOUND_KEY_AUTH_CONTEXT_HANDLE publicHandle) noexcept
     {
-        auto table = GetAuthContextTable();
+        auto table = TryGetAuthContextTable();
         RETURN_IF_NULL_ALLOC(table);
         
         auto handle = ObjectTable::Handle{ reinterpret_cast<uintptr_t>(publicHandle) };
@@ -273,7 +273,7 @@ namespace SessionInfo
     //
     // Object table
     //
-    static ObjectTable::Table<USER_BOUND_KEY_SESSION_INTERNAL>* GetSessionTable()
+    static ObjectTable::Table<USER_BOUND_KEY_SESSION_INTERNAL>* TryGetSessionTable()
     {
         static ObjectTable::Table<USER_BOUND_KEY_SESSION_INTERNAL>* volatile s_table = nullptr;
         return InitOnceAndAcquire(&s_table);
@@ -286,7 +286,7 @@ namespace SessionInfo
             return E_INVALIDARG;
         }
 
-        auto table = GetSessionTable();
+        auto table = TryGetSessionTable();
         RETURN_IF_NULL_ALLOC(table);
 
         auto handle = ObjectTable::Handle { reinterpret_cast<uintptr_t>(publicHandle) };
@@ -304,7 +304,7 @@ namespace SessionInfo
         wil_raw::unique_ptr<USER_BOUND_KEY_SESSION_INTERNAL>&& object,
         _Out_ USER_BOUND_KEY_SESSION_HANDLE* handle) noexcept
     {
-        auto table = GetSessionTable();
+        auto table = TryGetSessionTable();
         RETURN_IF_NULL_ALLOC(table);
         
         ObjectTable::Handle tempHandle;
@@ -315,7 +315,7 @@ namespace SessionInfo
 
     static HRESULT CloseHandle(_In_ USER_BOUND_KEY_SESSION_HANDLE publicHandle) noexcept
     {
-        auto table = GetSessionTable();
+        auto table = TryGetSessionTable();
         RETURN_IF_NULL_ALLOC(table);
         
         auto handle = ObjectTable::Handle{ reinterpret_cast<uintptr_t>(publicHandle) };
