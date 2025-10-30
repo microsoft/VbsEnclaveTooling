@@ -59,7 +59,6 @@ mod edl_core {
 
     #[test]
     fn round_trip_hresult_pointer_conversions() {
-        // Common HRESULT values to test (including edge cases)
         let test_values = [S_OK, E_INVALIDARG, E_ACCESSDENIED];
 
         for &hr in &test_values {

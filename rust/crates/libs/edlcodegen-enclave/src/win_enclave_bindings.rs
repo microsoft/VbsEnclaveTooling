@@ -41,8 +41,9 @@ impl Default for ENCLAVE_INFORMATION {
     }
 }
 
-// Only use and link the following functions directly from vertdll.dll when the feature "testing" is not enabled.
-#[cfg(not(any(test, feature = "testing")))]
+// Only use and link the following functions directly from vertdll.dll when the
+// feature "mock_functions" is not enabled.
+#[cfg(not(any(test, feature = "mock_functions")))]
 windows_link::link!("vertdll.dll" "system" fn CallEnclave(
     lproutine : isize,
     lpparameter : *const core::ffi::c_void,
@@ -50,54 +51,54 @@ windows_link::link!("vertdll.dll" "system" fn CallEnclave(
     lpreturnvalue : *mut *mut core::ffi::c_void)
 -> BOOL);
 
-#[cfg(not(any(test, feature = "testing")))]
+#[cfg(not(any(test, feature = "mock_functions")))]
 windows_link::link!("vertdll.dll" "system" fn GetLastError() -> WIN32_ERROR);
 
-#[cfg(not(any(test, feature = "testing")))]
+#[cfg(not(any(test, feature = "mock_functions")))]
 windows_link::link!("vertdll.dll" "system" fn GetProcessHeap() -> HANDLE);
 
-#[cfg(not(any(test, feature = "testing")))]
+#[cfg(not(any(test, feature = "mock_functions")))]
 windows_link::link!("vertdll.dll" "system" fn HeapAlloc(
     hheap : HANDLE,
     dwflags : HEAP_FLAGS,
     dwbytes : usize)
 -> *mut core::ffi::c_void);
 
-#[cfg(not(any(test, feature = "testing")))]
+#[cfg(not(any(test, feature = "mock_functions")))]
 windows_link::link!("vertdll.dll" "system" fn HeapFree(
     hheap : HANDLE,
     dwflags : HEAP_FLAGS,
     lpmem : *const core::ffi::c_void)
 -> BOOL);
 
-#[cfg(not(any(test, feature = "testing")))]
+#[cfg(not(any(test, feature = "mock_functions")))]
 windows_link::link!("vertdll.dll" "system" fn EnclaveCopyIntoEnclave(
     enclaveaddress: *mut core::ffi::c_void,
     unsecureaddress: *const core::ffi::c_void,
     numberofbytes: usize)
 -> HRESULT);
 
-#[cfg(not(any(test, feature = "testing")))]
+#[cfg(not(any(test, feature = "mock_functions")))]
 windows_link::link!("vertdll.dll" "system" fn EnclaveCopyOutOfEnclave(
     unsecureaddress: *mut core::ffi::c_void,
     enclaveaddress: *const core::ffi::c_void,
     numberofbytes: usize)
 -> HRESULT);
 
-#[cfg(not(any(test, feature = "testing")))]
+#[cfg(not(any(test, feature = "mock_functions")))]
 windows_link::link!("vertdll.dll" "system" fn EnclaveRestrictContainingProcessAccess(
     restrictaccess: BOOL,
     previouslyrestricted: *mut BOOL)
 -> HRESULT);
 
-#[cfg(not(any(test, feature = "testing")))]
+#[cfg(not(any(test, feature = "mock_functions")))]
 windows_link::link!("vertdll.dll" "system" fn EnclaveGetEnclaveInformation(
     informationsize : u32,
     enclaveinformation : *mut ENCLAVE_INFORMATION)
 -> HRESULT);
 
 // Mocked in tests so we only need to declare and not implement them here.
-#[cfg(any(test, feature = "testing"))]
+#[cfg(any(test, feature = "mock_functions"))]
 unsafe extern "system" {
     pub fn EnclaveCopyIntoEnclave(
         enclaveaddress: *mut core::ffi::c_void,
