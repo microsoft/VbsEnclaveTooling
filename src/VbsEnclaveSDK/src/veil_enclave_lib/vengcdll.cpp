@@ -180,7 +180,7 @@ namespace AuthorizationContext
         }
         
         // Allocate raw memory for the variable-length structure
-        void* buffer = VengcAlloc(bufferSize);
+        void* buffer = VengcAlloc(bufferSize + alignof(NCRYPT_NGC_AUTHORIZATION_CONTEXT)); // Overallocate for alignment (revisit with _aligned_malloc)
         if (buffer == nullptr)
         {
             return wil_raw::unique_ptr<NCRYPT_NGC_AUTHORIZATION_CONTEXT>{ nullptr };

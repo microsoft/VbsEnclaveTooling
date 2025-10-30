@@ -189,7 +189,7 @@ inline unique_secure_blob make_unique_secure_blob(UINT32 size)
 // Init once
 //
 template <typename T>
-static T* InitOnceAndAcquire(_In_ T* volatile * objectPtr)
+static T* InitOnceAndAcquire(_Inout_ T* volatile * objectPtr)
 {
     // Fast path: if already initialized, return immediately
     {
@@ -204,7 +204,7 @@ static T* InitOnceAndAcquire(_In_ T* volatile * objectPtr)
     // Slow path: need to initialize
     {
         // Allocate memory
-        void* buffer = VengcAlloc(sizeof(T));
+        void* buffer = VengcAlloc(sizeof(T) + alignof(T)); // Overallocate for alignment (revisit with _aligned_malloc)
         if (buffer == nullptr)
         {
             return nullptr;
@@ -267,6 +267,10 @@ namespace ObjectTable
 
         // SRW lock for thread safety - much more efficient than spinlock
         SRWLOCK s_tableLock = SRWLOCK_INIT;
+
+        Table() noexcept
+        {
+        }
 
         T* ResolveObject(_In_ Handle handle) noexcept
         {
