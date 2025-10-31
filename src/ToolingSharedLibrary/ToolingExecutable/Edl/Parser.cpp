@@ -723,6 +723,10 @@ namespace EdlProcessor
             {
                 type_info = ParseVector();
             }
+            else if (type_kind == EdlTypeKind::Optional)
+            {
+                type_info = ParseOptional();
+            }
             else
             {
                 type_info.m_type_kind = c_string_to_edltype_map.at(type_name);
@@ -863,6 +867,14 @@ namespace EdlProcessor
                         m_cur_line,
                         m_cur_column);
                 }
+                else if (edl_type == EdlTypeKind::Optional)
+                {
+                    throw EdlAnalysisException(
+                        ErrorId::EdlVectorInvalidInnerType,
+                        m_file_name,
+                        m_cur_line,
+                        m_cur_column);
+                }
 
                 vector_info.inner_type = std::make_shared<EdlTypeInfo>(token_name, edl_type);
             }
@@ -882,6 +894,63 @@ namespace EdlProcessor
         }
 
         return vector_info;
+    }
+
+    EdlTypeInfo EdlParser::ParseOptional()
+    {
+        EdlTypeInfo optional_info {};
+        optional_info.m_type_kind = EdlTypeKind::Optional;
+        optional_info.m_name = "optional";
+
+        if (PeekAtCurrentToken() != LEFT_ARROW_BRACKET)
+        {
+            throw EdlAnalysisException(
+                ErrorId::EdlOptionalDoesNotStartWithArrowBracket,
+                m_file_name,
+                m_cur_line,
+                m_cur_column);
+        }
+
+        while (PeekAtCurrentToken() == LEFT_ARROW_BRACKET)
+        {
+            // Move past '<' to get value within it.
+            GetCurrentTokenAndMoveToNextToken();
+            Token optional_value_token = GetCurrentTokenAndMoveToNextToken();
+            ThrowIfTokenNotIdentifier(optional_value_token, ErrorId::EdlOptionalNameIdentifierNotFound);
+            auto token_name = optional_value_token.ToString();
+
+            if (c_string_to_edltype_map.contains(token_name))
+            {
+                auto edl_type = c_string_to_edltype_map.at(token_name);
+
+                // Only allow primitive types and developer types within optionals.
+                if (edl_type == EdlTypeKind::Vector || edl_type == EdlTypeKind::Optional)
+                {
+                    throw EdlAnalysisException(
+                        ErrorId::EdlOptionalInvalidInnerType,
+                        m_file_name,
+                        m_cur_line,
+                        m_cur_column);
+                }
+
+                optional_info.inner_type = std::make_shared<EdlTypeInfo>(token_name, edl_type);
+            }
+            else if (m_edl.m_developer_types.contains(token_name))
+            {
+                DeveloperType& dev_type = m_edl.m_developer_types.at(token_name);
+                optional_info.inner_type = std::make_shared<EdlTypeInfo>(
+                    dev_type.m_name,
+                    dev_type.m_type_kind);
+            }
+            else
+            {
+                optional_info.inner_type = std::make_shared<EdlTypeInfo>(token_name, EdlTypeKind::Unknown);
+            }
+
+            ThrowIfExpectedTokenNotNext(RIGHT_ARROW_BRACKET);
+        }
+
+        return optional_info;
     }
 
     void EdlParser::ValidatePointers(const Declaration& declaration)
@@ -999,14 +1068,15 @@ namespace EdlProcessor
         for (auto& declaration : declarations)
         {
             auto type_info_ptr = &declaration.m_edl_type_info;
+            auto type_name_found = declaration.m_edl_type_info.m_name;
 
-            // Cover vector<type> case.
+            // Cover vector<type> and optional<type> cases.
             if (type_info_ptr->inner_type)
             {
                 type_info_ptr = type_info_ptr->inner_type.get();
+                type_name_found = type_info_ptr->m_name;
             }
 
-            auto type_name_found = declaration.m_edl_type_info.m_name;
             auto type_name_is_unresolved = m_unresolved_types.contains(type_name_found);
             auto dev_type_iter = m_edl.m_developer_types.find(type_name_found);
             auto type_name_is_dev_type = dev_type_iter != m_edl.m_developer_types.end();
@@ -1022,6 +1092,51 @@ namespace EdlProcessor
         {
             m_unresolved_types.erase(name);
         }
+    }
+
+    bool HasOptionalCycle(
+        const std::string& start_type,
+        const std::string& current_type,
+        const OrderedMap<std::string, DeveloperType>& developer_types,
+        std::unordered_set<std::string>& visited)
+    {
+        if (visited.contains(current_type))
+        {
+            return false; // already explored this branch, no cycle detected here
+        }
+
+        visited.insert(current_type);
+
+        const auto& dev_type = developer_types.at(current_type);
+        for (const auto& field : dev_type.m_fields)
+        {
+            const auto& info = field.m_edl_type_info;
+            const bool is_optional = info.m_type_kind == EdlTypeKind::Optional;
+
+            if (!is_optional)
+            {
+                continue;
+            }
+
+            const auto& inner = *info.inner_type;
+            if (inner.m_type_kind != EdlTypeKind::Struct)
+            {
+                continue;
+            }
+
+            // Found optional<start_type> which indicates a cycle back to the original type.
+            if (inner.m_name == start_type)
+            {
+                return true;
+            }
+
+            if (HasOptionalCycle(start_type, inner.m_name, developer_types, visited))
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     void EdlParser::PerformFinalValidations()
@@ -1053,6 +1168,27 @@ namespace EdlProcessor
                 m_cur_line,
                 m_cur_column,
                 type_names);
+        }
+
+        // Check for cycles of T inside optional<T> fields within structs.
+        for (auto& dev_type : m_edl.m_developer_types.values())
+        {
+            if (dev_type.m_type_kind != EdlTypeKind::Struct)
+            {
+                continue;
+            }
+
+            std::unordered_set<std::string> visited;
+
+            if (HasOptionalCycle(dev_type.m_name, dev_type.m_name, m_edl.m_developer_types, visited))
+            {
+                throw EdlAnalysisException(
+                    ErrorId::EdlOptionalCycle,
+                    m_file_name,
+                    m_cur_line,
+                    m_cur_column,
+                    dev_type.m_name);
+            }
         }
 
         // now that we've finished parsing the function declarations and structs 

@@ -1,0 +1,97 @@
+// Copyright (c) Microsoft Corporation.
+// Licensed under the MIT License.
+
+enclave
+{
+    enum MyEnum
+    {
+        value = 1,
+    };
+
+    struct MyStruct1
+    {
+        optional<int32_t> x;
+        vector<MyStruct2> my_struct2_vec;
+        optional<MyEnum> my_enum;
+    };
+
+    struct MyStruct2
+    {
+        optional<MyStruct1> my_struct1_opt;
+        MyStruct1 my_struct1_no_opt;
+    };
+
+    trusted
+    {
+        void TrustedWithOptionalTypes(
+            optional<char> arg1,
+            optional<wchar_t> arg2,
+            optional<float> arg3,
+            optional<double> arg4,
+            optional<size_t> arg5,
+            optional<int8_t> arg6,
+            optional<int16_t> arg7,
+            optional<int32_t> arg8,
+            optional<int64_t> arg9,
+            optional<uint8_t> arg10,
+            optional<uint16_t> arg11,
+            optional<uint32_t> arg12,
+            optional<uint64_t> arg13,
+            optional<MyStruct2> arg14,
+            optional<MyEnum> arg15
+        );
+
+        optional<char> RetOptionalChar();
+        optional<wchar_t> RetOptionalWchar_t();
+        optional<float> RetOptionalFloat();
+        optional<double> RetOptionalDouble();
+        optional<size_t> RetOptionalSize_t();
+        optional<int8_t> RetOptionalInt8_t();
+        optional<int16_t> RetOptionalInt16_t();
+        optional<int32_t> RetOptionalInt32_t();
+        optional<int64_t> RetOptionalInt64_t();
+        optional<uint8_t> RetOptionalUint8_t();
+        optional<uint16_t> RetOptionalUint16_t();
+        optional<uint32_t> RetOptionalUint32_t();
+        optional<uint64_t> RetOptionalUint64_t();
+        optional<MyStruct2> RetOptionalMyStruct();
+        optional<MyEnum> RetOptionalMyEnum();
+    };
+
+    untrusted 
+    {
+        void UntrustedWithOptionalTypes(
+            optional<char> arg1,
+            optional<wchar_t> arg2,
+            optional<float> arg3,
+            optional<double> arg4,
+            optional<size_t> arg5,
+            optional<int8_t> arg6,
+            optional<int16_t> arg7,
+            optional<int32_t> arg8,
+            optional<int64_t> arg9,
+            optional<uint8_t> arg10,
+            optional<uint16_t> arg11,
+            optional<uint32_t> arg12,
+            optional<uint64_t> arg13,
+            optional<MyStruct2> arg14,
+            optional<MyEnum> arg15
+        );
+
+        optional<char> RetOptionalChar();
+        optional<wchar_t> RetOptionalWchar_t();
+        optional<float> RetOptionalFloat();
+        optional<double> RetOptionalDouble();
+        optional<size_t> RetOptionalSize_t();
+        optional<int8_t> RetOptionalInt8_t();
+        optional<int16_t> RetOptionalInt16_t();
+        optional<int32_t> RetOptionalInt32_t();
+        optional<int64_t> RetOptionalInt64_t();
+        optional<uint8_t> RetOptionalUint8_t();
+        optional<uint16_t> RetOptionalUint16_t();
+        optional<uint32_t> RetOptionalUint32_t();
+        optional<uint64_t> RetOptionalUint64_t();
+        optional<MyStruct2> RetOptionalMyStruct();
+        optional<MyEnum> RetOptionalMyEnum();
+    };
+};

@@ -199,6 +199,7 @@
     <ClCompile Include="ToolingExecutableTests\EdlParserArrayTests.cpp" />
     <ClCompile Include="ToolingExecutableTests\EdlParserEnumTypeTests.cpp" />
     <ClCompile Include="ToolingExecutableTests\EdlParserImportTests.cpp" />
+    <ClCompile Include="ToolingExecutableTests\EdlParserOptionalTypes.cpp" />
     <ClCompile Include="ToolingExecutableTests\EdlParserStructTypesTests.cpp" />
     <ClCompile Include="ToolingExecutableTests\ErrorHelpersTests.cpp" />
     <ClCompile Include="pch.cpp">
@@ -263,6 +264,12 @@
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
     <None Include="TestFiles\ImportTestFiles\DuplicateAnonymousEnumValues.edl">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Include="TestFiles\OptionalTests.edl">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Include="TestFiles\OptionalTestWithCycles.edl">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
     <None Include="TestFiles\StructTest.edl">

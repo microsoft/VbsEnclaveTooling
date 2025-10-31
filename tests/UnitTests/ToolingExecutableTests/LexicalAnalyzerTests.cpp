@@ -123,6 +123,11 @@ TEST_CLASS(LexicalAnalyzerTests)
     TEST_METHOD(TestTokenizingEdlFileThatContainsStructTypes)
     {
         TokenizeFile(m_struct_edl_file_name);
-    }    
+    } 
+    
+    TEST_METHOD(TestTokenizingEdlFileThatContainsOptionalTypes)
+    {
+        TokenizeFile(c_optional_edl_file_name);
+    }
 };
 }

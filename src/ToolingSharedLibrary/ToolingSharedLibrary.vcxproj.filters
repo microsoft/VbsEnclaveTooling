@@ -42,7 +42,7 @@
     <ClInclude Include="Includes\CodeGeneration\CodeGeneration.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Includes\CodeGeneration\Contants.h">
+    <ClInclude Include="Includes\CodeGeneration\Constants.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Includes\CodeGeneration\CodeGenerationHelpers.h">
@@ -66,7 +66,7 @@
     <ClInclude Include="Includes\VbsEnclaveABI\Enclave\Vtl0Pointers.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Includes\CodeGeneration\Flatbuffers\Contants.h">
+    <ClInclude Include="Includes\CodeGeneration\Flatbuffers\Constants.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Includes\VbsEnclaveABI\Shared\ConversionHelpers.h">

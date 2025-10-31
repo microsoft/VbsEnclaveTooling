@@ -45,6 +45,9 @@
     <ClCompile Include="ToolingExecutableTests\EdlParserImportTests.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="ToolingExecutableTests\EdlParserOptionalTypes.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h">
@@ -72,6 +75,8 @@
     <None Include="TestFiles\ImportTestFiles\CycleImports\C_Cycle.edl" />
     <None Include="TestFiles\ImportTestFiles\CycleImports\D_Cycle.edl" />
     <None Include="TestFiles\ImportTestFiles\DuplicateAnonymousEnumValues.edl" />
+    <None Include="TestFiles\OptionalTests.edl" />
+    <None Include="TestFiles\OptionalTestWithCycle.edl" />
   </ItemGroup>
   <ItemGroup>
     <Natvis Include="$(MSBuildThisFileDirectory)..\..\natvis\wil.natvis" />

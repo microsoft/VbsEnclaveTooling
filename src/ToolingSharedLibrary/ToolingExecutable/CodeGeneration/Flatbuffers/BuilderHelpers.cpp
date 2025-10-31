@@ -4,10 +4,10 @@
 #include <pch.h>
 #include <Edl\Structures.h>
 #include <Edl\Utils.h>
-#include <CodeGeneration\Contants.h>
+#include <CodeGeneration\Constants.h>
 #include <CodeGeneration\CodeGeneration.h>
 #include <CodeGeneration\CodeGenerationHelpers.h>
-#include <CodeGeneration\Flatbuffers\Contants.h>
+#include <CodeGeneration\Flatbuffers\Constants.h>
 #include <CodeGeneration\Flatbuffers\BuilderHelpers.h>
 
 #include <sstream>
@@ -138,11 +138,12 @@ namespace CodeGeneration::Flatbuffers
         // vector as a vector<T>. We want this behavior so we can limit the amount of memory the abi allocates. 
         // Flatbuffer generates all other types within vectors as vector<T> by default. WString is special 
         // because we generate it as a Flatbuffer table that contains a vector of uint16's.
+        // Note for Rust: The required keyword is needed for the native_inline to work properly.
         std::string inline_type_string = "";
         if (info.m_type_kind == EdlTypeKind::Struct ||
             info.m_type_kind == EdlTypeKind::WString)
         {
-            inline_type_string = "(native_inline)";
+            inline_type_string = "(native_inline, required)";
         }
 
         return inline_type_string;
@@ -173,6 +174,20 @@ namespace CodeGeneration::Flatbuffers
                     GetFlatBufferType(*inner_type),
                     GetNativeInlineStringForVector(*inner_type));
             }
+            else if (declaration.IsEdlType(EdlTypeKind::Optional))
+            {
+                auto& inner_type = declaration.m_edl_type_info.inner_type;
+                bool is_inner_a_struct = inner_type->m_type_kind == EdlTypeKind::Struct;
+
+                // In the flatbuffer schema, structs are optional by default without the "= null" expression.
+                // All other types need the "= null" expression to be considered optional.
+                auto optional_val = is_inner_a_struct ? "" : "= null";
+                table_body << std::format(
+                    "    {} : {} {};\n",
+                    declaration.m_name,
+                    GetFlatBufferType(*inner_type),
+                    optional_val);
+            }
             else if (declaration.IsEdlType(EdlTypeKind::Struct))
             {
                 // We generate structs as tables using the Flatbuffer object api. Unfortunately for C++ it generates nested
@@ -180,7 +195,7 @@ namespace CodeGeneration::Flatbuffers
                 // no way to generate nested tables as type T instead of unique_ptr<T> like in the case of vectors.
                 // See: https://github.com/google/flatbuffers/issues/4969
                 table_body << std::format(
-                    "    {} : {};\n",
+                    "    {} : {} (required);\n",
                     declaration.m_name,
                     declaration.m_edl_type_info.m_name);
             }
