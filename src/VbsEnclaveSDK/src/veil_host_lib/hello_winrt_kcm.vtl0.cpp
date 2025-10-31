@@ -144,33 +144,14 @@ KeyCredentialCacheConfiguration ConvertCacheConfig(const veil_abi::Types::keyCre
     return factory.CreateInstance(cacheOption, timeout, cacheConfig.cacheUsageCount);
 }
 
-// Helper function to convert a KeyCredential to vector<uint8_t> for transmission to VTL1
-std::vector<uint8_t> ConvertCredentialToVector(const KeyCredential& credential, int expectedUsageCount = 1)
-{
-    // Get the ABI pointer and AddRef to keep the COM object alive
-    auto abi = winrt::get_abi(credential);
-
-    // Add references based on expected Usage count
-    for (int i = 0; i < expectedUsageCount; ++i)
-    {
-        static_cast<IUnknown*>(abi)->AddRef();
-    }
-
-    std::wcout << L"DEBUG: ConvertCredentialToVector - AddRef called " << expectedUsageCount << L" times on credential ABI: 0x" << std::hex << reinterpret_cast<uintptr_t>(abi) << std::dec << std::endl;
-
-    uintptr_t credentialPtr = reinterpret_cast<uintptr_t>(abi);
-    std::vector<uint8_t> credentialVector(sizeof(uintptr_t));
-    memcpy(credentialVector.data(), &credentialPtr, sizeof(uintptr_t));
-    return credentialVector;
-}
-
-veil_abi::Types::credentialAndFormattedKeyNameAndSessionInfo veil_abi::Untrusted::Implementation::userboundkey_establish_session_for_create(
+veil_abi::Types::credentialAndSessionInfo veil_abi::Untrusted::Implementation::userboundkey_establish_session_for_create(
     uintptr_t enclave,
     const std::wstring& key_name,
     uintptr_t ecdh_protocol,
     const std::wstring& message,
     uintptr_t window_id,
-    const veil_abi::Types::keyCredentialCacheConfig& cache_config)
+    const veil_abi::Types::keyCredentialCacheConfig& cache_config,
+    uint32_t key_credential_creation_option)
 {
     std::wcout << L"Inside userboundkey_establish_session_for_create_callback"<< std::endl;
     auto algorithm = GetAlgorithm(ecdh_protocol);
@@ -196,7 +177,7 @@ veil_abi::Types::credentialAndFormattedKeyNameAndSessionInfo veil_abi::Untrusted
     std::wcout << L"Calling RequestCreateAsync" << std::endl;
     auto credentialResult = KeyCredentialManager::RequestCreateAsync(
         key_name,
-        KeyCredentialCreationOption::ReplaceExisting,
+        static_cast<KeyCredentialCreationOption>(key_credential_creation_option),
         algorithm,
         message,
         cacheConfiguration,
@@ -210,46 +191,32 @@ veil_abi::Types::credentialAndFormattedKeyNameAndSessionInfo veil_abi::Untrusted
     // Check if the operation was successful
     auto status = credentialResult.Status();
     if (status != KeyCredentialStatus::Success)
-    {
+    {        
+        // Throw after setting result so VTL1 can clean up
         THROW_HR(static_cast<HRESULT>(status));
     }
 
     const auto& credential = credentialResult.Credential();
-    std::wstring formattedKeyName = FormatUserHelloKeyName(key_name.c_str());
 
-    credentialAndFormattedKeyNameAndSessionInfo result;
-    result.credential = ConvertCredentialToVector(credential);
-    result.formattedKeyName = formattedKeyName; // Store the formatted key name
-    result.sessionInfo = *sessionInfo; // Store session info
+    // AddRef the COM object to keep it alive when we pass the pointer to VTL1
+    // VTL1 will consume this reference when it's done
+    auto credentialPtr = reinterpret_cast<uintptr_t>(winrt::get_abi(credential));
+    static_cast<IUnknown*>(winrt::get_abi(credential))->AddRef();
+    
+    std::wcout << L"DEBUG: Returning credential pointer: 0x" << std::hex << credentialPtr << std::dec << std::endl;
+
+    credentialAndSessionInfo result;
+    result.credential = credentialPtr;
+    result.sessionInfo = *sessionInfo;
 
     return result;
 }
 
-// Helper function to convert vector<uint8_t> back to KeyCredential
-KeyCredential ConvertVectorToCredential(const std::vector<uint8_t>& credentialVector)
-{
-    if (credentialVector.size() != sizeof(uintptr_t))
-    {
-        THROW_HR(E_INVALIDARG);
-    }
-    
-    uintptr_t credentialPtr;
-    memcpy(&credentialPtr, credentialVector.data(), sizeof(uintptr_t));
-    void* abi = reinterpret_cast<void*>(credentialPtr);
-    
-    std::wcout << L"DEBUG: ConvertVectorToCredential - Retrieved credential ABI: 0x" << std::hex << credentialPtr << std::dec << std::endl;
-    
-    // Create KeyCredential and transfer ownership (this will handle the Release)
-    // The take_ownership_from_abi will NOT AddRef, so our earlier AddRef is consumed
-    return KeyCredential{ abi, winrt::take_ownership_from_abi };
-}
-
-veil_abi::Types::credentialAndFormattedKeyNameAndSessionInfo veil_abi::Untrusted::Implementation::userboundkey_establish_session_for_load(
+veil_abi::Types::credentialAndSessionInfo veil_abi::Untrusted::Implementation::userboundkey_establish_session_for_load(
     uintptr_t enclave,
     const std::wstring& key_name,
     const std::wstring& message,
-    uintptr_t window_id,
-    uint64_t nonce)
+    uintptr_t window_id)
 {
     auto sessionInfo = std::make_shared<uintptr_t>(0);
     auto enclaveptr = (void*)enclave;
@@ -268,33 +235,38 @@ veil_abi::Types::credentialAndFormattedKeyNameAndSessionInfo veil_abi::Untrusted
     }
 
     const auto& credential = credentialResult.Credential();
-    std::wstring formattedKeyName = FormatUserHelloKeyName(key_name.c_str());
 
-    // Return the credential as a vector along with sessionInfo for VTL1 to use later
-    credentialAndFormattedKeyNameAndSessionInfo result;
-    result.credential = ConvertCredentialToVector(credential, 2); // 2 = expected usage count: one for RetrieveAuthorizationContext and one for DeriveSharedSecret in load flow
-    result.formattedKeyName = formattedKeyName;
-    result.sessionInfo = *sessionInfo; // Store session info    
+    // AddRef twice: one for RetrieveAuthorizationContext and one for DeriveSharedSecret
+    auto credentialPtr = reinterpret_cast<uintptr_t>(winrt::get_abi(credential));
+    static_cast<IUnknown*>(winrt::get_abi(credential))->AddRef();
+    static_cast<IUnknown*>(winrt::get_abi(credential))->AddRef();
+    
+    std::wcout << L"DEBUG: Returning credential pointer (AddRef x2): 0x" << std::hex << credentialPtr << std::dec << std::endl;
+
+    credentialAndSessionInfo result;
+    result.credential = credentialPtr;
+    result.sessionInfo = *sessionInfo;
+    
     return result;
 }
 
 // New VTL0 function to extract authorization context from credential
 std::vector<uint8_t> veil_abi::Untrusted::Implementation::userboundkey_get_authorization_context_from_credential(
-    const std::vector<uint8_t>& credential_vector,
+    uintptr_t credential_ptr,
     const std::vector<uint8_t>& encrypted_kcm_request_for_get_authorization_context,
     const std::wstring& message,
     uintptr_t window_id)
 {
-    std::wcout << L"DEBUG: userboundkey_get_authorization_context_from_credential_callback called" << std::endl;
+    std::wcout << L"DEBUG: userboundkey_get_authorization_context_from_credential called with credential: 0x" 
+               << std::hex << credential_ptr << std::dec << std::endl;
 
-    KeyCredential credential{ nullptr };
-    
     try
     {
-        // Convert the credential vector back to KeyCredential
-        credential = ConvertVectorToCredential(credential_vector);
+        // Convert the pointer back to KeyCredential
+        void* abi = reinterpret_cast<void*>(credential_ptr);
+        KeyCredential credential{ abi, winrt::take_ownership_from_abi };
         
-        std::wcout << L"DEBUG: Converting credential vector back to KeyCredential" << std::endl;
+        std::wcout << L"DEBUG: Converted pointer to KeyCredential" << std::endl;
 
         // Extract authorization context
         auto authorizationContext = credential.RetrieveAuthorizationContext(
@@ -302,46 +274,40 @@ std::vector<uint8_t> veil_abi::Untrusted::Implementation::userboundkey_get_autho
 
         auto result = ConvertBufferToVector(authorizationContext);
 
-        std::wcout << L"DEBUG: userboundkey_get_authorization_context_from_credential_callback completed successfully" << std::endl;
+        std::wcout << L"DEBUG: userboundkey_get_authorization_context_from_credential completed successfully" << std::endl;
         
         // The KeyCredential destructor will automatically handle the Release when it goes out of scope
         return result;
     }
     catch (const std::exception& e)
     {
-        std::wcout << L"DEBUG: Exception in userboundkey_get_authorization_context_from_credential_callback: " << e.what() << std::endl;
-
-        // If we successfully created the credential but failed later, the destructor will clean up
-        // If we failed to create the credential, there's nothing extra to clean up
+        std::wcout << L"DEBUG: Exception in userboundkey_get_authorization_context_from_credential: " << e.what() << std::endl;
         throw;
     }
     catch (...)
     {
-        std::wcout << L"DEBUG: Unknown exception in userboundkey_get_authorization_context_from_credential_callback" << std::endl;
-        
-        // If we successfully created the credential but failed later, the destructor will clean up
-        // If we failed to create the credential, there's nothing extra to clean up
+        std::wcout << L"DEBUG: Unknown exception in userboundkey_get_authorization_context_from_credential" << std::endl;
         throw;
     }
 }
 
 // New VTL0 function to extract secret from credential
 std::vector<uint8_t> veil_abi::Untrusted::Implementation::userboundkey_get_secret_from_credential(
-    const std::vector<uint8_t>& credential_vector,
+    uintptr_t credential_ptr,
     const std::vector<uint8_t>& encrypted_kcm_request_for_derive_shared_secret,
     const std::wstring& message,
     uintptr_t window_id)
 {
-    std::wcout << L"DEBUG: userboundkey_get_secret_from_credential_callback called" << std::endl;
-
-    KeyCredential credential {nullptr};
+    std::wcout << L"DEBUG: userboundkey_get_secret_from_credential called with credential: 0x" 
+               << std::hex << credential_ptr << std::dec << std::endl;
 
     try
     {
-        // Convert the credential vector back to KeyCredential
-        credential = ConvertVectorToCredential(credential_vector);
+        // Convert the pointer back to KeyCredential
+        void* abi = reinterpret_cast<void*>(credential_ptr);
+        KeyCredential credential{ abi, winrt::take_ownership_from_abi };
 
-        std::wcout << L"DEBUG: Converting credential vector back to KeyCredential" << std::endl;
+        std::wcout << L"DEBUG: Converted pointer to KeyCredential" << std::endl;
 
         // Derive shared secret. This prompts for the hello PIN.
         auto secret = credential.RequestDeriveSharedSecretAsync(
@@ -350,25 +316,25 @@ std::vector<uint8_t> veil_abi::Untrusted::Implementation::userboundkey_get_secre
             winrt::Windows::Security::Cryptography::CryptographicBuffer::CreateFromByteArray(encrypted_kcm_request_for_derive_shared_secret)).get();
 
         auto result = ConvertBufferToVector(secret.Result());
-        std::wcout << L"DEBUG: userboundkey_get_secret_from_credential_callback completed successfully" << std::endl;
+        std::wcout << L"DEBUG: userboundkey_get_secret_from_credential completed successfully" << std::endl;
 
         // The KeyCredential destructor will automatically handle the Release when it goes out of scope
         return result;
     }
     catch (const std::exception& e)
     {
-        std::wcout << L"DEBUG: Exception in userboundkey_get_secret_from_credential_callback: " << e.what() << std::endl;
-
-        // If we successfully created the credential but failed later, the destructor will clean up
-        // If we failed to create the credential, there's nothing extra to clean up
+        std::wcout << L"DEBUG: Exception in userboundkey_get_secret_from_credential: " << e.what() << std::endl;
         throw;
     }
     catch (...)
     {
-        std::wcout << L"DEBUG: Unknown exception in userboundkey_get_secret_from_credential_callback" << std::endl;
-
-        // If we successfully created the credential but failed later, the destructor will clean up
-        // If we failed to create the credential, there's nothing extra to clean up
+        std::wcout << L"DEBUG: Unknown exception in userboundkey_get_secret_from_credential" << std::endl;
         throw;
     }
+}
+
+// Format a key name with SID information for use with Windows Hello
+std::wstring veil_abi::Untrusted::Implementation::format_key_name(const std::wstring& key_name)
+{
+    return FormatUserHelloKeyName(key_name.c_str());
 }

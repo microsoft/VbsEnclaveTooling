@@ -339,6 +339,7 @@ HRESULT VbsEnclave::Trusted::Implementation::MyEnclaveCreateUserBoundKey(
     _In_ const std::wstring& helloKeyName,
     _In_ const std::wstring& pinMessage,
     _In_ const uintptr_t windowId,
+    _In_ const uint32_t keyCredentialCacheOption,
     _Out_ std::vector<std::uint8_t>& securedEncryptionKeyBytes)
 {
     using namespace veil::vtl1::vtl0_functions;
@@ -358,7 +359,8 @@ HRESULT VbsEnclave::Trusted::Implementation::MyEnclaveCreateUserBoundKey(
             pinMessage,
             windowId,
             ENCLAVE_SEALING_IDENTITY_POLICY::ENCLAVE_IDENTITY_POLICY_SEAL_SAME_IMAGE,
-            ENCLAVE_RUNTIME_POLICY_ALLOW_FULL_DEBUG);
+            ENCLAVE_RUNTIME_POLICY_ALLOW_FULL_DEBUG,
+            keyCredentialCacheOption);
 
         debug_print(L"create_user_bound_key returned");
 

@@ -89,6 +89,7 @@ EncryptionConfig CreateEncryptionKeyOnFirstRun(void* enclave, const std::filesys
         config.helloKeyName,
         config.pinMessage,
         reinterpret_cast<uintptr_t>(config.hCurWnd),
+        static_cast<uint32_t>(KeyCredentialCreationOption::ReplaceExisting),
         securedEncryptionKeyBytes));
 
     // *** securedEncryptionKeyBytes persisted to disk

@@ -16,10 +16,9 @@ enclave
         uintptr_t sessionInfo;
     };
 
-    struct credentialAndFormattedKeyNameAndSessionInfo
+    struct credentialAndSessionInfo
     {
-        vector<uint8_t> credential;
-        wstring formattedKeyName;
+        uintptr_t credential;
         uintptr_t sessionInfo;
     };
 
@@ -70,35 +69,40 @@ enclave
         );
 
         // hello user bound key
-        credentialAndFormattedKeyNameAndSessionInfo userboundkey_establish_session_for_create(
+        credentialAndSessionInfo userboundkey_establish_session_for_create(
             uintptr_t enclave,
             wstring key_name,
             uintptr_t ecdh_protocol,
             wstring message,
             uintptr_t window_id,
-            keyCredentialCacheConfig cache_config
+            keyCredentialCacheConfig cache_config,
+            uint32_t key_credential_creation_option
         );
 
-        credentialAndFormattedKeyNameAndSessionInfo userboundkey_establish_session_for_load(
+        credentialAndSessionInfo userboundkey_establish_session_for_load(
             uintptr_t enclave,
             wstring key_name,
             wstring message,
-            uintptr_t window_id,
-            uint64_t nonce
+            uintptr_t window_id
         );
 
         vector<uint8_t> userboundkey_get_authorization_context_from_credential(
-            vector<uint8_t> credential_vector,
+            uintptr_t credential,
             vector<uint8_t> encrypted_kcm_request_for_get_authorization_context,
             wstring message,
             uintptr_t window_id
         );
 
         vector<uint8_t> userboundkey_get_secret_from_credential(
-            vector<uint8_t> credential_vector,
+            uintptr_t credential,
             vector<uint8_t> encrypted_kcm_request_for_derive_shared_secret,
             wstring message,
             uintptr_t window_id
+        );
+
+        // Format a key name with SID information for use with Windows Hello
+        wstring format_key_name(
+            wstring key_name
         );
     };
 };

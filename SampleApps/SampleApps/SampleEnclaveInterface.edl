@@ -46,6 +46,7 @@ enclave
             wstring helloKeyName,
             wstring pinMessage,
             uintptr_t windowId,
+            uint32_t keyCredentialCreationOption,
             [out] vector<uint8_t> securedEncryptionKeyBytes
             );
 

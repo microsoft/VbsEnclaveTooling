@@ -24,7 +24,8 @@ namespace veil::vtl1::userboundkey
         const std::wstring& message,
         uintptr_t windowId,
         ENCLAVE_SEALING_IDENTITY_POLICY sealingPolicy,
-        uint32_t runtimePolicy);
+        uint32_t runtimePolicy,
+        uint32_t keyCredentialCreationOption);
 
     std::vector<uint8_t> load_user_bound_key(
         const std::wstring& keyName,
