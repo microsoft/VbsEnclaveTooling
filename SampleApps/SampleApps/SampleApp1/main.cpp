@@ -42,6 +42,7 @@ struct EncryptionConfig
 // Initialize function to set up configuration and determine API availability
 EncryptionConfig InitializeUserBindingConfig(bool& areUserBindingApisAvailable)
 {
+    areUserBindingApisAvailable = true;
     EncryptionConfig config;
     config.helloKeyName = L"MyEncryptionKey-001";
     config.pinMessage = L"Please enter your PIN to access the encryption key.";
@@ -99,7 +100,7 @@ EncryptionConfig CreateEncryptionKeyOnFirstRun(void* enclave, const std::filesys
     return config;
 }
 
-void NewEncryptFlow(
+void UserBoundEncryptFlow(
     void* enclave,
     const std::wstring& input,
     const std::filesystem::path& keyFilePath,
@@ -135,7 +136,7 @@ void NewEncryptFlow(
     SaveBinaryData(encryptedOutputFilePath.string(), combinedOutputData);
 }
 
-void NewDecryptFlow(
+void UserBoundDecryptFlow(
     void* enclave,
     const std::filesystem::path& keyFilePath,
     const std::filesystem::path& encryptedInputFilePath,
@@ -438,7 +439,7 @@ int mainEncryptDecrypt(uint32_t activityLevel)
     bool programExecuted = false;
 
     // Initialize configuration (simplified - no cache config in VTL0)
-    bool areUserBindingApisAvailable = true;
+    bool areUserBindingApisAvailable;
     auto config = InitializeUserBindingConfig(areUserBindingApisAvailable);
 
     veil::vtl0::logger::logger veilLog(
@@ -533,7 +534,7 @@ int mainEncryptDecrypt(uint32_t activityLevel)
                 else
                 {
                     CreateEncryptionKeyOnFirstRun(enclave.get(), keyFilePath, config); // Pass config as parameter
-                    NewEncryptFlow(enclave.get(), input, keyFilePath, encryptedOutputFilePath, config); // Pass config
+                    UserBoundEncryptFlow(enclave.get(), input, keyFilePath, encryptedOutputFilePath, config); // Pass config
                 }
 
                 std::wcout << L"Encryption in Enclave completed. \n Encrypted bytes are saved to disk in " << encryptedOutputFilePath << std::endl;
@@ -550,7 +551,7 @@ int mainEncryptDecrypt(uint32_t activityLevel)
                 }
                 else
                 {
-                    NewDecryptFlow(enclave.get(), keyFilePath, encryptedOutputFilePath, config); // Pass config
+                    UserBoundDecryptFlow(enclave.get(), keyFilePath, encryptedOutputFilePath, config); // Pass config
                 }
 
                 std::filesystem::remove(keyFilePath);
