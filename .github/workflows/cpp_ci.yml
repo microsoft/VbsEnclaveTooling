@@ -33,7 +33,10 @@ jobs:
         with:
           # 2025.09.17 release.
           vcpkgGitCommitId: '4334d8b4c8916018600212ab4dd4bbdc343065d1'
-          runVcpkgInstall: true
+
+      - name: Integrate vcpkg with MSBuild
+        run: ${{ env.VCPKG_ROOT }}/vcpkg.exe integrate install
+        shell: pwsh
 
       - name: Restore NuGet packages
         run: nuget restore VbsEnclaveTooling.sln -ConfigFile NuGet.config
@@ -74,6 +77,7 @@ jobs:
           $vsTestInstallPath = & "${env:ProgramFiles(x86)}/Microsoft Visual Studio/Installer/vswhere.exe" -latest -products * -requires Microsoft.VisualStudio.Workload.ManagedDesktop Microsoft.VisualStudio.Workload.Web -requiresAny -property installationPath
           $vstestConsoleExe = join-path $vsTestInstallPath 'Common7/IDE/CommonExtensions/Microsoft/TestWindow/vstest.console.exe'
           & $vstestConsoleExe "_build/x64/${{ matrix.configuration }}/UnitTests.dll"
+
   build-sdk:
     name: Build Veil SDK
     runs-on: windows-latest
