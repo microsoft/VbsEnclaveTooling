@@ -150,11 +150,11 @@ CreateChallengeCallback(std::shared_ptr<veil::vtl0::userboundkey::implementation
                 std::wcout << L"DEBUG: Session stored: " << reinterpret_cast<uintptr_t>(sessionInfo->get()) << std::endl;
             }
       
-        // Convert std::vector<uint8_t> back to IBuffer for return
-        std::wcout << L"DEBUG: Converting attestation report back to IBuffer..." << std::endl;
-        auto result = winrt::Windows::Security::Cryptography::CryptographicBuffer::CreateFromByteArray(attestationReportAndSessionInfo.attestationReport);
-        std::wcout << L"DEBUG: " << callbackType << L" callback completed successfully!" << std::endl;
-        return result;
+            // Convert std::vector<uint8_t> back to IBuffer for return
+            std::wcout << L"DEBUG: Converting attestation report back to IBuffer..." << std::endl;
+            auto result = winrt::Windows::Security::Cryptography::CryptographicBuffer::CreateFromByteArray(attestationReportAndSessionInfo.attestationReport);
+            std::wcout << L"DEBUG: " << callbackType << L" callback completed successfully!" << std::endl;
+            return result;
         }
         catch (const std::exception& e) {
             std::wcout << L"DEBUG: Exception in " << callbackType << L" callback: " << e.what() << std::endl;
@@ -241,7 +241,7 @@ veil_abi::Types::credentialAndSessionInfo veil_abi::Untrusted::Implementation::u
     uint32_t key_credential_creation_option)
 {
     std::wcout << L"Inside userboundkey_establish_session_for_create_callback"<< std::endl;
-  auto algorithm = GetAlgorithm(ecdh_protocol);
+    auto algorithm = GetAlgorithm(ecdh_protocol);
 
     // Convert the cacheConfig parameter to KeyCredentialCacheConfiguration
     auto cacheConfiguration = ConvertCacheConfig(cache_config);
