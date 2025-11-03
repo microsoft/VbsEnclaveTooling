@@ -426,12 +426,6 @@ HRESULT VbsEnclave::Trusted::Implementation::MyEnclaveLoadUserBoundKeyAndEncrypt
         // Use the global key for encryption
         debug_print(L"Encrypting input data");
         auto keyHandle = GetEncryptionKeyHandle();
-        if (!keyHandle)
-        {
-            debug_print(L"ERROR: Encryption key handle is null");
-            return E_UNEXPECTED;
-        }
-
         auto [encryptedText, encryptionTag] = veil::vtl1::crypto::encrypt(
             keyHandle, 
             veil::vtl1::as_data_span(inputData.c_str()), 
@@ -440,27 +434,28 @@ HRESULT VbsEnclave::Trusted::Implementation::MyEnclaveLoadUserBoundKeyAndEncrypt
         debug_print(L"Encryption completed, encrypted size: %d, tag size: %d", 
                    encryptedText.size(), encryptionTag.size());
 
-        // Combine encrypted data and tag into single output
-        // Format: [encrypted_data][tag_data][tag_size (4 bytes)]
+        // Combine tag and encrypted data into single output
+        // Format: [tag_size (4 bytes)][tag_data][encrypted_data]
         uint32_t tagSize = static_cast<uint32_t>(encryptionTag.size());
         combinedOutputData.clear();
-        combinedOutputData.reserve(encryptedText.size() + encryptionTag.size() + sizeof(tagSize));
-        
-        // Append encrypted data
-        combinedOutputData.insert(combinedOutputData.end(), encryptedText.begin(), encryptedText.end());
-        
+        combinedOutputData.reserve(sizeof(tagSize) + encryptionTag.size() + encryptedText.size());
+  
+        // Append tag size (4 bytes) at the beginning
+        const uint8_t* tagSizeBytes = reinterpret_cast<const uint8_t*>(&tagSize);
+        combinedOutputData.insert(combinedOutputData.end(), tagSizeBytes, tagSizeBytes + sizeof(tagSize));
+  
         // Append tag data
         combinedOutputData.insert(combinedOutputData.end(), encryptionTag.begin(), encryptionTag.end());
         
-        // Append tag size (4 bytes) at the very end
-        const uint8_t* tagSizeBytes = reinterpret_cast<const uint8_t*>(&tagSize);
-        combinedOutputData.insert(combinedOutputData.end(), tagSizeBytes, tagSizeBytes + sizeof(tagSize));
+        // Append encrypted data
+        combinedOutputData.insert(combinedOutputData.end(), encryptedText.begin(), encryptedText.end());
 
-        debug_print(L"Combined data created, total size: %u (encrypted: %u, tag: %u, tag_size: %u)", 
-                   static_cast<uint32_t>(combinedOutputData.size()), 
-                   static_cast<uint32_t>(encryptedText.size()), 
-                   static_cast<uint32_t>(encryptionTag.size()), 
-                   static_cast<uint32_t>(sizeof(tagSize)));
+        debug_print(L"Combined data created, total size: %u (tag_size: %u, tag: %u, encrypted: %u)", 
+             static_cast<uint32_t>(combinedOutputData.size()), 
+     static_cast<uint32_t>(sizeof(tagSize)),
+        static_cast<uint32_t>(encryptionTag.size()), 
+        static_cast<uint32_t>(encryptedText.size()));
+
     }
     CATCH_RETURN();
 
@@ -485,17 +480,17 @@ HRESULT VbsEnclave::Trusted::Implementation::MyEnclaveLoadUserBoundKeyAndDecrypt
         debug_print(L"Start MyEnclaveLoadUserBoundKeyAndDecryptData");
 
         // Extract tag from the combined input data
-        // Format: [encrypted_data][tag_data][tag_size (4 bytes)]
+        // Format: [tag_size (4 bytes)][tag_data][encrypted_data]
         if (combinedInputData.size() < sizeof(uint32_t))
         {
             debug_print(L"ERROR: Combined input data too small, size: %u", static_cast<uint32_t>(combinedInputData.size()));
-            return E_INVALIDARG;
+          return E_INVALIDARG;
         }
 
-        // Read tag size from the last 4 bytes
+        // Read tag size from the first 4 bytes
         uint32_t tagSize;
-        std::memcpy(&tagSize, combinedInputData.data() + combinedInputData.size() - sizeof(uint32_t), sizeof(uint32_t));
-        
+        std::memcpy(&tagSize, combinedInputData.data(), sizeof(uint32_t));
+   
         debug_print(L"Extracted tag size: %d", tagSize);
 
         // Validate tag size
@@ -505,19 +500,22 @@ HRESULT VbsEnclave::Trusted::Implementation::MyEnclaveLoadUserBoundKeyAndDecrypt
             return E_INVALIDARG;
         }
 
-        // Extract encrypted data (everything except tag and tag size)
-        size_t encryptedDataSize = combinedInputData.size() - sizeof(uint32_t) - tagSize;
-        std::vector<uint8_t> encryptedInputBytes(combinedInputData.begin(), combinedInputData.begin() + encryptedDataSize);
-        
-        // Extract tag data (between encrypted data and tag size)
+        // Extract tag data (after tag size)
         std::vector<uint8_t> tag(
-            combinedInputData.begin() + encryptedDataSize,
-            combinedInputData.begin() + encryptedDataSize + tagSize
+            combinedInputData.begin() + sizeof(uint32_t),
+            combinedInputData.begin() + sizeof(uint32_t) + tagSize
+        );
+   
+        // Extract encrypted data (everything after tag size and tag data)
+        size_t encryptedDataOffset = sizeof(uint32_t) + tagSize;
+        std::vector<uint8_t> encryptedInputBytes(
+            combinedInputData.begin() + encryptedDataOffset,
+            combinedInputData.end()
         );
 
-        debug_print(L"Extracted encrypted data size: %u, tag size: %u", 
-                   static_cast<uint32_t>(encryptedInputBytes.size()), 
-                   static_cast<uint32_t>(tag.size()));
+        debug_print(L"Extracted tag size: %u, encrypted data size: %u", 
+        static_cast<uint32_t>(tag.size()), 
+        static_cast<uint32_t>(encryptedInputBytes.size()));
 
         // Only load the user-bound key if it's not already loaded
         if (!IsUBKLoaded())
@@ -557,12 +555,6 @@ HRESULT VbsEnclave::Trusted::Implementation::MyEnclaveLoadUserBoundKeyAndDecrypt
                    static_cast<uint32_t>(tag.size()));
         
         auto keyHandle = GetEncryptionKeyHandle();
-        if (!keyHandle)
-        {
-            debug_print(L"ERROR: Encryption key handle is null");
-            return E_UNEXPECTED;
-        }
-
         auto decryptedBytes = veil::vtl1::crypto::decrypt(
             keyHandle, 
             encryptedInputBytes, 
@@ -605,7 +597,7 @@ HRESULT VbsEnclave::Trusted::Implementation::RunEncryptionKeyExample_CreateEncry
     
     debug_print("");
 
-// Generate our encryption key
+    // Generate our encryption key
     debug_print(L"1. Generating our encryption key");
     veil::vtl1::logger::add_log_from_enclave(
         L"[Enclave] Generating our encryption key",

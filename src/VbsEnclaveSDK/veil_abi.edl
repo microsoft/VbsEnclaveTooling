@@ -32,6 +32,11 @@ enclave
         // hello user bound key
         attestationReportAndSessionInfo userboundkey_get_attestation_report(
             vector<uint8_t> challenge);
+
+        // Cleanup function for session handles from VTL0
+        void userboundkey_close_session(
+            uintptr_t session_info
+        );
     };
 
     untrusted
@@ -101,7 +106,7 @@ enclave
         );
 
         // Format a key name with SID information for use with Windows Hello
-        wstring format_key_name(
+        wstring userboundkey_format_key_name(
             wstring key_name
         );
     };

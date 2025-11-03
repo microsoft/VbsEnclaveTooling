@@ -438,59 +438,15 @@ int mainEncryptDecrypt(uint32_t activityLevel)
     std::wstring tagFilePath = encryptedKeyDirPath + L"\\tag";
     bool programExecuted = false;
 
-    // Initialize configuration (simplified - no cache config in VTL0)
-    bool areUserBindingApisAvailable;
-    auto config = InitializeUserBindingConfig(areUserBindingApisAvailable);
-
     veil::vtl0::logger::logger veilLog(
         L"VeilSampleApp",
         L"70F7212C-1F84-4B86-B550-3D5AE82EC779" /*Generated GUID*/,
-        static_cast<veil::any::logger::eventLevel>(activityLevel));
+    static_cast<veil::any::logger::eventLevel>(activityLevel));
 
     veilLog.AddTimestampedLog(L"[Host] Starting from host", veil::any::logger::eventLevel::EVENT_LEVEL_CRITICAL);
 
-    /******************************* Enclave setup *******************************/
-    // Create app+user enclave identity - use the new GetSecureId API from IKeyCredentialManagerStatics2
-    std::vector<uint8_t> ownerId;
-
-    if (areUserBindingApisAvailable)
-    {
-        try
-        {
-            // Call the GetSecureId API directly on the static class
-            auto secureIdBuffer = KeyCredentialManager::GetSecureId();
-
-            if (secureIdBuffer && secureIdBuffer.Length() > 0)
-            {
-                // Convert IBuffer to std::vector<uint8_t>
-                auto reader = winrt::Windows::Storage::Streams::DataReader::FromBuffer(secureIdBuffer);
-                ownerId.resize(secureIdBuffer.Length());
-                reader.ReadBytes(ownerId);
-            }
-            else
-            {
-                std::wcout << L"Warning: GetSecureId returned empty buffer." << std::endl;
-                THROW_HR(E_UNEXPECTED);
-            }
-        }
-        catch (winrt::hresult_error const& ex)
-        {
-            // If the new API is not available or fails, log the error and continue with default
-            std::wcout << L"Warning: Failed to get secure ID using GetSecureId API (HRESULT: 0x"
-                << std::hex << ex.code() << L"). Using default owner_id." << std::endl;
-        }
-        catch (...)
-        {
-            // If any other exception occurs, continue with default
-            std::wcout << L"Warning: Exception occurred while getting secure ID. Using default owner_id." << std::endl;
-        }
-    }
-
-    // Fallback to the default owner_id if the new API failed or returned empty result
-    if (ownerId.empty())
-    {
-        ownerId = veil::vtl0::appmodel::owner_id();
-    }
+    // Create app+user enclave identity
+    std::vector<uint8_t> ownerId = {};
 
     // Load enclave
     auto flags = ENCLAVE_VBS_FLAG_DEBUG;
@@ -518,6 +474,139 @@ int mainEncryptDecrypt(uint32_t activityLevel)
             std::cout << "Invalid input. Please enter a valid option (1 or 2).\n";
             std::cin.clear(); // Clear the error flag
             std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n'); // Discard invalid input
+           continue;
+        }
+
+        switch (choice)
+        {
+            case 1:
+                std::cout << "Enter the string to encrypt: ";
+                std::cin.ignore();
+                std::getline(std::wcin, input);
+                EncryptFlow(enclave.get(), input, keyFilePath, encryptedOutputFilePath, tagFilePath, veilLog);
+                std::wcout << L"Encryption in Enclave completed. \n Encrypted bytes are saved to disk in " << encryptedOutputFilePath << std::endl;
+                veilLog.AddTimestampedLog(
+                    L"[Host] Encryption in Enclave completed. Encrypted bytes are saved to disk in " + encryptedOutputFilePath,
+                        veil::any::logger::eventLevel::EVENT_LEVEL_CRITICAL);
+                programExecuted = true;
+                break;
+
+            case 2:
+                DecryptFlow(enclave.get(), keyFilePath, encryptedOutputFilePath, tagFilePath, veilLog);
+                std::filesystem::remove(keyFilePath);
+                std::filesystem::remove(encryptedOutputFilePath);
+                std::filesystem::remove(tagFilePath);
+                programExecuted = true;
+                break;
+
+            default:
+                std::cout << "Invalid choice. Please try again.\n";
+        }
+    }
+    while (!programExecuted);
+
+    // Wait for a key press before exiting
+    std::cout << "\n\nPress any key to exit..." << std::endl;
+    _getch();
+
+    return 0;
+}
+
+int mainEncryptDecryptUserBound(uint32_t activityLevel)
+{
+    int choice;
+    std::wstring input;
+    const std::wstring encryptedKeyDirPath = std::filesystem::current_path().wstring();
+    const std::wstring encryptedDataDirPath = std::filesystem::current_path().wstring();
+    std::wstring encryptedOutputFilePath = encryptedDataDirPath + L"\\encrypted_userbound";
+    bool programExecuted = false;
+
+    // Initialize configuration for user-bound keys
+    bool areUserBindingApisAvailable;
+    auto config = InitializeUserBindingConfig(areUserBindingApisAvailable);
+
+    if (!areUserBindingApisAvailable)
+    {
+        std::wcout << L"Error: User Binding APIs are not available on this system." << std::endl;
+        std::wcout << L"This feature requires Windows Hello and appropriate hardware support." << std::endl;
+        std::cout << "\nPress any key to return to main menu..." << std::endl;
+        _getch();
+        return 1;
+    }
+
+    veil::vtl0::logger::logger veilLog(
+        L"VeilSampleApp",
+        L"70F7212C-1F84-4B86-B550-3D5AE82EC779" /*Generated GUID*/,
+    static_cast<veil::any::logger::eventLevel>(activityLevel));
+
+    veilLog.AddTimestampedLog(L"[Host] Starting user-bound encryption from host", veil::any::logger::eventLevel::EVENT_LEVEL_CRITICAL);
+
+    /******************************* Enclave setup *******************************/
+    // Create app+user enclave identity - use the new GetSecureId API from IKeyCredentialManagerStatics2
+    std::vector<uint8_t> ownerId;
+
+    try
+    {
+        // Call the GetSecureId API directly on the static class
+        auto secureIdBuffer = KeyCredentialManager::GetSecureId();
+
+        if (secureIdBuffer && secureIdBuffer.Length() > 0)
+        {
+            // Convert IBuffer to std::vector<uint8_t>
+            auto reader = winrt::Windows::Storage::Streams::DataReader::FromBuffer(secureIdBuffer);
+            ownerId.resize(secureIdBuffer.Length());
+            reader.ReadBytes(ownerId);
+        }
+        else
+        {
+            std::wcout << L"Warning: GetSecureId returned empty buffer." << std::endl;
+            THROW_HR(E_UNEXPECTED);
+        }
+    }
+    catch (winrt::hresult_error const& ex)
+    {
+        // If the new API is not available or fails, log the error and continue with default
+        std::wcout << L"Warning: Failed to get secure ID using GetSecureId API (HRESULT: 0x"
+            << std::hex << ex.code() << L"). Using default owner_id." << std::endl;
+    }
+    catch (...)
+    {
+        // If any other exception occurs, continue with default
+        std::wcout << L"Warning: Exception occurred while getting secure ID. Using default owner_id." << std::endl;
+    }
+
+    // Fallback to the default owner_id if the new API failed or returned empty result
+    if (ownerId.empty())
+    {
+        ownerId = {};
+    }
+
+    // Load enclave
+    auto flags = ENCLAVE_VBS_FLAG_DEBUG;
+
+    auto enclave = veil::vtl0::enclave::create(ENCLAVE_TYPE_VBS, ownerId, flags, veil::vtl0::enclave::megabytes(512));
+    veil::vtl0::enclave::load_image(enclave.get(), L"sampleenclave.dll");
+    veil::vtl0::enclave::initialize(enclave.get(), 2); // Note we need at 2 threads, otherwise we will have a reentrancy deadlock
+
+    // Register framework callbacks
+    veil::vtl0::enclave_api::register_callbacks(enclave.get());
+
+    constexpr PCWSTR keyMoniker = L"MyEncryptionKey-UserBound-001";
+
+    // File with secured encryption key bytes
+    auto keyFilePath = std::filesystem::path(encryptedKeyDirPath) / keyMoniker;
+
+    do
+    {
+        std::cout << "\n*** User-Bound String Encryption and Decryption Menu ***\n";
+        std::cout << "1. Encrypt a string (user-bound)\n";
+        std::cout << "2. Decrypt the string (user-bound)\n";
+        std::cout << "Enter your choice: ";
+        if (!(std::cin >> choice)) // Check if input is not an integer
+        {
+            std::cout << "Invalid input. Please enter a valid option (1 or 2).\n";
+            std::cin.clear(); // Clear the error flag
+            std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n'); // Discard invalid input
             continue;
         }
 
@@ -527,36 +616,19 @@ int mainEncryptDecrypt(uint32_t activityLevel)
                 std::cout << "Enter the string to encrypt: ";
                 std::cin.ignore();
                 std::getline(std::wcin, input);
-                if (!areUserBindingApisAvailable)
-                {
-                    EncryptFlow(enclave.get(), input, keyFilePath, encryptedOutputFilePath, tagFilePath, veilLog);
-                }
-                else
-                {
-                    CreateEncryptionKeyOnFirstRun(enclave.get(), keyFilePath, config); // Pass config as parameter
-                    UserBoundEncryptFlow(enclave.get(), input, keyFilePath, encryptedOutputFilePath, config); // Pass config
-                }
-
-                std::wcout << L"Encryption in Enclave completed. \n Encrypted bytes are saved to disk in " << encryptedOutputFilePath << std::endl;
+                CreateEncryptionKeyOnFirstRun(enclave.get(), keyFilePath, config);
+                UserBoundEncryptFlow(enclave.get(), input, keyFilePath, encryptedOutputFilePath, config);
+                std::wcout << L"User-bound encryption in Enclave completed. \n Encrypted bytes are saved to disk in " << encryptedOutputFilePath << std::endl;
                 veilLog.AddTimestampedLog(
-                    L"[Host] Encryption in Enclave completed. Encrypted bytes are saved to disk in " + encryptedOutputFilePath,
+                    L"[Host] User-bound encryption in Enclave completed. Encrypted bytes are saved to disk in " + encryptedOutputFilePath,
                     veil::any::logger::eventLevel::EVENT_LEVEL_CRITICAL);
                 programExecuted = true;
                 break;
 
             case 2:
-                if (!areUserBindingApisAvailable)
-                {
-                    DecryptFlow(enclave.get(), keyFilePath, encryptedOutputFilePath, tagFilePath, veilLog);
-                }
-                else
-                {
-                    UserBoundDecryptFlow(enclave.get(), keyFilePath, encryptedOutputFilePath, config); // Pass config
-                }
-
+                UserBoundDecryptFlow(enclave.get(), keyFilePath, encryptedOutputFilePath, config);
                 std::filesystem::remove(keyFilePath);
                 std::filesystem::remove(encryptedOutputFilePath);
-                std::filesystem::remove(tagFilePath);
                 programExecuted = true;
                 break;
 
@@ -578,7 +650,7 @@ int mainThreadPool(uint32_t /*activityLevel*/)
     std::wcout << L"Running sample: Taskpool..." << std::endl;
 
     // Create app+user enclave identity
-    auto ownerId = veil::vtl0::appmodel::owner_id();
+    std::vector<uint8_t> ownerId = {};
 
     // Load enclave
     auto flags = ENCLAVE_VBS_FLAG_DEBUG;
@@ -614,7 +686,7 @@ int mainEncryptDecryptThreadpool(uint32_t activityLevel)
     std::wcout << L"Running sample: Encrypt decrypt in taskpool..." << std::endl;
 
     // Create app+user enclave identity
-    auto ownerId = veil::vtl0::appmodel::owner_id();
+    std::vector<uint8_t> ownerId = {};
 
     // Load enclave
     auto flags = ENCLAVE_VBS_FLAG_DEBUG;
@@ -671,7 +743,7 @@ int mainEncryptDecryptThreadpool(uint32_t activityLevel)
                 std::cout << "Enter second string to encrypt: ";
                 std::getline(std::wcin, input2);
                 EncryptFlowThreadpool(enclave.get(), input1, input2, keyFilePath, encryptedInputFilePath, tagFilePath, veilLog);
-                std::wcout << L"Encryption in Enclave threadpool completed. \n Encrypted bytes are saved to disk in " << encryptedDataDirPath << std::endl;;
+                std::wcout << L"Encryption in Enclave threadpool completed. \n Encrypted bytes are saved to disk in " << encryptedDataDirPath << std::endl;
                 veilLog.AddTimestampedLog(
                     L"[Host] Encryption in Enclave threadpool completed. \n Encrypted bytes are saved to disk in " + encryptedDataDirPath,
                     veil::any::logger::eventLevel::EVENT_LEVEL_CRITICAL);
@@ -730,10 +802,11 @@ int main(int argc, char* argv[])
         std::cout << "1. Encrypt, decrypt a string using enclave\n";
         std::cout << "2. Explore executing a threadpool in the enclave\n";
         std::cout << "3. Encrypt, decrypt multiple strings using threadpool and enclave\n";
+        std::cout << "4. Encrypt, decrypt a string using user-bound keys (Windows Hello)\n";
         std::cout << "Enter your choice: ";
         if (!(std::cin >> choice)) // Check if input is not an integer
         {
-            std::cout << "Invalid input. Please enter a valid option (1, 2 or 3).\n";
+            std::cout << "Invalid input. Please enter a valid option (1, 2, 3 or 4).\n";
             std::cin.clear(); // Clear the error flag
             std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n'); // Discard invalid input
             continue;
@@ -753,6 +826,11 @@ int main(int argc, char* argv[])
 
             case 3:
                 mainEncryptDecryptThreadpool(activityLevel);
+                programExecuted = true;
+                break;
+
+            case 4:
+                mainEncryptDecryptUserBound(activityLevel);
                 programExecuted = true;
                 break;
 

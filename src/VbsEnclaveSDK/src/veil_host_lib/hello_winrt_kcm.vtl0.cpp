@@ -27,9 +27,92 @@
 #include <VbsEnclave\HostApp\Stubs\Trusted.h>
 #include <veinterop_kcm.h>
 #include <wil/token_helpers.h>
+#include <wil/resource.h>
 #include <sddl.h>
 
 using namespace winrt::Windows::Security::Credentials;
+
+namespace veil::vtl0::userboundkey::implementation
+{
+    // RAII wrapper that stores both the session handle and enclave pointer
+    class unique_sessionhandle
+    {
+    public:
+        unique_sessionhandle() = default;
+        
+        // Move constructor
+        unique_sessionhandle(unique_sessionhandle&& other) noexcept
+            : m_handle(std::exchange(other.m_handle, nullptr))
+            , m_enclavePtr(std::exchange(other.m_enclavePtr, nullptr)) {}
+         
+        // Move assignment
+        unique_sessionhandle& operator=(unique_sessionhandle&& other) noexcept
+        {
+            if (this != &other)
+            {
+                reset();
+                m_handle = std::exchange(other.m_handle, nullptr);
+                m_enclavePtr = std::exchange(other.m_enclavePtr, nullptr);
+            }
+            return *this;
+        }
+    
+        // Delete copy operations
+        unique_sessionhandle(const unique_sessionhandle&) = delete;
+        unique_sessionhandle& operator=(const unique_sessionhandle&) = delete;
+        
+        ~unique_sessionhandle()
+        {
+            reset();
+        }
+        
+        void reset()
+        {
+            if (m_handle != nullptr && m_enclavePtr != nullptr)
+            {
+                try
+                {
+                    std::wcout << L"DEBUG: VTL0 unique_sessionhandle cleanup - calling into VTL1" << std::endl;
+                    auto sessionInfo = reinterpret_cast<uintptr_t>(m_handle);
+                    auto enclaveInterface = veil_abi::Trusted::Stubs::export_interface(m_enclavePtr);
+                    enclaveInterface.userboundkey_close_session(sessionInfo);
+                    std::wcout << L"DEBUG: VTL0 session cleanup completed successfully" << std::endl;
+                }
+                catch (const std::exception& e)
+                {
+                    std::wcout << L"ERROR: Exception during VTL0 session cleanup: " << e.what() << std::endl;
+                }
+                catch (...)
+                {
+                    std::wcout << L"ERROR: Unknown exception during VTL0 session cleanup" << std::endl;
+                }
+            }
+            m_handle = nullptr;
+            m_enclavePtr = nullptr;
+        }
+        
+        USER_BOUND_KEY_SESSION_HANDLE get() const noexcept { return m_handle; }
+        
+        USER_BOUND_KEY_SESSION_HANDLE release() noexcept
+        {
+            auto result = m_handle;
+            m_handle = nullptr;
+            m_enclavePtr = nullptr;
+            return result;
+        }
+   
+        void set(USER_BOUND_KEY_SESSION_HANDLE handle, void* enclavePtr)
+        {
+            reset();
+            m_handle = handle;
+            m_enclavePtr = enclavePtr;
+        }
+    
+    private:
+        USER_BOUND_KEY_SESSION_HANDLE m_handle = nullptr;
+        void* m_enclavePtr = nullptr;
+    };
+}
 
 // Helper function to convert WinRT IBuffer to std::vector<uint8_t>
 std::vector<uint8_t> ConvertBufferToVector(winrt::Windows::Storage::Streams::IBuffer const& buffer)
@@ -41,12 +124,12 @@ std::vector<uint8_t> ConvertBufferToVector(winrt::Windows::Storage::Streams::IBu
 
 // Helper function for common challenge callback logic
 std::function<winrt::Windows::Storage::Streams::IBuffer(const winrt::Windows::Storage::Streams::IBuffer&)> 
-CreateChallengeCallback(std::shared_ptr<uintptr_t> sessionInfo, void* enclaveptr, const std::wstring& callbackType)
+CreateChallengeCallback(std::shared_ptr<veil::vtl0::userboundkey::implementation::unique_sessionhandle> sessionInfo, void* enclaveptr, const std::wstring& callbackType)
 {
     return [sessionInfo, enclaveptr, callbackType](const auto& challenge) mutable -> winrt::Windows::Storage::Streams::IBuffer
     {
         std::wcout << L"DEBUG: " << callbackType << L" callback challenge invoked! Challenge size: " << challenge.Length() << std::endl;
-        
+  
         try {
             auto enclaveInterface = veil_abi::Trusted::Stubs::export_interface(enclaveptr);
 
@@ -58,16 +141,20 @@ CreateChallengeCallback(std::shared_ptr<uintptr_t> sessionInfo, void* enclaveptr
             auto attestationReportAndSessionInfo = enclaveInterface.userboundkey_get_attestation_report(challengeVector);
             std::wcout << L"DEBUG: userboundkey_get_attestation_report returned successfully (" << callbackType << L" callback)!" << std::endl;
 
-            *sessionInfo = attestationReportAndSessionInfo.sessionInfo;
+            // Store the session handle in the RAII wrapper with enclave pointer
+            sessionInfo->set(
+                reinterpret_cast<USER_BOUND_KEY_SESSION_HANDLE>(attestationReportAndSessionInfo.sessionInfo),
+                enclaveptr
+            );
             if (callbackType == L"Challenge") {
-                std::wcout << L"DEBUG: Session stored: " << *sessionInfo << std::endl;
+                std::wcout << L"DEBUG: Session stored: " << reinterpret_cast<uintptr_t>(sessionInfo->get()) << std::endl;
             }
-        
-            // Convert std::vector<uint8_t> back to IBuffer for return
-            std::wcout << L"DEBUG: Converting attestation report back to IBuffer..." << std::endl;
-            auto result = winrt::Windows::Security::Cryptography::CryptographicBuffer::CreateFromByteArray(attestationReportAndSessionInfo.attestationReport);
-            std::wcout << L"DEBUG: " << callbackType << L" callback completed successfully!" << std::endl;
-            return result;
+      
+        // Convert std::vector<uint8_t> back to IBuffer for return
+        std::wcout << L"DEBUG: Converting attestation report back to IBuffer..." << std::endl;
+        auto result = winrt::Windows::Security::Cryptography::CryptographicBuffer::CreateFromByteArray(attestationReportAndSessionInfo.attestationReport);
+        std::wcout << L"DEBUG: " << callbackType << L" callback completed successfully!" << std::endl;
+        return result;
         }
         catch (const std::exception& e) {
             std::wcout << L"DEBUG: Exception in " << callbackType << L" callback: " << e.what() << std::endl;
@@ -154,12 +241,12 @@ veil_abi::Types::credentialAndSessionInfo veil_abi::Untrusted::Implementation::u
     uint32_t key_credential_creation_option)
 {
     std::wcout << L"Inside userboundkey_establish_session_for_create_callback"<< std::endl;
-    auto algorithm = GetAlgorithm(ecdh_protocol);
+  auto algorithm = GetAlgorithm(ecdh_protocol);
 
     // Convert the cacheConfig parameter to KeyCredentialCacheConfiguration
     auto cacheConfiguration = ConvertCacheConfig(cache_config);
 
-    auto sessionInfo = std::make_shared<uintptr_t>(0);
+    auto sessionInfo = std::make_shared<veil::vtl0::userboundkey::implementation::unique_sessionhandle>();
     auto enclaveptr = (void*)enclave;   
 
     try
@@ -173,7 +260,7 @@ veil_abi::Types::credentialAndSessionInfo veil_abi::Untrusted::Implementation::u
     {
         std::wcout << "Deletion failed" << std::endl;
     }
-    
+  
     std::wcout << L"Calling RequestCreateAsync" << std::endl;
     auto credentialResult = KeyCredentialManager::RequestCreateAsync(
         key_name,
@@ -183,7 +270,7 @@ veil_abi::Types::credentialAndSessionInfo veil_abi::Untrusted::Implementation::u
         cacheConfiguration,
         static_cast<winrt::Windows::UI::WindowId>(window_id),
         ChallengeResponseKind::VirtualizationBasedSecurityEnclave,
-        CreateChallengeCallback(sessionInfo, enclaveptr, L"Challenge")
+        CreateChallengeCallback(sessionInfo, enclaveptr, L"Create")
     ).get();
 
     std::wcout << L"RequestCreateAsync returned" << std::endl;
@@ -192,12 +279,12 @@ veil_abi::Types::credentialAndSessionInfo veil_abi::Untrusted::Implementation::u
     auto status = credentialResult.Status();
     if (status != KeyCredentialStatus::Success)
     {        
-        // Throw after setting result so VTL1 can clean up
-        THROW_HR(static_cast<HRESULT>(status));
+    // Throw after setting result so VTL1 can clean up
+     THROW_HR(static_cast<HRESULT>(status));
     }
 
     const auto& credential = credentialResult.Credential();
-
+    
     // AddRef the COM object to keep it alive when we pass the pointer to VTL1
     // VTL1 will consume this reference when it's done
     auto credentialPtr = reinterpret_cast<uintptr_t>(winrt::get_abi(credential));
@@ -207,7 +294,7 @@ veil_abi::Types::credentialAndSessionInfo veil_abi::Untrusted::Implementation::u
 
     credentialAndSessionInfo result;
     result.credential = credentialPtr;
-    result.sessionInfo = *sessionInfo;
+    result.sessionInfo = reinterpret_cast<uintptr_t>(sessionInfo->release()); // Transfer ownership to VTL1
 
     return result;
 }
@@ -218,12 +305,12 @@ veil_abi::Types::credentialAndSessionInfo veil_abi::Untrusted::Implementation::u
     const std::wstring& message,
     uintptr_t window_id)
 {
-    auto sessionInfo = std::make_shared<uintptr_t>(0);
+    auto sessionInfo = std::make_shared<veil::vtl0::userboundkey::implementation::unique_sessionhandle>();
     auto enclaveptr = (void*)enclave;
 
     auto credentialResult = KeyCredentialManager::OpenAsync(
-        key_name.c_str(),
-        ChallengeResponseKind::VirtualizationBasedSecurityEnclave,
+  key_name.c_str(),
+     ChallengeResponseKind::VirtualizationBasedSecurityEnclave,
         CreateChallengeCallback(sessionInfo, enclaveptr, L"Load")
     ).get();
 
@@ -231,7 +318,7 @@ veil_abi::Types::credentialAndSessionInfo veil_abi::Untrusted::Implementation::u
     auto status = credentialResult.Status();
     if (status != KeyCredentialStatus::Success)
     {
-        THROW_HR(static_cast<HRESULT>(status));
+     THROW_HR(static_cast<HRESULT>(status));
     }
 
     const auto& credential = credentialResult.Credential();
@@ -245,7 +332,7 @@ veil_abi::Types::credentialAndSessionInfo veil_abi::Untrusted::Implementation::u
 
     credentialAndSessionInfo result;
     result.credential = credentialPtr;
-    result.sessionInfo = *sessionInfo;
+    result.sessionInfo = reinterpret_cast<uintptr_t>(sessionInfo->release()); // Transfer ownership to VTL1  
     
     return result;
 }
@@ -334,7 +421,7 @@ std::vector<uint8_t> veil_abi::Untrusted::Implementation::userboundkey_get_secre
 }
 
 // Format a key name with SID information for use with Windows Hello
-std::wstring veil_abi::Untrusted::Implementation::format_key_name(const std::wstring& key_name)
+std::wstring veil_abi::Untrusted::Implementation::userboundkey_format_key_name(const std::wstring& key_name)
 {
     return FormatUserHelloKeyName(key_name.c_str());
 }

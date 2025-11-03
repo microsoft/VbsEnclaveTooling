@@ -81,7 +81,7 @@ veil_abi::Types::attestationReportAndSessionInfo userboundkey_get_attestation_re
     // DEBUG: Log that the enclave function has been called
     veil::vtl1::vtl0_functions::debug_print(L"DEBUG: userboundkey_get_attestation_report called - enclave function started");
     
-    // DEBUG: Add hex dump of the challenge buffer
+  // DEBUG: Add hex dump of the challenge buffer
     auto challengeHex = veil::vtl1::userboundkey::CreateHexDump(challenge, L"DEBUG: Challenge buffer");
     veil::vtl1::vtl0_functions::debug_print(challengeHex.c_str());
     
@@ -108,15 +108,32 @@ veil_abi::Types::attestationReportAndSessionInfo userboundkey_get_attestation_re
     // DEBUG: Log after InitializeUserBoundKeySession completes
     veil::vtl1::vtl0_functions::debug_print(L"DEBUG: InitializeUserBoundKeySession completed successfully");
 
-    // Create vector from the allocated memory - RAII will handle cleanup
+ // Create vector from the allocated memory - RAII will handle cleanup
     uint8_t* rawPtr = static_cast<uint8_t*>(reportPtr.get());
     std::vector<uint8_t> report(rawPtr, rawPtr + reportSize);
-    
-    // DEBUG: Log before returning
+ 
+ // DEBUG: Log before returning
     veil::vtl1::vtl0_functions::debug_print(L"DEBUG: userboundkey_get_attestation_report returning successfully");
 
     auto sessionInfo = veil::vtl1::userboundkey::ConvertFromSessionHandle(std::move(sessionHandle));
     return veil_abi::Types::attestationReportAndSessionInfo {std::move(report), sessionInfo};
+}
+
+void userboundkey_close_session(_In_ uintptr_t session_info)
+{
+    veil::vtl1::vtl0_functions::debug_print((L"DEBUG: userboundkey_close_session called with session: 0x" + std::to_wstring(session_info)).c_str());
+    
+    if (session_info != 0)
+    {
+        // Convert back to session handle and use RAII for cleanup
+        auto sessionHandle = veil::vtl1::userboundkey::ConvertToSessionHandle(session_info);
+        veil::vtl1::vtl0_functions::debug_print(L"DEBUG: userboundkey_close_session - Session handle cleaned up via RAII");
+        // sessionHandle destructor will automatically call CloseUserBoundKeySession
+    }
+    else
+    {
+        veil::vtl1::vtl0_functions::debug_print(L"DEBUG: userboundkey_close_session - Session info is null, nothing to clean up");
+    }
 }
 }
 
@@ -185,10 +202,10 @@ namespace veil::vtl1::implementation::userboundkey::callouts
     }
 
     // Format a key name with SID information - calls VTL0
-    std::wstring format_key_name(
+    std::wstring userboundkey_format_key_name(
         _In_ const std::wstring& key_name)
     {
-        return veil_abi::Untrusted::Stubs::format_key_name(key_name);
+        return veil_abi::Untrusted::Stubs::userboundkey_format_key_name(key_name);
     }
 }
 
@@ -285,11 +302,11 @@ wil::secure_vector<uint8_t> create_user_bound_key(
     uint32_t keyCredentialCreationOption)
 {
     veil::vtl1::vtl0_functions::debug_print(L"DEBUG: create_user_bound_key - Function entered");
-
-    unique_sessionhandle sessionHandle; // Declare outside try block for cleanup in catch
     
     try
     {
+        unique_sessionhandle sessionHandle;
+
         // Convert cacheConfig to the type expected by the callback
         auto abi_cache_config = ConvertCacheConfig(cacheConfig);
         wil::unique_process_heap_ptr<void> encryptedKcmRequestRac; // RAII wrapper for automatic cleanup
@@ -298,7 +315,7 @@ wil::secure_vector<uint8_t> create_user_bound_key(
 
         // Format the key name before establishing session
         veil::vtl1::vtl0_functions::debug_print(L"DEBUG: create_user_bound_key - Formatting key name");
-        std::wstring formattedKeyName = veil::vtl1::implementation::userboundkey::callouts::format_key_name(keyName);
+        std::wstring formattedKeyName = veil::vtl1::implementation::userboundkey::callouts::userboundkey_format_key_name(keyName);
         veil::vtl1::vtl0_functions::debug_print((L"DEBUG: create_user_bound_key - formattedKeyName: " + formattedKeyName).c_str());
 
         // Validate that the formatted key name ends with the original key name
@@ -415,29 +432,11 @@ wil::secure_vector<uint8_t> create_user_bound_key(
         std::string error_msg = e.what();
         std::wstring werror_msg(error_msg.begin(), error_msg.end());
         veil::vtl1::vtl0_functions::debug_print((L"ERROR: create_user_bound_key - Exception caught: " + werror_msg).c_str());
-        
-        // Clean up the VTL1 session if it was created
-        if (sessionHandle.get() != nullptr)
-        {
-            veil::vtl1::vtl0_functions::debug_print((L"DEBUG: create_user_bound_key - Cleaning up VTL1 session: 0x" + 
-                std::to_wstring(reinterpret_cast<uintptr_t>(sessionHandle.get()))).c_str());
-            sessionHandle.reset(); // This will call CloseUserBoundKeySession
-        }
-        
         throw; // Re-throw the exception
     }
     catch (...)
     {
-        veil::vtl1::vtl0_functions::debug_print(L"ERROR: create_user_bound_key - Unknown exception caught");
-        
-        // Clean up the VTL1 session if it was created
-        if (sessionHandle.get() != nullptr)
-        {
-            veil::vtl1::vtl0_functions::debug_print((L"DEBUG: create_user_bound_key - Cleaning up VTL1 session: 0x" + 
-                std::to_wstring(reinterpret_cast<uintptr_t>(sessionHandle.get()))).c_str());
-            sessionHandle.reset(); // This will call CloseUserBoundKeySession
-        }
-        
+        veil::vtl1::vtl0_functions::debug_print(L"ERROR: create_user_bound_key - Unknown exception caught");        
         throw; // Re-throw the exception
     }
 }
@@ -450,11 +449,10 @@ std::vector<uint8_t> load_user_bound_key(
     const std::vector<uint8_t>& sealedBoundKeyBytes)
 {
     veil::vtl1::vtl0_functions::debug_print(L"DEBUG: load_user_bound_key - Function entered");
-
-    unique_sessionhandle sessionHandle; // Declare outside try block for cleanup in catch
     
     try
     {
+        unique_sessionhandle sessionHandle;
         uint64_t localNonce = 0; // captures the nonce used in the encrypted request, will be used in the corresponding decrypt call
 
         // UNSEAL
@@ -473,7 +471,7 @@ std::vector<uint8_t> load_user_bound_key(
 
         // Format the key name before establishing session
         veil::vtl1::vtl0_functions::debug_print(L"DEBUG: load_user_bound_key - Formatting key name");
-        std::wstring formattedKeyName = veil::vtl1::implementation::userboundkey::callouts::format_key_name(keyName);
+        std::wstring formattedKeyName = veil::vtl1::implementation::userboundkey::callouts::userboundkey_format_key_name(keyName);
         veil::vtl1::vtl0_functions::debug_print((L"DEBUG: load_user_bound_key - formattedKeyName: " + formattedKeyName).c_str());
 
         // Validate that the formatted key name ends with the original key name
