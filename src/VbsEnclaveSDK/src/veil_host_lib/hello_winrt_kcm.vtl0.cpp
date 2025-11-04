@@ -35,124 +35,85 @@ using namespace winrt::Windows::Security::Credentials;
 namespace veil::vtl0::userboundkey::implementation
 {
     // RAII wrapper that stores both the session handle and enclave pointer
-    class unique_sessionhandle
-    {
+class unique_sessionhandle
+{
     public:
-        unique_sessionhandle() = default;
-        
-        // Move constructor
-        unique_sessionhandle(unique_sessionhandle&& other) noexcept
-            : m_handle(std::exchange(other.m_handle, nullptr))
-            , m_enclavePtr(std::exchange(other.m_enclavePtr, nullptr)) {}
-         
-        // Move assignment
-        unique_sessionhandle& operator=(unique_sessionhandle&& other) noexcept
-        {
-            if (this != &other)
-            {
-                reset();
-                m_handle = std::exchange(other.m_handle, nullptr);
-                m_enclavePtr = std::exchange(other.m_enclavePtr, nullptr);
-            }
-            return *this;
-        }
-    
-        // Delete copy operations
-        unique_sessionhandle(const unique_sessionhandle&) = delete;
-        unique_sessionhandle& operator=(const unique_sessionhandle&) = delete;
-        
-        ~unique_sessionhandle()
+    unique_sessionhandle() = default;
+
+    // Move constructor
+    unique_sessionhandle(unique_sessionhandle&& other) noexcept
+        : m_handle(std::exchange(other.m_handle, nullptr))
+        , m_enclavePtr(std::exchange(other.m_enclavePtr, nullptr))
+    {
+    }
+
+          // Move assignment
+    unique_sessionhandle& operator=(unique_sessionhandle&& other) noexcept
+    {
+        if (this != &other)
         {
             reset();
+            m_handle = std::exchange(other.m_handle, nullptr);
+            m_enclavePtr = std::exchange(other.m_enclavePtr, nullptr);
         }
-        
-        void reset()
-        {
-            if (m_handle != nullptr && m_enclavePtr != nullptr)
-            {
-                try
-                {
-                    std::wcout << L"DEBUG: VTL0 unique_sessionhandle cleanup - calling into VTL1" << std::endl;
-                    auto sessionInfo = reinterpret_cast<uintptr_t>(m_handle);
-                    auto enclaveInterface = veil_abi::Trusted::Stubs::export_interface(m_enclavePtr);
-                    enclaveInterface.userboundkey_close_session(sessionInfo);
-                    std::wcout << L"DEBUG: VTL0 session cleanup completed successfully" << std::endl;
-                }
-                catch (const std::exception& e)
-                {
-                    std::wcout << L"ERROR: Exception during VTL0 session cleanup: " << e.what() << std::endl;
-                }
-                catch (...)
-                {
-                    std::wcout << L"ERROR: Unknown exception during VTL0 session cleanup" << std::endl;
-                }
-            }
-            m_handle = nullptr;
-            m_enclavePtr = nullptr;
-        }
-        
-        USER_BOUND_KEY_SESSION_HANDLE get() const noexcept { return m_handle; }
-        
-        USER_BOUND_KEY_SESSION_HANDLE release() noexcept
-        {
-            auto result = m_handle;
-            m_handle = nullptr;
-            m_enclavePtr = nullptr;
-            return result;
-        }
-   
-        void set(USER_BOUND_KEY_SESSION_HANDLE handle, void* enclavePtr)
-        {
-            reset();
-            m_handle = handle;
-            m_enclavePtr = enclavePtr;
-        }
-    
-    private:
-        USER_BOUND_KEY_SESSION_HANDLE m_handle = nullptr;
-        void* m_enclavePtr = nullptr;
-    };
+        return *this;
+    }
 
-    // RAII wrapper for KeyCredential - transfers ownership to VTL1 (similar to unique_sessionhandle)
-    class unique_credential
+    // Delete copy operations
+    unique_sessionhandle(const unique_sessionhandle&) = delete;
+    unique_sessionhandle& operator=(const unique_sessionhandle&) = delete;
+
+    ~unique_sessionhandle()
     {
-    public:
-        unique_credential() = default;
-        
-        // Constructor from KeyCredential
-        explicit unique_credential(KeyCredential credential) 
-            : m_credential(std::move(credential)) {}
-        
-        // Delete copy and move operations (like unique_sessionhandle)
-        unique_credential(const unique_credential&) = delete;
-        unique_credential& operator=(const unique_credential&) = delete;
-        unique_credential(unique_credential&&) = delete;
-        unique_credential& operator=(unique_credential&&) = delete;
-        
-        ~unique_credential() = default; // KeyCredential handles its own cleanup
-        
-        // Transfer ownership by converting to raw pointer and detaching (like sessionInfo)
-        uintptr_t release() noexcept
+        reset();
+    }
+
+    void reset()
+    {
+        if (m_handle != nullptr && m_enclavePtr != nullptr)
         {
-            if (m_credential)
+            try
             {
-                // Get the ABI pointer and detach from WinRT wrapper
-                auto ptr = reinterpret_cast<uintptr_t>(winrt::get_abi(m_credential));
-                winrt::detach_abi(m_credential); // Detach without calling Release - VTL1 takes ownership
-       
-                return ptr;
+                std::wcout << L"DEBUG: VTL0 unique_sessionhandle cleanup - calling into VTL1" << std::endl;
+                auto sessionInfo = reinterpret_cast<uintptr_t>(m_handle);
+                auto enclaveInterface = veil_abi::Trusted::Stubs::export_interface(m_enclavePtr);
+                enclaveInterface.userboundkey_close_session(sessionInfo);
+                std::wcout << L"DEBUG: VTL0 session cleanup completed successfully" << std::endl;
             }
-            return 0;
+            catch (const std::exception& e)
+            {
+                std::wcout << L"ERROR: Exception during VTL0 session cleanup: " << e.what() << std::endl;
+            }
+            catch (...)
+            {
+                std::wcout << L"ERROR: Unknown exception during VTL0 session cleanup" << std::endl;
+            }
         }
-    
-        explicit operator bool() const noexcept
-        {
-            return m_credential != nullptr;
-        }
+        m_handle = nullptr;
+        m_enclavePtr = nullptr;
+    }
+
+    USER_BOUND_KEY_SESSION_HANDLE get() const noexcept { return m_handle; }
+
+    USER_BOUND_KEY_SESSION_HANDLE release() noexcept
+    {
+        auto result = m_handle;
+        m_handle = nullptr;
+        m_enclavePtr = nullptr;
+        return result;
+    }
+
+    void set(USER_BOUND_KEY_SESSION_HANDLE handle, void* enclavePtr)
+    {
+        reset();
+        m_handle = handle;
+        m_enclavePtr = enclavePtr;
+    }
 
     private:
-        KeyCredential m_credential{nullptr};
-    };
+    USER_BOUND_KEY_SESSION_HANDLE m_handle = nullptr;
+    void* m_enclavePtr = nullptr;
+};
 }
 
 // Helper function to convert WinRT IBuffer to std::vector<uint8_t>
@@ -323,14 +284,13 @@ veil_abi::Types::credentialAndSessionInfo veil_abi::Untrusted::Implementation::u
         THROW_HR(static_cast<HRESULT>(status));
     }
 
-    
-    // Use RAII wrapper and transfer ownership to VTL1 (like sessionInfo)
-    veil::vtl0::userboundkey::implementation::unique_credential credentialWrapper{credentialResult.Credential()};
-    
     std::wcout << L"DEBUG: Transferring credential and session ownership to VTL1" << std::endl;
 
     credentialAndSessionInfo result;
-    result.credential = credentialWrapper.release(); // Transfer ownership to VTL1
+    void* tempCredential = nullptr;
+    winrt::copy_to_abi(credentialResult.Credential(), tempCredential); // Detach ownership from WinRT
+
+    result.credential = reinterpret_cast<uintptr_t>(tempCredential); // Transfer ownership to VTL1
     result.sessionInfo = reinterpret_cast<uintptr_t>(sessionInfo->release()); // Transfer ownership to VTL1
 
     return result;
@@ -357,14 +317,14 @@ veil_abi::Types::credentialAndSessionInfo veil_abi::Untrusted::Implementation::u
     {
         THROW_HR(static_cast<HRESULT>(status));
     }
-
-    // Use RAII wrapper and transfer ownership to VTL1 (like sessionInfo)
-    veil::vtl0::userboundkey::implementation::unique_credential credentialWrapper{credentialResult.Credential()};
     
     std::wcout << L"DEBUG: Transferring credential and session ownership to VTL1" << std::endl;
 
     credentialAndSessionInfo result;
-    result.credential = credentialWrapper.release(); // Transfer ownership to VTL1
+    void* tempCredential = nullptr;
+    winrt::copy_to_abi(credentialResult.Credential(), tempCredential); // Detach ownership from WinRT
+
+    result.credential = reinterpret_cast<uintptr_t>(tempCredential); // Transfer ownership to VTL1
     result.sessionInfo = reinterpret_cast<uintptr_t>(sessionInfo->release()); // Transfer ownership to VTL1  
     
     return result;
@@ -385,7 +345,10 @@ std::vector<uint8_t> veil_abi::Untrusted::Implementation::userboundkey_get_autho
         // Directly attach to the existing COM object with one reference
         // This creates a non-owning wrapper that won't call Release
         void* abi = reinterpret_cast<void*>(credential_ptr);
-        KeyCredential credential{ abi, winrt::take_ownership_from_abi };
+        
+        // KeyCredential credential{ abi, winrt::take_ownership_from_abi };
+        KeyCredential credential { nullptr };
+        winrt::copy_from_abi(credential, abi);
    
         std::wcout << L"DEBUG: Created non-owning KeyCredential wrapper" << std::endl;
 
@@ -395,8 +358,7 @@ std::vector<uint8_t> veil_abi::Untrusted::Implementation::userboundkey_get_autho
 
         auto result = ConvertBufferToVector(authorizationContext);
 
-        // Prevent the destructor from calling Release by detaching. This ensures VTL1's ownership is preserved
-        winrt::detach_abi(credential);
+        // winrt::detach_abi(credential);
 
         std::wcout << L"DEBUG: userboundkey_get_authorization_context_from_credential completed successfully" << std::endl;
   
@@ -429,7 +391,8 @@ std::vector<uint8_t> veil_abi::Untrusted::Implementation::userboundkey_get_secre
         // Directly attach to the existing COM object with one reference
         // This creates a non-owning wrapper that won't call Release
         void* abi = reinterpret_cast<void*>(credential_ptr);
-        KeyCredential credential{ abi, winrt::take_ownership_from_abi };
+        KeyCredential credential {nullptr};
+        winrt::copy_from_abi(credential, abi);
 
         std::wcout << L"DEBUG: Created non-owning KeyCredential wrapper" << std::endl;
 
@@ -441,8 +404,7 @@ std::vector<uint8_t> veil_abi::Untrusted::Implementation::userboundkey_get_secre
 
         auto result = ConvertBufferToVector(secret.Result());
 
-        // Prevent the destructor from calling Release by detaching. This ensures VTL1's ownership is preserved
-        winrt::detach_abi(credential);
+        // winrt::detach_abi(credential);
   
         std::wcout << L"DEBUG: userboundkey_get_secret_from_credential completed successfully" << std::endl;
 
