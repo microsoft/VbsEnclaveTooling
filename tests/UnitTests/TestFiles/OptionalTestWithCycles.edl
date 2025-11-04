@@ -1,0 +1,17 @@
+// Copyright (c) Microsoft Corporation.
+// Licensed under the MIT License.
+
+enclave
+{
+    struct MyStruct1
+    {
+        optional<MyStruct2> my_struct2_opt;
+        vector<MyStruct2> my_struct2_vec;
+    };
+
+    struct MyStruct2
+    {
+        optional<MyStruct1> my_struct1_opt;
+        MyStruct1 my_struct1_no_opt;
+    };
+};

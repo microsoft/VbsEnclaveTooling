@@ -22,13 +22,13 @@ namespace VbsEnclaveABI::Shared::Converters
     template <>
     struct StructMetadata<CodeGenTest::Types::TestStruct2>
     {
-        static constexpr auto members = std::make_tuple(&CodeGenTest::Types::TestStruct2::int32_ptr,&CodeGenTest::Types::TestStruct2::struct_no_ptr,&CodeGenTest::Types::TestStruct2::struct_ptr);
+        static constexpr auto members = std::make_tuple(&CodeGenTest::Types::TestStruct2::int32_opt,&CodeGenTest::Types::TestStruct2::struct_no_opt,&CodeGenTest::Types::TestStruct2::struct_opt);
     };
 
     template <>
     struct StructMetadata<CodeGenTest::FlatbufferTypes::TestStruct2T>
     {
-        static constexpr auto members = std::make_tuple(&CodeGenTest::FlatbufferTypes::TestStruct2T::int32_ptr,&CodeGenTest::FlatbufferTypes::TestStruct2T::struct_no_ptr,&CodeGenTest::FlatbufferTypes::TestStruct2T::struct_ptr);
+        static constexpr auto members = std::make_tuple(&CodeGenTest::FlatbufferTypes::TestStruct2T::int32_opt,&CodeGenTest::FlatbufferTypes::TestStruct2T::struct_no_opt,&CodeGenTest::FlatbufferTypes::TestStruct2T::struct_opt);
     };
 
     template <>

@@ -28,9 +28,9 @@ namespace CodeGenTest::Types
 
     struct TestStruct2
     {
-        std::unique_ptr<int32_t> int32_ptr {};
-        TestStruct1 struct_no_ptr {};
-        std::unique_ptr<TestStruct1> struct_ptr {};
+        std::optional<std::int32_t> int32_opt {};
+        TestStruct1 struct_no_opt {};
+        std::optional<TestStruct1> struct_opt {};
     };
 
 }

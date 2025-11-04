@@ -81,11 +81,15 @@ namespace ErrorHelpers
         EdlVectorNameIdentifierNotFound,
         EdlVectorDoesNotStartWithArrowBracket,
         EdlStructSelfReference,
-        EdlTypeInVectorMustBePreviouslyDefined,
         ImportDirectoriesNoMoreArgs,
         ImportDirectoryDoesNotExist,
         ImportedEdlFileDoesNotExist,
         ImportCycleFound,
+        EdlOptionalDoesNotStartWithArrowBracket,
+        EdlOptionalNameIdentifierNotFound,
+        EdlOptionalCycle,
+        EdlOptionalInvalidInnerType,
+        EdlVectorInvalidInnerType,
     };
 
     struct ErrorIdHash
@@ -160,6 +164,11 @@ namespace ErrorHelpers
         { ErrorId::EdlVectorNameIdentifierNotFound, "Expected an identifier name for a vector but found '{}'" },
         { ErrorId::EdlVectorDoesNotStartWithArrowBracket, "Vectors must be declared with <T>. where T is a valid type" },
         { ErrorId::EdlStructSelfReference, "A struct cannot contain itself directly. Use a pointer to the struct instead." },
+        { ErrorId::EdlOptionalDoesNotStartWithArrowBracket, "Optionals must be declared with optional<T> where T is a valid type. Valid types: structs, enums and primitives" },
+        { ErrorId::EdlOptionalCycle, "Optional<T> cycle detected in '{}'." },
+        { ErrorId::EdlOptionalNameIdentifierNotFound, "Expected an identifier name for an optional but found '{}'" },
+        { ErrorId::EdlOptionalInvalidInnerType, "Invalid inner optional type. Valid types: structs, enums and primitives" },
+        { ErrorId::EdlVectorInvalidInnerType, "Invalid inner vector type. Valid types: structs, enums and primitives" },
 
         // CodeGen errors
         { ErrorId::CodeGenUnableToOpenOutputFile, "Failed to open '{}' for writing." },
