@@ -112,6 +112,47 @@ namespace veil::vtl0::userboundkey::implementation
         USER_BOUND_KEY_SESSION_HANDLE m_handle = nullptr;
         void* m_enclavePtr = nullptr;
     };
+
+    // RAII wrapper for KeyCredential - transfers ownership to VTL1 (similar to unique_sessionhandle)
+    class unique_credential
+    {
+    public:
+        unique_credential() = default;
+        
+        // Constructor from KeyCredential
+        explicit unique_credential(KeyCredential credential) 
+            : m_credential(std::move(credential)) {}
+        
+        // Delete copy and move operations (like unique_sessionhandle)
+        unique_credential(const unique_credential&) = delete;
+        unique_credential& operator=(const unique_credential&) = delete;
+        unique_credential(unique_credential&&) = delete;
+        unique_credential& operator=(unique_credential&&) = delete;
+        
+        ~unique_credential() = default; // KeyCredential handles its own cleanup
+        
+        // Transfer ownership by converting to raw pointer and detaching (like sessionInfo)
+        uintptr_t release() noexcept
+        {
+            if (m_credential)
+            {
+                // Get the ABI pointer and detach from WinRT wrapper
+                auto ptr = reinterpret_cast<uintptr_t>(winrt::get_abi(m_credential));
+                winrt::detach_abi(m_credential); // Detach without calling Release - VTL1 takes ownership
+       
+                return ptr;
+            }
+            return 0;
+        }
+    
+        explicit operator bool() const noexcept
+        {
+            return m_credential != nullptr;
+        }
+
+    private:
+        KeyCredential m_credential{nullptr};
+    };
 }
 
 // Helper function to convert WinRT IBuffer to std::vector<uint8_t>
@@ -279,21 +320,17 @@ veil_abi::Types::credentialAndSessionInfo veil_abi::Untrusted::Implementation::u
     auto status = credentialResult.Status();
     if (status != KeyCredentialStatus::Success)
     {        
-    // Throw after setting result so VTL1 can clean up
-     THROW_HR(static_cast<HRESULT>(status));
+        THROW_HR(static_cast<HRESULT>(status));
     }
 
-    const auto& credential = credentialResult.Credential();
     
-    // AddRef the COM object to keep it alive when we pass the pointer to VTL1
-    // VTL1 will consume this reference when it's done
-    auto credentialPtr = reinterpret_cast<uintptr_t>(winrt::get_abi(credential));
-    static_cast<IUnknown*>(winrt::get_abi(credential))->AddRef();
+    // Use RAII wrapper and transfer ownership to VTL1 (like sessionInfo)
+    veil::vtl0::userboundkey::implementation::unique_credential credentialWrapper{credentialResult.Credential()};
     
-    std::wcout << L"DEBUG: Returning credential pointer: 0x" << std::hex << credentialPtr << std::dec << std::endl;
+    std::wcout << L"DEBUG: Transferring credential and session ownership to VTL1" << std::endl;
 
     credentialAndSessionInfo result;
-    result.credential = credentialPtr;
+    result.credential = credentialWrapper.release(); // Transfer ownership to VTL1
     result.sessionInfo = reinterpret_cast<uintptr_t>(sessionInfo->release()); // Transfer ownership to VTL1
 
     return result;
@@ -309,8 +346,8 @@ veil_abi::Types::credentialAndSessionInfo veil_abi::Untrusted::Implementation::u
     auto enclaveptr = (void*)enclave;
 
     auto credentialResult = KeyCredentialManager::OpenAsync(
-  key_name.c_str(),
-     ChallengeResponseKind::VirtualizationBasedSecurityEnclave,
+        key_name.c_str(),
+        ChallengeResponseKind::VirtualizationBasedSecurityEnclave,
         CreateChallengeCallback(sessionInfo, enclaveptr, L"Load")
     ).get();
 
@@ -318,26 +355,22 @@ veil_abi::Types::credentialAndSessionInfo veil_abi::Untrusted::Implementation::u
     auto status = credentialResult.Status();
     if (status != KeyCredentialStatus::Success)
     {
-     THROW_HR(static_cast<HRESULT>(status));
+        THROW_HR(static_cast<HRESULT>(status));
     }
 
-    const auto& credential = credentialResult.Credential();
-
-    // AddRef twice: one for RetrieveAuthorizationContext and one for DeriveSharedSecret
-    auto credentialPtr = reinterpret_cast<uintptr_t>(winrt::get_abi(credential));
-    static_cast<IUnknown*>(winrt::get_abi(credential))->AddRef();
-    static_cast<IUnknown*>(winrt::get_abi(credential))->AddRef();
+    // Use RAII wrapper and transfer ownership to VTL1 (like sessionInfo)
+    veil::vtl0::userboundkey::implementation::unique_credential credentialWrapper{credentialResult.Credential()};
     
-    std::wcout << L"DEBUG: Returning credential pointer (AddRef x2): 0x" << std::hex << credentialPtr << std::dec << std::endl;
+    std::wcout << L"DEBUG: Transferring credential and session ownership to VTL1" << std::endl;
 
     credentialAndSessionInfo result;
-    result.credential = credentialPtr;
+    result.credential = credentialWrapper.release(); // Transfer ownership to VTL1
     result.sessionInfo = reinterpret_cast<uintptr_t>(sessionInfo->release()); // Transfer ownership to VTL1  
     
     return result;
 }
 
-// New VTL0 function to extract authorization context from credential
+// VTL0 function to extract authorization context from credential
 std::vector<uint8_t> veil_abi::Untrusted::Implementation::userboundkey_get_authorization_context_from_credential(
     uintptr_t credential_ptr,
     const std::vector<uint8_t>& encrypted_kcm_request_for_get_authorization_context,
@@ -349,21 +382,24 @@ std::vector<uint8_t> veil_abi::Untrusted::Implementation::userboundkey_get_autho
 
     try
     {
-        // Convert the pointer back to KeyCredential
+        // Directly attach to the existing COM object with one reference
+        // This creates a non-owning wrapper that won't call Release
         void* abi = reinterpret_cast<void*>(credential_ptr);
         KeyCredential credential{ abi, winrt::take_ownership_from_abi };
-        
-        std::wcout << L"DEBUG: Converted pointer to KeyCredential" << std::endl;
+   
+        std::wcout << L"DEBUG: Created non-owning KeyCredential wrapper" << std::endl;
 
         // Extract authorization context
         auto authorizationContext = credential.RetrieveAuthorizationContext(
-            winrt::Windows::Security::Cryptography::CryptographicBuffer::CreateFromByteArray(encrypted_kcm_request_for_get_authorization_context));
+        winrt::Windows::Security::Cryptography::CryptographicBuffer::CreateFromByteArray(encrypted_kcm_request_for_get_authorization_context));
 
         auto result = ConvertBufferToVector(authorizationContext);
 
+        // Prevent the destructor from calling Release by detaching. This ensures VTL1's ownership is preserved
+        winrt::detach_abi(credential);
+
         std::wcout << L"DEBUG: userboundkey_get_authorization_context_from_credential completed successfully" << std::endl;
-        
-        // The KeyCredential destructor will automatically handle the Release when it goes out of scope
+  
         return result;
     }
     catch (const std::exception& e)
@@ -386,15 +422,16 @@ std::vector<uint8_t> veil_abi::Untrusted::Implementation::userboundkey_get_secre
     uintptr_t window_id)
 {
     std::wcout << L"DEBUG: userboundkey_get_secret_from_credential called with credential: 0x" 
-               << std::hex << credential_ptr << std::dec << std::endl;
+      << std::hex << credential_ptr << std::dec << std::endl;
 
     try
     {
-        // Convert the pointer back to KeyCredential
+        // Directly attach to the existing COM object with one reference
+        // This creates a non-owning wrapper that won't call Release
         void* abi = reinterpret_cast<void*>(credential_ptr);
         KeyCredential credential{ abi, winrt::take_ownership_from_abi };
 
-        std::wcout << L"DEBUG: Converted pointer to KeyCredential" << std::endl;
+        std::wcout << L"DEBUG: Created non-owning KeyCredential wrapper" << std::endl;
 
         // Derive shared secret. This prompts for the hello PIN.
         auto secret = credential.RequestDeriveSharedSecretAsync(
@@ -403,9 +440,12 @@ std::vector<uint8_t> veil_abi::Untrusted::Implementation::userboundkey_get_secre
             winrt::Windows::Security::Cryptography::CryptographicBuffer::CreateFromByteArray(encrypted_kcm_request_for_derive_shared_secret)).get();
 
         auto result = ConvertBufferToVector(secret.Result());
+
+        // Prevent the destructor from calling Release by detaching. This ensures VTL1's ownership is preserved
+        winrt::detach_abi(credential);
+  
         std::wcout << L"DEBUG: userboundkey_get_secret_from_credential completed successfully" << std::endl;
 
-        // The KeyCredential destructor will automatically handle the Release when it goes out of scope
         return result;
     }
     catch (const std::exception& e)

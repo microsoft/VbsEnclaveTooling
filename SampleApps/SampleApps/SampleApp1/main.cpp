@@ -16,6 +16,7 @@
 
 #include <winrt/base.h>
 #include <winrt/Windows.Foundation.h>
+#include <winrt/Windows.Foundation.Metadata.h>
 #include <winrt/Windows.Security.Credentials.h>
 #include <winrt/Windows.Storage.Streams.h>
 #include <roapi.h>
@@ -42,7 +43,6 @@ struct EncryptionConfig
 // Initialize function to set up configuration and determine API availability
 EncryptionConfig InitializeUserBindingConfig(bool& areUserBindingApisAvailable)
 {
-    areUserBindingApisAvailable = true;
     EncryptionConfig config;
     config.helloKeyName = L"MyEncryptionKey-001";
     config.pinMessage = L"Please enter your PIN to access the encryption key.";
@@ -50,25 +50,22 @@ EncryptionConfig InitializeUserBindingConfig(bool& areUserBindingApisAvailable)
     // Initialize COM for WinRT
     winrt::init_apartment();
     
-    // Check if User Binding APIs are available by attempting to create KeyCredentialCacheConfiguration
+    // Check if User Binding APIs are available using ApiInformation
     try 
     {
-        // Use RoGetActivationFactory to test if KeyCredentialCacheConfiguration is available
-        winrt::com_ptr<winrt::Windows::Security::Credentials::IKeyCredentialCacheConfigurationFactory> factory;
-        
-        // Create HSTRING for the runtime class name
-        winrt::hstring className = L"Windows.Security.Credentials.KeyCredentialCacheConfiguration";
-        
-        // Get the activation factory using RoGetActivationFactory
-        THROW_IF_FAILED(RoGetActivationFactory(
-            reinterpret_cast<HSTRING>(winrt::get_abi(className)),
-            winrt::guid_of<winrt::Windows::Security::Credentials::IKeyCredentialCacheConfigurationFactory>(),
-            factory.put_void()
-        ));
+        // Check if both the KeyCredentialManager type and GetSecureId method are available
+        areUserBindingApisAvailable = 
+            winrt::Windows::Foundation::Metadata::ApiInformation::IsTypePresent(L"Windows.Security.Credentials.KeyCredentialManager") &&
+            winrt::Windows::Foundation::Metadata::ApiInformation::IsMethodPresent(L"Windows.Security.Credentials.KeyCredentialManager", L"GetSecureId");
+
+        if (!areUserBindingApisAvailable)
+        {
+            std::wcout << L"Warning: User Binding APIs (KeyCredentialManager.GetSecureId) are not available on this system." << std::endl;
+        }
     }
     catch (...)
     {
-        // Any other exception means APIs are not available
+        // Any exception means APIs are not available
         std::wcout << L"Warning: Exception occurred while checking User Binding API availability." << std::endl;
         areUserBindingApisAvailable = false;
     }
