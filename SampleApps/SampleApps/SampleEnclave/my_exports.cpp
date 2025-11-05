@@ -21,6 +21,19 @@ wil::unique_bcrypt_key g_encryptionKey;
 // SRW lock to protect access to g_encryptionKey (enclave-compatible)
 wil::srwlock g_encryptionKeyLock;
 
+// Global runtime policy for enclave operations
+// 
+// ENCLAVE_RUNTIME_POLICY_ALLOW_FULL_DEBUG:
+//   - **DEBUG ONLY** - Allows debugger to attach and inspect enclave state
+//   - **SECURITY WARNING**: Reduces isolation guarantees in debug builds
+//   - Production builds should use 0 (no debug policy) for maximum security
+#ifdef _DEBUG
+    constexpr UINT32 g_runtimePolicy = ENCLAVE_RUNTIME_POLICY_ALLOW_FULL_DEBUG;
+#else
+    // Production: No debug policy - maximum security and isolation
+    constexpr UINT32 g_runtimePolicy = 0;
+#endif
+
 bool IsUBKLoaded()
 {
     // Thread-safe check if the key object is valid
@@ -354,33 +367,14 @@ HRESULT VbsEnclave::Trusted::Implementation::MyEnclaveCreateUserBoundKey(
         debug_print(L"Created secure cache configuration in VTL1");
 
         // Create a user-bound key with enclave sealing
-        // 
-        // ENCLAVE_IDENTITY_POLICY_SEAL_SAME_IMAGE:
-        //   - Binds the key to this specific enclave image (binary)
-        //   - Key can only be unsealed by an enclave with the EXACT same measurement
-        //   - Protects against unauthorized access even if enclave code is modified
-        //   - Ensures data sealed by one version cannot be accessed by another version
-        //
-        #ifdef _DEBUG
-            // ENCLAVE_RUNTIME_POLICY_ALLOW_FULL_DEBUG:
-            //   - **DEBUG ONLY** - Allows debugger to attach and inspect enclave state
-            //   - **SECURITY WARNING**: Reduces isolation guarantees in debug builds
-            //   - Production builds should use 0 (no debug policy) for maximum security
-            constexpr UINT32 runtimePolicy = ENCLAVE_RUNTIME_POLICY_ALLOW_FULL_DEBUG;
-        #else
-            // Production: No debug policy - maximum security and isolation
-            constexpr UINT32 runtimePolicy = 0;
-        #endif
-
         auto keyBytes = veil::vtl1::userboundkey::create_user_bound_key(
             helloKeyName,
-            secureConfig,
-            pinMessage,
-            windowId,
+ secureConfig,
+   pinMessage,
+      windowId,
             ENCLAVE_SEALING_IDENTITY_POLICY::ENCLAVE_IDENTITY_POLICY_SEAL_SAME_IMAGE,
-            runtimePolicy,
+            g_runtimePolicy,
             keyCredentialCacheOption);
-
         debug_print(L"create_user_bound_key returned");
 
         // Store the user-bound key bytes directly - do NOT try to create a symmetric key from them
@@ -431,6 +425,7 @@ HRESULT VbsEnclave::Trusted::Implementation::MyEnclaveLoadUserBoundKeyAndEncrypt
                 pinMessage,
                 windowId,
                 securedEncryptionKeyBytes,
+                g_runtimePolicy,
                 needsReseal,
                 resealedBoundKeyBytes);
 
@@ -566,6 +561,7 @@ HRESULT VbsEnclave::Trusted::Implementation::MyEnclaveLoadUserBoundKeyAndDecrypt
                 pinMessage,
                 windowId,
                 securedEncryptionKeyBytes,
+                g_runtimePolicy,
                 needsReseal,
                 resealedBoundKeyBytes
             );
@@ -656,25 +652,7 @@ HRESULT VbsEnclave::Trusted::Implementation::RunEncryptionKeyExample_CreateEncry
         logFilePath);
 
     // Create a user-bound key with enclave sealing
-    // 
-    // ENCLAVE_IDENTITY_POLICY_SEAL_SAME_IMAGE:
-    //   - Binds the key to this specific enclave image (binary)
-    //   - Key can only be unsealed by an enclave with the EXACT same measurement
-    //   - Protects against unauthorized access even if enclave code is modified
-    //   - Ensures data sealed by one version cannot be accessed by another version
-    //
-    #ifdef _DEBUG
-        // ENCLAVE_RUNTIME_POLICY_ALLOW_FULL_DEBUG:
-        //   - **DEBUG ONLY** - Allows debugger to attach and inspect enclave state
-        //   - **SECURITY WARNING**: Reduces isolation guarantees in debug builds
-        //   - Production builds should use 0 (no debug policy) for maximum security
-        constexpr UINT32 runtimePolicy = ENCLAVE_RUNTIME_POLICY_ALLOW_FULL_DEBUG;
-    #else
-        // Production: No debug policy - maximum security and isolation
-        constexpr UINT32 runtimePolicy = 0;
-    #endif
-
-    auto sealedKeyMaterial = veil::vtl1::crypto::seal_data(encryptionKeyBytes, ENCLAVE_IDENTITY_POLICY_SEAL_SAME_IMAGE, runtimePolicy);
+    auto sealedKeyMaterial = veil::vtl1::crypto::seal_data(encryptionKeyBytes, ENCLAVE_IDENTITY_POLICY_SEAL_SAME_IMAGE, g_runtimePolicy);
     debug_print(L" ...CHECKPOINT: sealed key material byte count: %d", sealedKeyMaterial.size());
     logSizeStr = std::to_wstring(sealedKeyMaterial.size());
     veil::vtl1::logger::add_log_from_enclave(

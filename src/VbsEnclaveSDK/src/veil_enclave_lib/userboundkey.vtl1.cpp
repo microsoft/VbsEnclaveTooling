@@ -41,41 +41,8 @@ inline void delete_credential(uintptr_t credential) noexcept
     }
 }
 
-// Simple RAII credential wrapper - always cleans up via VTL0 function
-class unique_credential_wrapper
-{
-    private:
-    uintptr_t m_credential = 0;
-
-    public:
-    explicit unique_credential_wrapper(uintptr_t credential) noexcept
-        : m_credential(credential) 
-    {
-        if (m_credential)
-        {
-            veil::vtl1::vtl0_functions::debug_print((L"DEBUG: unique_credential_wrapper constructor - Guarding credential 0x" + 
-            std::to_wstring(m_credential)).c_str());
-        }
-    }
-
-    ~unique_credential_wrapper() noexcept
-    {
-        if (m_credential)
-        {
-            veil::vtl1::vtl0_functions::debug_print((L"DEBUG: unique_credential_wrapper destructor - Cleaning up credential 0x" + 
-            std::to_wstring(m_credential)).c_str());
-            delete_credential(m_credential);
-        }
-    }
-
-    // Non-copyable, non-movable for simplicity
-    unique_credential_wrapper(const unique_credential_wrapper&) = delete;
-    unique_credential_wrapper& operator=(const unique_credential_wrapper&) = delete;
-    unique_credential_wrapper(unique_credential_wrapper&&) = delete;
-    unique_credential_wrapper& operator=(unique_credential_wrapper&&) = delete;
-
-    uintptr_t get() const noexcept { return m_credential; }
-};
+// RAII wrapper for credentials using WIL
+using unique_credential = wil::unique_any<uintptr_t, decltype(&delete_credential), delete_credential>;
 
 // Helper function to convert USER_BOUND_KEY_SESSION_HANDLE to DeveloperTypes::sessionInfo
 unique_sessionhandle ConvertToSessionHandle(uintptr_t sessionInfo)
@@ -380,12 +347,13 @@ wil::secure_vector<uint8_t> create_user_bound_key(
         std::wstring formattedKeyName = veil::vtl1::implementation::userboundkey::callouts::userboundkey_format_key_name(keyName);
         veil::vtl1::vtl0_functions::debug_print((L"DEBUG: create_user_bound_key - formattedKeyName: " + formattedKeyName).c_str());
 
-        // Validate that the formatted key name ends with the original key name
+        // Validate that the formatted key name ends with the expected pattern "//{keyName}"
         // Expected format: {SID}//{SID}//{keyName}
-        if (formattedKeyName.length() < keyName.length() || 
-            formattedKeyName.compare(formattedKeyName.length() - keyName.length(), keyName.length(), keyName) != 0)
+        std::wstring expectedSuffix = L"//" + keyName;
+        if (formattedKeyName.length() < expectedSuffix.length() || 
+            formattedKeyName.compare(formattedKeyName.length() - expectedSuffix.length(), expectedSuffix.length(), expectedSuffix) != 0)
         {
-            veil::vtl1::vtl0_functions::debug_print((L"ERROR: create_user_bound_key - Formatted key name does not end with original key name. Original: " + keyName + L", Formatted: " + formattedKeyName).c_str());
+            veil::vtl1::vtl0_functions::debug_print((L"ERROR: create_user_bound_key - Formatted key name does not end with expected pattern. Expected suffix: " + expectedSuffix + L", Formatted: " + formattedKeyName).c_str());
             THROW_HR(E_ACCESSDENIED);
         }
         veil::vtl1::vtl0_functions::debug_print(L"DEBUG: create_user_bound_key - Key name validation passed (suffix check)");
@@ -404,8 +372,8 @@ wil::secure_vector<uint8_t> create_user_bound_key(
         veil::vtl1::vtl0_functions::debug_print(L"DEBUG: create_user_bound_key - Received credential and session info");
 
         // Use RAII wrapper to prevent leaks
-        unique_credential_wrapper credentialWrapper(credentialAndSessionInfo.credential);
-        unique_sessionhandle sessionHandle = ConvertToSessionHandle(credentialAndSessionInfo.sessionInfo);
+         unique_credential credentialWrapper(credentialAndSessionInfo.credential);
+unique_sessionhandle sessionHandle = ConvertToSessionHandle(credentialAndSessionInfo.sessionInfo);
 
         veil::vtl1::vtl0_functions::debug_print((L"DEBUG: create_user_bound_key - credential pointer: 0x" + std::to_wstring(credentialWrapper.get())).c_str());
 
@@ -510,6 +478,7 @@ std::vector<uint8_t> load_user_bound_key(
     const std::wstring& message,
     uintptr_t windowId,
     const std::vector<uint8_t>& sealedBoundKeyBytes,
+    uint32_t runtimePolicy,
     _Out_ bool& needsReseal,
     _Out_ std::vector<uint8_t>& resealedBoundKeyBytes)
 {
@@ -545,7 +514,7 @@ std::vector<uint8_t> load_user_bound_key(
             auto resealedData = veil::vtl1::crypto::seal_data(
                 boundKeyBytes, 
                 ENCLAVE_SEALING_IDENTITY_POLICY::ENCLAVE_IDENTITY_POLICY_SEAL_SAME_IMAGE, 
-                ENCLAVE_RUNTIME_POLICY_ALLOW_FULL_DEBUG);
+                runtimePolicy);
             
             // Copy re-sealed data to output parameter
             resealedBoundKeyBytes.assign(resealedData.begin(), resealedData.end());
@@ -553,6 +522,8 @@ std::vector<uint8_t> load_user_bound_key(
             veil::vtl1::vtl0_functions::debug_print((L"DEBUG: load_user_bound_key - Re-sealed bound key, new size: " + std::to_wstring(resealedBoundKeyBytes.size())).c_str());
             
             // Important! Caller _must_ replace old sealedBoundKeyBytes with resealedBoundKeyBytes on disk or risk data loss.
+            // Note that unseal_data still successfully returns the boundKeyBytes 
+            // and it is okay to continue using the same for this load operation.
         }
         std::vector<uint8_t> ephemeralPublicKeyBytes = GetEphemeralPublicKeyBytesFromBoundKeyBytes(boundKeyBytes);
         veil::vtl1::vtl0_functions::debug_print((L"DEBUG: load_user_bound_key - ephemeralPublicKeyBytes size: " + std::to_wstring(ephemeralPublicKeyBytes.size())).c_str());
@@ -562,12 +533,13 @@ std::vector<uint8_t> load_user_bound_key(
         std::wstring formattedKeyName = veil::vtl1::implementation::userboundkey::callouts::userboundkey_format_key_name(keyName);
         veil::vtl1::vtl0_functions::debug_print((L"DEBUG: load_user_bound_key - formattedKeyName: " + formattedKeyName).c_str());
 
-        // Validate that the formatted key name ends with the original key name
+        // Validate that the formatted key name ends with the expected pattern "//{keyName}"
         // Expected format: {SID}//{SID}//{keyName}
-        if (formattedKeyName.length() < keyName.length() || 
-            formattedKeyName.compare(formattedKeyName.length() - keyName.length(), keyName.length(), keyName) != 0)
+        std::wstring expectedSuffix = L"//" + keyName;
+        if (formattedKeyName.length() < expectedSuffix.length() || 
+            formattedKeyName.compare(formattedKeyName.length() - expectedSuffix.length(), expectedSuffix.length(), expectedSuffix) != 0)
         {
-            veil::vtl1::vtl0_functions::debug_print((L"ERROR: load_user_bound_key - Formatted key name does not end with original key name. Original: " + keyName + L", Formatted: " + formattedKeyName).c_str());
+            veil::vtl1::vtl0_functions::debug_print((L"ERROR: load_user_bound_key - Formatted key name does not end with expected pattern. Expected suffix: " + expectedSuffix + L", Formatted: " + formattedKeyName).c_str());
             THROW_HR(E_ACCESSDENIED);
         }
         veil::vtl1::vtl0_functions::debug_print(L"DEBUG: load_user_bound_key - Key name validation passed (suffix check)");
@@ -585,8 +557,8 @@ std::vector<uint8_t> load_user_bound_key(
         veil::vtl1::vtl0_functions::debug_print(L"DEBUG: load_user_bound_key - userboundkey_establish_session_for_load completed");
 
         // Use RAII wrapper to prevent leaks
-        unique_credential_wrapper credentialWrapper(credentialAndSessionInfo.credential);
-        unique_sessionhandle sessionHandle = ConvertToSessionHandle(credentialAndSessionInfo.sessionInfo);
+         unique_credential credentialWrapper(credentialAndSessionInfo.credential);
+unique_sessionhandle sessionHandle = ConvertToSessionHandle(credentialAndSessionInfo.sessionInfo);
 
         veil::vtl1::vtl0_functions::debug_print((L"DEBUG: load_user_bound_key - credential pointer: 0x" + std::to_wstring(credentialWrapper.get())).c_str());
 

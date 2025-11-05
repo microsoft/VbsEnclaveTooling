@@ -33,6 +33,7 @@ namespace veil::vtl1::userboundkey
         const std::wstring& message,
         uintptr_t windowId,
         const std::vector<uint8_t>& sealedBoundKeyBytes,
+        uint32_t runtimePolicy,
         _Out_ bool& needsReseal,
         _Out_ std::vector<uint8_t>& resealedBoundKeyBytes);
 }

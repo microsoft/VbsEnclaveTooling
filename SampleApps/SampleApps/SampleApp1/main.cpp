@@ -136,7 +136,11 @@ void UserBoundEncryptFlow(
         resealedBoundKeyBytes
     ));
 
-    // Handle re-sealing if needed
+    // VBS has a fixed sized key ring. The VBS keys rotate on roughly every OS upgrade. 
+    // Eventually enough rotations happen and the sealing key used to seal the encrypted key is rotated out and no longer available. 
+    // This is notified through the second return parameter unsealingFlags in the unseal_data API. 
+    // It tells the caller whether the underlying keyring has rotated the sealing key out and we need to re-seal the encrypted key. 
+    // At this point, if the reseal is not performed, it would not be possible to unseal the encrypted key the next time.
     if (needsReseal)
     {
         std::wcout << L"Key was re-sealed, updating stored data with new size: " << resealedBoundKeyBytes.size() << std::endl;
