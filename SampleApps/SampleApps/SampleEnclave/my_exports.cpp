@@ -353,13 +353,32 @@ HRESULT VbsEnclave::Trusted::Implementation::MyEnclaveCreateUserBoundKey(
 
         debug_print(L"Created secure cache configuration in VTL1");
 
+        // Create a user-bound key with enclave sealing
+        // 
+        // ENCLAVE_IDENTITY_POLICY_SEAL_SAME_IMAGE:
+        //   - Binds the key to this specific enclave image (binary)
+        //   - Key can only be unsealed by an enclave with the EXACT same measurement
+        //   - Protects against unauthorized access even if enclave code is modified
+        //   - Ensures data sealed by one version cannot be accessed by another version
+        //
+        #ifdef _DEBUG
+            // ENCLAVE_RUNTIME_POLICY_ALLOW_FULL_DEBUG:
+            //   - **DEBUG ONLY** - Allows debugger to attach and inspect enclave state
+            //   - **SECURITY WARNING**: Reduces isolation guarantees in debug builds
+            //   - Production builds should use 0 (no debug policy) for maximum security
+            constexpr UINT32 runtimePolicy = ENCLAVE_RUNTIME_POLICY_ALLOW_FULL_DEBUG;
+        #else
+            // Production: No debug policy - maximum security and isolation
+            constexpr UINT32 runtimePolicy = 0;
+        #endif
+
         auto keyBytes = veil::vtl1::userboundkey::create_user_bound_key(
             helloKeyName,
             secureConfig,
             pinMessage,
             windowId,
             ENCLAVE_SEALING_IDENTITY_POLICY::ENCLAVE_IDENTITY_POLICY_SEAL_SAME_IMAGE,
-            ENCLAVE_RUNTIME_POLICY_ALLOW_FULL_DEBUG,
+            runtimePolicy,
             keyCredentialCacheOption);
 
         debug_print(L"create_user_bound_key returned");
@@ -633,7 +652,27 @@ HRESULT VbsEnclave::Trusted::Implementation::RunEncryptionKeyExample_CreateEncry
         veil::any::logger::eventLevel::EVENT_LEVEL_INFO,
         activityLevel,
         logFilePath);
-    auto sealedKeyMaterial = veil::vtl1::crypto::seal_data(encryptionKeyBytes, ENCLAVE_IDENTITY_POLICY_SEAL_SAME_IMAGE, ENCLAVE_RUNTIME_POLICY_ALLOW_FULL_DEBUG);
+
+    // Create a user-bound key with enclave sealing
+    // 
+    // ENCLAVE_IDENTITY_POLICY_SEAL_SAME_IMAGE:
+    //   - Binds the key to this specific enclave image (binary)
+    //   - Key can only be unsealed by an enclave with the EXACT same measurement
+    //   - Protects against unauthorized access even if enclave code is modified
+    //   - Ensures data sealed by one version cannot be accessed by another version
+    //
+    #ifdef _DEBUG
+        // ENCLAVE_RUNTIME_POLICY_ALLOW_FULL_DEBUG:
+        //   - **DEBUG ONLY** - Allows debugger to attach and inspect enclave state
+        //   - **SECURITY WARNING**: Reduces isolation guarantees in debug builds
+        //   - Production builds should use 0 (no debug policy) for maximum security
+        constexpr UINT32 runtimePolicy = ENCLAVE_RUNTIME_POLICY_ALLOW_FULL_DEBUG;
+    #else
+        // Production: No debug policy - maximum security and isolation
+        constexpr UINT32 runtimePolicy = 0;
+    #endif
+
+    auto sealedKeyMaterial = veil::vtl1::crypto::seal_data(encryptionKeyBytes, ENCLAVE_IDENTITY_POLICY_SEAL_SAME_IMAGE, runtimePolicy);
     debug_print(L" ...CHECKPOINT: sealed key material byte count: %d", sealedKeyMaterial.size());
     logSizeStr = std::to_wstring(sealedKeyMaterial.size());
     veil::vtl1::logger::add_log_from_enclave(
