@@ -21,43 +21,61 @@ inline void delete_credential(uintptr_t credential) noexcept
 {
     if (credential)
     {
-        // copy from abi
-        KeyCredential credential{ nullptr };
-        winrt::copy_from_abi(credential, credential);
-
-        // release the credential
-        winrt::release_abi(credential);
+        try
+        {
+            // Call VTL0 function to handle credential deletion using proper WinRT patterns
+            veil::vtl1::vtl0_functions::debug_print((L"DEBUG: delete_credential - Calling VTL0 userboundkey_delete_credential for credential 0x" + 
+   std::to_wstring(credential)).c_str());
+      
+            // Call the VTL0 function which handles the proper WinRT take_ownership_from_abi + detach_abi pattern
+            veil_abi::Untrusted::Stubs::userboundkey_delete_credential(credential);
+     
+            veil::vtl1::vtl0_functions::debug_print((L"DEBUG: delete_credential - VTL0 userboundkey_delete_credential completed for credential 0x" + 
+    std::to_wstring(credential)).c_str());
+        }
+        catch (...)
+        {
+            // VTL0 function should handle exceptions internally, but just in case
+            veil::vtl1::vtl0_functions::debug_print((L"ERROR: delete_credential - Exception during VTL0 call for credential 0x" + 
+       std::to_wstring(credential)).c_str());
+        }
     }
 }
 
-// Conditional credential guard - only releases if VTL0 callbacks weren't called successfully
-class credential_guard
+// Simple RAII credential wrapper - always cleans up via VTL0 function
+class unique_credential_wrapper
 {
     private:
     uintptr_t m_credential = 0;
-    bool m_transferred_to_vtl0 = false;
 
     public:
-    explicit credential_guard(uintptr_t credential) noexcept
-        : m_credential(credential) {}
-
-    ~credential_guard() noexcept
+    explicit unique_credential_wrapper(uintptr_t credential) noexcept
+        : m_credential(credential) 
     {
-        if (!m_transferred_to_vtl0 && m_credential)
+        if (m_credential)
         {
-            delete_credential(m_credential);
+ veil::vtl1::vtl0_functions::debug_print((L"DEBUG: unique_credential_wrapper constructor - Guarding credential 0x" + 
+           std::to_wstring(m_credential)).c_str());
+  }
+    }
+
+    ~unique_credential_wrapper() noexcept
+    {
+        if (m_credential)
+        {
+            veil::vtl1::vtl0_functions::debug_print((L"DEBUG: unique_credential_wrapper destructor - Cleaning up credential 0x" + 
+            std::to_wstring(m_credential)).c_str());
+       delete_credential(m_credential);
         }
     }
 
-    credential_guard(const credential_guard&) = delete;
-    credential_guard& operator=(const credential_guard&) = delete;
-    credential_guard(credential_guard&&) = delete;
-    credential_guard& operator=(credential_guard&&) = delete;
+    // Non-copyable, non-movable for simplicity
+    unique_credential_wrapper(const unique_credential_wrapper&) = delete;
+    unique_credential_wrapper& operator=(const unique_credential_wrapper&) = delete;
+    unique_credential_wrapper(unique_credential_wrapper&&) = delete;
+    unique_credential_wrapper& operator=(unique_credential_wrapper&&) = delete;
 
     uintptr_t get() const noexcept { return m_credential; }
-
-    // Mark as transferred to VTL0 - disables automatic cleanup
-    void mark_transferred_to_vtl0() noexcept { m_transferred_to_vtl0 = true; }
 };
 
 // Helper function to convert USER_BOUND_KEY_SESSION_HANDLE to DeveloperTypes::sessionInfo
@@ -385,12 +403,11 @@ wil::secure_vector<uint8_t> create_user_bound_key(
 
         veil::vtl1::vtl0_functions::debug_print(L"DEBUG: create_user_bound_key - Received credential and session info");
 
-        // Use conditional guard to prevent leaks in edge cases
-        credential_guard credentialGuard(credentialAndSessionInfo.credential);
-        // auto credentialPtr = credentialGuard.get();
+        // Use RAII wrapper to prevent leaks in edge cases
+        unique_credential_wrapper credentialWrapper(credentialAndSessionInfo.credential);
         sessionHandle = ConvertToSessionHandle(credentialAndSessionInfo.sessionInfo);
 
-        veil::vtl1::vtl0_functions::debug_print((L"DEBUG: create_user_bound_key - credential pointer: 0x" + std::to_wstring(credentialGuard.get())).c_str());
+        veil::vtl1::vtl0_functions::debug_print((L"DEBUG: create_user_bound_key - credential pointer: 0x" + std::to_wstring(credentialWrapper.get())).c_str());
 
         // Call to veinterop to create the encrypted KCM request for RetrieveAuthorizationContext
         // Use the function that accepts session handle and handles nonce manipulation internally
@@ -411,13 +428,10 @@ wil::secure_vector<uint8_t> create_user_bound_key(
         veil::vtl1::vtl0_functions::debug_print(L"DEBUG: create_user_bound_key - About to call userboundkey_get_authorization_context_from_credential");
 
         auto authContextBlob = veil::vtl1::implementation::userboundkey::callouts::userboundkey_get_authorization_context_from_credential(
-            credentialGuard.get(),  // Use raw pointer - VTL0 callbacks handle their own reference management
-        encryptedKcmRequestForRetrieveAuthorizationContext,
-   message,
-            windowId);
-
-        // Mark credential as transferred to VTL0 - VTL0 now owns the lifecycle
-        // credentialGuard.mark_transferred_to_vtl0();
+        credentialWrapper.get(),  // Use raw pointer - VTL0 callbacks handle their own reference management
+            encryptedKcmRequestForRetrieveAuthorizationContext,
+            message,
+  windowId);
 
         veil::vtl1::vtl0_functions::debug_print(L"DEBUG: create_user_bound_key - userboundkey_get_authorization_context_from_credential completed");
 
@@ -472,9 +486,6 @@ wil::secure_vector<uint8_t> create_user_bound_key(
         // SEAL
         auto sealedKeyMaterial = veil::vtl1::crypto::seal_data(boundKeyBytes, sealingPolicy, runtimePolicy);
         veil::vtl1::vtl0_functions::debug_print(L"DEBUG: create_user_bound_key - Function completed successfully");
-      
-        // credential_guard ensures proper cleanup if VTL0 callbacks weren't called
-        // If mark_transferred_to_vtl0() was called, VTL0 owns the credential lifecycle
         
         return sealedKeyMaterial;
     }
@@ -548,12 +559,12 @@ std::vector<uint8_t> load_user_bound_key(
 
         veil::vtl1::vtl0_functions::debug_print(L"DEBUG: load_user_bound_key - userboundkey_establish_session_for_load completed");
 
-        // Use conditional guard to prevent leaks in edge cases
-        credential_guard credentialGuard(credentialAndSessionInfo.credential);
-        // auto credentialPtr = credentialGuard.get();
+        // Use RAII wrapper to prevent leaks in edge cases
+        unique_credential_wrapper credentialWrapper(credentialAndSessionInfo.credential);
+        // auto credentialPtr = credentialWrapper.get();
         sessionHandle = ConvertToSessionHandle(credentialAndSessionInfo.sessionInfo);
 
-        veil::vtl1::vtl0_functions::debug_print((L"DEBUG: load_user_bound_key - credential pointer: 0x" + std::to_wstring(credentialGuard.get())).c_str());
+        veil::vtl1::vtl0_functions::debug_print((L"DEBUG: load_user_bound_key - credential pointer: 0x" + std::to_wstring(credentialWrapper.get())).c_str());
 
         // Call to veinterop to create the encrypted KCM request for RetrieveAuthorizationContext
         wil::unique_process_heap_ptr<void> encryptedKcmRequestRac;
@@ -581,7 +592,7 @@ std::vector<uint8_t> load_user_bound_key(
         veil::vtl1::vtl0_functions::debug_print(L"DEBUG: load_user_bound_key - About to call userboundkey_get_authorization_context_from_credential");
 
         auto authContextBlob = veil::vtl1::implementation::userboundkey::callouts::userboundkey_get_authorization_context_from_credential(
-            credentialGuard.get(),  // Use raw pointer - VTL0 callbacks handle their own reference management
+            credentialWrapper.get(),  // Use raw pointer - VTL0 callbacks handle their own reference management
             encryptedKcmRequestForRetrieveAuthorizationContext,
             message,
             windowId);
@@ -633,13 +644,10 @@ std::vector<uint8_t> load_user_bound_key(
         veil::vtl1::vtl0_functions::debug_print(L"DEBUG: load_user_bound_key - About to call userboundkey_get_secret_from_credential");
 
         auto secret = veil::vtl1::implementation::userboundkey::callouts::userboundkey_get_secret_from_credential(
-            credentialGuard.get(),  // Use raw pointer - VTL0 callbacks handle their own reference management
+            credentialWrapper.get(),  // Use raw pointer - VTL0 callbacks handle their own reference management
             encryptedKcmRequestForDeriveSharedSecret,
             message,
             windowId);
-
-        // Mark credential as transferred to VTL0 - VTL0 now owns the lifecycle
-        // credentialGuard.mark_transferred_to_vtl0();
 
         veil::vtl1::vtl0_functions::debug_print(L"DEBUG: load_user_bound_key - userboundkey_get_secret_from_credential completed");
         veil::vtl1::vtl0_functions::debug_print((L"DEBUG: load_user_bound_key - secret size: " + std::to_wstring(secret.size())).c_str());
@@ -666,9 +674,6 @@ std::vector<uint8_t> load_user_bound_key(
         // Memory automatically freed by unique_process_heap_ptr destructor
 
         veil::vtl1::vtl0_functions::debug_print(L"DEBUG: load_user_bound_key - Function completed successfully");
-        
-        // credential_guard ensures proper cleanup if VTL0 callbacks weren't called
-        // If mark_transferred_to_vtl0() was called, VTL0 owns the credential lifecycle
 
      return userkeyBytes;
     }

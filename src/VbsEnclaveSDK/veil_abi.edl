@@ -109,5 +109,10 @@ enclave
         wstring userboundkey_format_key_name(
             wstring key_name
         );
+
+        // VTL0 function to safely delete/release a credential
+     void userboundkey_delete_credential(
+         uintptr_t credential
+     );
     };
 };

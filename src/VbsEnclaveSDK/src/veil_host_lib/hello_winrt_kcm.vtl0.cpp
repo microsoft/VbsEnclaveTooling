@@ -427,3 +427,47 @@ std::wstring veil_abi::Untrusted::Implementation::userboundkey_format_key_name(c
 {
     return FormatUserHelloKeyName(key_name.c_str());
 }
+
+// VTL0 function to safely delete/release a credential using WinRT ownership patterns
+void veil_abi::Untrusted::Implementation::userboundkey_delete_credential(uintptr_t credential_ptr)
+{
+    std::wcout << L"DEBUG: userboundkey_delete_credential called with credential: 0x" 
+      << std::hex << credential_ptr << std::dec << std::endl;
+
+    if (credential_ptr == 0)
+ {
+    std::wcout << L"DEBUG: userboundkey_delete_credential - credential_ptr is null, nothing to delete" << std::endl;
+  return;
+  }
+
+    try
+    {
+        // Use WinRT's take_ownership_from_abi to take control of the object
+    void* abi = reinterpret_cast<void*>(credential_ptr);
+        KeyCredential credential{ abi, winrt::take_ownership_from_abi };
+  
+     std::wcout << L"DEBUG: userboundkey_delete_credential - Created owning KeyCredential wrapper via take_ownership_from_abi" << std::endl;
+
+        // Now release control - detach_abi releases our WinRT wrapper without calling Release()
+        // This effectively transfers ownership back while decrementing our wrapper's control
+        auto released_abi = winrt::detach_abi(credential);
+     
+     std::wcout << L"DEBUG: userboundkey_delete_credential - Called detach_abi, released_abi: 0x" 
+      << std::hex << reinterpret_cast<uintptr_t>(released_abi) << std::dec << std::endl;
+        
+        // The KeyCredential destructor will now properly release the COM object
+        std::wcout << L"DEBUG: userboundkey_delete_credential - KeyCredential wrapper going out of scope, will call proper cleanup" << std::endl;
+    }
+    catch (const std::exception& e)
+    {
+        std::wcout << L"DEBUG: Exception in userboundkey_delete_credential: " << e.what() << std::endl;
+        // Don't rethrow - this is cleanup code and should be noexcept-like
+    }
+    catch (...)
+    {
+        std::wcout << L"DEBUG: Unknown exception in userboundkey_delete_credential" << std::endl;
+    // Don't rethrow - this is cleanup code and should be noexcept-like
+    }
+    
+  std::wcout << L"DEBUG: userboundkey_delete_credential completed" << std::endl;
+}
