@@ -372,8 +372,8 @@ wil::secure_vector<uint8_t> create_user_bound_key(
         veil::vtl1::vtl0_functions::debug_print(L"DEBUG: create_user_bound_key - Received credential and session info");
 
         // Use RAII wrapper to prevent leaks
-         unique_credential credentialWrapper(credentialAndSessionInfo.credential);
-unique_sessionhandle sessionHandle = ConvertToSessionHandle(credentialAndSessionInfo.sessionInfo);
+        unique_credential credentialWrapper(credentialAndSessionInfo.credential);
+        unique_sessionhandle sessionHandle = ConvertToSessionHandle(credentialAndSessionInfo.sessionInfo);
 
         veil::vtl1::vtl0_functions::debug_print((L"DEBUG: create_user_bound_key - credential pointer: 0x" + std::to_wstring(credentialWrapper.get())).c_str());
 
@@ -557,8 +557,8 @@ std::vector<uint8_t> load_user_bound_key(
         veil::vtl1::vtl0_functions::debug_print(L"DEBUG: load_user_bound_key - userboundkey_establish_session_for_load completed");
 
         // Use RAII wrapper to prevent leaks
-         unique_credential credentialWrapper(credentialAndSessionInfo.credential);
-unique_sessionhandle sessionHandle = ConvertToSessionHandle(credentialAndSessionInfo.sessionInfo);
+        unique_credential credentialWrapper(credentialAndSessionInfo.credential);
+        unique_sessionhandle sessionHandle = ConvertToSessionHandle(credentialAndSessionInfo.sessionInfo);
 
         veil::vtl1::vtl0_functions::debug_print((L"DEBUG: load_user_bound_key - credential pointer: 0x" + std::to_wstring(credentialWrapper.get())).c_str());
 

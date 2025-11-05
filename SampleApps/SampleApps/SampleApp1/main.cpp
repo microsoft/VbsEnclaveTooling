@@ -199,8 +199,6 @@ void UserBoundDecryptFlow(
     std::wcout << L"Decryption completed in Enclave. Decrypted string: " << decryptedData << std::endl;
 }
 
-
-
 int EncryptFlow(
     void* enclave, 
     const std::wstring& input, 
@@ -463,12 +461,12 @@ int mainEncryptDecrypt(uint32_t activityLevel)
     const fs::path encryptedDataDirPath = fs::current_path();
     const fs::path encryptedOutputFilePath = encryptedDataDirPath / "encrypted";
     const fs::path tagFilePath = encryptedKeyDirPath / "tag";
- bool programExecuted = false;
+    bool programExecuted = false;
 
     veil::vtl0::logger::logger veilLog(
-   L"VeilSampleApp",
+        L"VeilSampleApp",
         L"70F7212C-1F84-4B86-B550-3D5AE82EC779" /*Generated GUID*/,
-    static_cast<veil::any::logger::eventLevel>(activityLevel));
+        static_cast<veil::any::logger::eventLevel>(activityLevel));
 
     veilLog.AddTimestampedLog(L"[Host] Starting from host", veil::any::logger::eventLevel::EVENT_LEVEL_CRITICAL);
 
@@ -483,7 +481,7 @@ int mainEncryptDecrypt(uint32_t activityLevel)
     veil::vtl0::enclave::initialize(enclave.get(), 2); // Note we need at 2 threads, otherwise we will have a reentrancy deadlock
 
     // Register framework callbacks
-  veil::vtl0::enclave_api::register_callbacks(enclave.get());
+    veil::vtl0::enclave_api::register_callbacks(enclave.get());
 
     constexpr PCWSTR keyMoniker = KEY_NAME.data();
 
@@ -546,7 +544,7 @@ int mainEncryptDecryptUserBound(uint32_t activityLevel)
     const fs::path encryptedKeyDirPath = fs::current_path();
     const fs::path encryptedDataDirPath = fs::current_path();
     const fs::path encryptedOutputFilePath = encryptedDataDirPath / "encrypted_userbound";
-  bool programExecuted = false;
+    bool programExecuted = false;
 
     // Initialize configuration for user-bound keys
     bool areUserBindingApisAvailable;
@@ -598,11 +596,11 @@ int mainEncryptDecryptUserBound(uint32_t activityLevel)
         std::wcout << L"Cannot proceed without a valid secure ID for user-bound encryption." << std::endl;
         std::cout << "\nPress any key to exit..." << std::endl;
         _getch();
-     return -1;
+        return -1;
     }
     catch (...)
     {
-    // If any other exception occurs, log error and return
+        // If any other exception occurs, log error and return
         std::wcout << L"Error: Exception occurred while getting secure ID." << std::endl;
         std::wcout << L"Cannot proceed without a valid secure ID for user-bound encryption." << std::endl;
         std::cout << "\nPress any key to return to exit..." << std::endl;
@@ -650,7 +648,7 @@ int mainEncryptDecryptUserBound(uint32_t activityLevel)
                 std::wcout << L"User-bound encryption in Enclave completed. \n Encrypted bytes are saved to disk in " << encryptedOutputFilePath << std::endl;
                 veilLog.AddTimestampedLog(
                     L"[Host] User-bound encryption in Enclave completed. Encrypted bytes are saved to disk in " + encryptedOutputFilePath.wstring(),
-         veil::any::logger::eventLevel::EVENT_LEVEL_CRITICAL);
+                veil::any::logger::eventLevel::EVENT_LEVEL_CRITICAL);
                 programExecuted = true;
                 break;
 
@@ -734,7 +732,7 @@ int mainEncryptDecryptThreadpool(uint32_t activityLevel)
     std::wstring input1, input2;
     const fs::path encryptedKeyDirPath = fs::current_path();
     const fs::path encryptedDataDirPath = fs::current_path();
- const fs::path encryptedInputFilePath = encryptedDataDirPath / "encrypted";
+    const fs::path encryptedInputFilePath = encryptedDataDirPath / "encrypted";
     const fs::path tagFilePath = encryptedKeyDirPath / "tag";
     bool programExecuted = false;
 

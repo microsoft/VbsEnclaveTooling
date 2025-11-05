@@ -369,9 +369,9 @@ HRESULT VbsEnclave::Trusted::Implementation::MyEnclaveCreateUserBoundKey(
         // Create a user-bound key with enclave sealing
         auto keyBytes = veil::vtl1::userboundkey::create_user_bound_key(
             helloKeyName,
- secureConfig,
-   pinMessage,
-      windowId,
+            secureConfig,
+            pinMessage,
+            windowId,
             ENCLAVE_SEALING_IDENTITY_POLICY::ENCLAVE_IDENTITY_POLICY_SEAL_SAME_IMAGE,
             g_runtimePolicy,
             keyCredentialCacheOption);
