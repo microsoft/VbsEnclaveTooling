@@ -528,18 +528,20 @@ HRESULT VbsEnclave::Trusted::Implementation::MyEnclaveLoadUserBoundKeyAndDecrypt
             return E_INVALIDARG;
         }
 
+        auto it = combinedInputData.begin() + sizeof(uint32_t);
+
         // Extract tag data (after tag size)
         std::vector<uint8_t> tag(
-            combinedInputData.begin() + sizeof(uint32_t),
-            combinedInputData.begin() + sizeof(uint32_t) + tagSize
+            it,
+            it + tagSize
         );
-   
+        it += tagSize;
+
         // Extract encrypted data (everything after tag size and tag data)
-        size_t encryptedDataOffset = sizeof(uint32_t) + tagSize;
         std::vector<uint8_t> encryptedInputBytes(
-            combinedInputData.begin() + encryptedDataOffset,
+            it,
             combinedInputData.end()
-        ); 
+        );
 
         debug_print(L"Extracted tag size: %u, encrypted data size: %u", 
             static_cast<uint32_t>(tag.size()), 

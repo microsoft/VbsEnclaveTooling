@@ -32,6 +32,9 @@ using namespace winrt::Windows::Security::Credentials;
 
 namespace fs = std::filesystem;
 
+// Global constants for key identifiers
+constexpr std::wstring_view KEY_NAME = L"MyEncryptionKey-001";
+
 // Configuration structure
 struct EncryptionConfig
 {
@@ -44,7 +47,7 @@ struct EncryptionConfig
 EncryptionConfig InitializeUserBindingConfig(bool& areUserBindingApisAvailable)
 {
     EncryptionConfig config;
-    config.helloKeyName = L"MyEncryptionKey-001";
+    config.helloKeyName = KEY_NAME;
     config.pinMessage = L"Please enter your PIN to access the encryption key.";
     
     // Initialize COM for WinRT
@@ -74,7 +77,7 @@ EncryptionConfig InitializeUserBindingConfig(bool& areUserBindingApisAvailable)
     return config;
 }
 
-EncryptionConfig CreateEncryptionKeyOnFirstRun(void* enclave, const std::filesystem::path& keyFilePath, const EncryptionConfig& config)
+EncryptionConfig CreateEncryptionKeyOnFirstRun(void* enclave, const fs::path& keyFilePath, const EncryptionConfig& config)
 {
     // Initialize enclave interface
     auto enclaveInterface = VbsEnclave::Trusted::Stubs::SampleEnclave(enclave);
@@ -91,7 +94,7 @@ EncryptionConfig CreateEncryptionKeyOnFirstRun(void* enclave, const std::filesys
         securedEncryptionKeyBytes));
 
     // *** securedEncryptionKeyBytes persisted to disk
-    SaveBinaryData(keyFilePath.string(), securedEncryptionKeyBytes);
+    SaveBinaryData(keyFilePath, securedEncryptionKeyBytes);
     
     // Return the config so it can be used by subsequent functions
     return config;
@@ -100,8 +103,8 @@ EncryptionConfig CreateEncryptionKeyOnFirstRun(void* enclave, const std::filesys
 void UserBoundEncryptFlow(
     void* enclave,
     const std::wstring& input,
-    const std::filesystem::path& keyFilePath,
-    const std::filesystem::path& encryptedOutputFilePath,
+    const fs::path& keyFilePath,
+    const fs::path& encryptedOutputFilePath,
     const EncryptionConfig& config)
 {
     // Initialize enclave interface
@@ -115,9 +118,9 @@ void UserBoundEncryptFlow(
     //
 
     // Load secured encryption key bytes from disk
-    auto securedEncryptionKeyBytes = LoadBinaryData(keyFilePath.string());
+    auto securedEncryptionKeyBytes = LoadBinaryData(keyFilePath);
 
-    // Call into enclave - the enclave will return combined data (encrypted + tag + tag_size)
+    // Call into enclave - the enclave returns combined data: [tag_size (4 bytes)][tag][encrypted_data]
     auto combinedOutputData = std::vector<uint8_t> {};
     bool needsReseal = false;
     std::vector<uint8_t> resealedBoundKeyBytes;
@@ -138,16 +141,16 @@ void UserBoundEncryptFlow(
     {
         std::wcout << L"Key was re-sealed, updating stored data with new size: " << resealedBoundKeyBytes.size() << std::endl;
         // Save the re-sealed data back to disk to avoid re-sealing on subsequent runs
-        SaveBinaryData(keyFilePath.string(), resealedBoundKeyBytes);
+        SaveBinaryData(keyFilePath, resealedBoundKeyBytes);
     }
     // Save combined data directly to disk (enclave handles the tag appending)
-    SaveBinaryData(encryptedOutputFilePath.string(), combinedOutputData);
+    SaveBinaryData(encryptedOutputFilePath, combinedOutputData);
 }
 
 void UserBoundDecryptFlow(
     void* enclave,
-    const std::filesystem::path& keyFilePath,
-    const std::filesystem::path& encryptedInputFilePath,
+    const fs::path& keyFilePath,
+    const fs::path& encryptedInputFilePath,
     const EncryptionConfig& config)
 {
     // Initialize enclave interface
@@ -161,8 +164,8 @@ void UserBoundDecryptFlow(
     //
 
     // Load data from disk
-    auto securedEncryptionKeyBytes = LoadBinaryData(keyFilePath.string());
-    auto combinedInputData = LoadBinaryData(encryptedInputFilePath.string());
+    auto securedEncryptionKeyBytes = LoadBinaryData(keyFilePath);
+    auto combinedInputData = LoadBinaryData(encryptedInputFilePath);
 
     // Call into enclave for decryption - pass combined data, enclave will extract tag internally
     auto decryptedData = std::wstring {};
@@ -185,7 +188,7 @@ void UserBoundDecryptFlow(
     {
         std::wcout << L"Key was re-sealed, updating stored data with new size: " << resealedBoundKeyBytes.size() << std::endl;
         // Save the re-sealed data back to disk to avoid re-sealing on subsequent runs
-        SaveBinaryData(keyFilePath.string(), resealedBoundKeyBytes);
+        SaveBinaryData(keyFilePath, resealedBoundKeyBytes);
     }
 
     // Display the decrypted result
@@ -197,9 +200,9 @@ void UserBoundDecryptFlow(
 int EncryptFlow(
     void* enclave, 
     const std::wstring& input, 
-    const std::filesystem::path& keyFilePath,
-    const std::filesystem::path& encryptedInputFilePath,
-    const std::filesystem::path& tagFilePath,
+    const fs::path& keyFilePath,
+    const fs::path& encryptedInputFilePath,
+    const fs::path& tagFilePath,
     veil::vtl0::logger::logger& veilLog)
 {
     //
@@ -228,7 +231,7 @@ int EncryptFlow(
     //          by the sealing-enclave or an enclave signed with compatible signature).
 
     // Save securedEncryptionKeyBytes to disk
-    SaveBinaryData(keyFilePath.string(), securedEncryptionKeyBytes);
+    SaveBinaryData(keyFilePath, securedEncryptionKeyBytes);
 
     //
     // [Load flow]
@@ -257,17 +260,17 @@ int EncryptFlow(
     ));
 
     // Save encryptedInputBytes to disk
-    SaveBinaryData(encryptedInputFilePath.string(), encryptedInputBytes);
-    SaveBinaryData(tagFilePath.string(), tag);
+    SaveBinaryData(encryptedInputFilePath, encryptedInputBytes);
+    SaveBinaryData(tagFilePath, tag);
 
     return 0;
 }
 
 int DecryptFlow(
     void* enclave,
-    const std::filesystem::path& keyFilePath,
-    const std::filesystem::path& encryptedInputFilePath,
-    const std::filesystem::path& tagFilePath,
+    const fs::path& keyFilePath,
+    const fs::path& encryptedInputFilePath,
+    const fs::path& tagFilePath,
     veil::vtl0::logger::logger& veilLog)
 {
     //
@@ -276,10 +279,10 @@ int DecryptFlow(
     //  Get (encrypted) key bytes from disk, then pass into enclave to decrypt the encrypted input
     //
 
-    auto encryptedInputBytes = LoadBinaryData(encryptedInputFilePath.string());
+    auto encryptedInputBytes = LoadBinaryData(encryptedInputFilePath);
 
-    auto securedEncryptionKeyBytes = LoadBinaryData(keyFilePath.string());
-    auto tag = LoadBinaryData(tagFilePath.string());
+    auto securedEncryptionKeyBytes = LoadBinaryData(keyFilePath);
+    auto tag = LoadBinaryData(tagFilePath);
 
     // Initialize enclave interface
     auto enclaveInterface = VbsEnclave::Trusted::Stubs::SampleEnclave(enclave);
@@ -315,9 +318,9 @@ int EncryptFlowThreadpool(
     void* enclave,
     const std::wstring& input1,
     const std::wstring& input2,
-    const std::filesystem::path& keyFilePath,
-    const std::filesystem::path& encryptedInputFilePath,
-    const std::filesystem::path& tagFilePath,
+    const fs::path& keyFilePath,
+    const fs::path& encryptedInputFilePath,
+    const fs::path& tagFilePath,
     veil::vtl0::logger::logger& veilLog)
 {
     //
@@ -346,7 +349,7 @@ int EncryptFlowThreadpool(
     //          by the sealing-enclave or an enclave signed with compatible signature).
 
     // Save securedEncryptionKeyBytes to disk
-    SaveBinaryData(keyFilePath.string(), securedEncryptionKeyBytes);
+    SaveBinaryData(keyFilePath, securedEncryptionKeyBytes);
 
     //
     // [Load flow]
@@ -382,33 +385,33 @@ int EncryptFlowThreadpool(
     ));
 
     // Save encryptedInputBytes to disk
-    SaveBinaryData(encryptedInputFilePath.string().append("1"), encryptedInputBytes1);
-    SaveBinaryData(tagFilePath.string().append("1"), tag1);
-    SaveBinaryData(encryptedInputFilePath.string().append("2"), encryptedInputBytes2);
-    SaveBinaryData(tagFilePath.string().append("2"), tag2);
+    SaveBinaryData(fs::path(encryptedInputFilePath.string() + "1"), encryptedInputBytes1);
+    SaveBinaryData(fs::path(tagFilePath.string() + "1"), tag1);
+    SaveBinaryData(fs::path(encryptedInputFilePath.string() + "2"), encryptedInputBytes2);
+    SaveBinaryData(fs::path(tagFilePath.string() + "2"), tag2);
 
     return 0;
 }
 
 int DecryptFlowThreadpool(
     void* enclave,
-    const std::filesystem::path& keyFilePath,
-    const std::filesystem::path& encryptedInputFilePath,
-    const std::filesystem::path& tagFilePath,
+    const fs::path& keyFilePath,
+    const fs::path& encryptedInputFilePath,
+    const fs::path& tagFilePath,
     veil::vtl0::logger::logger& veilLog)
 {
     //
     // [Load flow]
     // 
-    //  Get (encrypted) key bytes from disk, then pass into enclave to decrypt the encrypted input
+    //Get (encrypted) key bytes from disk, then pass into enclave to decrypt the encrypted input
     //
 
-    auto encryptedInputBytes1 = LoadBinaryData(encryptedInputFilePath.string().append("1"));
-    auto encryptedInputBytes2 = LoadBinaryData(encryptedInputFilePath.string().append("2"));
+    auto encryptedInputBytes1 = LoadBinaryData(fs::path(encryptedInputFilePath.string() + "1"));
+    auto encryptedInputBytes2 = LoadBinaryData(fs::path(encryptedInputFilePath.string() + "2"));
 
-    auto securedEncryptionKeyBytes = LoadBinaryData(keyFilePath.string());
-    auto tag1 = LoadBinaryData(tagFilePath.string().append("1"));
-    auto tag2 = LoadBinaryData(tagFilePath.string().append("2"));
+    auto securedEncryptionKeyBytes = LoadBinaryData(keyFilePath);
+    auto tag1 = LoadBinaryData(fs::path(tagFilePath.string() + "1"));
+    auto tag2 = LoadBinaryData(fs::path(tagFilePath.string() + "2"));
 
     // Initialize enclave interface
     auto enclaveInterface = VbsEnclave::Trusted::Stubs::SampleEnclave(enclave);
@@ -452,14 +455,14 @@ int mainEncryptDecrypt(uint32_t activityLevel)
 {
     int choice;
     std::wstring input;
-    const std::wstring encryptedKeyDirPath = std::filesystem::current_path().wstring();
-    const std::wstring encryptedDataDirPath = std::filesystem::current_path().wstring();
-    std::wstring encryptedOutputFilePath = encryptedDataDirPath + L"\\encrypted";
-    std::wstring tagFilePath = encryptedKeyDirPath + L"\\tag";
-    bool programExecuted = false;
+    const fs::path encryptedKeyDirPath = fs::current_path();
+    const fs::path encryptedDataDirPath = fs::current_path();
+    const fs::path encryptedOutputFilePath = encryptedDataDirPath / "encrypted";
+    const fs::path tagFilePath = encryptedKeyDirPath / "tag";
+ bool programExecuted = false;
 
     veil::vtl0::logger::logger veilLog(
-        L"VeilSampleApp",
+   L"VeilSampleApp",
         L"70F7212C-1F84-4B86-B550-3D5AE82EC779" /*Generated GUID*/,
     static_cast<veil::any::logger::eventLevel>(activityLevel));
 
@@ -476,12 +479,12 @@ int mainEncryptDecrypt(uint32_t activityLevel)
     veil::vtl0::enclave::initialize(enclave.get(), 2); // Note we need at 2 threads, otherwise we will have a reentrancy deadlock
 
     // Register framework callbacks
-    veil::vtl0::enclave_api::register_callbacks(enclave.get());
+  veil::vtl0::enclave_api::register_callbacks(enclave.get());
 
-    constexpr PCWSTR keyMoniker = L"MyEncryptionKey-001";
+    constexpr PCWSTR keyMoniker = KEY_NAME.data();
 
     // File with secured encryption key bytes
-    auto keyFilePath = std::filesystem::path(encryptedKeyDirPath) / keyMoniker;
+    auto keyFilePath = encryptedKeyDirPath / keyMoniker;
 
     do
     {
@@ -506,16 +509,16 @@ int mainEncryptDecrypt(uint32_t activityLevel)
                 EncryptFlow(enclave.get(), input, keyFilePath, encryptedOutputFilePath, tagFilePath, veilLog);
                 std::wcout << L"Encryption in Enclave completed. \n Encrypted bytes are saved to disk in " << encryptedOutputFilePath << std::endl;
                 veilLog.AddTimestampedLog(
-                    L"[Host] Encryption in Enclave completed. Encrypted bytes are saved to disk in " + encryptedOutputFilePath,
+                    L"[Host] Encryption in Enclave completed. Encrypted bytes are saved to disk in " + encryptedOutputFilePath.wstring(),
                     veil::any::logger::eventLevel::EVENT_LEVEL_CRITICAL);
                 programExecuted = true;
                 break;
 
             case 2:
                 DecryptFlow(enclave.get(), keyFilePath, encryptedOutputFilePath, tagFilePath, veilLog);
-                std::filesystem::remove(keyFilePath);
-                std::filesystem::remove(encryptedOutputFilePath);
-                std::filesystem::remove(tagFilePath);
+                fs::remove(keyFilePath);
+                fs::remove(encryptedOutputFilePath);
+                fs::remove(tagFilePath);
                 programExecuted = true;
                 break;
 
@@ -536,10 +539,10 @@ int mainEncryptDecryptUserBound(uint32_t activityLevel)
 {
     int choice;
     std::wstring input;
-    const std::wstring encryptedKeyDirPath = std::filesystem::current_path().wstring();
-    const std::wstring encryptedDataDirPath = std::filesystem::current_path().wstring();
-    std::wstring encryptedOutputFilePath = encryptedDataDirPath + L"\\encrypted_userbound";
-    bool programExecuted = false;
+    const fs::path encryptedKeyDirPath = fs::current_path();
+    const fs::path encryptedDataDirPath = fs::current_path();
+    const fs::path encryptedOutputFilePath = encryptedDataDirPath / "encrypted_userbound";
+  bool programExecuted = false;
 
     // Initialize configuration for user-bound keys
     bool areUserBindingApisAvailable;
@@ -585,20 +588,22 @@ int mainEncryptDecryptUserBound(uint32_t activityLevel)
     }
     catch (winrt::hresult_error const& ex)
     {
-        // If the new API is not available or fails, log the error and continue with default
-        std::wcout << L"Warning: Failed to get secure ID using GetSecureId API (HRESULT: 0x"
-            << std::hex << ex.code() << L"). Using default owner_id." << std::endl;
+        // If the new API is not available or fails, log the error and return
+        std::wcout << L"Error: Failed to get secure ID using GetSecureId API (HRESULT: 0x"
+            << std::hex << ex.code() << L")." << std::endl;
+        std::wcout << L"Cannot proceed without a valid secure ID for user-bound encryption." << std::endl;
+        std::cout << "\nPress any key to exit..." << std::endl;
+        _getch();
+     return -1;
     }
     catch (...)
     {
-        // If any other exception occurs, continue with default
-        std::wcout << L"Warning: Exception occurred while getting secure ID. Using default owner_id." << std::endl;
-    }
-
-    // Fallback to the default owner_id if the new API failed or returned empty result
-    if (ownerId.empty())
-    {
-        ownerId = {};
+    // If any other exception occurs, log error and return
+        std::wcout << L"Error: Exception occurred while getting secure ID." << std::endl;
+        std::wcout << L"Cannot proceed without a valid secure ID for user-bound encryption." << std::endl;
+        std::cout << "\nPress any key to return to exit..." << std::endl;
+        _getch();
+        return -1;
     }
 
     // Load enclave
@@ -611,10 +616,10 @@ int mainEncryptDecryptUserBound(uint32_t activityLevel)
     // Register framework callbacks
     veil::vtl0::enclave_api::register_callbacks(enclave.get());
 
-    constexpr PCWSTR keyMoniker = L"MyEncryptionKey-UserBound-001";
+    constexpr PCWSTR keyMoniker = KEY_NAME.data();
 
     // File with secured encryption key bytes
-    auto keyFilePath = std::filesystem::path(encryptedKeyDirPath) / keyMoniker;
+    auto keyFilePath = encryptedKeyDirPath / keyMoniker;
 
     do
     {
@@ -640,15 +645,15 @@ int mainEncryptDecryptUserBound(uint32_t activityLevel)
                 UserBoundEncryptFlow(enclave.get(), input, keyFilePath, encryptedOutputFilePath, config);
                 std::wcout << L"User-bound encryption in Enclave completed. \n Encrypted bytes are saved to disk in " << encryptedOutputFilePath << std::endl;
                 veilLog.AddTimestampedLog(
-                    L"[Host] User-bound encryption in Enclave completed. Encrypted bytes are saved to disk in " + encryptedOutputFilePath,
-                    veil::any::logger::eventLevel::EVENT_LEVEL_CRITICAL);
+                    L"[Host] User-bound encryption in Enclave completed. Encrypted bytes are saved to disk in " + encryptedOutputFilePath.wstring(),
+         veil::any::logger::eventLevel::EVENT_LEVEL_CRITICAL);
                 programExecuted = true;
                 break;
 
             case 2:
                 UserBoundDecryptFlow(enclave.get(), keyFilePath, encryptedOutputFilePath, config);
-                std::filesystem::remove(keyFilePath);
-                std::filesystem::remove(encryptedOutputFilePath);
+                fs::remove(keyFilePath);
+                fs::remove(encryptedOutputFilePath);
                 programExecuted = true;
                 break;
 
@@ -723,22 +728,22 @@ int mainEncryptDecryptThreadpool(uint32_t activityLevel)
 
     int choice;
     std::wstring input1, input2;
-    const std::wstring encryptedKeyDirPath = std::filesystem::current_path().wstring();
-    const std::wstring encryptedDataDirPath = std::filesystem::current_path().wstring();
-    std::wstring encryptedInputFilePath = encryptedDataDirPath + L"\\encrypted";
-    std::wstring tagFilePath = encryptedKeyDirPath + L"\\tag";
+    const fs::path encryptedKeyDirPath = fs::current_path();
+    const fs::path encryptedDataDirPath = fs::current_path();
+ const fs::path encryptedInputFilePath = encryptedDataDirPath / "encrypted";
+    const fs::path tagFilePath = encryptedKeyDirPath / "tag";
     bool programExecuted = false;
 
     veil::vtl0::logger::logger veilLog(
-        L"VeilSampleApp",
+     L"VeilSampleApp",
         L"70F7212C-1F84-4B86-B550-3D5AE82EC779" /*Generated GUID*/,
-        static_cast<veil::any::logger::eventLevel>(activityLevel));
+     static_cast<veil::any::logger::eventLevel>(activityLevel));
     veilLog.AddTimestampedLog(L"[Host] Starting from host", veil::any::logger::eventLevel::EVENT_LEVEL_CRITICAL);
 
-    constexpr PCWSTR keyMoniker = L"MyEncryptionKey-001";
+    constexpr PCWSTR keyMoniker = KEY_NAME.data();
 
     // File with secured encryption key bytes
-    auto keyFilePath = std::filesystem::path(encryptedKeyDirPath) / keyMoniker;
+    auto keyFilePath = encryptedKeyDirPath / keyMoniker;
 
     do
     {
@@ -765,18 +770,18 @@ int mainEncryptDecryptThreadpool(uint32_t activityLevel)
                 EncryptFlowThreadpool(enclave.get(), input1, input2, keyFilePath, encryptedInputFilePath, tagFilePath, veilLog);
                 std::wcout << L"Encryption in Enclave threadpool completed. \n Encrypted bytes are saved to disk in " << encryptedDataDirPath << std::endl;
                 veilLog.AddTimestampedLog(
-                    L"[Host] Encryption in Enclave threadpool completed. \n Encrypted bytes are saved to disk in " + encryptedDataDirPath,
+                    L"[Host] Encryption in Enclave threadpool completed. \n Encrypted bytes are saved to disk in " + encryptedDataDirPath.wstring(),
                     veil::any::logger::eventLevel::EVENT_LEVEL_CRITICAL);
                 programExecuted = true;
                 break;
 
             case 2:
                 DecryptFlowThreadpool(enclave.get(), keyFilePath, encryptedInputFilePath, tagFilePath, veilLog);
-                std::filesystem::remove(keyFilePath);
-                std::filesystem::remove(encryptedInputFilePath + L"1");
-                std::filesystem::remove(encryptedInputFilePath + L"2");
-                std::filesystem::remove(tagFilePath + L"1");
-                std::filesystem::remove(tagFilePath + L"2");
+                fs::remove(keyFilePath);
+                fs::remove(fs::path(encryptedInputFilePath.string() + "1"));
+                fs::remove(fs::path(encryptedInputFilePath.string() + "2"));
+                fs::remove(fs::path(tagFilePath.string() + "1"));
+                fs::remove(fs::path(tagFilePath.string() + "2"));
                 programExecuted = true;
                 break;
 

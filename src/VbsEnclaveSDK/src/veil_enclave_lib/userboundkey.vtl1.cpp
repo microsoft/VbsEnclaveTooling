@@ -369,8 +369,6 @@ wil::secure_vector<uint8_t> create_user_bound_key(
     
     try
     {
-        unique_sessionhandle sessionHandle;
-
         // Convert cacheConfig to the type expected by the callback
         auto abi_cache_config = ConvertCacheConfig(cacheConfig);
         wil::unique_process_heap_ptr<void> encryptedKcmRequestRac; // RAII wrapper for automatic cleanup
@@ -405,9 +403,9 @@ wil::secure_vector<uint8_t> create_user_bound_key(
 
         veil::vtl1::vtl0_functions::debug_print(L"DEBUG: create_user_bound_key - Received credential and session info");
 
-        // Use RAII wrapper to prevent leaks in edge cases
+        // Use RAII wrapper to prevent leaks
         unique_credential_wrapper credentialWrapper(credentialAndSessionInfo.credential);
-        sessionHandle = ConvertToSessionHandle(credentialAndSessionInfo.sessionInfo);
+        unique_sessionhandle sessionHandle = ConvertToSessionHandle(credentialAndSessionInfo.sessionInfo);
 
         veil::vtl1::vtl0_functions::debug_print((L"DEBUG: create_user_bound_key - credential pointer: 0x" + std::to_wstring(credentialWrapper.get())).c_str());
 
@@ -523,24 +521,19 @@ std::vector<uint8_t> load_user_bound_key(
     
     try
     {
-        unique_sessionhandle sessionHandle;
         uint64_t localNonce = 0; // captures the nonce used in the encrypted request, will be used in the corresponding decrypt call
 
         // UNSEAL
         veil::vtl1::vtl0_functions::debug_print(L"DEBUG: load_user_bound_key - About to call unseal_data");
         veil::vtl1::vtl0_functions::debug_print((L"DEBUG: load_user_bound_key - sealedBoundKeyBytes size: " + std::to_wstring(sealedBoundKeyBytes.size())).c_str());
 
-        auto boundKeyBytesMaterial = veil::vtl1::crypto::unseal_data(sealedBoundKeyBytes);
+        auto [boundKeyBytes, unsealingFlags] = veil::vtl1::crypto::unseal_data(sealedBoundKeyBytes);
 
-        veil::vtl1::vtl0_functions::debug_print(L"DEBUG: load_user_bound_key - unseal_data completed successfully");
-
-        auto& boundKeyBytes = boundKeyBytesMaterial.first;
-        auto unsealingFlags = boundKeyBytesMaterial.second;
-   
+        veil::vtl1::vtl0_functions::debug_print(L"DEBUG: load_user_bound_key - unseal_data completed successfully");     
         veil::vtl1::vtl0_functions::debug_print((L"DEBUG: load_user_bound_key - boundKeyBytes size: " + std::to_wstring(boundKeyBytes.size())).c_str());
         veil::vtl1::vtl0_functions::debug_print((L"DEBUG: load_user_bound_key - unsealingFlags: 0x" + std::to_wstring(unsealingFlags)).c_str());
 
-        // Check if the unsealed key is stale and needs to be re-sealed
+        // Check if the sealing key is stale and data needs to be re-sealed
         if (unsealingFlags & ENCLAVE_UNSEAL_FLAG_STALE_KEY)
         {
             veil::vtl1::vtl0_functions::debug_print(L"WARNING: load_user_bound_key - Detected stale key, re-sealing bound key bytes");
@@ -559,7 +552,7 @@ std::vector<uint8_t> load_user_bound_key(
     
             veil::vtl1::vtl0_functions::debug_print((L"DEBUG: load_user_bound_key - Re-sealed bound key, new size: " + std::to_wstring(resealedBoundKeyBytes.size())).c_str());
             
-            // Note: Caller can now use resealedBoundKeyBytes to save the updated data to persistent storage
+            // Important! Caller _must_ replace old sealedBoundKeyBytes with resealedBoundKeyBytes on disk or risk data loss.
         }
         std::vector<uint8_t> ephemeralPublicKeyBytes = GetEphemeralPublicKeyBytesFromBoundKeyBytes(boundKeyBytes);
         veil::vtl1::vtl0_functions::debug_print((L"DEBUG: load_user_bound_key - ephemeralPublicKeyBytes size: " + std::to_wstring(ephemeralPublicKeyBytes.size())).c_str());
@@ -591,9 +584,9 @@ std::vector<uint8_t> load_user_bound_key(
 
         veil::vtl1::vtl0_functions::debug_print(L"DEBUG: load_user_bound_key - userboundkey_establish_session_for_load completed");
 
-        // Use RAII wrapper to prevent leaks in edge cases
+        // Use RAII wrapper to prevent leaks
         unique_credential_wrapper credentialWrapper(credentialAndSessionInfo.credential);
-        sessionHandle = ConvertToSessionHandle(credentialAndSessionInfo.sessionInfo);
+        unique_sessionhandle sessionHandle = ConvertToSessionHandle(credentialAndSessionInfo.sessionInfo);
 
         veil::vtl1::vtl0_functions::debug_print((L"DEBUG: load_user_bound_key - credential pointer: 0x" + std::to_wstring(credentialWrapper.get())).c_str());
 
