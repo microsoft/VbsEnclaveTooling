@@ -5,7 +5,6 @@
             The <VbsEnclaveCodegenPackageDir> should always point to this folder. Our targets file will be placed in
             <ProjectRoot>\packages\<name of nuget package>\build\native. 
          -->
-        <VbsEnclaveCodegenVersion Condition="'$(VbsEnclaveCodegenVersion)' == ''">0.0.0-Dev</VbsEnclaveCodegenVersion>
         <VbsEnclaveCodegenPackageDir>$([System.IO.Path]::GetFullPath($(MSBuildThisFileDirectory)))..\..\</VbsEnclaveCodegenPackageDir>
         <VbsEnclaveExeFilePath>$(VbsEnclaveCodegenPackageDir)bin\edlcodegen.exe</VbsEnclaveExeFilePath>
         <VbsEnclavePackageEnclaveAbiPath>$(VbsEnclaveCodegenPackageDir)src\VbsEnclaveABI</VbsEnclavePackageEnclaveAbiPath>
@@ -51,25 +50,47 @@
             <AdditionalIncludeDirectories>$(VcpkgIncludesDir);$(VbsEnclaveCodegenPackageDir)src\;$(VbsEnclaveGeneratedFilesDir);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
         </ClCompile>
 
-        <!-- define the __ENCLAVE_PROJECT__ macro in the enclave project so the enclave related ABI code lights up in the project.-->
-        <ClCompile Condition="'$(VbsEnclaveVirtualTrustLayer)' == 'Enclave'">
-            <PreprocessorDefinitions>__ENCLAVE_PROJECT__;__VBS_ENCLAVE_CODEGEN_VERSION__="$(VbsEnclaveCodegenVersion)";%(PreprocessorDefinitions)</PreprocessorDefinitions>
-        </ClCompile>
-
         <!-- The onecore.lib static library is required for host app projects. Add it by default to the host app-->
         <Link Condition="'$(VbsEnclaveVirtualTrustLayer)' == 'HostApp'">
             <AdditionalDependencies>onecore.lib;%(AdditionalDependencies)</AdditionalDependencies>
         </Link>
     </ItemDefinitionGroup>
 
-    <!-- Add enclave lib properties based on the platform. -->
-    <PropertyGroup Condition="'$(Platform)'=='x64' AND '$(VbsEnclaveVirtualTrustLayer)' == 'Enclave'">
-        <VC_LibraryPath_Enclave>$(VC_LibraryPath_VC_x64_Desktop)\..\$(Platform)\enclave</VC_LibraryPath_Enclave>
-        <VBS_Enclave_Dependencies Condition="'$(VBS_Enclave_Dependencies)' == ''">$(VC_LibraryPath_Enclave)\libcmt.lib;$(VC_LibraryPath_Enclave)\libvcruntime.lib;$(winsdk_cpp_x64_root)\um\x64\vertdll.lib;$(winsdk_cpp_x64_root)\um\x64\bcrypt.lib;$(winsdk_cpp_x64_root)\ucrt_enclave\x64\ucrt.lib</VBS_Enclave_Dependencies>
+    <PropertyGroup>
+        <NugetSdkRoot Condition="$(Platform) == x64">$(winsdk_cpp_x64_root)</NugetSdkRoot>
+        <NugetSdkRoot Condition="$(Platform) == ARM64">$(winsdk_cpp_arm64_root)</NugetSdkRoot>
+        <VC_LibraryPath_Enclave_Root Condition="$(Platform) == x64">$(VC_LibraryPath_VC_x64_Desktop)</VC_LibraryPath_Enclave_Root>
+        <VC_LibraryPath_Enclave_Root Condition="$(Platform) == ARM64">$(VC_LibraryPath_VC_ARM64_Desktop)</VC_LibraryPath_Enclave_Root>
     </PropertyGroup>
 
-    <PropertyGroup Condition="'$(Platform)'=='ARM64' AND '$(VbsEnclaveVirtualTrustLayer)' == 'Enclave'">
-        <VC_LibraryPath_Enclave>$(VC_LibraryPath_VC_arm64_Desktop)\..\$(Platform)\enclave</VC_LibraryPath_Enclave>
-        <VBS_Enclave_Dependencies Condition="'$(VBS_Enclave_Dependencies)' == ''">$(VC_LibraryPath_Enclave)\libcmt.lib;$(VC_LibraryPath_Enclave)\libvcruntime.lib;$(winsdk_cpp_arm64_root)\um\arm64\vertdll.lib;$(winsdk_cpp_arm64_root)\um\arm64\bcrypt.lib;$(winsdk_cpp_arm64_root)\ucrt_enclave\arm64\ucrt.lib</VBS_Enclave_Dependencies>
+    <!--
+        Adds the vbs enclave dependency libs when the developer installs the Windows SDK via Nuget
+        instead of using the nuget packages.
+    -->   
+    <PropertyGroup
+        Condition="Exists('$(NugetSdkRoot)')">
+        <VBS_Enclave_Dependencies Condition="'$(VBS_Enclave_Dependencies)' == ''">
+            $(VC_LibraryPath_Enclave_Root)\..\$(Platform)\enclave\libcmt.lib;
+            $(VC_LibraryPath_Enclave_Root)\..\$(Platform)\enclave\libvcruntime.lib;
+            $(NugetSdkRoot)\um\$(Platform)\vertdll.lib;
+            $(NugetSdkRoot)\um\$(Platform)\bcrypt.lib;
+            $(NugetSdkRoot)\ucrt_enclave\$(Platform)\ucrt.lib
+        </VBS_Enclave_Dependencies>
+    </PropertyGroup>
+    
+    <!--
+        Adds the vbs enclave dependency libs when the developer Installs the Windows SDK via Visual Studio 
+        or through the MSI package.
+    -->
+    <PropertyGroup 
+        Label="EnclaveLibs"
+        Condition="!Exists('$(NugetSdkRoot)')">
+        <VBS_Enclave_Dependencies Condition="'$(VBS_Enclave_Dependencies)' == ''">
+            vertdll.lib;
+            bcrypt.lib;
+            $(VC_LibraryPath_Enclave_Root)\enclave\libcmt.lib;
+            $(VC_LibraryPath_Enclave_Root)\enclave\libvcruntime.lib;
+            $(WindowsSDK_LibraryPath)\..\ucrt_enclave\$(Platform)\ucrt.lib;
+        </VBS_Enclave_Dependencies>
     </PropertyGroup>
 </Project>

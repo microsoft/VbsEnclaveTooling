@@ -1,0 +1,19 @@
+[package]
+name = "edlcodegen"
+version = "0.0.0"
+edition.workspace = true
+publish = false
+
+[lib]
+doc = false
+doctest = false
+
+[build-dependencies]
+edlcodegen-tools = { workspace = true }
+
+[dependencies]
+edlcodegen-core = { workspace = true }
+edlcodegen-enclave = { workspace = true, features = ["mock_functions"] }
+flatbuffers = { workspace = true }
+windows-result = { workspace = true }
+windows-sys = { workspace = true, features = ["Win32_System", "Win32_System_Memory"] }

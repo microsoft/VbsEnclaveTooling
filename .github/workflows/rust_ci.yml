@@ -1,0 +1,64 @@
+name: rust_ci
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'rust/**'
+      - '.github/workflows/rust_ci.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'rust/**'
+      - '.github/workflows/rust_ci.yml'
+
+defaults:
+  run:
+    working-directory: ./rust
+
+jobs:
+
+  # Confirm Rust code formatting is ok.
+  fmt:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v5
+      - run: rustup update stable
+      - run: cargo fmt --all -- --check
+
+  # Confirm Rust linter doesn't produce errors.
+  clippy:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v5
+      - run: rustup update stable
+      - run: cargo clippy --workspace --all-targets -- -D warnings
+
+ # Confirm all Rust tests pass without errors on x64 and arm64.
+  test:
+    strategy:
+      matrix:
+        include:
+          - version: stable
+            host: x86_64-pc-windows-msvc
+            target: x86_64-pc-windows-msvc
+            runner: windows-2025
+          - version: stable
+            host: aarch64-pc-windows-msvc
+            target: aarch64-pc-windows-msvc
+            runner: windows-11-arm
+
+    runs-on: ${{ matrix.runner }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+      - name: Update toolchain
+        run: rustup update --no-self-update ${{ matrix.version }} && rustup default ${{ matrix.version }}-${{ matrix.host }}
+      - name: Add toolchain target
+        run: rustup target add ${{ matrix.target }}
+      - name: Install fmt, clippy
+        run: rustup component add clippy rustfmt
+      - name: Clean
+        run: cargo clean
+      - run: cargo test --workspace
