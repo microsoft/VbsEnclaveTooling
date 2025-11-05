@@ -16,7 +16,6 @@ namespace veil::vtl1::userboundkey
 {
 using unique_sessionhandle = wil::unique_any<USER_BOUND_KEY_SESSION_HANDLE, decltype(&::CloseUserBoundKeySession), ::CloseUserBoundKeySession>;
 
-
 inline void delete_credential(uintptr_t credential) noexcept
 {
     if (credential)
@@ -25,19 +24,19 @@ inline void delete_credential(uintptr_t credential) noexcept
         {
             // Call VTL0 function to handle credential deletion using proper WinRT patterns
             veil::vtl1::vtl0_functions::debug_print((L"DEBUG: delete_credential - Calling VTL0 userboundkey_delete_credential for credential 0x" + 
-   std::to_wstring(credential)).c_str());
+            std::to_wstring(credential)).c_str());
       
             // Call the VTL0 function which handles the proper WinRT take_ownership_from_abi + detach_abi pattern
             veil_abi::Untrusted::Stubs::userboundkey_delete_credential(credential);
      
             veil::vtl1::vtl0_functions::debug_print((L"DEBUG: delete_credential - VTL0 userboundkey_delete_credential completed for credential 0x" + 
-    std::to_wstring(credential)).c_str());
+            std::to_wstring(credential)).c_str());
         }
         catch (...)
         {
             // VTL0 function should handle exceptions internally, but just in case
             veil::vtl1::vtl0_functions::debug_print((L"ERROR: delete_credential - Exception during VTL0 call for credential 0x" + 
-       std::to_wstring(credential)).c_str());
+            std::to_wstring(credential)).c_str());
         }
     }
 }
@@ -54,9 +53,9 @@ class unique_credential_wrapper
     {
         if (m_credential)
         {
- veil::vtl1::vtl0_functions::debug_print((L"DEBUG: unique_credential_wrapper constructor - Guarding credential 0x" + 
-           std::to_wstring(m_credential)).c_str());
-  }
+            veil::vtl1::vtl0_functions::debug_print((L"DEBUG: unique_credential_wrapper constructor - Guarding credential 0x" + 
+            std::to_wstring(m_credential)).c_str());
+        }
     }
 
     ~unique_credential_wrapper() noexcept
@@ -65,7 +64,7 @@ class unique_credential_wrapper
         {
             veil::vtl1::vtl0_functions::debug_print((L"DEBUG: unique_credential_wrapper destructor - Cleaning up credential 0x" + 
             std::to_wstring(m_credential)).c_str());
-       delete_credential(m_credential);
+            delete_credential(m_credential);
         }
     }
 
@@ -104,12 +103,14 @@ veil_abi::Types::keyCredentialCacheConfig ConvertCacheConfig(const veil::vtl1::u
 std::wstring CreateHexDump(const std::vector<uint8_t>& data, const std::wstring& prefix = L"", size_t maxBytes = 64)
 {
     std::wstring hexDump = prefix;
-    if (!prefix.empty()) {
+    if (!prefix.empty()) 
+    {
         hexDump += L" (size=" + std::to_wstring(data.size()) + L"): ";
     }
     
     size_t bytesToShow = data.size() < maxBytes ? data.size() : maxBytes;
-    for (size_t i = 0; i < bytesToShow; ++i) {
+    for (size_t i = 0; i < bytesToShow; ++i) 
+    {
         wchar_t hexByte[4];
         swprintf_s(hexByte, L"%02X ", data[i]);
         hexDump += hexByte;
@@ -154,7 +155,8 @@ veil_abi::Types::attestationReportAndSessionInfo userboundkey_get_attestation_re
     veil::vtl1::vtl0_functions::debug_print(L"DEBUG: About to call InitializeUserBoundKeySession");
 
     // Safe overflow check before casting
-    if (challenge.size() > std::numeric_limits<uint32_t>::max()) {
+    if (challenge.size() > std::numeric_limits<uint32_t>::max()) 
+    {
         veil::vtl1::vtl0_functions::debug_print(L"ERROR: Challenge size exceeds std::numeric_limits<uint32_t>::max()");
         throw std::overflow_error("Challenge size exceeds std::numeric_limits<uint32_t>::max()");
     }
@@ -280,9 +282,9 @@ namespace
     {
         if (handle)
         {
-         // CloseUserBoundKeyAuthContext returns HRESULT, but we're in a noexcept context
-       // so we ignore the return value (similar to the original implementation)
-     (void)CloseUserBoundKeyAuthContext(handle);
+            // CloseUserBoundKeyAuthContext returns HRESULT, but we're in a noexcept context
+            // so we ignore the return value (similar to the original implementation)
+            (void)CloseUserBoundKeyAuthContext(handle);
         }
     }
 
@@ -290,8 +292,8 @@ namespace
     inline uint32_t read_uint32(const uint8_t* ptr)
     {
         uint32_t value;
-      std::memcpy(&value, ptr, sizeof(value));
-   return value;
+        std::memcpy(&value, ptr, sizeof(value));
+        return value;
     }
 }
 
@@ -361,7 +363,7 @@ wil::secure_vector<uint8_t> create_user_bound_key(
     uintptr_t windowId,
     ENCLAVE_SEALING_IDENTITY_POLICY sealingPolicy,
     uint32_t runtimePolicy,
-  uint32_t keyCredentialCreationOption)
+    uint32_t keyCredentialCreationOption)
 {
     veil::vtl1::vtl0_functions::debug_print(L"DEBUG: create_user_bound_key - Function entered");
     
@@ -428,10 +430,10 @@ wil::secure_vector<uint8_t> create_user_bound_key(
         veil::vtl1::vtl0_functions::debug_print(L"DEBUG: create_user_bound_key - About to call userboundkey_get_authorization_context_from_credential");
 
         auto authContextBlob = veil::vtl1::implementation::userboundkey::callouts::userboundkey_get_authorization_context_from_credential(
-        credentialWrapper.get(),  // Use raw pointer - VTL0 callbacks handle their own reference management
+            credentialWrapper.get(),
             encryptedKcmRequestForRetrieveAuthorizationContext,
             message,
-  windowId);
+            windowId);
 
         veil::vtl1::vtl0_functions::debug_print(L"DEBUG: create_user_bound_key - userboundkey_get_authorization_context_from_credential completed");
 
@@ -442,7 +444,7 @@ wil::secure_vector<uint8_t> create_user_bound_key(
             authContextBlob.data(),
             static_cast<uint32_t>(authContextBlob.size()),
             localNonce,
-                authContext.put()
+            authContext.put()
         )); // OS CALL
   
         veil::vtl1::vtl0_functions::debug_print(L"DEBUG: create_user_bound_key - GetUserBoundKeyAuthContext completed");
@@ -540,25 +542,25 @@ std::vector<uint8_t> load_user_bound_key(
 
         // Check if the unsealed key is stale and needs to be re-sealed
         if (unsealingFlags & ENCLAVE_UNSEAL_FLAG_STALE_KEY)
-    {
-     veil::vtl1::vtl0_functions::debug_print(L"WARNING: load_user_bound_key - Detected stale key, re-sealing bound key bytes");
+        {
+            veil::vtl1::vtl0_functions::debug_print(L"WARNING: load_user_bound_key - Detected stale key, re-sealing bound key bytes");
             
-  // Set the needsReseal flag
-        needsReseal = true;
+            // Set the needsReseal flag
+            needsReseal = true;
      
-  // Re-seal the bound key bytes with current enclave identity
-  auto resealedData = veil::vtl1::crypto::seal_data(
-   boundKeyBytes, 
-   ENCLAVE_SEALING_IDENTITY_POLICY::ENCLAVE_IDENTITY_POLICY_SEAL_SAME_IMAGE, 
-ENCLAVE_RUNTIME_POLICY_ALLOW_FULL_DEBUG);
+            // Re-seal the bound key bytes with current enclave identity
+            auto resealedData = veil::vtl1::crypto::seal_data(
+                boundKeyBytes, 
+                ENCLAVE_SEALING_IDENTITY_POLICY::ENCLAVE_IDENTITY_POLICY_SEAL_SAME_IMAGE, 
+                ENCLAVE_RUNTIME_POLICY_ALLOW_FULL_DEBUG);
             
-     // Copy re-sealed data to output parameter
+            // Copy re-sealed data to output parameter
             resealedBoundKeyBytes.assign(resealedData.begin(), resealedData.end());
     
-  veil::vtl1::vtl0_functions::debug_print((L"DEBUG: load_user_bound_key - Re-sealed bound key, new size: " + std::to_wstring(resealedBoundKeyBytes.size())).c_str());
+            veil::vtl1::vtl0_functions::debug_print((L"DEBUG: load_user_bound_key - Re-sealed bound key, new size: " + std::to_wstring(resealedBoundKeyBytes.size())).c_str());
             
-      // Note: Caller can now use resealedBoundKeyBytes to save the updated data to persistent storage
-   }
+            // Note: Caller can now use resealedBoundKeyBytes to save the updated data to persistent storage
+        }
         std::vector<uint8_t> ephemeralPublicKeyBytes = GetEphemeralPublicKeyBytesFromBoundKeyBytes(boundKeyBytes);
         veil::vtl1::vtl0_functions::debug_print((L"DEBUG: load_user_bound_key - ephemeralPublicKeyBytes size: " + std::to_wstring(ephemeralPublicKeyBytes.size())).c_str());
 
@@ -591,7 +593,6 @@ ENCLAVE_RUNTIME_POLICY_ALLOW_FULL_DEBUG);
 
         // Use RAII wrapper to prevent leaks in edge cases
         unique_credential_wrapper credentialWrapper(credentialAndSessionInfo.credential);
-        // auto credentialPtr = credentialWrapper.get();
         sessionHandle = ConvertToSessionHandle(credentialAndSessionInfo.sessionInfo);
 
         veil::vtl1::vtl0_functions::debug_print((L"DEBUG: load_user_bound_key - credential pointer: 0x" + std::to_wstring(credentialWrapper.get())).c_str());
@@ -674,7 +675,7 @@ ENCLAVE_RUNTIME_POLICY_ALLOW_FULL_DEBUG);
         veil::vtl1::vtl0_functions::debug_print(L"DEBUG: load_user_bound_key - About to call userboundkey_get_secret_from_credential");
 
         auto secret = veil::vtl1::implementation::userboundkey::callouts::userboundkey_get_secret_from_credential(
-            credentialWrapper.get(),  // Use raw pointer - VTL0 callbacks handle their own reference management
+            credentialWrapper.get(),
             encryptedKcmRequestForDeriveSharedSecret,
             message,
             windowId);

@@ -111,8 +111,8 @@ enclave
         );
 
         // VTL0 function to safely delete/release a credential
-     void userboundkey_delete_credential(
-         uintptr_t credential
+        void userboundkey_delete_credential(
+            uintptr_t credential
      );
     };
 };

@@ -34,7 +34,7 @@ using namespace winrt::Windows::Security::Credentials;
 
 namespace veil::vtl0::userboundkey::implementation
 {
-    // RAII wrapper that stores both the session handle and enclave pointer
+// RAII wrapper that stores both the session handle and enclave pointer
 class unique_sessionhandle
 {
     public:
@@ -47,7 +47,7 @@ class unique_sessionhandle
     {
     }
 
-          // Move assignment
+    // Move assignment
     unique_sessionhandle& operator=(unique_sessionhandle&& other) noexcept
     {
         if (this != &other)
@@ -255,7 +255,6 @@ veil_abi::Types::credentialAndSessionInfo veil_abi::Untrusted::Implementation::u
     {
         auto op = KeyCredentialManager::DeleteAsync(key_name);
         std::wcout << "Deletion worked" << std::endl;
-
         op.get();
     }
     catch (...)
@@ -288,9 +287,9 @@ veil_abi::Types::credentialAndSessionInfo veil_abi::Untrusted::Implementation::u
 
     credentialAndSessionInfo result;
     void* tempCredential = nullptr;
-    winrt::copy_to_abi(credentialResult.Credential(), tempCredential); // Detach ownership from WinRT
+    winrt::copy_to_abi(credentialResult.Credential(), tempCredential);
 
-    result.credential = reinterpret_cast<uintptr_t>(tempCredential); // Transfer ownership to VTL1
+    result.credential = reinterpret_cast<uintptr_t>(tempCredential);
     result.sessionInfo = reinterpret_cast<uintptr_t>(sessionInfo->release()); // Transfer ownership to VTL1
 
     return result;
@@ -322,9 +321,9 @@ veil_abi::Types::credentialAndSessionInfo veil_abi::Untrusted::Implementation::u
 
     credentialAndSessionInfo result;
     void* tempCredential = nullptr;
-    winrt::copy_to_abi(credentialResult.Credential(), tempCredential); // Detach ownership from WinRT
+    winrt::copy_to_abi(credentialResult.Credential(), tempCredential);
 
-    result.credential = reinterpret_cast<uintptr_t>(tempCredential); // Transfer ownership to VTL1
+    result.credential = reinterpret_cast<uintptr_t>(tempCredential);
     result.sessionInfo = reinterpret_cast<uintptr_t>(sessionInfo->release()); // Transfer ownership to VTL1  
     
     return result;
@@ -338,15 +337,13 @@ std::vector<uint8_t> veil_abi::Untrusted::Implementation::userboundkey_get_autho
     uintptr_t window_id)
 {
     std::wcout << L"DEBUG: userboundkey_get_authorization_context_from_credential called with credential: 0x" 
-               << std::hex << credential_ptr << std::dec << std::endl;
+        << std::hex << credential_ptr << std::dec << std::endl;
 
     try
     {
         // Directly attach to the existing COM object with one reference
         // This creates a non-owning wrapper that won't call Release
         void* abi = reinterpret_cast<void*>(credential_ptr);
-        
-        // KeyCredential credential{ abi, winrt::take_ownership_from_abi };
         KeyCredential credential { nullptr };
         winrt::copy_from_abi(credential, abi);
    
@@ -357,8 +354,6 @@ std::vector<uint8_t> veil_abi::Untrusted::Implementation::userboundkey_get_autho
         winrt::Windows::Security::Cryptography::CryptographicBuffer::CreateFromByteArray(encrypted_kcm_request_for_get_authorization_context));
 
         auto result = ConvertBufferToVector(authorizationContext);
-
-        // winrt::detach_abi(credential);
 
         std::wcout << L"DEBUG: userboundkey_get_authorization_context_from_credential completed successfully" << std::endl;
   
@@ -384,7 +379,7 @@ std::vector<uint8_t> veil_abi::Untrusted::Implementation::userboundkey_get_secre
     uintptr_t window_id)
 {
     std::wcout << L"DEBUG: userboundkey_get_secret_from_credential called with credential: 0x" 
-      << std::hex << credential_ptr << std::dec << std::endl;
+        << std::hex << credential_ptr << std::dec << std::endl;
 
     try
     {
@@ -403,8 +398,6 @@ std::vector<uint8_t> veil_abi::Untrusted::Implementation::userboundkey_get_secre
             winrt::Windows::Security::Cryptography::CryptographicBuffer::CreateFromByteArray(encrypted_kcm_request_for_derive_shared_secret)).get();
 
         auto result = ConvertBufferToVector(secret.Result());
-
-        // winrt::detach_abi(credential);
   
         std::wcout << L"DEBUG: userboundkey_get_secret_from_credential completed successfully" << std::endl;
 
@@ -432,42 +425,36 @@ std::wstring veil_abi::Untrusted::Implementation::userboundkey_format_key_name(c
 void veil_abi::Untrusted::Implementation::userboundkey_delete_credential(uintptr_t credential_ptr)
 {
     std::wcout << L"DEBUG: userboundkey_delete_credential called with credential: 0x" 
-      << std::hex << credential_ptr << std::dec << std::endl;
+        << std::hex << credential_ptr << std::dec << std::endl;
 
     if (credential_ptr == 0)
- {
-    std::wcout << L"DEBUG: userboundkey_delete_credential - credential_ptr is null, nothing to delete" << std::endl;
-  return;
-  }
+    {
+        std::wcout << L"DEBUG: userboundkey_delete_credential - credential_ptr is null, nothing to delete" << std::endl;
+        return;
+    }
 
     try
     {
-        // Use WinRT's take_ownership_from_abi to take control of the object
-    void* abi = reinterpret_cast<void*>(credential_ptr);
+        void* abi = reinterpret_cast<void*>(credential_ptr);
         KeyCredential credential{ abi, winrt::take_ownership_from_abi };
   
-     std::wcout << L"DEBUG: userboundkey_delete_credential - Created owning KeyCredential wrapper via take_ownership_from_abi" << std::endl;
+        std::wcout << L"DEBUG: userboundkey_delete_credential - Created owning KeyCredential wrapper via take_ownership_from_abi" << std::endl;
 
-        // Now release control - detach_abi releases our WinRT wrapper without calling Release()
-        // This effectively transfers ownership back while decrementing our wrapper's control
         auto released_abi = winrt::detach_abi(credential);
      
-     std::wcout << L"DEBUG: userboundkey_delete_credential - Called detach_abi, released_abi: 0x" 
-      << std::hex << reinterpret_cast<uintptr_t>(released_abi) << std::dec << std::endl;
+        std::wcout << L"DEBUG: userboundkey_delete_credential - Called detach_abi, released_abi: 0x" 
+            << std::hex << reinterpret_cast<uintptr_t>(released_abi) << std::dec << std::endl;
         
-        // The KeyCredential destructor will now properly release the COM object
         std::wcout << L"DEBUG: userboundkey_delete_credential - KeyCredential wrapper going out of scope, will call proper cleanup" << std::endl;
     }
     catch (const std::exception& e)
     {
         std::wcout << L"DEBUG: Exception in userboundkey_delete_credential: " << e.what() << std::endl;
-        // Don't rethrow - this is cleanup code and should be noexcept-like
     }
     catch (...)
     {
         std::wcout << L"DEBUG: Unknown exception in userboundkey_delete_credential" << std::endl;
-    // Don't rethrow - this is cleanup code and should be noexcept-like
     }
     
-  std::wcout << L"DEBUG: userboundkey_delete_credential completed" << std::endl;
+    std::wcout << L"DEBUG: userboundkey_delete_credential completed" << std::endl;
 }

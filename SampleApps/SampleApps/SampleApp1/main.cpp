@@ -123,20 +123,20 @@ void UserBoundEncryptFlow(
     std::vector<uint8_t> resealedBoundKeyBytes;
 
     THROW_IF_FAILED(enclaveInterface.MyEnclaveLoadUserBoundKeyAndEncryptData(
-      config.helloKeyName,
-    config.pinMessage,
+        config.helloKeyName,
+        config.pinMessage,
         reinterpret_cast<uintptr_t>(config.hCurWnd),
         securedEncryptionKeyBytes,
-   input,
- combinedOutputData,
-  needsReseal,
+        input,
+        combinedOutputData,
+        needsReseal,
         resealedBoundKeyBytes
     ));
 
     // Handle re-sealing if needed
-  if (needsReseal)
+    if (needsReseal)
     {
-     std::wcout << L"Key was re-sealed, updating stored data with new size: " << resealedBoundKeyBytes.size() << std::endl;
+        std::wcout << L"Key was re-sealed, updating stored data with new size: " << resealedBoundKeyBytes.size() << std::endl;
         // Save the re-sealed data back to disk to avoid re-sealing on subsequent runs
         SaveBinaryData(keyFilePath.string(), resealedBoundKeyBytes);
     }
@@ -166,18 +166,18 @@ void UserBoundDecryptFlow(
 
     // Call into enclave for decryption - pass combined data, enclave will extract tag internally
     auto decryptedData = std::wstring {};
- bool needsReseal = false;
+    bool needsReseal = false;
     std::vector<uint8_t> resealedBoundKeyBytes;
 
     THROW_IF_FAILED(enclaveInterface.MyEnclaveLoadUserBoundKeyAndDecryptData(
         config.helloKeyName,
-  config.pinMessage,
+        config.pinMessage,
         reinterpret_cast<uintptr_t>(config.hCurWnd),
         securedEncryptionKeyBytes,
-   combinedInputData,
-   decryptedData,
+        combinedInputData,
+        decryptedData,
         needsReseal,
- resealedBoundKeyBytes
+        resealedBoundKeyBytes
     ));
 
     // Handle re-sealing if needed
@@ -507,7 +507,7 @@ int mainEncryptDecrypt(uint32_t activityLevel)
                 std::wcout << L"Encryption in Enclave completed. \n Encrypted bytes are saved to disk in " << encryptedOutputFilePath << std::endl;
                 veilLog.AddTimestampedLog(
                     L"[Host] Encryption in Enclave completed. Encrypted bytes are saved to disk in " + encryptedOutputFilePath,
-                        veil::any::logger::eventLevel::EVENT_LEVEL_CRITICAL);
+                    veil::any::logger::eventLevel::EVENT_LEVEL_CRITICAL);
                 programExecuted = true;
                 break;
 
