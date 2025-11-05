@@ -119,16 +119,27 @@ void UserBoundEncryptFlow(
 
     // Call into enclave - the enclave will return combined data (encrypted + tag + tag_size)
     auto combinedOutputData = std::vector<uint8_t> {};
+    bool needsReseal = false;
+    std::vector<uint8_t> resealedBoundKeyBytes;
 
     THROW_IF_FAILED(enclaveInterface.MyEnclaveLoadUserBoundKeyAndEncryptData(
-        config.helloKeyName,
-        config.pinMessage,
+      config.helloKeyName,
+    config.pinMessage,
         reinterpret_cast<uintptr_t>(config.hCurWnd),
         securedEncryptionKeyBytes,
-        input,
-        combinedOutputData
+   input,
+ combinedOutputData,
+  needsReseal,
+        resealedBoundKeyBytes
     ));
 
+    // Handle re-sealing if needed
+  if (needsReseal)
+    {
+     std::wcout << L"Key was re-sealed, updating stored data with new size: " << resealedBoundKeyBytes.size() << std::endl;
+        // Save the re-sealed data back to disk to avoid re-sealing on subsequent runs
+        SaveBinaryData(keyFilePath.string(), resealedBoundKeyBytes);
+    }
     // Save combined data directly to disk (enclave handles the tag appending)
     SaveBinaryData(encryptedOutputFilePath.string(), combinedOutputData);
 }
@@ -155,15 +166,27 @@ void UserBoundDecryptFlow(
 
     // Call into enclave for decryption - pass combined data, enclave will extract tag internally
     auto decryptedData = std::wstring {};
+ bool needsReseal = false;
+    std::vector<uint8_t> resealedBoundKeyBytes;
 
     THROW_IF_FAILED(enclaveInterface.MyEnclaveLoadUserBoundKeyAndDecryptData(
         config.helloKeyName,
-        config.pinMessage,
+  config.pinMessage,
         reinterpret_cast<uintptr_t>(config.hCurWnd),
         securedEncryptionKeyBytes,
-        combinedInputData,
-        decryptedData
+   combinedInputData,
+   decryptedData,
+        needsReseal,
+ resealedBoundKeyBytes
     ));
+
+    // Handle re-sealing if needed
+    if (needsReseal)
+    {
+        std::wcout << L"Key was re-sealed, updating stored data with new size: " << resealedBoundKeyBytes.size() << std::endl;
+        // Save the re-sealed data back to disk to avoid re-sealing on subsequent runs
+        SaveBinaryData(keyFilePath.string(), resealedBoundKeyBytes);
+    }
 
     // Display the decrypted result
     std::wcout << L"Decryption completed in Enclave. Decrypted string: " << decryptedData << std::endl;

@@ -384,7 +384,9 @@ HRESULT VbsEnclave::Trusted::Implementation::MyEnclaveLoadUserBoundKeyAndEncrypt
     _In_ const uintptr_t windowId,
     _In_ const std::vector<std::uint8_t>& securedEncryptionKeyBytes,
     _In_ const std::wstring& inputData,
-    _Out_ std::vector<std::uint8_t>& combinedOutputData)
+    _Out_ std::vector<std::uint8_t>& combinedOutputData,
+    _Out_ bool& needsReseal,
+    _Out_ std::vector<std::uint8_t>& resealedBoundKeyBytes)
 {
     using namespace veil::vtl1::vtl0_functions;
 
@@ -405,38 +407,40 @@ HRESULT VbsEnclave::Trusted::Implementation::MyEnclaveLoadUserBoundKeyAndEncrypt
             // Load the user-bound key from secured encryption key bytes
             // Note: securedEncryptionKeyBytes contains the user-bound key data, not raw key material
             auto loadedKeyBytes = veil::vtl1::userboundkey::load_user_bound_key(
-                helloKeyName,
-                secureConfig,
-                pinMessage,
-                windowId,
-                securedEncryptionKeyBytes);
+       helloKeyName,
+  secureConfig,
+     pinMessage,
+         windowId,
+     securedEncryptionKeyBytes,
+    needsReseal,
+         resealedBoundKeyBytes);
 
             debug_print(L"load_user_bound_key returned, key size: %d", loadedKeyBytes.size());
 
-            // NOW we can create a symmetric key from the loaded raw key material
-            auto newEncryptionKey = veil::vtl1::crypto::create_symmetric_key(loadedKeyBytes);
-            SetEncryptionKey(std::move(newEncryptionKey));
-            debug_print(L"Created symmetric key from loaded user-bound key material");
+    // NOW we can create a symmetric key from the loaded raw key material
+    auto newEncryptionKey = veil::vtl1::crypto::create_symmetric_key(loadedKeyBytes);
+    SetEncryptionKey(std::move(newEncryptionKey));
+      debug_print(L"Created symmetric key from loaded user-bound key material");
         }
-        else
+    else
         {
-            debug_print(L"UBK already loaded, using cached key");
+         debug_print(L"UBK already loaded, using cached key");
         }
 
         // Use the global key for encryption
         debug_print(L"Encrypting input data");
         auto keyHandle = GetEncryptionKeyHandle();
-        auto [encryptedText, encryptionTag] = veil::vtl1::crypto::encrypt(
-            keyHandle, 
-            veil::vtl1::as_data_span(inputData.c_str()), 
-            veil::vtl1::crypto::zero_nonce);
+   auto [encryptedText, encryptionTag] = veil::vtl1::crypto::encrypt(
+        keyHandle, 
+    veil::vtl1::as_data_span(inputData.c_str()), 
+      veil::vtl1::crypto::zero_nonce);
 
         debug_print(L"Encryption completed, encrypted size: %d, tag size: %d", 
-                   encryptedText.size(), encryptionTag.size());
+     encryptedText.size(), encryptionTag.size());
 
         // Combine tag and encrypted data into single output
-        // Format: [tag_size (4 bytes)][tag_data][encrypted_data]
-        uint32_t tagSize = static_cast<uint32_t>(encryptionTag.size());
+   // Format: [tag_size (4 bytes)][tag_data][encrypted_data]
+     uint32_t tagSize = static_cast<uint32_t>(encryptionTag.size());
         combinedOutputData.clear();
         combinedOutputData.reserve(sizeof(tagSize) + encryptionTag.size() + encryptedText.size());
   
@@ -450,12 +454,11 @@ HRESULT VbsEnclave::Trusted::Implementation::MyEnclaveLoadUserBoundKeyAndEncrypt
         // Append encrypted data
         combinedOutputData.insert(combinedOutputData.end(), encryptedText.begin(), encryptedText.end());
 
-        debug_print(L"Combined data created, total size: %u (tag_size: %u, tag: %u, encrypted: %u)", 
+   debug_print(L"Combined data created, total size: %u (tag_size: %u, tag: %u, encrypted: %u)", 
              static_cast<uint32_t>(combinedOutputData.size()), 
-     static_cast<uint32_t>(sizeof(tagSize)),
-        static_cast<uint32_t>(encryptionTag.size()), 
-        static_cast<uint32_t>(encryptedText.size()));
-
+      static_cast<uint32_t>(sizeof(tagSize)),
+      static_cast<uint32_t>(encryptionTag.size()), 
+       static_cast<uint32_t>(encryptedText.size()));
     }
     CATCH_RETURN();
 
@@ -471,20 +474,26 @@ HRESULT VbsEnclave::Trusted::Implementation::MyEnclaveLoadUserBoundKeyAndDecrypt
     _In_ const uintptr_t windowId,
     _In_ const std::vector<std::uint8_t>& securedEncryptionKeyBytes,
     _In_ const std::vector<std::uint8_t>& combinedInputData,
-    _Out_ std::wstring& decryptedData)
+    _Out_ std::wstring& decryptedData,
+    _Out_ bool& needsReseal,
+    _Out_ std::vector<std::uint8_t>& resealedBoundKeyBytes)
 {
     using namespace veil::vtl1::vtl0_functions;
 
-    try
-    {
-        debug_print(L"Start MyEnclaveLoadUserBoundKeyAndDecryptData");
+    // Initialize output parameters
+  needsReseal = false;
+    resealedBoundKeyBytes.clear();
 
-        // Extract tag from the combined input data
-        // Format: [tag_size (4 bytes)][tag_data][encrypted_data]
+    try
+ {
+ debug_print(L"Start MyEnclaveLoadUserBoundKeyAndDecryptData");
+
+      // Extract tag from the combined input data
+  // Format: [tag_size (4 bytes)][tag_data][encrypted_data]
         if (combinedInputData.size() < sizeof(uint32_t))
         {
-            debug_print(L"ERROR: Combined input data too small, size: %u", static_cast<uint32_t>(combinedInputData.size()));
-          return E_INVALIDARG;
+    debug_print(L"ERROR: Combined input data too small, size: %u", static_cast<uint32_t>(combinedInputData.size()));
+ return E_INVALIDARG;
         }
 
         // Read tag size from the first 4 bytes
@@ -494,83 +503,84 @@ HRESULT VbsEnclave::Trusted::Implementation::MyEnclaveLoadUserBoundKeyAndDecrypt
         debug_print(L"Extracted tag size: %d", tagSize);
 
         // Validate tag size
-        if (tagSize > combinedInputData.size() - sizeof(uint32_t) || tagSize == 0)
+  if (tagSize > combinedInputData.size() - sizeof(uint32_t) || tagSize == 0)
         {
-            debug_print(L"ERROR: Invalid tag size: %u, combined data size: %u", tagSize, static_cast<uint32_t>(combinedInputData.size()));
-            return E_INVALIDARG;
+       debug_print(L"ERROR: Invalid tag size: %u, combined data size: %u", tagSize, static_cast<uint32_t>(combinedInputData.size()));
+      return E_INVALIDARG;
         }
 
-        // Extract tag data (after tag size)
+     // Extract tag data (after tag size)
         std::vector<uint8_t> tag(
-            combinedInputData.begin() + sizeof(uint32_t),
-            combinedInputData.begin() + sizeof(uint32_t) + tagSize
+        combinedInputData.begin() + sizeof(uint32_t),
+     combinedInputData.begin() + sizeof(uint32_t) + tagSize
         );
    
         // Extract encrypted data (everything after tag size and tag data)
-        size_t encryptedDataOffset = sizeof(uint32_t) + tagSize;
-        std::vector<uint8_t> encryptedInputBytes(
-            combinedInputData.begin() + encryptedDataOffset,
-            combinedInputData.end()
-        );
+  size_t encryptedDataOffset = sizeof(uint32_t) + tagSize;
+   std::vector<uint8_t> encryptedInputBytes(
+      combinedInputData.begin() + encryptedDataOffset,
+   combinedInputData.end()
+     );
 
-        debug_print(L"Extracted tag size: %u, encrypted data size: %u", 
+ debug_print(L"Extracted tag size: %u, encrypted data size: %u", 
         static_cast<uint32_t>(tag.size()), 
         static_cast<uint32_t>(encryptedInputBytes.size()));
 
-        // Only load the user-bound key if it's not already loaded
-        if (!IsUBKLoaded())
+      // Only load the user-bound key if it's not already loaded
+      if (!IsUBKLoaded())
         {
-            debug_print(L"UBK not loaded, loading user-bound key");
+    debug_print(L"UBK not loaded, loading user-bound key");
 
-            // VTL1 creates secure cache configuration - VTL0 input is ignored
+      // VTL1 creates secure cache configuration - VTL0 input is ignored
             auto secureConfig = CreateSecureKeyCredentialCacheConfig();
 
-            debug_print(L"Created secure cache configuration in VTL1");
-            debug_print(L"securedEncryptionKeyBytes size: %d", securedEncryptionKeyBytes.size());
+     debug_print(L"Created secure cache configuration in VTL1");
+      debug_print(L"securedEncryptionKeyBytes size: %d", securedEncryptionKeyBytes.size());
 
-            // Load the user-bound key from secured encryption key bytes
-            // Note: securedEncryptionKeyBytes contains the user-bound key data, not raw key material
+      // Load the user-bound key from secured encryption key bytes
+        // Note: securedEncryptionKeyBytes contains the user-bound key data, not raw key material
             auto loadedKeyBytes = veil::vtl1::userboundkey::load_user_bound_key(
-                helloKeyName,
-                secureConfig,
-                pinMessage,
-                windowId,
-                securedEncryptionKeyBytes);
+       helloKeyName,
+  secureConfig,
+     pinMessage,
+         windowId,
+             securedEncryptionKeyBytes,
+       needsReseal,
+         resealedBoundKeyBytes);
 
-            debug_print(L"load_user_bound_key returned, key size: %d", loadedKeyBytes.size());
+  debug_print(L"load_user_bound_key returned, key size: %d", loadedKeyBytes.size());
 
-            // NOW we can create a symmetric key from the loaded raw key material
-            auto newEncryptionKey = veil::vtl1::crypto::create_symmetric_key(loadedKeyBytes);
-            SetEncryptionKey(std::move(newEncryptionKey));
-            debug_print(L"Created symmetric key from loaded user-bound key material");
+    // NOW we can create a symmetric key from the loaded raw key material
+    auto newEncryptionKey = veil::vtl1::crypto::create_symmetric_key(loadedKeyBytes);
+    SetEncryptionKey(std::move(newEncryptionKey));
+      debug_print(L"Created symmetric key from loaded user-bound key material");
         }
-        else
+    else
         {
-            debug_print(L"UBK already loaded, using cached key");
+         debug_print(L"UBK already loaded, using cached key");
         }
 
         // Use the global key for decryption
         debug_print(L"Decrypting input data, encrypted size: %u, tag size: %u", 
-                   static_cast<uint32_t>(encryptedInputBytes.size()), 
-                   static_cast<uint32_t>(tag.size()));
+    static_cast<uint32_t>(encryptedInputBytes.size()), 
+    static_cast<uint32_t>(tag.size()));
         
-        auto keyHandle = GetEncryptionKeyHandle();
+   auto keyHandle = GetEncryptionKeyHandle();
         auto decryptedBytes = veil::vtl1::crypto::decrypt(
-            keyHandle, 
-            encryptedInputBytes, 
-            veil::vtl1::crypto::zero_nonce, 
-            tag);
+      keyHandle, 
+          encryptedInputBytes, 
+     veil::vtl1::crypto::zero_nonce, 
+      tag);
 
         // Convert decrypted bytes to wstring
         decryptedData = veil::vtl1::to_wstring(decryptedBytes);
         
-        debug_print(L"Decryption completed, decrypted string: %ws", decryptedData.c_str());
+ debug_print(L"Decryption completed, decrypted string: %ws", decryptedData.c_str());
     }
     CATCH_RETURN();
 
     return S_OK;
 }
-
 //
 // Secured encryption key
 //

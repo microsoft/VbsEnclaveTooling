@@ -32,5 +32,7 @@ namespace veil::vtl1::userboundkey
         veil::vtl1::userboundkey::keyCredentialCacheConfig& cacheConfig,
         const std::wstring& message,
         uintptr_t windowId,
-        const std::vector<uint8_t>& sealedBoundKeyBytes);
+        const std::vector<uint8_t>& sealedBoundKeyBytes,
+        _Out_ bool& needsReseal,
+        _Out_ std::vector<uint8_t>& resealedBoundKeyBytes);
 }

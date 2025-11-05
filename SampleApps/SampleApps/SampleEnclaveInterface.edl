@@ -56,7 +56,9 @@ enclave
             uintptr_t windowId,
             vector<uint8_t> secured_encryption_key_bytes,
             wstring inputData,
-            [out] vector<uint8_t> encryptedInputBytes,
+            [out] vector<uint8_t> combinedOutputData,
+            [out] bool needsReseal,
+            [out] vector<uint8_t> resealedBoundKeyBytes
             );
 
         HRESULT MyEnclaveLoadUserBoundKeyAndDecryptData(
@@ -64,8 +66,10 @@ enclave
             wstring pinMessage,
             uintptr_t windowId,
             vector<uint8_t> secured_encryption_key_bytes,
-            vector<uint8_t> encryptedInputBytes,
-            [out] wstring decryptedData
+            vector<uint8_t> combinedInputData,
+            [out] wstring decryptedData,
+            [out] bool needsReseal,
+            [out] vector<uint8_t> resealedBoundKeyBytes
             );
     };
 };

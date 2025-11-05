@@ -509,9 +509,15 @@ std::vector<uint8_t> load_user_bound_key(
     veil::vtl1::userboundkey::keyCredentialCacheConfig& cacheConfig,
     const std::wstring& message,
     uintptr_t windowId,
-    const std::vector<uint8_t>& sealedBoundKeyBytes)
+    const std::vector<uint8_t>& sealedBoundKeyBytes,
+    _Out_ bool& needsReseal,
+    _Out_ std::vector<uint8_t>& resealedBoundKeyBytes)
 {
     veil::vtl1::vtl0_functions::debug_print(L"DEBUG: load_user_bound_key - Function entered");
+    
+    // Initialize output parameters
+    needsReseal = false;
+    resealedBoundKeyBytes.clear();
     
     try
     {
@@ -527,8 +533,32 @@ std::vector<uint8_t> load_user_bound_key(
         veil::vtl1::vtl0_functions::debug_print(L"DEBUG: load_user_bound_key - unseal_data completed successfully");
 
         auto& boundKeyBytes = boundKeyBytesMaterial.first;
+        auto unsealingFlags = boundKeyBytesMaterial.second;
+   
         veil::vtl1::vtl0_functions::debug_print((L"DEBUG: load_user_bound_key - boundKeyBytes size: " + std::to_wstring(boundKeyBytes.size())).c_str());
+        veil::vtl1::vtl0_functions::debug_print((L"DEBUG: load_user_bound_key - unsealingFlags: 0x" + std::to_wstring(unsealingFlags)).c_str());
 
+        // Check if the unsealed key is stale and needs to be re-sealed
+        if (unsealingFlags & ENCLAVE_UNSEAL_FLAG_STALE_KEY)
+    {
+     veil::vtl1::vtl0_functions::debug_print(L"WARNING: load_user_bound_key - Detected stale key, re-sealing bound key bytes");
+            
+  // Set the needsReseal flag
+        needsReseal = true;
+     
+  // Re-seal the bound key bytes with current enclave identity
+  auto resealedData = veil::vtl1::crypto::seal_data(
+   boundKeyBytes, 
+   ENCLAVE_SEALING_IDENTITY_POLICY::ENCLAVE_IDENTITY_POLICY_SEAL_SAME_IMAGE, 
+ENCLAVE_RUNTIME_POLICY_ALLOW_FULL_DEBUG);
+            
+     // Copy re-sealed data to output parameter
+            resealedBoundKeyBytes.assign(resealedData.begin(), resealedData.end());
+    
+  veil::vtl1::vtl0_functions::debug_print((L"DEBUG: load_user_bound_key - Re-sealed bound key, new size: " + std::to_wstring(resealedBoundKeyBytes.size())).c_str());
+            
+      // Note: Caller can now use resealedBoundKeyBytes to save the updated data to persistent storage
+   }
         std::vector<uint8_t> ephemeralPublicKeyBytes = GetEphemeralPublicKeyBytesFromBoundKeyBytes(boundKeyBytes);
         veil::vtl1::vtl0_functions::debug_print((L"DEBUG: load_user_bound_key - ephemeralPublicKeyBytes size: " + std::to_wstring(ephemeralPublicKeyBytes.size())).c_str());
 
