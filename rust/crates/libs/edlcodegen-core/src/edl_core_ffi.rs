@@ -6,6 +6,7 @@ use core::ffi::c_void;
 // We need to make sure that this crate can be usable in both the host and the enclave
 // and not accidentally bring in things that are not usable inside an enclave.
 pub type EnclaveRoutine = isize;
+pub type AbiFuncPtr = unsafe extern "system" fn(*mut c_void) -> *mut c_void;
 pub type HANDLE = *mut core::ffi::c_void;
 pub type HEAP_FLAGS = u32;
 pub type WIN32_ERROR = u32;

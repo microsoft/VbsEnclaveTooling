@@ -1,12 +1,10 @@
 use core::ffi::c_void;
+use edlcodegen_core::edl_core_ffi::AbiFuncPtr;
 use edlcodegen_enclave::win_enclave_bindings::ENCLAVE_INFORMATION;
 use std::ptr;
 use std::sync::atomic::{AtomicI32, Ordering};
-use windows_result::BOOL;
-use windows_sys::Win32::Foundation::{E_FAIL, ERROR_ACCESS_DENIED, S_OK, SetLastError};
-use windows_sys::core::HRESULT;
-
-type EnclaveRoutine = unsafe extern "system" fn(*mut c_void) -> *mut c_void;
+use windows::Win32::Foundation::{E_FAIL, ERROR_ACCESS_DENIED, S_OK, SetLastError};
+use windows::core::BOOL;
 
 #[unsafe(no_mangle)]
 pub extern "C" fn CallEnclave(
@@ -21,7 +19,7 @@ pub extern "C" fn CallEnclave(
         return BOOL(0);
     }
 
-    let f: EnclaveRoutine = unsafe { core::mem::transmute(func) };
+    let f: AbiFuncPtr = unsafe { core::mem::transmute(func) };
     let param_mut = param as *mut c_void;
     let result = unsafe { f(param_mut) };
 
@@ -38,7 +36,7 @@ pub extern "C" fn EnclaveCopyIntoEnclave(dst: *mut c_void, src: *const c_void, s
         ptr::copy_nonoverlapping(src as *const u8, dst as *mut u8, size);
     }
     println!("[mock] memcpy -> EnclaveCopyIntoEnclave ({} bytes)", size);
-    S_OK
+    S_OK.0
 }
 
 #[unsafe(no_mangle)]
@@ -51,7 +49,7 @@ pub extern "C" fn EnclaveCopyOutOfEnclave(
         ptr::copy_nonoverlapping(src as *const u8, dst as *mut u8, size);
     }
     println!("[mock] memcpy -> EnclaveCopyOutOfEnclave ({} bytes)", size);
-    S_OK
+    S_OK.0
 }
 
 #[unsafe(no_mangle)]
@@ -64,14 +62,14 @@ pub extern "C" fn EnclaveRestrictContainingProcessAccess(_restrict: BOOL, _prev:
         count_so_far
     );
 
-    if count_so_far > 1 { E_FAIL } else { S_OK }
+    if count_so_far > 1 { E_FAIL.0 } else { S_OK.0 }
 }
 
 #[unsafe(no_mangle)]
 pub extern "system" fn EnclaveGetEnclaveInformation(
     _informationsize: u32,
     enclaveinformation: *mut ENCLAVE_INFORMATION,
-) -> HRESULT {
+) -> i32 {
     // SAFETY NOTE: 0x1000_0000 is a sentinel only used for address-range comparisons.
     // Do NOT dereference this pointer.
     const FAKE_BASE: usize = 0x1000_0000;
@@ -82,5 +80,5 @@ pub extern "system" fn EnclaveGetEnclaveInformation(
         (*enclaveinformation).Size = FAKE_SIZE;
     }
 
-    S_OK
+    S_OK.0
 }
