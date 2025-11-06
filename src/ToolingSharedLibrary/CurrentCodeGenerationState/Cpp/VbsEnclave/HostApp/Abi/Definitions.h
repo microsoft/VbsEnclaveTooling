@@ -2,6 +2,7 @@
 // Changes to this file may be lost if the file is regenerated.
 
 #pragma once
+#include <wil\cppwinrt.h>
 #include <VbsEnclave\HostApp\Implementation\Untrusted.h>
 #include <VbsEnclave\HostApp\Abi\TypeMetadata.h>
 

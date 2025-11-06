@@ -658,5 +658,11 @@ struct EnclaveTestClass
         VERIFY_SUCCEEDED(generated_enclave_class.Start_ComplexPassingOfTypesThatContainPointers_To_HostApp_Callback_Test());
     }
 
+    TEST_METHOD(Start_Throw_Winrt_Exception_From_Host_Test)
+    {
+        auto generated_enclave_class = TestEnclave(m_enclave);
+        VERIFY_SUCCEEDED(generated_enclave_class.Start_Throw_Winrt_Exception_From_Host_Test());
+    }
+
     #pragma endregion // Enclave to HostApp tests happen in vtl1
 };

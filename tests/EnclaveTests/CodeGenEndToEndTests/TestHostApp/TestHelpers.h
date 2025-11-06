@@ -1,7 +1,7 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
-#ifdef __ENCLAVE_PROJECT__
+#ifdef TESTENCLAVE_EXPORTS
 #include <VbsEnclave\Enclave\Implementation\Types.h>
 #else
 #include <VbsEnclave\HostApp\Implementation\Types.h>
