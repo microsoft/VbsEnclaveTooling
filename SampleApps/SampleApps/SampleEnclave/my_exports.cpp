@@ -425,6 +425,7 @@ HRESULT VbsEnclave::Trusted::Implementation::MyEnclaveLoadUserBoundKeyAndEncrypt
                 pinMessage,
                 windowId,
                 securedEncryptionKeyBytes,
+                ENCLAVE_SEALING_IDENTITY_POLICY::ENCLAVE_IDENTITY_POLICY_SEAL_SAME_IMAGE,
                 g_runtimePolicy,
                 needsReseal,
                 resealedBoundKeyBytes);
@@ -561,6 +562,7 @@ HRESULT VbsEnclave::Trusted::Implementation::MyEnclaveLoadUserBoundKeyAndDecrypt
                 pinMessage,
                 windowId,
                 securedEncryptionKeyBytes,
+                ENCLAVE_SEALING_IDENTITY_POLICY::ENCLAVE_IDENTITY_POLICY_SEAL_SAME_IMAGE,
                 g_runtimePolicy,
                 needsReseal,
                 resealedBoundKeyBytes

@@ -20,7 +20,7 @@ namespace veil::vtl1::userboundkey
 
     wil::secure_vector<uint8_t> create_user_bound_key(
         const std::wstring& keyName,
-        veil::vtl1::userboundkey::keyCredentialCacheConfig& cacheConfig,
+        const veil::vtl1::userboundkey::keyCredentialCacheConfig& cacheConfig,
         const std::wstring& message,
         uintptr_t windowId,
         ENCLAVE_SEALING_IDENTITY_POLICY sealingPolicy,
@@ -29,10 +29,11 @@ namespace veil::vtl1::userboundkey
 
     std::vector<uint8_t> load_user_bound_key(
         const std::wstring& keyName,
-        veil::vtl1::userboundkey::keyCredentialCacheConfig& cacheConfig,
+        const veil::vtl1::userboundkey::keyCredentialCacheConfig& cacheConfig,
         const std::wstring& message,
         uintptr_t windowId,
         const std::vector<uint8_t>& sealedBoundKeyBytes,
+        ENCLAVE_SEALING_IDENTITY_POLICY sealingPolicy,
         uint32_t runtimePolicy,
         _Out_ bool& needsReseal,
         _Out_ std::vector<uint8_t>& resealedBoundKeyBytes);
