@@ -122,8 +122,7 @@ void UserBoundEncryptFlow(
 
     // Call into enclave - the enclave returns combined data: [tag_size (4 bytes)][tag][encrypted_data]
     auto combinedOutputData = std::vector<uint8_t> {};
-    bool needsReseal = false;
-    std::vector<uint8_t> resealedBoundKeyBytes;
+    bool needsReseal = false;    
 
     THROW_IF_FAILED(enclaveInterface.MyEnclaveLoadUserBoundKeyAndEncryptData(
         config.helloKeyName,
@@ -132,8 +131,7 @@ void UserBoundEncryptFlow(
         securedEncryptionKeyBytes,
         input,
         combinedOutputData,
-        needsReseal,
-        resealedBoundKeyBytes
+        needsReseal
     ));
 
     // VBS has a fixed sized key ring. The VBS keys rotate on roughly every OS upgrade. 
@@ -143,6 +141,15 @@ void UserBoundEncryptFlow(
     // At this point, if the reseal is not performed, it would not be possible to unseal the encrypted key the next time.
     if (needsReseal)
     {
+        std::vector<uint8_t> resealedBoundKeyBytes;
+        std::wcout << L"Key needs re-sealing, calling MyEnclaveResealKey API..." << std::endl;
+   
+        // Call the new MyEnclaveResealKey API to get the resealed data
+        THROW_IF_FAILED(enclaveInterface.MyEnclaveResealKey(
+            securedEncryptionKeyBytes,
+            resealedBoundKeyBytes
+        ));
+
         std::wcout << L"Key was re-sealed, updating stored data with new size: " << resealedBoundKeyBytes.size() << std::endl;
         // Save the re-sealed data back to disk to avoid re-sealing on subsequent runs
         SaveBinaryData(keyFilePath, resealedBoundKeyBytes);
@@ -174,7 +181,6 @@ void UserBoundDecryptFlow(
     // Call into enclave for decryption - pass combined data, enclave will extract tag internally
     auto decryptedData = std::wstring {};
     bool needsReseal = false;
-    std::vector<uint8_t> resealedBoundKeyBytes;
 
     THROW_IF_FAILED(enclaveInterface.MyEnclaveLoadUserBoundKeyAndDecryptData(
         config.helloKeyName,
@@ -183,13 +189,21 @@ void UserBoundDecryptFlow(
         securedEncryptionKeyBytes,
         combinedInputData,
         decryptedData,
-        needsReseal,
-        resealedBoundKeyBytes
+        needsReseal
     ));
 
     // Handle re-sealing if needed
     if (needsReseal)
     {
+        std::vector<uint8_t> resealedBoundKeyBytes;
+        std::wcout << L"Key needs re-sealing, calling MyEnclaveResealKey API..." << std::endl;
+      
+        // Call the new MyEnclaveResealKey API to get the resealed data
+        THROW_IF_FAILED(enclaveInterface.MyEnclaveResealKey(
+            securedEncryptionKeyBytes,
+            resealedBoundKeyBytes
+        ));
+
         std::wcout << L"Key was re-sealed, updating stored data with new size: " << resealedBoundKeyBytes.size() << std::endl;
         // Save the re-sealed data back to disk to avoid re-sealing on subsequent runs
         SaveBinaryData(keyFilePath, resealedBoundKeyBytes);

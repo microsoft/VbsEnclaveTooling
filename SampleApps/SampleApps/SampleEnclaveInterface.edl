@@ -57,8 +57,7 @@ enclave
             vector<uint8_t> secured_encryption_key_bytes,
             wstring inputData,
             [out] vector<uint8_t> combinedOutputData,
-            [out] bool needsReseal,
-            [out] vector<uint8_t> resealedBoundKeyBytes
+            [out] bool needsReseal
             );
 
         HRESULT MyEnclaveLoadUserBoundKeyAndDecryptData(
@@ -68,7 +67,11 @@ enclave
             vector<uint8_t> secured_encryption_key_bytes,
             vector<uint8_t> combinedInputData,
             [out] wstring decryptedData,
-            [out] bool needsReseal,
+            [out] bool needsReseal
+            );
+
+        HRESULT MyEnclaveResealKey(
+            vector<uint8_t> secured_encryption_key_bytes,
             [out] vector<uint8_t> resealedBoundKeyBytes
             );
     };

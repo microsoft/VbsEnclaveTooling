@@ -398,10 +398,12 @@ HRESULT VbsEnclave::Trusted::Implementation::MyEnclaveLoadUserBoundKeyAndEncrypt
     _In_ const std::vector<std::uint8_t>& securedEncryptionKeyBytes,
     _In_ const std::wstring& inputData,
     _Out_ std::vector<std::uint8_t>& combinedOutputData,
-    _Out_ bool& needsReseal,
-    _Out_ std::vector<std::uint8_t>& resealedBoundKeyBytes)
+    _Out_ bool& needsReseal)
 {
     using namespace veil::vtl1::vtl0_functions;
+
+    // Initialize output parameters
+    needsReseal = false;
 
     try
     {
@@ -425,12 +427,7 @@ HRESULT VbsEnclave::Trusted::Implementation::MyEnclaveLoadUserBoundKeyAndEncrypt
                 pinMessage,
                 windowId,
                 securedEncryptionKeyBytes,
-                ENCLAVE_SEALING_IDENTITY_POLICY::ENCLAVE_IDENTITY_POLICY_SEAL_SAME_IMAGE,
-                g_runtimePolicy,
-                needsReseal,
-                resealedBoundKeyBytes);
-
-            debug_print(L"load_user_bound_key returned, key size: %d", loadedKeyBytes.size());
+                needsReseal);
 
             // NOW we can create a symmetric key from the loaded raw key material
             auto newEncryptionKey = veil::vtl1::crypto::create_symmetric_key(loadedKeyBytes);
@@ -490,14 +487,12 @@ HRESULT VbsEnclave::Trusted::Implementation::MyEnclaveLoadUserBoundKeyAndDecrypt
     _In_ const std::vector<std::uint8_t>& securedEncryptionKeyBytes,
     _In_ const std::vector<std::uint8_t>& combinedInputData,
     _Out_ std::wstring& decryptedData,
-    _Out_ bool& needsReseal,
-    _Out_ std::vector<std::uint8_t>& resealedBoundKeyBytes)
+    _Out_ bool& needsReseal)
 {
-    using namespace veil::vtl1::vtl0_functions;
+  using namespace veil::vtl1::vtl0_functions;
 
     // Initialize output parameters
     needsReseal = false;
-    resealedBoundKeyBytes.clear();
 
     try
     {
@@ -508,7 +503,7 @@ HRESULT VbsEnclave::Trusted::Implementation::MyEnclaveLoadUserBoundKeyAndDecrypt
         if (combinedInputData.size() < sizeof(uint32_t))
         {
             debug_print(L"ERROR: Combined input data too small, size: %u", static_cast<uint32_t>(combinedInputData.size()));
-            return E_INVALIDARG;
+       return E_INVALIDARG;
         }
 
         // Read tag size from the first 4 bytes
@@ -562,13 +557,8 @@ HRESULT VbsEnclave::Trusted::Implementation::MyEnclaveLoadUserBoundKeyAndDecrypt
                 pinMessage,
                 windowId,
                 securedEncryptionKeyBytes,
-                ENCLAVE_SEALING_IDENTITY_POLICY::ENCLAVE_IDENTITY_POLICY_SEAL_SAME_IMAGE,
-                g_runtimePolicy,
-                needsReseal,
-                resealedBoundKeyBytes
+                needsReseal
             );
-
-            debug_print(L"load_user_bound_key returned, key size: %d", loadedKeyBytes.size());
 
             // NOW we can create a symmetric key from the loaded raw key material
             auto newEncryptionKey = veil::vtl1::crypto::create_symmetric_key(loadedKeyBytes);
@@ -600,6 +590,44 @@ HRESULT VbsEnclave::Trusted::Implementation::MyEnclaveLoadUserBoundKeyAndDecrypt
     CATCH_RETURN();
 
     return S_OK;
+}
+
+//
+// Reseal user bound key
+//
+HRESULT VbsEnclave::Trusted::Implementation::MyEnclaveResealKey(
+    _In_ const std::vector<std::uint8_t>& securedEncryptionKeyBytes,
+    _Out_ std::vector<std::uint8_t>& resealedBoundKeyBytes)
+{
+    using namespace veil::vtl1::vtl0_functions;
+
+    try
+    {
+        debug_print(L"Start MyEnclaveResealKey");
+
+        // Call the reseal_user_bound_key API to reseal the key
+        // This takes the bound key bytes and reseals them with the current sealing key
+        auto resealed = veil::vtl1::userboundkey::reseal_user_bound_key(
+            securedEncryptionKeyBytes,
+            ENCLAVE_SEALING_IDENTITY_POLICY::ENCLAVE_IDENTITY_POLICY_SEAL_SAME_IMAGE,
+            g_runtimePolicy);
+
+        debug_print(L"reseal_user_bound_key completed, resealed data size: %d", resealed.size());
+
+        if (!resealed.empty())
+        {
+            resealedBoundKeyBytes.assign(resealed.begin(), resealed.end());
+            debug_print(L"Reseal successful, resealed data size: %d", resealedBoundKeyBytes.size());
+        }
+        else
+        {
+            debug_print(L"Reseal returned empty data");
+            return S_FALSE; // Indicates no reseal was performed or failed
+        }
+
+        return S_OK;
+    }
+    CATCH_RETURN();
 }
 
 //

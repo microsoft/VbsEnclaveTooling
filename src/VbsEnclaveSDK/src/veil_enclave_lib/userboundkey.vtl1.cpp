@@ -466,18 +466,14 @@ std::vector<uint8_t> load_user_bound_key(
     const std::wstring& message,
     uintptr_t windowId,
     const std::vector<uint8_t>& sealedBoundKeyBytes,
-    ENCLAVE_SEALING_IDENTITY_POLICY sealingPolicy,
-    uint32_t runtimePolicy,
-    _Out_ bool& needsReseal,
-    _Out_ std::vector<uint8_t>& resealedBoundKeyBytes)
+    _Out_ bool& needsReseal)
 {
    veil::vtl1::vtl0_functions::debug_print(L"DEBUG: load_user_bound_key - Function entered");
     
     // Initialize output parameters
-   needsReseal = false;
-    resealedBoundKeyBytes.clear();
+    needsReseal = false;
     
-  try
+    try
     {
         uint64_t localNonce = 0; // captures the nonce used in the encrypted request, will be used in the corresponding decrypt call
 
@@ -494,23 +490,14 @@ std::vector<uint8_t> load_user_bound_key(
         // Check if the sealing key is stale and data needs to be re-sealed
         if (unsealingFlags & ENCLAVE_UNSEAL_FLAG_STALE_KEY)
         {
-            veil::vtl1::vtl0_functions::debug_print(L"WARNING: load_user_bound_key - Detected stale key, re-sealing bound key bytes");
+            veil::vtl1::vtl0_functions::debug_print(L"WARNING: load_user_bound_key - Detected stale key, caller should re-seal bound key bytes");
             
-            // Set the needsReseal flag
+            // Set the needsReseal flag - caller is responsible for calling reseal_user_bound_key
             needsReseal = true;
      
-            // Re-seal the bound key bytes with current enclave identity
-            auto resealedData = veil::vtl1::crypto::seal_data(
-                boundKeyBytes, 
-                sealingPolicy,
-                runtimePolicy);
-            
-            // Copy re-sealed data to output parameter
-            resealedBoundKeyBytes.assign(resealedData.begin(), resealedData.end());
-    
-            veil::vtl1::vtl0_functions::debug_print((L"DEBUG: load_user_bound_key - Re-sealed bound key, new size: " + std::to_wstring(resealedBoundKeyBytes.size())).c_str());
-            
-            // Important! Caller _must_ replace old sealedBoundKeyBytes with resealedBoundKeyBytes on disk or risk data loss.
+            veil::vtl1::vtl0_functions::debug_print(L"DEBUG: load_user_bound_key - needsReseal flag set to true, caller should call reseal_user_bound_key");
+          
+            // Important! Caller _must_ call reseal_user_bound_key and replace old sealedBoundKeyBytes with the result.
             // Note that unseal_data still successfully returns the boundKeyBytes 
             // and it is okay to continue using the same for this load operation.
         }
@@ -652,7 +639,7 @@ std::vector<uint8_t> load_user_bound_key(
 
         veil::vtl1::vtl0_functions::debug_print(L"DEBUG: load_user_bound_key - Function completed successfully");
 
-     return userkeyBytes;
+        return userkeyBytes;
     }
     catch (const std::exception& e)
     {
@@ -665,6 +652,44 @@ std::vector<uint8_t> load_user_bound_key(
     catch (...)
     {
         veil::vtl1::vtl0_functions::debug_print(L"ERROR: load_user_bound_key - Unknown exception caught");
+        throw; // Re-throw the exception
+    }
+}
+
+std::vector<uint8_t> reseal_user_bound_key(
+    const std::vector<uint8_t>& boundKeyBytes,
+    ENCLAVE_SEALING_IDENTITY_POLICY sealingPolicy,
+    uint32_t runtimePolicy)
+{
+    veil::vtl1::vtl0_functions::debug_print(L"DEBUG: reseal_user_bound_key - Function entered");
+    veil::vtl1::vtl0_functions::debug_print((L"DEBUG: reseal_user_bound_key - boundKeyBytes size: " + std::to_wstring(boundKeyBytes.size())).c_str());
+    veil::vtl1::vtl0_functions::debug_print((L"DEBUG: reseal_user_bound_key - sealingPolicy: " + std::to_wstring(static_cast<uint32_t>(sealingPolicy))).c_str());
+    veil::vtl1::vtl0_functions::debug_print((L"DEBUG: reseal_user_bound_key - runtimePolicy: 0x" + std::to_wstring(runtimePolicy)).c_str());
+    
+    try
+    {
+        // Re-seal the bound key bytes with current enclave identity
+        auto resealedData = veil::vtl1::crypto::seal_data(
+            boundKeyBytes, 
+            sealingPolicy,
+            runtimePolicy);
+            
+        veil::vtl1::vtl0_functions::debug_print((L"DEBUG: reseal_user_bound_key - Successfully re-sealed bound key, new size: " + std::to_wstring(resealedData.size())).c_str());
+        veil::vtl1::vtl0_functions::debug_print(L"DEBUG: reseal_user_bound_key - Function completed successfully");
+        
+        return std::vector<uint8_t>(resealedData.begin(), resealedData.end());
+    }
+    catch (const std::exception& e)
+    {
+        // Convert exception message to wide string for debug printing
+        std::string error_msg = e.what();
+        std::wstring werror_msg(error_msg.begin(), error_msg.end());
+        veil::vtl1::vtl0_functions::debug_print((L"ERROR: reseal_user_bound_key - Exception caught: " + werror_msg).c_str());
+        throw; // Re-throw the exception
+    }
+    catch (...)
+    {
+        veil::vtl1::vtl0_functions::debug_print(L"ERROR: reseal_user_bound_key - Unknown exception caught");
         throw; // Re-throw the exception
     }
 }
