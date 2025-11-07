@@ -10,7 +10,6 @@
 #include <veil\enclave\logger.vtl1.h>
 #include <veil\enclave\taskpool.vtl1.h>
 #include <veil\enclave\userboundkey.vtl1.h>
-#include <veinterop_kcm.h>
 #include <veil\enclave\vtl0_functions.vtl1.h>
 #include <VbsEnclave\Enclave\Implementation\Trusted.h>
 #include <VbsEnclave\Enclave\Implementation\Types.h>

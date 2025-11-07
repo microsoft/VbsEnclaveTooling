@@ -1,5 +1,6 @@
 #pragma once
 
+#include "pch.h"
 #include <functional>
 #include <future>
 #include <string>
@@ -25,7 +26,6 @@
 
 #include <VbsEnclave\HostApp\Implementation\Untrusted.h>
 #include <VbsEnclave\HostApp\Stubs\Trusted.h>
-#include <veinterop_kcm.h>
 #include <wil/token_helpers.h>
 #include <wil/resource.h>
 #include <sddl.h>
@@ -329,6 +329,13 @@ veil_abi::Types::credentialAndSessionInfo veil_abi::Untrusted::Implementation::u
     return result;
 }
 
+template <typename T>
+concept CanRetrieveAuthorizationContextFromBuffer =
+    requires(T type, winrt::Windows::Storage::Streams::IBuffer buffer)
+{
+    type.RetrieveAuthorizationContext(buffer);
+};
+
 // VTL0 function to extract authorization context from credential
 std::vector<uint8_t> veil_abi::Untrusted::Implementation::userboundkey_get_authorization_context_from_credential(
     uintptr_t credential_ptr,
@@ -336,6 +343,9 @@ std::vector<uint8_t> veil_abi::Untrusted::Implementation::userboundkey_get_autho
     const std::wstring& message,
     uintptr_t window_id)
 {
+    using namespace winrt::Windows::Storage::Streams;
+    using namespace winrt::Windows::Security::Cryptography;
+
     std::wcout << L"DEBUG: userboundkey_get_authorization_context_from_credential called with credential: 0x" 
         << std::hex << credential_ptr << std::dec << std::endl;
 
@@ -350,8 +360,22 @@ std::vector<uint8_t> veil_abi::Untrusted::Implementation::userboundkey_get_autho
         std::wcout << L"DEBUG: Created non-owning KeyCredential wrapper" << std::endl;
 
         // Extract authorization context
-        auto authorizationContext = credential.RetrieveAuthorizationContext(
-        winrt::Windows::Security::Cryptography::CryptographicBuffer::CreateFromByteArray(encrypted_kcm_request_for_get_authorization_context));
+        auto encryptedBuffer = CryptographicBuffer::CreateFromByteArray(
+            encrypted_kcm_request_for_get_authorization_context
+        );
+
+        auto authorizationContext = [&] () -> IBuffer
+        {
+            if constexpr (CanRetrieveAuthorizationContextFromBuffer<KeyCredential>)
+            {
+                return credential.RetrieveAuthorizationContext(encryptedBuffer);
+            }
+
+            // If we get here then that means the SDK does not have a KeyCredential object with a
+            // RetrieveAuthorizationContext function that takes an IBuffer.
+            throw wil::ResultException(E_NOTIMPL);
+
+        }();
 
         auto result = ConvertBufferToVector(authorizationContext);
 
