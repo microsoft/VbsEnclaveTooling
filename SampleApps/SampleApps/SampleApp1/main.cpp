@@ -2,7 +2,7 @@
 #include <fstream>
 #include <string>
 #include <conio.h> // For getch()
-#include <filesystem> // For directory validation
+#include <filesystem> // For filesystem operations
 #include <chrono>
 
 #include <windows.h>
@@ -12,7 +12,7 @@
 #include <span>
 #include <sddl.h>
 #include <limits>
-#include <ncrypt.h>  // Added for NCrypt functions
+#include <ncrypt.h>
 
 #include <winrt/base.h>
 #include <winrt/Windows.Foundation.h>
@@ -136,10 +136,10 @@ void UserBoundEncryptFlow(
         resealedEncryptionKeyBytes
     ));
 
-    // VBS has a fixed sized key ring. The VBS keys rotate on roughly every OS upgrade. 
-    // Eventually enough rotations happen and the sealing key used to seal the encrypted key is rotated out and no longer available. 
-    // This is notified through the second return parameter unsealingFlags in the unseal_data API. 
-    // It tells the caller whether the underlying keyring has rotated the sealing key out and we need to re-seal the encrypted key. 
+    // VBS has a fixed sized key ring. The VBS keys rotate on roughly every OS upgrade.
+    // Eventually enough rotations happen and the sealing key used to seal the encrypted key is rotated out and no longer available.
+    // This is notified through the second return parameter unsealingFlags in the unseal_data API.
+    // It tells the caller whether the underlying keyring has rotated the sealing key out and we need to re-seal the encrypted key.
     // At this point, if the reseal is not performed, it would not be possible to unseal the encrypted key the next time.
     if (needsReseal && !resealedEncryptionKeyBytes.empty())
     {
@@ -188,10 +188,10 @@ void UserBoundDecryptFlow(
         resealedEncryptionKeyBytes
     ));
 
-    // VBS has a fixed sized key ring. The VBS keys rotate on roughly every OS upgrade. 
-    // Eventually enough rotations happen and the sealing key used to seal the encrypted key is rotated out and no longer available. 
-    // This is notified through the second return parameter unsealingFlags in the unseal_data API. 
-    // It tells the caller whether the underlying keyring has rotated the sealing key out and we need to re-seal the encrypted key. 
+    // VBS has a fixed sized key ring. The VBS keys rotate on roughly every OS upgrade.
+    // Eventually enough rotations happen and the sealing key used to seal the encrypted key is rotated out and no longer available.
+    // This is notified through the second return parameter unsealingFlags in the unseal_data API.
+    // It tells the caller whether the underlying keyring has rotated the sealing key out and we need to re-seal the encrypted key.
     // At this point, if the reseal is not performed, it would not be possible to unseal the encrypted key the next time.
     if (needsReseal && !resealedEncryptionKeyBytes.empty())
     {
@@ -411,7 +411,7 @@ int DecryptFlowThreadpool(
     //
     // [Load flow]
     // 
-    //Get (encrypted) key bytes from disk, then pass into enclave to decrypt the encrypted input
+    //  Load sealed key bytes and encrypted data from disk, then pass into enclave to decrypt
     //
 
     auto encryptedInputBytes1 = LoadBinaryData(fs::path(encryptedInputFilePath.string() + "1"));
@@ -573,7 +573,7 @@ int mainEncryptDecryptUserBound(uint32_t activityLevel)
     veilLog.AddTimestampedLog(L"[Host] Starting user-bound encryption from host", veil::any::logger::eventLevel::EVENT_LEVEL_CRITICAL);
 
     /******************************* Enclave setup *******************************/
-    // Create app+user enclave identity - use the new GetSecureId API from IKeyCredentialManagerStatics2
+    // Create app+user enclave identity using GetSecureId API
     std::vector<uint8_t> ownerId;
 
     try
@@ -596,7 +596,7 @@ int mainEncryptDecryptUserBound(uint32_t activityLevel)
     }
     catch (winrt::hresult_error const& ex)
     {
-        // If the new API is not available or fails, log the error and return
+        // API call failed, log the error and return
         std::wcout << L"Error: Failed to get secure ID using GetSecureId API (HRESULT: 0x"
             << std::hex << ex.code() << L")." << std::endl;
         std::wcout << L"Cannot proceed without a valid secure ID for user-bound encryption." << std::endl;

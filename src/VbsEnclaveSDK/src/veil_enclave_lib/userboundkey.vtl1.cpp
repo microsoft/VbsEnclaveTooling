@@ -21,19 +21,19 @@ using unique_sessionhandle = wil::unique_any<USER_BOUND_KEY_SESSION_HANDLE, decl
 // RAII wrapper for credentials using WIL
 using unique_credential = wil::unique_any<uintptr_t, decltype(&veil_abi::Untrusted::Stubs::userboundkey_delete_credential), veil_abi::Untrusted::Stubs::userboundkey_delete_credential>;
 
-// Helper function to convert USER_BOUND_KEY_SESSION_HANDLE to DeveloperTypes::sessionInfo
+// Helper function to convert session handle from uintptr_t
 unique_sessionhandle ConvertToSessionHandle(uintptr_t sessionInfo)
 {
     return unique_sessionhandle{reinterpret_cast<USER_BOUND_KEY_SESSION_HANDLE>(sessionInfo)};
 }
 
-// Helper function to convert USER_BOUND_KEY_SESSION_HANDLE to DeveloperTypes::sessionInfo
+// Helper function to convert session handle to uintptr_t
 uintptr_t ConvertFromSessionHandle(unique_sessionhandle sessionHandle)
 {
     return reinterpret_cast<uintptr_t>(sessionHandle.release());
 }
 
-// Helper function to convert veil::vtl1::developer_types::keyCredentialCacheConfig to veil_abi::Types::keyCredentialCacheConfig
+// Helper function to convert keyCredentialCacheConfig to veil_abi::Types::keyCredentialCacheConfig
 veil_abi::Types::keyCredentialCacheConfig ConvertCacheConfig(const veil::vtl1::userboundkey::keyCredentialCacheConfig& cache_config)
 {
     veil_abi::Types::keyCredentialCacheConfig abi_cache_config;
@@ -101,8 +101,8 @@ veil_abi::Types::attestationReportAndSessionInfo userboundkey_get_attestation_re
     // Safe overflow check before casting
     if (challenge.size() > std::numeric_limits<uint32_t>::max()) 
     {
-      debug_print(L"ERROR: Challenge size exceeds std::numeric_limits<uint32_t>::max()");
-   throw std::overflow_error("Challenge size exceeds std::numeric_limits<uint32_t>::max()");
+        debug_print(L"ERROR: Challenge size exceeds std::numeric_limits<uint32_t>::max()");
+        throw std::overflow_error("Challenge size exceeds std::numeric_limits<uint32_t>::max()");
     }
 
     veil::vtl1::userboundkey::unique_sessionhandle sessionHandle; // RAII wrapper for automatic cleanup
@@ -133,14 +133,14 @@ void userboundkey_close_session(_In_ uintptr_t session_info)
     
     if (session_info != 0)
     {
-    // Convert back to session handle and use RAII for cleanup
+        // Convert back to session handle and use RAII for cleanup
         auto sessionHandle = veil::vtl1::userboundkey::ConvertToSessionHandle(session_info);
-      debug_print(L"DEBUG: userboundkey_close_session - Session handle cleaned up via RAII");
+        debug_print(L"DEBUG: userboundkey_close_session - Session handle cleaned up via RAII");
         // sessionHandle destructor will automatically call CloseUserBoundKeySession
     }
     else
-  {
-      debug_print(L"DEBUG: userboundkey_close_session - Session info is null, nothing to clean up");
+    {
+        debug_print(L"DEBUG: userboundkey_close_session - Session info is null, nothing to clean up");
     }
 }
 }
@@ -227,7 +227,7 @@ namespace
         if (handle)
         {
             // CloseUserBoundKeyAuthContext returns HRESULT, but we're in a noexcept context
-            // so we ignore the return value (similar to the original implementation)
+            // so we ignore the return value
             (void)CloseUserBoundKeyAuthContext(handle);
         }
     }
@@ -386,7 +386,7 @@ wil::secure_vector<uint8_t> create_user_bound_key(
         debug_print(L"DEBUG: create_user_bound_key - About to call userboundkey_get_authorization_context_from_credential");
 
         auto authContextBlob = veil::vtl1::implementation::userboundkey::callouts::userboundkey_get_authorization_context_from_credential(
-            credentialWrapper.get(),
+            credentialWrapper.get(),  // VTL0 callbacks handle their own reference management
             encryptedKcmRequestForRetrieveAuthorizationContext,
             message,
             windowId);
@@ -470,7 +470,7 @@ std::vector<uint8_t> load_user_bound_key(
     const std::vector<uint8_t>& sealedBoundKeyBytes,
     _Out_ bool& needsReseal)
 {
-   debug_print(L"DEBUG: load_user_bound_key - Function entered");
+    debug_print(L"DEBUG: load_user_bound_key - Function entered");
     
     // Initialize output parameter
     needsReseal = false;
@@ -499,7 +499,7 @@ std::vector<uint8_t> load_user_bound_key(
             // Set the needsReseal flag for informational purposes
             needsReseal = true;
  
-            // Fail the operation - caller must explicitly handle resealing and call load_user_bound_key again
+            // Fail the operation - caller must explicitly handle resealing
             THROW_HR_MSG(HRESULT_FROM_WIN32(ERROR_INVALID_DATA), 
                 "Stale sealing key detected. Caller must re-seal the data using reseal_user_bound_key before attempting to load.");
         }
@@ -558,7 +558,7 @@ std::vector<uint8_t> load_user_bound_key(
         debug_print(L"DEBUG: load_user_bound_key - About to call userboundkey_get_authorization_context_from_credential");
 
         auto authContextBlob = veil::vtl1::implementation::userboundkey::callouts::userboundkey_get_authorization_context_from_credential(
-            credentialWrapper.get(),  // Use raw pointer - VTL0 callbacks handle their own reference management
+            credentialWrapper.get(),  // VTL0 callbacks handle their own reference management
             encryptedKcmRequestForRetrieveAuthorizationContext,
             message,
             windowId);

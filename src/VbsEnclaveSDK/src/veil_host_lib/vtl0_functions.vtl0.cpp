@@ -17,7 +17,7 @@ HRESULT veil_abi::Untrusted::Implementation::printf(_In_ const std::string& str)
     auto lock = std::scoped_lock<std::mutex>(veil::vtl0::implementation::g_printMutex);
 
     DebugPrint("FROM VTL1: " + str);
-  return S_OK;
+    return S_OK;
 }
 
 HRESULT veil_abi::Untrusted::Implementation::wprintf(_In_ const std::wstring& str)
