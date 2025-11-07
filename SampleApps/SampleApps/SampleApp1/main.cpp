@@ -515,7 +515,7 @@ int mainEncryptDecrypt(uint32_t activityLevel)
                 std::cin.ignore();
                 std::getline(std::wcin, input);
                 EncryptFlow(enclave.get(), input, keyFilePath, encryptedOutputFilePath, tagFilePath, veilLog);
-                std::wcout << L"Encryption in Enclave completed. \n Encrypted bytes are saved to disk in " << encryptedOutputFilePath << std::endl;
+                std::wcout << L"Encryption in Enclave completed. \nEncrypted bytes are saved to disk in " << encryptedOutputFilePath << std::endl;
                 veilLog.AddTimestampedLog(
                     L"[Host] Encryption in Enclave completed. Encrypted bytes are saved to disk in " + encryptedOutputFilePath.wstring(),
                     veil::any::logger::eventLevel::EVENT_LEVEL_CRITICAL);
@@ -651,9 +651,9 @@ int mainEncryptDecryptUserBound(uint32_t activityLevel)
                 std::getline(std::wcin, input);
                 CreateEncryptionKeyOnFirstRun(enclave.get(), keyFilePath, config);
                 UserBoundEncryptFlow(enclave.get(), input, keyFilePath, encryptedOutputFilePath, config);
-                std::wcout << L"User-bound encryption in Enclave completed. \n Encrypted bytes are saved to disk in " << encryptedOutputFilePath << std::endl;
+                std::wcout << L"User-bound encryption in Enclave completed. \nEncrypted bytes are saved to disk in " << encryptedOutputFilePath << std::endl;
                 veilLog.AddTimestampedLog(
-                    L"[Host] User-bound encryption in Enclave completed. Encrypted bytes are saved to disk in " + encryptedOutputFilePath.wstring(),
+                    L"[Host] User-bound encryption in Enclave completed. \nEncrypted bytes are saved to disk in " + encryptedOutputFilePath.wstring(),
                 veil::any::logger::eventLevel::EVENT_LEVEL_CRITICAL);
                 programExecuted = true;
                 break;
@@ -776,9 +776,9 @@ int mainEncryptDecryptThreadpool(uint32_t activityLevel)
                 std::cout << "Enter second string to encrypt: ";
                 std::getline(std::wcin, input2);
                 EncryptFlowThreadpool(enclave.get(), input1, input2, keyFilePath, encryptedInputFilePath, tagFilePath, veilLog);
-                std::wcout << L"Encryption in Enclave threadpool completed. \n Encrypted bytes are saved to disk in " << encryptedDataDirPath << std::endl;
+                std::wcout << L"Encryption in Enclave threadpool completed. \nEncrypted bytes are saved to disk in " << encryptedDataDirPath << std::endl;
                 veilLog.AddTimestampedLog(
-                    L"[Host] Encryption in Enclave threadpool completed. \n Encrypted bytes are saved to disk in " + encryptedDataDirPath.wstring(),
+                    L"[Host] Encryption in Enclave threadpool completed. \nEncrypted bytes are saved to disk in " + encryptedDataDirPath.wstring(),
                     veil::any::logger::eventLevel::EVENT_LEVEL_CRITICAL);
                 programExecuted = true;
                 break;

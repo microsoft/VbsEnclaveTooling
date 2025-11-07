@@ -62,8 +62,8 @@
 		"$(WindowsSDK_LibraryPath)\..\ucrt_enclave\$(Platform)"
 	</WindowsSDK_LibraryPath_Enclave>
     <VBS_Enclave_Dependencies>
-	  "C:\Program Files (x86)\Windows Kits\10\Lib\10.0.26499.0\um\x64\vertdll.lib";
-	  "C:\Program Files (x86)\Windows Kits\10\Lib\10.0.26499.0\um\x64\veinterop.lib";
+	  vertdll.lib;
+	  veinterop.lib;
 	  bcrypt.lib;
 	  $(VC_LibraryPath_Enclave)\libcmt.lib;
 	  $(VC_LibraryPath_Enclave)\libvcruntime.lib;
