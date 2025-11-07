@@ -338,7 +338,8 @@ R"(#include <VbsEnclave\Enclave\Implementation\Trusted.h>
 )";
 
     static inline constexpr std::string_view c_vtl0_abi_definitions_includes =
-R"(#include <VbsEnclave\HostApp\Implementation\Untrusted.h>
+R"(#include <wil\cppwinrt.h>
+#include <VbsEnclave\HostApp\Implementation\Untrusted.h>
 #include <VbsEnclave\HostApp\Abi\TypeMetadata.h>
 )";
 

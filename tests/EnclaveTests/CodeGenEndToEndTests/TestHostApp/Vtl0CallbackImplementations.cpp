@@ -331,4 +331,9 @@ NestedStructWithArray Untrusted::Implementation::PassingArrayTypes_To_HostApp(
     return CreateNestedStructWithArray();
 }
 
+void Untrusted::Implementation::Throw_Winrt_Exception_From_Host()
+{
+    throw winrt::hresult_not_implemented();
+}
+
 #pragma endregion

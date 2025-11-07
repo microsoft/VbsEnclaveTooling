@@ -149,6 +149,13 @@ namespace CodeGeneration::Flatbuffers
         return inline_type_string;
     }
 
+    std::string GetRequiredStringForField(const Declaration& declaration)
+    {
+        // Fields that represent Out-parameters or pointers must be declared as optional in
+        // the FlatBuffer schema; in all other cases, they should be marked as required.
+        return (declaration.IsOutParameterOnly() || declaration.HasPointer()) ? "" : "(required)";
+    }
+
     std::string BuildTable(const std::vector<Declaration>& values, std::string_view struct_name)
     {
         std::ostringstream table_body {};
@@ -194,10 +201,12 @@ namespace CodeGeneration::Flatbuffers
                 // tables as unique_ptr<T> where T is the Flatbuffer representation of the struct. There is currently
                 // no way to generate nested tables as type T instead of unique_ptr<T> like in the case of vectors.
                 // See: https://github.com/google/flatbuffers/issues/4969
+
                 table_body << std::format(
-                    "    {} : {} (required);\n",
+                    "    {} : {} {};\n",
                     declaration.m_name,
-                    declaration.m_edl_type_info.m_name);
+                    declaration.m_edl_type_info.m_name,
+                    GetRequiredStringForField(declaration));
             }
             else if (declaration.IsEdlType(EdlTypeKind::Enum))
             {

@@ -1,6 +1,7 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
+#include <wil\enclave\wil_for_enclaves.h>
 #include <VbsEnclave\Enclave\Implementation\Trusted.h>
 #include <VbsEnclave\Enclave\Stubs\Untrusted.h>
 #include "..\TestHostApp\TestHelpers.h"
@@ -771,6 +772,25 @@ HRESULT Trusted::Implementation::Start_PassingArrayTypes_To_HostApp_Callback_Tes
     THROW_HR_IF(E_INVALIDARG, !std::equal(arg3.begin(), arg3.end(), arg3_expected.begin()));
     THROW_HR_IF(E_INVALIDARG, !std::equal(arg4.begin(), arg4.end(), arg4_expected.begin(), CompareTestStruct2));
     THROW_HR_IF(E_INVALIDARG, !std::equal(arg5.begin(), arg5.end(), arg5_expected.begin(), CompareTestStruct3));
+
+    return S_OK;
+}
+
+HRESULT Trusted::Implementation::Start_Throw_Winrt_Exception_From_Host_Test()
+{
+    HRESULT expected_thrown_hr = E_NOTIMPL;
+    HRESULT thrown_hr = S_OK;
+
+    try
+    {
+        Untrusted::Stubs::Throw_Winrt_Exception_From_Host();
+    }
+    catch (...)
+    {
+        thrown_hr = wil::ResultFromCaughtException();
+    }
+
+    THROW_HR_IF(E_INVALIDARG, thrown_hr != expected_thrown_hr);
 
     return S_OK;
 }
