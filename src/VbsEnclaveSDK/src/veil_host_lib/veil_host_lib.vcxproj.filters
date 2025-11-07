@@ -30,7 +30,7 @@
     <ClCompile Include="vtl0_functions.vtl0.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="hello_winrt_kcm.vtl0.cpp">
+    <ClCompile Include="userboundkey.vtl0.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
