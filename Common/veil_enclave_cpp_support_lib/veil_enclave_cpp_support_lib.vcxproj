@@ -96,6 +96,7 @@
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
     <Import Project="$(SolutionDir)packages\Microsoft.Windows.ImplementationLibrary.1.0.240803.1\build\native\Microsoft.Windows.ImplementationLibrary.targets" Condition="Exists('$(SolutionDir)packages\Microsoft.Windows.ImplementationLibrary.1.0.240803.1\build\native\Microsoft.Windows.ImplementationLibrary.targets')" />
+    <Import Project="..\..\src\VbsEnclaveSDK\packages\Microsoft.Windows.VbsEnclave.CodeGenerator.0.1.2-prerelease.250820.1\build\native\Microsoft.Windows.VbsEnclave.CodeGenerator.targets" Condition="Exists('..\..\src\VbsEnclaveSDK\packages\Microsoft.Windows.VbsEnclave.CodeGenerator.0.1.2-prerelease.250820.1\build\native\Microsoft.Windows.VbsEnclave.CodeGenerator.targets')" />
   </ImportGroup>
   <ItemGroup>
     <None Include="packages.config" />

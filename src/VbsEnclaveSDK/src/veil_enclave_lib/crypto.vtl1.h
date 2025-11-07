@@ -3,6 +3,7 @@
 
 #pragma once
 
+#include <array>
 #include <span>
 #include <wil/stl.h>
 #include "utils.vtl1.h"
@@ -157,10 +158,10 @@ namespace veil::vtl1::crypto
         return keyBytes;
     }
 
-    inline wil::unique_bcrypt_key bcrypt_generate_ecdh_key_pair()
+    inline wil::unique_bcrypt_key bcrypt_generate_ecdh_key_pair(BCRYPT_ALG_HANDLE algorithm)
     {
         wil::unique_bcrypt_key ecdhKeyPair;
-        THROW_IF_NTSTATUS_FAILED(BCryptGenerateKeyPair(BCRYPT_ECDH_P384_ALG_HANDLE, &ecdhKeyPair, veil::vtl1::crypto::DH_KEY_SIZE_BITS, 0));
+        THROW_IF_NTSTATUS_FAILED(BCryptGenerateKeyPair(algorithm, &ecdhKeyPair, veil::vtl1::crypto::DH_KEY_SIZE_BITS, 0));
         THROW_IF_NTSTATUS_FAILED(BCryptFinalizeKeyPair(ecdhKeyPair.get(), 0));
         return ecdhKeyPair;
     }
