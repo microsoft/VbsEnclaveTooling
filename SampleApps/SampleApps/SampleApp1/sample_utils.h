@@ -4,13 +4,14 @@
 #pragma once
 
 #include <vector>
+#include <filesystem>
 
-inline void SaveBinaryData(const std::string& filename, std::span<uint8_t> data)
+inline void SaveBinaryData(const std::filesystem::path& filename, std::span<uint8_t> data)
 {
     std::ofstream file(filename, std::ios::binary);
     if (!file)
     {
-        throw std::ios_base::failure("Failed to open file for writing: " + filename);
+        throw std::ios_base::failure("Failed to open file for writing: " + filename.string());
     }
 
     // Write the size of the vector first (optional but helpful for loading)
@@ -18,23 +19,23 @@ inline void SaveBinaryData(const std::string& filename, std::span<uint8_t> data)
     file.write(reinterpret_cast<const char*>(&size), sizeof(size));
     if (!file)
     {
-        throw std::ios_base::failure("Failed to write size to file: " + filename);
+        throw std::ios_base::failure("Failed to write size to file: " + filename.string());
     }
 
     // Write the actual data
     file.write(reinterpret_cast<const char*>(data.data()), size);
     if (!file)
     {
-        throw std::ios_base::failure("Failed to write data to file: " + filename);
+        throw std::ios_base::failure("Failed to write data to file: " + filename.string());
     }
 }
 
-inline std::vector<uint8_t> LoadBinaryData(const std::string& filename)
+inline std::vector<uint8_t> LoadBinaryData(const std::filesystem::path& filename)
 {
     std::ifstream file(filename, std::ios::binary);
     if (!file)
     {
-        throw std::ios_base::failure("Failed to open file for reading: " + filename);
+        throw std::ios_base::failure("Failed to open file for reading: " + filename.string());
     }
 
     // Read the size of the vector
@@ -42,7 +43,7 @@ inline std::vector<uint8_t> LoadBinaryData(const std::string& filename)
     file.read(reinterpret_cast<char*>(&size), sizeof(size));
     if (!file)
     {
-        throw std::ios_base::failure("Failed to read size from file: " + filename);
+        throw std::ios_base::failure("Failed to read size from file: " + filename.string());
     }
 
     // Read the actual data
@@ -50,7 +51,7 @@ inline std::vector<uint8_t> LoadBinaryData(const std::string& filename)
     file.read(reinterpret_cast<char*>(data.data()), size);
     if (!file)
     {
-        throw std::ios_base::failure("Failed to read data from file: " + filename);
+        throw std::ios_base::failure("Failed to read data from file: " + filename.string());
     }
 
     return data;

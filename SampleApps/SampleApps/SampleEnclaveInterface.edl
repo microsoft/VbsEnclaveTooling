@@ -41,5 +41,35 @@ enclave
             [out] wstring decrypted_input_bytes_1,
             [out] wstring decrypted_input_bytes_2
             );
+
+        HRESULT MyEnclaveCreateUserBoundKey(
+            wstring helloKeyName,
+            wstring pinMessage,
+            uintptr_t windowId,
+            uint32_t keyCredentialCreationOption,
+            [out] vector<uint8_t> securedEncryptionKeyBytes
+            );
+
+        HRESULT MyEnclaveLoadUserBoundKeyAndEncryptData(
+            wstring helloKeyName,
+            wstring pinMessage,
+            uintptr_t windowId,
+            vector<uint8_t> secured_encryption_key_bytes,
+            wstring inputData,
+            [out] vector<uint8_t> combinedOutputData,
+            [out] bool needsReseal,
+            [out] vector<uint8_t> resealedEncryptionKeyBytes
+            );
+
+        HRESULT MyEnclaveLoadUserBoundKeyAndDecryptData(
+            wstring helloKeyName,
+            wstring pinMessage,
+            uintptr_t windowId,
+            vector<uint8_t> secured_encryption_key_bytes,
+            vector<uint8_t> combinedInputData,
+            [out] wstring decryptedData,
+            [out] bool needsReseal,
+            [out] vector<uint8_t> resealedEncryptionKeyBytes
+            );
     };
 };

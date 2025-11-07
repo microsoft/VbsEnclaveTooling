@@ -7,7 +7,7 @@
 #include <wil\result_macros.h>
 #include <wil\resource.h>
 #include <WexTestClass.h>
-
+#include <winrt/base.h>
 
 template <typename T>
 inline void VerifyNumericArray(T* data, size_t size)

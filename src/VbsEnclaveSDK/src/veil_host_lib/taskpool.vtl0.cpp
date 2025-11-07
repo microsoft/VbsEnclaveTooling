@@ -46,10 +46,11 @@ HRESULT veil_abi::Untrusted::Implementation::taskpool_cancel_queued_tasks(_In_ u
 
 namespace veil::vtl0::implementation::callins
 {
-HRESULT taskpool_run_task(_In_ void* enclave, _In_ const std::uint64_t taskpool_instance_vtl1, _In_ const std::uint64_t task_id)
-{
-    // Initialize enclave interface
-    auto enclaveInterface = veil_abi::Trusted::Stubs::export_interface(enclave);
+    HRESULT taskpool_run_task(_In_ void* enclave, _In_ const std::uint64_t taskpool_instance_vtl1, _In_ const std::uint64_t task_id)
+    {
+        // Initialize enclave interface
+        auto enclaveInterface = veil_abi::Trusted::Stubs::export_interface(enclave);
+
         THROW_IF_FAILED(enclaveInterface.RegisterVtl0Callbacks());
 
         THROW_IF_FAILED(enclaveInterface.taskpool_run_task(taskpool_instance_vtl1, task_id));

@@ -198,6 +198,7 @@ enclave
         HRESULT Start_PassingStringTypes_To_HostApp_Callback_Test();
         HRESULT Start_PassingWStringTypes_To_HostApp_Callback_Test();
         HRESULT Start_PassingArrayTypes_To_HostApp_Callback_Test();
+        HRESULT Start_Throw_Winrt_Exception_From_Host_Test();
     };
 
     // Functions are the same but these are for the opposite direction.
@@ -310,5 +311,7 @@ enclave
             [out] wstring arg3[2],
             [in, out]TestStruct2 arg4[2],
             [out]TestStruct3 arg5[2]);
+
+        void Throw_Winrt_Exception_From_Host();
     };
 };

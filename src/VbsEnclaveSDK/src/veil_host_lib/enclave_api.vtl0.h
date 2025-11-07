@@ -32,15 +32,6 @@ namespace veil::vtl0
 
     using unique_enclave = wil::unique_any<void*, decltype(&implementation::terminate_and_delete), implementation::terminate_and_delete>;
 
-    namespace appmodel
-    {
-        inline std::vector<uint8_t> owner_id()
-        {
-            // todo
-            return {};
-        }
-    }
-
     namespace enclave
     {
         inline size_t megabytes(unsigned long long megabytes) noexcept
