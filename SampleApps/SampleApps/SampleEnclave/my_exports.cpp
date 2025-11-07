@@ -398,12 +398,14 @@ HRESULT VbsEnclave::Trusted::Implementation::MyEnclaveLoadUserBoundKeyAndEncrypt
     _In_ const std::vector<std::uint8_t>& securedEncryptionKeyBytes,
     _In_ const std::wstring& inputData,
     _Out_ std::vector<std::uint8_t>& combinedOutputData,
-    _Out_ bool& needsReseal)
+    _Out_ bool& needsReseal,
+    _Out_ std::vector<std::uint8_t>& resealedEncryptionKeyBytes)
 {
     using namespace veil::vtl1::vtl0_functions;
 
     // Initialize output parameters
     needsReseal = false;
+    resealedEncryptionKeyBytes.clear();
 
     try
     {
@@ -419,15 +421,72 @@ HRESULT VbsEnclave::Trusted::Implementation::MyEnclaveLoadUserBoundKeyAndEncrypt
 
             debug_print(L"Created secure cache configuration in VTL1");
 
-            // Load the user-bound key from secured encryption key bytes
-            // Note: securedEncryptionKeyBytes contains the user-bound key data, not raw key material
-            auto loadedKeyBytes = veil::vtl1::userboundkey::load_user_bound_key(
-                helloKeyName,
-                secureConfig,
-                pinMessage,
-                windowId,
-                securedEncryptionKeyBytes,
-                needsReseal);
+            std::vector<std::uint8_t> currentKeyBytes = securedEncryptionKeyBytes;
+            std::vector<std::uint8_t> loadedKeyBytes;
+            bool loadSucceeded = false;
+
+            // First attempt to load the user-bound key
+            try
+            {
+                loadedKeyBytes = veil::vtl1::userboundkey::load_user_bound_key(
+                    helloKeyName,
+                    secureConfig,
+                    pinMessage,
+                    windowId,
+                    currentKeyBytes,
+                    needsReseal);
+                loadSucceeded = true;
+                debug_print(L"Successfully loaded user-bound key on first attempt");
+            }
+            catch (...)
+            {
+                debug_print(L"First load attempt failed, checking if reseal is needed");
+                loadSucceeded = false;
+            }
+
+            // If load failed and reseal is needed, attempt reseal and retry
+            if (!loadSucceeded && needsReseal)
+            {
+                debug_print(L"Attempting to reseal user-bound key");
+      
+                try
+                {
+                    auto resealedBytes = veil::vtl1::userboundkey::reseal_user_bound_key(
+                        currentKeyBytes,
+                        ENCLAVE_SEALING_IDENTITY_POLICY::ENCLAVE_IDENTITY_POLICY_SEAL_SAME_IMAGE,
+                        g_runtimePolicy);
+
+                    debug_print(L"Reseal completed, attempting to load with resealed key");
+
+                    // Store resealed bytes in output parameter
+                    resealedEncryptionKeyBytes.assign(resealedBytes.begin(), resealedBytes.end());
+
+                    // Reset needsReseal for the retry
+                    needsReseal = false;
+
+                    // Retry loading with resealed bytes
+                    loadedKeyBytes = veil::vtl1::userboundkey::load_user_bound_key(
+                        helloKeyName,
+                        secureConfig,
+                        pinMessage,
+                        windowId,
+                        resealedBytes,
+                        needsReseal);
+
+                    loadSucceeded = true;
+                    debug_print(L"Successfully loaded user-bound key after reseal");
+                }
+                catch (...)
+                {
+                    debug_print(L"Failed to reseal or load after reseal");
+                    throw;
+                }
+            }
+            else if (!loadSucceeded)
+            {
+                debug_print(L"Load failed and reseal not needed or not indicated");
+                throw std::runtime_error("Failed to load user-bound key");
+            }
 
             // NOW we can create a symmetric key from the loaded raw key material
             auto newEncryptionKey = veil::vtl1::crypto::create_symmetric_key(loadedKeyBytes);
@@ -462,7 +521,7 @@ HRESULT VbsEnclave::Trusted::Implementation::MyEnclaveLoadUserBoundKeyAndEncrypt
   
         // Append tag data
         combinedOutputData.insert(combinedOutputData.end(), encryptionTag.begin(), encryptionTag.end());
-        
+ 
         // Append encrypted data
         combinedOutputData.insert(combinedOutputData.end(), encryptedText.begin(), encryptedText.end());
 
@@ -487,12 +546,14 @@ HRESULT VbsEnclave::Trusted::Implementation::MyEnclaveLoadUserBoundKeyAndDecrypt
     _In_ const std::vector<std::uint8_t>& securedEncryptionKeyBytes,
     _In_ const std::vector<std::uint8_t>& combinedInputData,
     _Out_ std::wstring& decryptedData,
-    _Out_ bool& needsReseal)
+    _Out_ bool& needsReseal,
+    _Out_ std::vector<std::uint8_t>& resealedEncryptionKeyBytes)
 {
-  using namespace veil::vtl1::vtl0_functions;
+    using namespace veil::vtl1::vtl0_functions;
 
     // Initialize output parameters
     needsReseal = false;
+    resealedEncryptionKeyBytes.clear();
 
     try
     {
@@ -503,7 +564,7 @@ HRESULT VbsEnclave::Trusted::Implementation::MyEnclaveLoadUserBoundKeyAndDecrypt
         if (combinedInputData.size() < sizeof(uint32_t))
         {
             debug_print(L"ERROR: Combined input data too small, size: %u", static_cast<uint32_t>(combinedInputData.size()));
-       return E_INVALIDARG;
+            return E_INVALIDARG;
         }
 
         // Read tag size from the first 4 bytes
@@ -549,16 +610,72 @@ HRESULT VbsEnclave::Trusted::Implementation::MyEnclaveLoadUserBoundKeyAndDecrypt
             debug_print(L"Created secure cache configuration in VTL1");
             debug_print(L"securedEncryptionKeyBytes size: %d", securedEncryptionKeyBytes.size());
 
-            // Load the user-bound key from secured encryption key bytes
-            // Note: securedEncryptionKeyBytes contains the user-bound key data, not raw key material
-            auto loadedKeyBytes = veil::vtl1::userboundkey::load_user_bound_key(
-                helloKeyName,
-                secureConfig,
-                pinMessage,
-                windowId,
-                securedEncryptionKeyBytes,
-                needsReseal
-            );
+            std::vector<std::uint8_t> currentKeyBytes = securedEncryptionKeyBytes;
+            std::vector<std::uint8_t> loadedKeyBytes;
+            bool loadSucceeded = false;
+
+            // First attempt to load the user-bound key
+            try
+            {
+                loadedKeyBytes = veil::vtl1::userboundkey::load_user_bound_key(
+                    helloKeyName,
+                    secureConfig,
+                    pinMessage,
+                    windowId,
+                    currentKeyBytes,
+                    needsReseal);
+                loadSucceeded = true;
+                debug_print(L"Successfully loaded user-bound key on first attempt");
+            }
+            catch (...)
+            {
+                debug_print(L"First load attempt failed, checking if reseal is needed");
+                loadSucceeded = false;
+            }
+
+            // If load failed and reseal is needed, attempt reseal and retry
+            if (!loadSucceeded && needsReseal)
+            {
+                debug_print(L"Attempting to reseal user-bound key");
+          
+                try
+                {
+                    auto resealedBytes = veil::vtl1::userboundkey::reseal_user_bound_key(
+                        currentKeyBytes,
+                        ENCLAVE_SEALING_IDENTITY_POLICY::ENCLAVE_IDENTITY_POLICY_SEAL_SAME_IMAGE,
+                        g_runtimePolicy);
+
+                    debug_print(L"Reseal completed, attempting to load with resealed key");
+
+                    // Store resealed bytes in output parameter
+                    resealedEncryptionKeyBytes.assign(resealedBytes.begin(), resealedBytes.end());
+
+                    // Reset needsReseal for the retry
+                    needsReseal = false;
+
+                    // Retry loading with resealed bytes
+                    loadedKeyBytes = veil::vtl1::userboundkey::load_user_bound_key(
+                        helloKeyName,
+                        secureConfig,
+                        pinMessage,
+                        windowId,
+                        resealedBytes,
+                        needsReseal);
+
+                    loadSucceeded = true;
+                    debug_print(L"Successfully loaded user-bound key after reseal");
+                }
+                catch (...)
+                {
+                    debug_print(L"Failed to reseal or load after reseal");
+                    throw;
+                }
+            }
+            else if (!loadSucceeded)
+            {
+                debug_print(L"Load failed and reseal not needed or not indicated");
+                throw std::runtime_error("Failed to load user-bound key");
+            }
 
             // NOW we can create a symmetric key from the loaded raw key material
             auto newEncryptionKey = veil::vtl1::crypto::create_symmetric_key(loadedKeyBytes);
@@ -574,7 +691,7 @@ HRESULT VbsEnclave::Trusted::Implementation::MyEnclaveLoadUserBoundKeyAndDecrypt
         debug_print(L"Decrypting input data, encrypted size: %u, tag size: %u", 
             static_cast<uint32_t>(encryptedInputBytes.size()), 
             static_cast<uint32_t>(tag.size()));
-        
+  
         auto keyHandle = GetEncryptionKeyHandle();
         auto decryptedBytes = veil::vtl1::crypto::decrypt(
             keyHandle, 
@@ -590,44 +707,6 @@ HRESULT VbsEnclave::Trusted::Implementation::MyEnclaveLoadUserBoundKeyAndDecrypt
     CATCH_RETURN();
 
     return S_OK;
-}
-
-//
-// Reseal user bound key
-//
-HRESULT VbsEnclave::Trusted::Implementation::MyEnclaveResealKey(
-    _In_ const std::vector<std::uint8_t>& securedEncryptionKeyBytes,
-    _Out_ std::vector<std::uint8_t>& resealedBoundKeyBytes)
-{
-    using namespace veil::vtl1::vtl0_functions;
-
-    try
-    {
-        debug_print(L"Start MyEnclaveResealKey");
-
-        // Call the reseal_user_bound_key API to reseal the key
-        // This takes the bound key bytes and reseals them with the current sealing key
-        auto resealed = veil::vtl1::userboundkey::reseal_user_bound_key(
-            securedEncryptionKeyBytes,
-            ENCLAVE_SEALING_IDENTITY_POLICY::ENCLAVE_IDENTITY_POLICY_SEAL_SAME_IMAGE,
-            g_runtimePolicy);
-
-        debug_print(L"reseal_user_bound_key completed, resealed data size: %d", resealed.size());
-
-        if (!resealed.empty())
-        {
-            resealedBoundKeyBytes.assign(resealed.begin(), resealed.end());
-            debug_print(L"Reseal successful, resealed data size: %d", resealedBoundKeyBytes.size());
-        }
-        else
-        {
-            debug_print(L"Reseal returned empty data");
-            return S_FALSE; // Indicates no reseal was performed or failed
-        }
-
-        return S_OK;
-    }
-    CATCH_RETURN();
 }
 
 //

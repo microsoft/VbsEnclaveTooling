@@ -470,7 +470,7 @@ std::vector<uint8_t> load_user_bound_key(
 {
    veil::vtl1::vtl0_functions::debug_print(L"DEBUG: load_user_bound_key - Function entered");
     
-    // Initialize output parameters
+    // Initialize output parameter
     needsReseal = false;
     
     try
@@ -490,16 +490,16 @@ std::vector<uint8_t> load_user_bound_key(
         // Check if the sealing key is stale and data needs to be re-sealed
         if (unsealingFlags & ENCLAVE_UNSEAL_FLAG_STALE_KEY)
         {
-            veil::vtl1::vtl0_functions::debug_print(L"WARNING: load_user_bound_key - Detected stale key, caller should re-seal bound key bytes");
-            
-            // Set the needsReseal flag - caller is responsible for calling reseal_user_bound_key
-            needsReseal = true;
-     
-            veil::vtl1::vtl0_functions::debug_print(L"DEBUG: load_user_bound_key - needsReseal flag set to true, caller should call reseal_user_bound_key");
+            veil::vtl1::vtl0_functions::debug_print(L"ERROR: load_user_bound_key - Stale sealing key detected, operation failed");
+            veil::vtl1::vtl0_functions::debug_print(L"ERROR: load_user_bound_key - Caller must handle re-sealing using reseal_user_bound_key function");
+            veil::vtl1::vtl0_functions::debug_print(L"ERROR: load_user_bound_key - This is a security requirement to ensure data integrity");
           
-            // Important! Caller _must_ call reseal_user_bound_key and replace old sealedBoundKeyBytes with the result.
-            // Note that unseal_data still successfully returns the boundKeyBytes 
-            // and it is okay to continue using the same for this load operation.
+            // Set the needsReseal flag for informational purposes
+            needsReseal = true;
+ 
+            // Fail the operation - caller must explicitly handle resealing and call load_user_bound_key again
+            THROW_HR_MSG(HRESULT_FROM_WIN32(ERROR_INVALID_DATA), 
+                "Stale sealing key detected. Caller must re-seal the data using reseal_user_bound_key before attempting to load.");
         }
         std::vector<uint8_t> ephemeralPublicKeyBytes = GetEphemeralPublicKeyBytesFromBoundKeyBytes(boundKeyBytes);
         veil::vtl1::vtl0_functions::debug_print((L"DEBUG: load_user_bound_key - ephemeralPublicKeyBytes size: " + std::to_wstring(ephemeralPublicKeyBytes.size())).c_str());

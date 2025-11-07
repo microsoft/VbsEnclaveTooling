@@ -27,6 +27,11 @@ namespace veil::vtl1::userboundkey
         uint32_t runtimePolicy,
         uint32_t keyCredentialCreationOption);
 
+    /// <summary>
+    /// Loads a user-bound key from sealed bytes. FAILS if re-sealing is required.
+    /// When the sealing key becomes stale, this function will fail with ERROR_INVALID_DATA.
+    /// The caller must use reseal_user_bound_key to re-seal the data before attempting to load again.
+    /// This ensures explicit handling of re-sealing scenarios for security and data integrity.
     std::vector<uint8_t> load_user_bound_key(
         const std::wstring& keyName,
         const veil::vtl1::userboundkey::keyCredentialCacheConfig& cacheConfig,
