@@ -108,8 +108,15 @@
     <VC_LibraryPath_Enclave Condition="'$(Platform)'=='ARM64'">$(VC_LibraryPath_VC_arm64_Desktop)\enclave</VC_LibraryPath_Enclave>
     <WindowsSDK_LibraryPath_Enclave>$(WindowsSDK_LibraryPath)\..\ucrt_enclave\$(Platform)</WindowsSDK_LibraryPath_Enclave>
     <VeInteropLibPath>$(WindowsSDK_LibraryPath)\$(Platform)\veinterop.lib</VeInteropLibPath>
+      
+    <!-- For use when veinterop does not exist in Windows SDK. -->
+    <VeInteropLib Condition="!Exists('$(VeInteropLibPath)')"></VeInteropLib>
+
+    <!-- For use when veinterop exists in Windows SDK. -->
+    <VeInteropLib Condition="Exists('$(VeInteropLibPath)')">$(VeInteropLibPath)</VeInteropLib>
     <VBS_Enclave_Dependencies>
         vertdll.lib;
+        $(VeInteropLib);
         bcrypt.lib;
         $(VC_LibraryPath_Enclave)\libcmt.lib;
         $(VC_LibraryPath_Enclave)\libvcruntime.lib;
