@@ -12,7 +12,6 @@
 #include <span>
 #include <sddl.h>
 #include <limits>
-#include <ncrypt.h>
 
 #include <winrt/base.h>
 #include <winrt/Windows.Foundation.h>
@@ -411,7 +410,7 @@ int DecryptFlowThreadpool(
     //
     // [Load flow]
     // 
-    //  Load sealed key bytes and encrypted data from disk, then pass into enclave to decrypt
+    //  Load user-bound key bytes and encrypted data from disk, then pass into enclave to decrypt
     //
 
     auto encryptedInputBytes1 = LoadBinaryData(fs::path(encryptedInputFilePath.string() + "1"));
@@ -476,7 +475,7 @@ int mainEncryptDecrypt(uint32_t activityLevel)
 
     veilLog.AddTimestampedLog(L"[Host] Starting from host", veil::any::logger::eventLevel::EVENT_LEVEL_CRITICAL);
 
-    // Create app+user enclave identity
+    // Create user enclave identity
     std::vector<uint8_t> ownerId = {};
 
     // Load enclave
@@ -573,7 +572,7 @@ int mainEncryptDecryptUserBound(uint32_t activityLevel)
     veilLog.AddTimestampedLog(L"[Host] Starting user-bound encryption from host", veil::any::logger::eventLevel::EVENT_LEVEL_CRITICAL);
 
     /******************************* Enclave setup *******************************/
-    // Create app+user enclave identity using GetSecureId API
+    // Create user enclave identity using GetSecureId API
     std::vector<uint8_t> ownerId;
 
     try
@@ -682,7 +681,7 @@ int mainThreadPool(uint32_t /*activityLevel*/)
 {
     std::wcout << L"Running sample: Taskpool..." << std::endl;
 
-    // Create app+user enclave identity
+    // Create user enclave identity
     std::vector<uint8_t> ownerId = {};
 
     // Load enclave
@@ -718,7 +717,7 @@ int mainEncryptDecryptThreadpool(uint32_t activityLevel)
 {
     std::wcout << L"Running sample: Encrypt decrypt in taskpool..." << std::endl;
 
-    // Create app+user enclave identity
+    // Create user enclave identity
     std::vector<uint8_t> ownerId = {};
 
     // Load enclave

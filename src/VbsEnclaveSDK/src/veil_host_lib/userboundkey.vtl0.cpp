@@ -28,7 +28,7 @@
 #include <wil/resource.h>
 #include <sddl.h>
 
-#include "utils.vtl0.h"
+#include "debug_utils.vtl0.h"
 
 using namespace winrt::Windows::Security::Credentials;
 using namespace veil::vtl0::debug;
