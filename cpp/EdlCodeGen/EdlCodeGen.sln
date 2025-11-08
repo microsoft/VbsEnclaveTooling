@@ -3,19 +3,7 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.9.34902.65
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{1542CC01-B383-491A-96C3-36FCAB8791A2}"
-	ProjectSection(SolutionItems) = preProject
-		.editorconfig = .editorconfig
-		.gitattributes = .gitattributes
-		.gitignore = .gitignore
-		Directory.Build.props = Directory.Build.props
-		Directory.Build.targets = Directory.Build.targets
-		LICENSE.txt = LICENSE.txt
-		nuget.config = nuget.config
-		README.md = README.md
-	EndProjectSection
-EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ToolingExecutable", "src\ToolingExecutable\ToolingExecutable.vcxproj", "{8068FE68-F1DC-4A82-B2A8-97AE1A48D571}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Executable", "Executable\Executable.vcxproj", "{8068FE68-F1DC-4A82-B2A8-97AE1A48D571}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "BuildScripts", "BuildScripts", "{E2DFF69F-9D18-460B-AB88-FB7A55A28EBC}"
 	ProjectSection(SolutionItems) = preProject
@@ -27,46 +15,15 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "BuildScripts", "BuildScript
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "UnitTests", "tests\UnitTests\UnitTests.vcxproj", "{4FA028C0-329C-4B6B-BC9F-FFC23B409EC1}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ToolingSharedLibrary", "src\ToolingSharedLibrary\ToolingSharedLibrary.vcxproj", "{27C99E39-8373-4559-83D7-F21B5134EB83}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Library", "SharedLibrary\SharedLibrary.vcxproj", "{27C99E39-8373-4559-83D7-F21B5134EB83}"
 EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "docs", "docs", "{890A5ACE-43AB-4957-B32A-7720ED8ED565}"
-	ProjectSection(SolutionItems) = preProject
-		docs\CodeGeneration.md = docs\CodeGeneration.md
-		docs\Edl.md = docs\Edl.md
-	EndProjectSection
-EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ToolingNuget", "src\ToolingNuget\ToolingNuget.vcxproj", "{1EC49385-89BB-4439-83DA-8D0374291F40}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Nuget", "Nuget\Nuget.vcxproj", "{1EC49385-89BB-4439-83DA-8D0374291F40}"
 	ProjectSection(ProjectDependencies) = postProject
 		{26116633-98EC-4EAC-859C-139D020D10C9} = {26116633-98EC-4EAC-859C-139D020D10C9}
 		{27C99E39-8373-4559-83D7-F21B5134EB83} = {27C99E39-8373-4559-83D7-F21B5134EB83}
 	EndProjectSection
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "veil_enclave_cpp_support_lib", "Common\veil_enclave_cpp_support_lib\veil_enclave_cpp_support_lib.vcxproj", "{26116633-98EC-4EAC-859C-139D020D10C9}"
-EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "PipelineTemplates", "PipelineTemplates", "{02EA681E-C7D8-13C7-8484-4AC65E1B71E8}"
-	ProjectSection(SolutionItems) = preProject
-		AzurePipelineTemplates\OneBranch.Official.yml = AzurePipelineTemplates\OneBranch.Official.yml
-		AzurePipelineTemplates\SyncMirror-Pipeline-Template.yml = AzurePipelineTemplates\SyncMirror-Pipeline-Template.yml
-	EndProjectSection
-EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "jobs", "jobs", "{D2331F9A-86B9-4308-B8B7-994114A65122}"
-	ProjectSection(SolutionItems) = preProject
-		AzurePipelineTemplates\jobs\CodeGenBuildJob.yml = AzurePipelineTemplates\jobs\CodeGenBuildJob.yml
-		AzurePipelineTemplates\jobs\PublishNugetPackages.yml = AzurePipelineTemplates\jobs\PublishNugetPackages.yml
-		AzurePipelineTemplates\jobs\SdkBuildJob.yml = AzurePipelineTemplates\jobs\SdkBuildJob.yml
-	EndProjectSection
-EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "variables", "variables", "{B4BB7018-CEC4-41C6-BBBD-925A69D5032A}"
-	ProjectSection(SolutionItems) = preProject
-		AzurePipelineTemplates\variables\OneBranchVariables.yml = AzurePipelineTemplates\variables\OneBranchVariables.yml
-		AzurePipelineTemplates\variables\version.yml = AzurePipelineTemplates\variables\version.yml
-	EndProjectSection
-EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "settings", "settings", "{9D71BE1B-2375-490F-9F24-7EDF81094461}"
-	ProjectSection(SolutionItems) = preProject
-		.gdn\gdnsettings = .gdn\gdnsettings
-		.config\tsaoptions.json = .config\tsaoptions.json
-	EndProjectSection
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "veil_enclave_cpp_support_lib", "..\Common\veil_enclave_cpp_support_lib\veil_enclave_cpp_support_lib.vcxproj", "{26116633-98EC-4EAC-859C-139D020D10C9}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -119,11 +76,6 @@ Global
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
-	EndGlobalSection
-	GlobalSection(NestedProjects) = preSolution
-		{D2331F9A-86B9-4308-B8B7-994114A65122} = {02EA681E-C7D8-13C7-8484-4AC65E1B71E8}
-		{B4BB7018-CEC4-41C6-BBBD-925A69D5032A} = {02EA681E-C7D8-13C7-8484-4AC65E1B71E8}
-		{9D71BE1B-2375-490F-9F24-7EDF81094461} = {02EA681E-C7D8-13C7-8484-4AC65E1B71E8}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {166D23FF-1362-43F2-BEE7-58FDCDB133DF}

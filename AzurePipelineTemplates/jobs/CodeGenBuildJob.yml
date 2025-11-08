@@ -11,8 +11,8 @@ jobs:
   pool:
     type: windows
   variables:
-    CodeGenSolution: $(Build.SourcesDirectory)\VbsEnclaveTooling.sln
-    VcpkgDirectory: $(Build.SourcesDirectory)\src\ToolingSharedLibrary\vcpkg_installed\x64-windows-static-cfg
+    CodeGenSolution: $(Build.SourcesDirectory)\cpp\EdlCodeGen\EdlCodeGen.sln
+    VcpkgDirectory: $(Build.SourcesDirectory)\cpp\EdlCodeGen\SharedLibrary\vcpkg_installed\x64-windows-static-cfg
     VcpkgToolsDirectory: $(VcpkgDirectory)\x64-windows\tools
     VcpkgSourcesDirectory: $(VcpkgDirectory)\x64-windows-static-cfg
     VCPKG_ROOT: '$(Pipeline.Workspace)\s\vcpkg'
@@ -57,7 +57,7 @@ jobs:
         performMultiLevelLookup: true
 
     - task: NuGetCommand@2
-      displayName: NuGet restore VbsEnclaveTooling.sln
+      displayName: NuGet restore EdlCodeGen.sln
       inputs:
         command: 'restore'
         restoreSolution: '$(CodeGenSolution)'
@@ -65,7 +65,7 @@ jobs:
         nugetConfigPath: NuGet.config
 
     - task: VSBuild@1
-      displayName: Build VbsEnclaveTooling x64 release
+      displayName: Build EdlCodeGen x64 release
       inputs:
         solution: $(CodeGenSolution)
         msbuildArgs: /p:VbsEnclaveCodegenVersion=$(NewCodeGenVersion)
@@ -73,7 +73,7 @@ jobs:
         configuration: 'Release'
     
     - task: VSBuild@1
-      displayName: Build VbsEnclaveTooling arm64 release
+      displayName: Build EdlCodeGen arm64 release
       inputs:
         solution: $(CodeGenSolution)
         msbuildArgs: /p:VbsEnclaveCodegenVersion=$(NewCodeGenVersion)
@@ -81,7 +81,7 @@ jobs:
         configuration: 'Release'
 
     - task: VSBuild@1
-      displayName: Build VbsEnclaveTooling x64 debug
+      displayName: Build EdlCodeGen x64 debug
       inputs:
         solution: $(CodeGenSolution)
         msbuildArgs: /p:VbsEnclaveCodegenVersion=$(NewCodeGenVersion)
@@ -89,7 +89,7 @@ jobs:
         configuration: 'Debug'
     
     - task: VSBuild@1
-      displayName: Build VbsEnclaveTooling arm64 debug
+      displayName: Build EdlCodeGen arm64 debug
       inputs:
         solution: $(CodeGenSolution)
         msbuildArgs: /p:VbsEnclaveCodegenVersion=$(NewCodeGenVersion)
@@ -127,7 +127,7 @@ jobs:
       displayName: 'Build CodeGenerator NuGet package'
       inputs:
         command: 'custom'
-        arguments: 'pack src\ToolingNuget\Nuget\Microsoft.Windows.VbsEnclave.CodeGenerator.nuspec -NonInteractive -OutputDirectory $(BaseBuildDirectory) -Properties target_version=$(NewCodeGenVersion);vbsenclave_codegen_x64_exe=$(x64ReleaseBuildLocation)\edlcodegen.exe;vcpkg_sources=$(VcpkgSourcesDirectory);vcpkg_tools=$(VcpkgToolsDirectory);$(VeilCppSupportLibX64Release);$(VeilCppSupportLibX64Debug);$(VeilCppSupportLibARM64Release);$(VeilCppSupportLibARM64Debug);$(VeilCppSupportPdbX64Release);$(VeilCppSupportPdbX64Debug);$(VeilCppSupportPdbARM64Release);$(VeilCppSupportPdbARM64Debug)  -Version $(NewCodeGenVersion) -Verbosity Detailed'
+        arguments: 'pack cpp\EdlCodeGen\Nuget\Microsoft.Windows.VbsEnclave.CodeGenerator.nuspec -NonInteractive -OutputDirectory $(BaseBuildDirectory) -Properties target_version=$(NewCodeGenVersion);vbsenclave_codegen_x64_exe=$(x64ReleaseBuildLocation)\edlcodegen.exe;vcpkg_sources=$(VcpkgSourcesDirectory);vcpkg_tools=$(VcpkgToolsDirectory);$(VeilCppSupportLibX64Release);$(VeilCppSupportLibX64Debug);$(VeilCppSupportLibARM64Release);$(VeilCppSupportLibARM64Debug);$(VeilCppSupportPdbX64Release);$(VeilCppSupportPdbX64Debug);$(VeilCppSupportPdbARM64Release);$(VeilCppSupportPdbARM64Debug)  -Version $(NewCodeGenVersion) -Verbosity Detailed'
     
     # Sign codegen nuget package
     - task: onebranch.pipeline.signing@1

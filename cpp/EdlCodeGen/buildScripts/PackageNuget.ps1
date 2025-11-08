@@ -26,7 +26,7 @@ Syntax:
       PackageNuget.ps1 [options]
 
 Description:
-      create vbs enclave tooling's .nupkg file.
+      create edlcodegen's .nupkg file.
 
 Options:
 

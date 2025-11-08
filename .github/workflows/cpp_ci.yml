@@ -8,6 +8,10 @@ on:
       - 'feature/**'
       - 'feat/**'
 
+env:
+  CODEGEN_DIR: cpp/EdlCodeGen
+  SDK_DIR: cpp/VbsEnclaveSDK
+
 jobs:
   build-edl-code-gen:
     name: Build EdlCodeGen
@@ -39,18 +43,19 @@ jobs:
         shell: pwsh
 
       - name: Restore NuGet packages
-        run: nuget restore VbsEnclaveTooling.sln -ConfigFile NuGet.config
+        run: nuget restore ${{ env.CODEGEN_DIR }}/EdlCodeGen.sln -ConfigFile NuGet.config
 
       - name: Build EdlCodeGen solution
-        run: msbuild VbsEnclaveTooling.sln /m /p:Configuration=${{ matrix.configuration }} /p:Platform=${{ matrix.platform }}
+        run: msbuild ${{ env.CODEGEN_DIR }}/EdlCodeGen.sln /m /p:Configuration=${{ matrix.configuration }} /p:Platform=${{ matrix.platform }}
 
-      # Upload build outputs so the test job can use them.
+      # Upload unittest dll so the test job can use them.
       - name: Upload EdlCodeGen artifacts
         uses: actions/upload-artifact@v4
         with:
           name: edlcodegen-${{ matrix.platform }}-${{ matrix.configuration }}
           path: |
-            _build/${{ matrix.platform }}/${{ matrix.configuration }}/
+            ${{ env.CODEGEN_DIR }}/_build/${{ matrix.platform }}/${{ matrix.configuration }}/UnitTests.dll
+
   run-edl-code-gen-tests:
     name: Test EdlCodeGen
     runs-on: windows-latest
@@ -65,7 +70,7 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: edlcodegen-x64-${{ matrix.configuration }}
-          path: _build/x64/${{ matrix.configuration }}/
+          path: ${{ env.CODEGEN_DIR }}/_build/x64/${{ matrix.configuration }}/
 
       - name: Setup MSBuild
         uses: microsoft/setup-msbuild@v2
@@ -76,7 +81,7 @@ jobs:
         run: |
           $vsTestInstallPath = & "${env:ProgramFiles(x86)}/Microsoft Visual Studio/Installer/vswhere.exe" -latest -products * -requires Microsoft.VisualStudio.Workload.ManagedDesktop Microsoft.VisualStudio.Workload.Web -requiresAny -property installationPath
           $vstestConsoleExe = join-path $vsTestInstallPath 'Common7/IDE/CommonExtensions/Microsoft/TestWindow/vstest.console.exe'
-          & $vstestConsoleExe "_build/x64/${{ matrix.configuration }}/UnitTests.dll"
+          & $vstestConsoleExe "${{ env.CODEGEN_DIR }}/_build/x64/${{ matrix.configuration }}/UnitTests.dll"
 
   build-sdk:
     name: Build Veil SDK
@@ -98,7 +103,7 @@ jobs:
         uses: NuGet/setup-nuget@v2
 
       - name: Restore NuGet packages
-        run: nuget restore src/VbsEnclaveSDK/vbs_enclave_implementation_library.sln -ConfigFile NuGet.config
+        run: nuget restore ${{ env.SDK_DIR }}/vbs_enclave_implementation_library.sln -ConfigFile NuGet.config
 
       - name: Build SDK solution
-        run: msbuild src/VbsEnclaveSDK/vbs_enclave_implementation_library.sln /m /p:Configuration=${{ matrix.configuration }} /p:Platform=${{ matrix.platform }}
+        run: msbuild ${{ env.SDK_DIR }}/vbs_enclave_implementation_library.sln /m /p:Configuration=${{ matrix.configuration }} /p:Platform=${{ matrix.platform }}

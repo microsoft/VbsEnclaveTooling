@@ -1,9 +1,9 @@
 <Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
     <PropertyGroup>
-        <VbsEnclaveNugetSpecFilePath>$(ProjectDir)Nuget\Microsoft.Windows.VbsEnclave.CodeGenerator.nuspec</VbsEnclaveNugetSpecFilePath>
+        <VbsEnclaveNugetSpecFilePath>$(ProjectDir)Microsoft.Windows.VbsEnclave.CodeGenerator.nuspec</VbsEnclaveNugetSpecFilePath>
         <VbsEnclaveCodeGenNugetPackVersionNumber>0.0.0</VbsEnclaveCodeGenNugetPackVersionNumber>
 
-        <!-- Property value should match the "ToolingExecutable" projects 'target name' property  -->
+        <!-- Property value should match the "Executable" projects 'target name' property  -->
         <VbsEnclaveCodegenNugetPackExePath>$(SolutionDir)_build\x64\$(Configuration)\edlcodegen.exe</VbsEnclaveCodegenNugetPackExePath>
         
         <!-- 
@@ -12,8 +12,8 @@
         -->
         <VbsEnclaveCodeGenNugetPackCppSupportPath>$(OutDir)veil_enclave_cpp_support_$(Platform)_$(Configuration)_lib.lib</VbsEnclaveCodeGenNugetPackCppSupportPath>
         <VbsEnclaveCodeGenNugetPackCppSupportPdbPath>$(OutDir)veil_enclave_cpp_support_$(Platform)_$(Configuration)_lib.pdb</VbsEnclaveCodeGenNugetPackCppSupportPdbPath>
-        <VcpkgSupportPath>$(SolutionDir)src\ToolingSharedLibrary\vcpkg_installed\x64-windows-static-cfg\x64-windows-static-cfg</VcpkgSupportPath>
-        <VcpkgToolsPath>$(SolutionDir)src\ToolingSharedLibrary\vcpkg_installed\x64-windows-static-cfg\x64-windows\tools</VcpkgToolsPath>
+        <VcpkgSupportPath>$(SolutionDir)SharedLibrary\vcpkg_installed\x64-windows-static-cfg\x64-windows-static-cfg</VcpkgSupportPath>
+        <VcpkgToolsPath>$(SolutionDir)SharedLibrary\vcpkg_installed\x64-windows-static-cfg\x64-windows\tools</VcpkgToolsPath>
         <VbsEnclaveNugetPackProperties>target_version=$(VbsEnclaveCodeGenNugetPackVersionNumber);vbsenclave_codegen_x64_exe=$(VbsEnclaveCodegenNugetPackExePath);vcpkg_sources=$(VcpkgSupportPath);vcpkg_tools=$(VcpkgToolsPath);vbsenclave_codegen_cpp_support_$(Platform)_$(configuration)_lib=$(VbsEnclaveCodeGenNugetPackCppSupportPath);vbsenclave_codegen_cpp_support_$(Platform)_$(configuration)_pdb=$(VbsEnclaveCodeGenNugetPackCppSupportPdbPath);</VbsEnclaveNugetPackProperties>
         <VbsEnclaveNugetPackOutputDirectory>$(SolutionDir)_build</VbsEnclaveNugetPackOutputDirectory>
         <VbsEnclaveNugetPackScriptFile>$(SolutionDir)buildScripts\PackageNuget.ps1</VbsEnclaveNugetPackScriptFile>
@@ -21,7 +21,7 @@
     
     <!-- 
         Targets in this file should only run when building in visual studio and should not be ran when building
-        the solution using the <repo path>\buildScripts\build.ps1 file on the commandline. That file handles
+        the solution using the \buildScripts\build.ps1 file on the commandline. That file handles
         creating the nuget package outside of visual studio.
     -->
 
@@ -31,16 +31,16 @@
         successfully in a visual studio developer powershell window.
     -->
     <Target 
-        Name="PackVbsEnclaveToolingNuget" 
+        Name="PackVbsEnclaveNuget" 
         AfterTargets="Build"
         Condition="'$(BuildingInsideVisualStudio)' == 'True'">
-        <Message Text="Generating vbs enclave nuget package (.nupkg) for with configuration '$(Configuration)' and platform: '$(Platform)'" Importance="high" />
+        <Message Text="Generating EdlCodeGen nuget package (.nupkg) for with configuration '$(Configuration)' and platform: '$(Platform)'" Importance="high" />
 
         <!-- Generate .nupkg file-->
         <PropertyGroup> 
-            <VbsEnclaveToolingNugetPackExecutionCommand>
+            <VbsEnclaveNugetPackExecutionCommand>
                 &quot;$(VbsEnclaveNugetPackScriptFile)&quot; -NugetSpecFilePath &quot;$(VbsEnclaveNugetSpecFilePath)&quot; -NugetPackProperties &quot;$(VbsEnclaveNugetPackProperties)&quot; -OutputDirectory &quot;$(VbsEnclaveNugetPackOutputDirectory)&quot;
-            </VbsEnclaveToolingNugetPackExecutionCommand>
+            </VbsEnclaveNugetPackExecutionCommand>
         </PropertyGroup>
 
         <Exec 

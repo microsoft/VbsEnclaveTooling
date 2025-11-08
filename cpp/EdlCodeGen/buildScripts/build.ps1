@@ -51,7 +51,7 @@ Options:
 # so the building behavior in VS UI and commandline stay the same.
 $ErrorActionPreference = "Stop"
 $BuildRootDirectory = (Split-Path $MyInvocation.MyCommand.Path)
-$BaseRepositoryDirectory = Split-Path $BuildRootDirectory
+$BaseSolutionDirectory = Split-Path $BuildRootDirectory
 $BuildPlatform = @($Platforms)
 $BuildConfiguration = @($Configurations)
 
@@ -71,19 +71,19 @@ $msbuildPath = & "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vsw
 
 Try 
 {
-    $solutionName = "VbsEnclaveTooling"
+    $solutionName = "EdlCodeGen"
 
     # Run nuget restore
     $nugetExeDownloaderPath = (Join-Path $BuildRootDirectory "NugetExeDownloader.ps1")
     $nugetPath = & $nugetExeDownloaderPath
     Write-Host "Running nuget restore for $solutionName"
-    & $nugetPath restore "$BaseRepositoryDirectory\$solutionName.sln"
+    & $nugetPath restore "$BaseSolutionDirectory\$solutionName.sln"
 
     # Create nuget pack properties that will always exist
-    $nuspecFile = "$BaseRepositoryDirectory\src\ToolingNuget\nuget\Microsoft.Windows.VbsEnclave.CodeGenerator.nuspec"
+    $nuspecFile = "$BaseSolutionDirectory\Nuget\Microsoft.Windows.VbsEnclave.CodeGenerator.nuspec"
     $nugetPackProperties = "target_version=$BuildTargetVersion;"
-    $nugetPackProperties += "vcpkg_sources=$BaseRepositoryDirectory\src\ToolingSharedLibrary\vcpkg_installed\x64-windows-static-cfg\x64-windows-static-cfg;";
-    $nugetPackProperties += "vcpkg_tools=$BaseRepositoryDirectory\src\ToolingSharedLibrary\vcpkg_installed\x64-windows-static-cfg\x64-windows\tools;";
+    $nugetPackProperties += "vcpkg_sources=$BaseSolutionDirectory\SharedLibrary\vcpkg_installed\x64-windows-static-cfg\x64-windows-static-cfg;";
+    $nugetPackProperties += "vcpkg_tools=$BaseSolutionDirectory\SharedLibrary\vcpkg_installed\x64-windows-static-cfg\x64-windows\tools;";
          
     $edlcodegen_exe_path = ""
     $cppSupportLibPath = ""
@@ -96,12 +96,12 @@ Try
             Write-Host "Building $solutionName for EnvPlatform: $BuildPlatform Platform: $platform Configuration: $configuration"
             $msbuildArgs = 
             @(
-                ("$BaseRepositoryDirectory\$solutionName.sln"),
+                ("$BaseSolutionDirectory\$solutionName.sln"),
                 ("/t:Rebuild"),
                 ("/p:Platform=$Platform"),
                 ("/p:Configuration=$Configuration"),
                 ("/restore"),
-                ("/binaryLogger:$BaseRepositoryDirectory\_build\$platform\$configuration\$solutionName.$platform.$configuration.binlog")
+                ("/binaryLogger:$BaseSolutionDirectory\_build\$platform\$configuration\$solutionName.$platform.$configuration.binlog")
             )
 
             & $msbuildPath $msbuildArgs
@@ -111,8 +111,8 @@ Try
                 exit $LASTEXITCODE
             }
 
-            $cppSupportLibPath = "$BaseRepositoryDirectory\_build\$platform\$configuration\veil_enclave_cpp_support_${platform}_${configuration}_lib.lib"
-            $cppSupportLibPdbPath = "$BaseRepositoryDirectory\_build\$platform\$configuration\veil_enclave_cpp_support_${platform}_${configuration}_lib.pdb"
+            $cppSupportLibPath = "$BaseSolutionDirectory\_build\$platform\$configuration\veil_enclave_cpp_support_${platform}_${configuration}_lib.lib"
+            $cppSupportLibPdbPath = "$BaseSolutionDirectory\_build\$platform\$configuration\veil_enclave_cpp_support_${platform}_${configuration}_lib.pdb"
             $nugetPackProperties += "vbsenclave_codegen_cpp_support_${platform}_${configuration}_lib=$cppSupportLibPath;"
             $nugetPackProperties += "vbsenclave_codegen_cpp_support_${platform}_${configuration}_pdb=$cppSupportLibPdbPath;"
 
@@ -120,7 +120,7 @@ Try
             # we use the specified user provided configuration. e.g debug or release.
             if ($edlcodegen_exe_path -eq "")
             {
-                $edlcodegen_exe_path = "vbsenclave_codegen_x64_exe=$BaseRepositoryDirectory\_build\x64\$configuration\edlcodegen.exe;"
+                $edlcodegen_exe_path = "vbsenclave_codegen_x64_exe=$BaseSolutionDirectory\_build\x64\$configuration\edlcodegen.exe;"
                 $nugetPackProperties += $edlcodegen_exe_path
             }
         }
@@ -129,7 +129,7 @@ Try
     # Pack nuget
     $packageNugetScriptPath  = "$BuildRootDirectory\PackageNuget.ps1"
 
-    & $packageNugetScriptPath -NugetSpecFilePath $nuspecFile -NugetPackProperties $nugetPackProperties -OutputDirectory "$BaseRepositoryDirectory\_build"
+    & $packageNugetScriptPath -NugetSpecFilePath $nuspecFile -NugetPackProperties $nugetPackProperties -OutputDirectory "$BaseSolutionDirectory\_build"
 } 
 Catch
 {
@@ -142,7 +142,7 @@ Catch
 # Now that we've finished building the codegen project and nuget package, build the sdk project and its nuget package.
 if ($NugetPackagesToOutput -eq "all")
 {
-    $sdkBuildScriptPath = "$BaseRepositoryDirectory\src\VbsEnclaveSDK\BuildScripts\build.ps1"
+    $sdkBuildScriptPath = "$BaseSolutionDirectory\..\VbsEnclaveSDK\BuildScripts\build.ps1"
     & $sdkBuildScriptPath -Platforms $Platforms -Configurations $Configurations
 }
 

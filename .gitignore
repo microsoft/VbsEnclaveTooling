@@ -445,5 +445,5 @@ target/
 obj
 bin
 
-# Ignore flatbuffer generated files in the shared tooling directory
-src/ToolingSharedLibrary/CurrentCodeGenerationState/**/flatbufferTypes.h
+# Ignore flatbuffer generated files in the edlcodegen shared library directory
+**/CurrentCodeGenerationState/**/flatbufferTypes.h

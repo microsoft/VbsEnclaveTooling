@@ -1,16 +1,16 @@
 <Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
     <PropertyGroup>
         <VbsEnclaveExeFilePath>$(OutDir)edlcodegen.exe</VbsEnclaveExeFilePath>
-        <VbsEnclaveEdlPath>$(SolutionDir)src\ToolingSharedLibrary\CurrentCodeGenerationState\CodeGenerationState.edl</VbsEnclaveEdlPath>
-        <VbsEnclaveGeneratedFilesDir>$(SolutionDir)src\ToolingSharedLibrary\CurrentCodeGenerationState</VbsEnclaveGeneratedFilesDir>
+        <VbsEnclaveEdlPath>$(SolutionDir)SharedLibrary\CurrentCodeGenerationState\CodeGenerationState.edl</VbsEnclaveEdlPath>
+        <VbsEnclaveGeneratedFilesDir>$(SolutionDir)SharedLibrary\CurrentCodeGenerationState</VbsEnclaveGeneratedFilesDir>
         <VbsEnclaveNamespace>CodeGenTest</VbsEnclaveNamespace>
         <VbsEnclaveVtl0ClassName>CodeGenTestClass</VbsEnclaveVtl0ClassName>
-        <FlatbuffersCompiler>$(SolutionDir)src\ToolingSharedLibrary\vcpkg_installed\x64-windows-static-cfg\x64-windows\tools\flatbuffers\flatc.exe</FlatbuffersCompiler>
+        <FlatbuffersCompiler>$(SolutionDir)SharedLibrary\vcpkg_installed\x64-windows-static-cfg\x64-windows\tools\flatbuffers\flatc.exe</FlatbuffersCompiler>
     </PropertyGroup>
     
     <!-- 
         Generate the current state of the codegen for both HostApp and Enclave after building the tooling executable.
-        See <repo-root>\src\ToolingSharedLibrary\CurrentCodeGenerationState\Readme.md for more information.
+        See <repo-root>\SharedLibrary\CurrentCodeGenerationState\Readme.md for more information.
     -->
     <Target
         Name="GenerateCodeGenCurrentState"
