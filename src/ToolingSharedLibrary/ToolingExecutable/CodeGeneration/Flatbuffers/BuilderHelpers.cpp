@@ -2,17 +2,18 @@
 // Licensed under the MIT License.
 
 #include <pch.h>
-#include <Edl\Structures.h>
-#include <Edl\Utils.h>
-#include <CodeGeneration\Constants.h>
-#include <CodeGeneration\CodeGeneration.h>
-#include <CodeGeneration\CodeGenerationHelpers.h>
+#include <CodeGeneration\Cpp\CodeGeneration.h>
+#include <CodeGeneration\Cpp\CodeGenerationHelpers.h>
+#include <CodeGeneration\Cpp\Constants.h>
+#include <CodeGeneration\Common\Constants.h>
 #include <CodeGeneration\Flatbuffers\Constants.h>
 #include <CodeGeneration\Flatbuffers\BuilderHelpers.h>
-
+#include <Edl\Structures.h>
+#include <Edl\Utils.h>
 #include <sstream>
 
 using namespace EdlProcessor;
+using namespace CodeGeneration::Common;
 
 namespace CodeGeneration::Flatbuffers
 {

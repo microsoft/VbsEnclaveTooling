@@ -2,60 +2,20 @@
 // Licensed under the MIT License.
 #pragma once 
 #include <pch.h>
-#include <Edl\Structures.h>
-#include <CodeGeneration\CodeGeneration.h>
-#include <CodeGeneration\Constants.h>
-#include <ErrorHelpers.h>
+#include <CodeGeneration\Cpp\CodeGeneration.h>
+#include <CodeGeneration\Cpp\Constants.h>
 #include <CodeGeneration\Flatbuffers\Constants.h>
 #include <CodeGeneration\Flatbuffers\BuilderHelpers.h>
+#include <Edl\Structures.h>
+#include <ErrorHelpers.h>
 
 using namespace EdlProcessor;
 using namespace ErrorHelpers;
-using namespace CodeGeneration::CppCodeBuilder;
+using namespace CodeGeneration::Cpp::CppCodeBuilder;
 using namespace CodeGeneration::Flatbuffers;
-namespace CodeGeneration
+
+namespace CodeGeneration::Cpp
 {
-    CppCodeGenerator::CppCodeGenerator(
-        Edl&& edl,
-        const std::filesystem::path& output_path,
-        ErrorHandlingKind error_handling,
-        VirtualTrustLayerKind trust_layer,
-        std::string_view generated_namespace_name,
-        std::string_view generated_vtl0_class_name,
-        const std::filesystem::path& flatbuffer_compiler_path)
-        :   m_edl(std::move(edl)),
-            m_output_folder_path(output_path),
-            m_error_handling(error_handling),
-            m_virtual_trust_layer_kind(trust_layer),
-            m_generated_namespace_name(generated_namespace_name),
-            m_generated_vtl0_class_name(generated_vtl0_class_name),
-            m_flatbuffer_compiler_path(flatbuffer_compiler_path)
-    {
-        if (m_output_folder_path.empty())
-        {
-            // Make output directory current directory by default if not provided.
-            m_output_folder_path = std::filesystem::current_path();
-        }
-
-        if (m_generated_namespace_name.empty())
-        {
-            m_generated_namespace_name = m_edl.m_name;
-        }
-
-        if (m_generated_vtl0_class_name.empty())
-        {
-            m_generated_vtl0_class_name = std::format(c_vtl0_enclave_class_name, m_edl.m_name);
-        }
-
-        if (m_flatbuffer_compiler_path.empty())
-        {
-            // Set flatbuffer compiler path to current directory by default if not provided.
-            m_flatbuffer_compiler_path = std::format(
-                c_flatbuffer_compiler_default_path,
-                std::filesystem::current_path().generic_string());
-        }
-    }
-
     void CppCodeGenerator::Generate()
     {
         using namespace CppCodeBuilder;
@@ -156,7 +116,7 @@ namespace CodeGeneration
         SaveFileToOutputFolder("TypeMetadata.h", abi_save_location, abi_metadata_types_header);
 
         SaveFileToOutputFolder(c_flatbuffer_fbs_filename, abi_save_location, flatbuffer_schema);
-        CompileFlatbufferFile(abi_save_location);
+        CompileFlatbufferFile(m_flatbuffer_compiler_path,c_cpp_gen_args, abi_save_location);
     }
 
     void CppCodeGenerator::SaveTrustedHeader(
@@ -273,42 +233,5 @@ namespace CodeGeneration
             definitions_namespace_content);
 
         SaveFileToOutputFolder("Definitions.h", output_parent_folder, header_content);
-    }
-
-    void CppCodeGenerator::SaveFileToOutputFolder(
-        std::string_view file_name,
-        const std::filesystem::path& output_folder,
-        std::string_view file_content)
-    {
-        auto output_file_path = output_folder / file_name;
-
-        if (!std::filesystem::exists(output_folder) && !std::filesystem::create_directories(output_folder))
-        {
-            throw CodeGenerationException(
-                ErrorId::CodeGenUnableToOpenOutputFile,
-                output_file_path.generic_string());
-        }
-
-        std::ofstream output_file(output_file_path.generic_string());
-
-        if (output_file.is_open())
-        {
-            output_file << file_content;
-            output_file.close();
-        }
-        else
-        {
-            throw CodeGenerationException(
-                ErrorId::CodeGenUnableToOpenOutputFile,
-                output_file_path.generic_string());
-        }
-    }
-
-    void CppCodeGenerator::CompileFlatbufferFile(std::filesystem::path save_location)
-    {
-        auto flatbuffer_schema_path = (save_location / c_flatbuffer_fbs_filename).generic_string();
-
-        std::string flatbuffer_args = std::format(R"({} -o "{}" "{}")", c_cpp_gen_args, save_location.generic_string(), flatbuffer_schema_path);
-        InvokeFlatbufferCompiler(m_flatbuffer_compiler_path, flatbuffer_args);
     }
 }

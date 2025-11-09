@@ -5,8 +5,8 @@
 #include <pch.h>
 #include <Edl\Structures.h>
 #include <Edl\Utils.h>
-#include <CodeGeneration\Constants.h>
-#include <CodeGeneration\CodeGeneration.h>
+#include <CodeGeneration\Cpp\Constants.h>
+#include <CodeGeneration\Cpp\CodeGeneration.h>
 #include <CodeGeneration\Flatbuffers\BuilderHelpers.h>
 #include <CodeGeneration\Flatbuffers\Constants.h>
 #include <sstream>
@@ -14,7 +14,7 @@
 using namespace EdlProcessor;
 using namespace CodeGeneration::Flatbuffers;
 
-namespace CodeGeneration
+namespace CodeGeneration::Cpp
 {
     std::string CppCodeBuilder::BuildDeveloperTypesHeader(
         std::string_view developer_namespace_name,
@@ -109,19 +109,6 @@ namespace CodeGeneration
             struct_metadata.str());
     }
 
-    std::string GenerateTabs(std::size_t count)
-    {
-        // User 4 spaces as tabs
-        std::string spaces {};
-        while (count > 0)
-        {
-            spaces += c_four_spaces;
-            count--;
-        }
-
-        return spaces;
-    }
-
     CppCodeBuilder::Definition CppCodeBuilder::BuildStartOfDefinition(
         std::string_view type_name,
         std::string_view identifier_name,
@@ -185,12 +172,12 @@ namespace CodeGeneration
             }
             else if (enum_value.m_is_hex)
             {
-                auto hex_value = uint64_to_hex(enum_value.m_declared_position);
+                auto hex_value = Uint64ToHex(enum_value.m_declared_position);
                 enum_body << std::format("{}{} = {},\n", body_tab_count, enum_value.m_name, hex_value);
             }
             else
             {
-                auto decimal_value = uint64_to_decimal(enum_value.m_declared_position);
+                auto decimal_value = Uint64ToDecimal(enum_value.m_declared_position);
                 enum_body << std::format("{}{} = {},\n", body_tab_count, enum_value.m_name, decimal_value);
             }
         }

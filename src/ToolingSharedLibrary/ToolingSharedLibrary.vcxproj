@@ -189,6 +189,9 @@
   <ItemGroup>
     <ClInclude Include="Includes\CmdlineArgumentsParser.h" />
     <ClInclude Include="Includes\CmdlineParsingHelpers.h" />
+    <ClInclude Include="Includes\CodeGeneration\Common\Constants.h" />
+    <ClInclude Include="Includes\CodeGeneration\Common\Helpers.h" />
+    <ClInclude Include="Includes\CodeGeneration\Common\Types.h" />
     <ClInclude Include="Includes\CodeGeneration\Flatbuffers\BuilderHelpers.h" />
     <ClInclude Include="Includes\CodeGeneration\Flatbuffers\Constants.h" />
     <ClInclude Include="Includes\Utils\Helpers.h" />
@@ -210,8 +213,8 @@
     <Text Include="Includes\Edl\LexicalAnalyzer.h">
       <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</DeploymentContent>
     </Text>
-    <ClInclude Include="Includes\CodeGeneration\CodeGeneration.h" />
-    <ClInclude Include="Includes\CodeGeneration\Constants.h" />
+    <ClInclude Include="Includes\CodeGeneration\Cpp\CodeGeneration.h" />
+    <ClInclude Include="Includes\CodeGeneration\Cpp\Constants.h" />
     <ClInclude Include="Includes\VbsEnclaveABI\Shared\ConversionHelpers.h" />
     <ClInclude Include="Includes\VbsEnclaveABI\Shared\VbsEnclaveAbiBase.h" />
     <ClInclude Include="Includes\Edl\Parser.h" />
@@ -230,11 +233,11 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|ARM64'">Create</PrecompiledHeader>
     </ClCompile>
-    <ClInclude Include="Includes\CodeGeneration\CodeGenerationHelpers.h">
+    <ClInclude Include="Includes\CodeGeneration\Cpp\CodeGenerationHelpers.h">
       <FileType>CppCode</FileType>
     </ClInclude>
-    <ClCompile Include="ToolingExecutable\CodeGeneration\CppCodeBuilder.cpp" />
-    <ClCompile Include="ToolingExecutable\CodeGeneration\CppCodeGenerator.cpp" />
+    <ClCompile Include="ToolingExecutable\CodeGeneration\Cpp\CppCodeBuilder.cpp" />
+    <ClCompile Include="ToolingExecutable\CodeGeneration\Cpp\CppCodeGenerator.cpp" />
     <ClCompile Include="ToolingExecutable\CodeGeneration\Flatbuffers\BuilderHelpers.cpp" />
     <ClCompile Include="ToolingExecutable\Edl\LexicalAnalyzer.cpp" />
     <ClCompile Include="ToolingExecutable\Edl\Parser.cpp" />
