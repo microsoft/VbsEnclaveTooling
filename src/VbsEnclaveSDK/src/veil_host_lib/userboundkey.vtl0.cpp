@@ -357,7 +357,7 @@ std::vector<uint8_t> veil_abi::Untrusted::Implementation::userboundkey_get_autho
             encrypted_kcm_request_for_get_authorization_context
         );
 
-        auto authorizationContext = veil::vtl0::internal::utils::GetAuthorizationContext(credential);
+        auto authorizationContext = veil::vtl0::internal::utils::GetAuthorizationContext(credential, encryptedBuffer);
         auto result = ConvertBufferToVector(authorizationContext);
 
         std::wcout << L"DEBUG: userboundkey_get_authorization_context_from_credential completed successfully" << std::endl;
