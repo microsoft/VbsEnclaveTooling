@@ -29,6 +29,7 @@
 #include <wil/token_helpers.h>
 #include <wil/resource.h>
 #include <sddl.h>
+#include "utils.vtl0.h"
 
 using namespace winrt::Windows::Security::Credentials;
 
@@ -329,13 +330,6 @@ veil_abi::Types::credentialAndSessionInfo veil_abi::Untrusted::Implementation::u
     return result;
 }
 
-template <typename T>
-concept CanRetrieveAuthorizationContextFromBuffer =
-    requires(T type, winrt::Windows::Storage::Streams::IBuffer buffer)
-{
-    type.RetrieveAuthorizationContext(buffer);
-};
-
 // VTL0 function to extract authorization context from credential
 std::vector<uint8_t> veil_abi::Untrusted::Implementation::userboundkey_get_authorization_context_from_credential(
     uintptr_t credential_ptr,
@@ -343,7 +337,6 @@ std::vector<uint8_t> veil_abi::Untrusted::Implementation::userboundkey_get_autho
     const std::wstring& message,
     uintptr_t window_id)
 {
-    using namespace winrt::Windows::Storage::Streams;
     using namespace winrt::Windows::Security::Cryptography;
 
     std::wcout << L"DEBUG: userboundkey_get_authorization_context_from_credential called with credential: 0x" 
@@ -364,19 +357,7 @@ std::vector<uint8_t> veil_abi::Untrusted::Implementation::userboundkey_get_autho
             encrypted_kcm_request_for_get_authorization_context
         );
 
-        auto authorizationContext = [&] () -> IBuffer
-        {
-            if constexpr (CanRetrieveAuthorizationContextFromBuffer<KeyCredential>)
-            {
-                return credential.RetrieveAuthorizationContext(encryptedBuffer);
-            }
-
-            // If we get here then that means the SDK does not have a KeyCredential object with a
-            // RetrieveAuthorizationContext function that takes an IBuffer.
-            throw wil::ResultException(E_NOTIMPL);
-
-        }();
-
+        auto authorizationContext = veil::vtl0::internal::utils::GetAuthorizationContext(credential);
         auto result = ConvertBufferToVector(authorizationContext);
 
         std::wcout << L"DEBUG: userboundkey_get_authorization_context_from_credential completed successfully" << std::endl;
