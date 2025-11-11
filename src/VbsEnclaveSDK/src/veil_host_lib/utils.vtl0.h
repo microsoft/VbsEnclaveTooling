@@ -18,7 +18,7 @@ namespace veil::vtl0::internal::utils
     using namespace winrt::Windows::Storage::Streams;
     using namespace winrt::Windows::Security::Credentials;
 
-    IBuffer GetAuthorizationContext(KeyCredential& manager)
+    inline IBuffer GetAuthorizationContext(KeyCredential& credential)
     {
         #ifdef _VEINTEROP_KCM_
         {
