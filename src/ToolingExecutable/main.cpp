@@ -47,7 +47,7 @@ int main(int argc, char* argv[])
             argument_parser.Vtl0ClassName(),
             argument_parser.FlatbufferCompiler());
 
-        if (metadata.language_kind != SupportedLanguageKind::Cpp)
+        if (metadata.language_kind == SupportedLanguageKind::Cpp)
         {
             CppCodeGenerator(metadata).Generate();
         }

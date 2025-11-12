@@ -84,36 +84,6 @@ namespace CodeGeneration::Rust
         return definition;
     }
 
-    static std::string GetEnumValueExpression(const EnumType& enum_value)
-    {
-        if (enum_value.m_value)
-        {
-            // Value was explicitly assigned
-            return enum_value.m_value.value();
-        }
-
-        if (enum_value.m_is_hex)
-        {
-            return Uint64ToHex(enum_value.m_declared_position);
-        }
-
-        return Uint64ToDecimal(enum_value.m_declared_position);
-    }
-
-    std::string GenerateConstantsFromAnonEnum(const DeveloperType& developer_types)
-    {
-        std::ostringstream pub_constants{};
-        for (auto& enum_value : developer_types.m_items.values())
-        {
-            pub_constants << std::format(
-                "pub const {}: u32 = {};\n",
-                enum_value.m_name,
-                GetEnumValueExpression(enum_value)
-            );
-        }
-        return pub_constants.str();
-    }
-
     std::string CodeBuilder::BuildEnumDefinition(
         std::string_view developer_namespace_name,
         const DeveloperType& developer_types)
@@ -192,7 +162,7 @@ namespace CodeGeneration::Rust
             struct_footer.str());
     }
 
-    std::string GenerateFlatbuffersPackModuleFile(
+    std::string CodeBuilder::GenerateFlatbuffersPackModuleFile(
         std::string_view developer_namespace_name,
         std::span<const DeveloperType> abi_function_developer_types)
     {

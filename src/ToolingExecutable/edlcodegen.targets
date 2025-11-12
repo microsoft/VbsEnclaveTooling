@@ -31,7 +31,21 @@
             </CppCodeGenForHostAppCommand>
         </PropertyGroup>
 
+        <!-- Generate the codegen files for Rust -->
+        <PropertyGroup>
+            <RustCodeGenForEnclaveCommand>
+                "$(VbsEnclaveExeFilePath)" --Language Rust --EdlPath "$(VbsEnclaveEdlPath)" --OutputDirectory "$(VbsEnclaveGeneratedFilesDir)\Rust" --VirtualTrustLayer "Enclave" --Vtl0ClassName "$(VbsEnclaveVtl0ClassName)" --Namespace "$(VbsEnclaveNamespace)" --FlatbuffersCompilerPath "$(FlatbuffersCompiler)"
+            </RustCodeGenForEnclaveCommand>
+
+            <RustCodeGenForHostAppCommand>
+                "$(VbsEnclaveExeFilePath)" --Language Rust --EdlPath "$(VbsEnclaveEdlPath)" --OutputDirectory "$(VbsEnclaveGeneratedFilesDir)\Rust" --VirtualTrustLayer "HostApp" --Vtl0ClassName "$(VbsEnclaveVtl0ClassName)" --Namespace "$(VbsEnclaveNamespace)" --FlatbuffersCompilerPath "$(FlatbuffersCompiler)"
+            </RustCodeGenForHostAppCommand>
+        </PropertyGroup>
+
         <Exec Command="$(CppCodeGenForEnclaveCommand)" />
         <Exec Command="$(CppCodeGenForHostAppCommand)" />
+        
+        <Exec Command="$(RustCodeGenForEnclaveCommand)" />
+        <Exec Command="$(RustCodeGenForHostAppCommand)" />
     </Target>
 </Project>

@@ -12,7 +12,7 @@ static inline constexpr std::string_view c_flatbuffer_compiler_name = "flatc.exe
 
 static inline constexpr std::string_view c_flatbuffer_compiler_default_path = "{}\\flatc.exe";
 
-static inline constexpr std::string_view c_cpp_gen_args = "--cpp --no-prefix --cpp-std c++17 --gen-object-api --force-empty --filename-suffix \"\"";
+static inline constexpr std::string_view c_cpp_gen_args = "--cpp --no-prefix --cpp-std c++17 --gen-object-api --gen-all --force-empty --filename-suffix \"\"";
 
 static inline constexpr std::string_view c_rust_gen_args = "--rust --gen-object-api --force-empty --no-prefix --rust-module-root-file --gen-all --filename-suffix \"\"";
 
@@ -23,7 +23,7 @@ static inline constexpr std::string_view c_table_definition = "\ntable {} {{\n{}
 
 static inline constexpr std::string_view c_flatbuffer_namespace = "\nnamespace {}.FlatbufferTypes;\n";
 
-static inline constexpr std::string_view c_edl_types_include = "\ninclude \"edl_types_gen.fbs\";\n";
+static inline constexpr std::string_view c_edl_types_include = "\ninclude \"EdlTypes.fbs\";\n";
 
 static inline constexpr std::string_view c_flatbuffer_register_callback_tables =
 R"(

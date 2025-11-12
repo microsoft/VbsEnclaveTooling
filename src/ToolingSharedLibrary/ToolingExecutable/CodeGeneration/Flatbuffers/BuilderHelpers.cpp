@@ -118,7 +118,7 @@ namespace CodeGeneration::Flatbuffers
             case EdlTypeKind::String:
                 return "string"; // natively supported by flatbuffers
             case EdlTypeKind::WString:
-                return "edl_types_gen.WString";
+                return "edl_types.WString";
             case EdlTypeKind::Enum:
             case EdlTypeKind::Struct:
                 return type_info.m_name;
@@ -204,7 +204,7 @@ namespace CodeGeneration::Flatbuffers
                 table_body << std::format(
                     "    {} : {} {};\n",
                     declaration.m_name,
-                    declaration.m_edl_type_info.m_name,
+                    GetFlatBufferType(declaration.m_edl_type_info),
                     GetRequiredStringForField(declaration));
             }
             else if (declaration.IsEdlType(EdlTypeKind::Enum))
