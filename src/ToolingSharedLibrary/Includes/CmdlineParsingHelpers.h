@@ -25,7 +25,7 @@ namespace CmdlineParsingHelpers
             << "--Namespace <name_of_class> --FlatbuffersCompilerPath <absolute_path_to_file> --ImportDirectories <absolute_directory_paths> \n"
             << "\n"
             << "Mandatory arguments:\n"
-            << "  --Language [cpp]                                     The programming language that will be used in the generated code\n"
+            << "  --Language [cpp | rust]                              The programming language that will be used in the generated code\n"
             << "  --EdlPath <filePath.edl>                             Absolute path to the .edl file that we should use to generate code in the language outlined in '--language'\n"
             << "  --VirtualTrustLayer [HostApp | Enclave]              The virtual trust layer that the code should be generated for.\n"
             << "\n"
@@ -51,6 +51,7 @@ namespace CmdlineParsingHelpers
     {
         Unknown,
         Cpp,
+        Rust,
     };
 
     enum class VirtualTrustLayerKind : std::uint32_t
@@ -84,6 +85,11 @@ namespace CmdlineParsingHelpers
         if (language == "c++")
         {
             supported_language = SupportedLanguageKind::Cpp;
+            return ErrorId::Success;
+        }
+        else if (language == "rust")
+        {
+            supported_language = SupportedLanguageKind::Rust;
             return ErrorId::Success;
         }
 

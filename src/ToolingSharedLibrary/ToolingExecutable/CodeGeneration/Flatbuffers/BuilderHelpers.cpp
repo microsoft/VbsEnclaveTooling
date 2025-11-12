@@ -26,7 +26,7 @@ namespace CodeGeneration::Flatbuffers
     {
         std::ostringstream schema {};
         auto schema_namespace = std::format(c_flatbuffer_namespace, developer_namespace_name);
-        schema << c_autogen_header_string << schema_namespace;
+        schema << c_autogen_header_string << c_edl_types_include << schema_namespace;
 
         for (const auto& dev_type : developer_types.values())
         {
@@ -45,9 +45,6 @@ namespace CodeGeneration::Flatbuffers
             // type will only ever be structs
             schema << BuildTable(dev_type.m_fields, dev_type.m_name);
         }
-
-        // Add Wstring table by default
-        schema << c_flatbuffer_wstring_table;
 
         schema << c_flatbuffer_register_callback_tables;
 
@@ -121,7 +118,7 @@ namespace CodeGeneration::Flatbuffers
             case EdlTypeKind::String:
                 return "string"; // natively supported by flatbuffers
             case EdlTypeKind::WString:
-                return "WString"; // array of uint16s that we convert to std::wstring
+                return "edl_types_gen.WString";
             case EdlTypeKind::Enum:
             case EdlTypeKind::Struct:
                 return type_info.m_name;
@@ -196,7 +193,8 @@ namespace CodeGeneration::Flatbuffers
                     GetFlatBufferType(*inner_type),
                     optional_val);
             }
-            else if (declaration.IsEdlType(EdlTypeKind::Struct))
+            else if (declaration.IsEdlType(EdlTypeKind::Struct) ||
+                     declaration.IsEdlType(EdlTypeKind::WString))
             {
                 // We generate structs as tables using the Flatbuffer object api. Unfortunately for C++ it generates nested
                 // tables as unique_ptr<T> where T is the Flatbuffer representation of the struct. There is currently

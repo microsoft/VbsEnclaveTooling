@@ -14,6 +14,8 @@ static inline constexpr std::string_view c_flatbuffer_compiler_default_path = "{
 
 static inline constexpr std::string_view c_cpp_gen_args = "--cpp --no-prefix --cpp-std c++17 --gen-object-api --force-empty --filename-suffix \"\"";
 
+static inline constexpr std::string_view c_rust_gen_args = "--rust --gen-object-api --force-empty --no-prefix --rust-module-root-file --gen-all --filename-suffix \"\"";
+
 // Since we allow Hex inside the edl enum, we will default to uint64 to cover all scenarios.
 static inline constexpr std::string_view c_enum_definition = "\nenum {} : uint32 {{\n{}}}\n";
 
@@ -21,12 +23,7 @@ static inline constexpr std::string_view c_table_definition = "\ntable {} {{\n{}
 
 static inline constexpr std::string_view c_flatbuffer_namespace = "\nnamespace {}.FlatbufferTypes;\n";
 
-static inline constexpr std::string_view c_flatbuffer_wstring_table =
-R"(
-table WString {
-  wchars:[int16] (required);
-}
-)";
+static inline constexpr std::string_view c_edl_types_include = "\ninclude \"edl_types_gen.fbs\";\n";
 
 static inline constexpr std::string_view c_flatbuffer_register_callback_tables =
 R"(
