@@ -14,6 +14,6 @@ edlcodegen-tools = { workspace = true }
 [dependencies]
 edlcodegen-core = { workspace = true }
 edlcodegen-enclave = { workspace = true, features = ["mock_functions"] }
+edlcodegen-host = { workspace = true, features = ["mock_functions"] }
 flatbuffers = { workspace = true }
-windows-result = { workspace = true }
-windows-sys = { workspace = true, features = ["Win32_System", "Win32_System_Memory"] }
+windows = { workspace = true, features = ["Win32_System"] }

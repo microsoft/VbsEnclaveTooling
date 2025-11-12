@@ -1,11 +1,22 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
-use crate::edl_core_ffi::{E_FAIL, GetProcessHeap, HEAP_ZERO_MEMORY, HeapAlloc, HeapFree, S_OK};
+use crate::{
+    edl_core_ffi::{
+        E_FAIL, E_INVALIDARG, GetProcessHeap, HEAP_ZERO_MEMORY, HeapAlloc, HeapFree, S_OK,
+    },
+    edl_core_types::AbiError,
+};
 use core::ffi::c_void;
 
 pub fn abi_func_to_address(func_ptr: extern "system" fn(*mut c_void) -> *mut c_void) -> u64 {
     func_ptr as *const () as u64
+}
+
+pub fn proc_address_to_isize(
+    func_ptr: unsafe extern "system" fn(*mut c_void) -> *mut c_void,
+) -> isize {
+    func_ptr as *const () as isize
 }
 
 #[inline(always)]
@@ -47,4 +58,18 @@ pub extern "system" fn allocate_memory_ffi(context: *mut c_void) -> *mut c_void 
 pub extern "system" fn deallocate_memory_ffi(memory: *mut c_void) -> *mut c_void {
     let hr = deallocate_memory(memory);
     hr.0 as *mut c_void
+}
+
+/// Performs a raw memory copy from a Rust slice into a raw buffer.
+pub fn copy_slice_to_buffer<T>(buffer: *mut c_void, data: &[T]) -> Result<(), AbiError> {
+    if buffer.is_null() {
+        return Err(AbiError::Hresult(E_INVALIDARG));
+    }
+
+    // SAFETY: caller guarantees buffer is valid and non-overlapping
+    unsafe {
+        core::ptr::copy_nonoverlapping(data.as_ptr(), buffer as *mut T, data.len());
+    }
+
+    Ok(())
 }

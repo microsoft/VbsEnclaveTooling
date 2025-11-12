@@ -1,9 +1,11 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
+use core::ffi::c_void;
+
 /// Represents a buffer and its size used for enclave data exchange.
-#[repr(C, packed)]
-#[derive(Debug, Copy, Clone, Default)]
+#[repr(C)]
+#[derive(Default)]
 pub struct EnclaveParameters {
     pub buffer: *mut core::ffi::c_void,
 
@@ -11,8 +13,8 @@ pub struct EnclaveParameters {
 }
 
 /// Function call context exchanged across the enclave trust boundary.
-#[repr(C, packed)]
-#[derive(Debug, Copy, Clone, Default)]
+#[repr(C)]
+#[derive(Default)]
 pub struct EnclaveFunctionContext {
     pub forwarded_parameters: EnclaveParameters,
 
@@ -34,3 +36,5 @@ impl AbiError {
         }
     }
 }
+
+pub struct EnclaveHandle(pub *mut c_void);

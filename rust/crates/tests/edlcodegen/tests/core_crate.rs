@@ -10,7 +10,7 @@ use edlcodegen_core::{
     flatbuffer_support::FlatbufferPack, flatbuffer_support::pack_flatbuffer,
     helpers::hresult_to_pvoid, helpers::pvoid_to_hresult,
 };
-use windows_sys::Win32::Foundation::{E_ACCESSDENIED, E_INVALIDARG, S_OK};
+use windows::Win32::Foundation::{E_ACCESSDENIED, E_INVALIDARG, S_OK};
 
 #[cfg(test)]
 mod edl_core {
@@ -59,7 +59,7 @@ mod edl_core {
 
     #[test]
     fn round_trip_hresult_pointer_conversions() {
-        let test_values = [S_OK, E_INVALIDARG, E_ACCESSDENIED];
+        let test_values = [S_OK.0, E_INVALIDARG.0, E_ACCESSDENIED.0];
 
         for &hr in &test_values {
             let ptr: *mut c_void = hresult_to_pvoid(hr);

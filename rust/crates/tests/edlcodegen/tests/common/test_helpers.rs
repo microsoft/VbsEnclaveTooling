@@ -1,7 +1,17 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
-use crate::common::test_types::{dev_types, edl_types};
+// The code in this file isn't used in this module but is are used by other
+// modules under tests\edlcodegen.
+#![allow(dead_code)]
+
+use crate::common::test_types::{
+    dev_types::{self},
+    edl_types,
+};
+
+use edlcodegen_core::helpers::{abi_func_to_address, allocate_memory_ffi, deallocate_memory_ffi};
+use edlcodegen_enclave::enclave_helpers::register_vtl0_callouts;
 
 pub fn create_nested_data_struct() -> dev_types::NestedData {
     dev_types::NestedData {
@@ -63,4 +73,47 @@ pub fn create_all_types_struct() -> dev_types::AllTypes {
         str_arr: ["foo".to_string(), "bar".to_string()],
         nested_struct_arr: [nested_data.clone(), nested_data.clone()],
     }
+}
+
+pub fn create_test_func_args() -> dev_types::TestFuncArgs {
+    dev_types::TestFuncArgs {
+        all_types: create_all_types_struct(),
+        return_val: "".to_string(),
+    }
+}
+
+pub fn create_test_func2_args() -> dev_types::TestFuncArgs2 {
+    dev_types::TestFuncArgs2 {
+        return_val: "".to_string(),
+    }
+}
+
+/// Helper for tests that need to register a callback first.
+pub fn register_vtl0_callouts_helper(
+    additional_addrs_opt: Option<&[u64]>,
+    additonal_names_opt: Option<&[String]>,
+) {
+    let alloc_addr = abi_func_to_address(allocate_memory_ffi);
+    let dealloc_addr = abi_func_to_address(deallocate_memory_ffi);
+
+    let mut addrs = vec![alloc_addr, dealloc_addr];
+    let mut names = vec![
+        "VbsEnclaveABI::HostApp::AllocateVtl0MemoryCallback".to_string(),
+        "VbsEnclaveABI::HostApp::DeallocateVtl0MemoryCallback".to_string(),
+    ];
+
+    if let Some(additional_addrs) = additional_addrs_opt {
+        addrs.extend_from_slice(additional_addrs);
+    }
+
+    if let Some(additonal_names) = additonal_names_opt {
+        names.extend_from_slice(additonal_names);
+    }
+
+    _ = register_vtl0_callouts(&addrs, &names).map_err(|err| {
+        panic!(
+            "Failed to register VTL0 callouts due to error: {:X}",
+            err.to_hresult().0
+        );
+    });
 }
