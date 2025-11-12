@@ -3,32 +3,19 @@
 
 #pragma once 
 #include <pch.h>
+#include <CodeGeneration\Common\Helpers.h>
+#include <CodeGeneration\Cpp\Constants.h>
+#include <CodeGeneration\Flatbuffers\Constants.h>
 #include <Edl\Structures.h>
 #include <Edl\Utils.h>
-#include <CodeGeneration\Constants.h>
 #include <Exceptions.h>
-#include "Flatbuffers\Constants.h"
 
 using namespace EdlProcessor;
 using namespace ToolingExceptions;
 
-namespace CodeGeneration
+namespace CodeGeneration::Cpp
 {
-    static size_t c_type_definition_tab_count = 1;
-
-    static inline std::string uint64_to_hex(uint64_t value)
-    {
-        std::stringstream string_stream;
-        string_stream << "0x" << std::hex << value;
-        return string_stream.str();
-    }
-
-    static inline std::string uint64_to_decimal(uint64_t value)
-    {
-        std::stringstream string_stream;
-        string_stream << value; 
-        return string_stream.str();
-    }
+    using namespace CodeGeneration::Common;
 
     static inline std::string AddSalToParameter(
         const Declaration& declaration,
@@ -49,85 +36,10 @@ namespace CodeGeneration
                 return std::format("{} {}", c_out_annotation, partially_complete_param);
             }
         }
-        
+
         // Default to using only the in annotation if none provided
         return std::format("{} {}", c_in_annotation, partially_complete_param);
     }
-
-    void inline InvokeFlatbufferCompiler(const std::filesystem::path& compiler_path, std::string_view args)
-    {
-        PrintStatus(Status::Info, Flatbuffers::c_failed_to_compile_flatbuffer_msg.data());
-        std::string complete_argument = std::format("{} {}", compiler_path.generic_string(), args);
-        auto result = std::system(complete_argument.c_str());
-
-        if (result)
-        {
-            // The flatbuffer compiler prints out the actual error message to stdout.
-            throw CodeGenerationException(ErrorId::FlatbufferCompilerError, result);
-        }
-
-        PrintStatus(Status::Info, Flatbuffers::c_succeeded_compiling_flatbuffer_msg.data());
-    }
-
-    inline DeveloperType GetDeveloperTypeStructForABI(const Function& function)
-    {
-        std::string function_params_struct_type = std::format(c_function_args_struct, function.abi_m_name);
-        DeveloperType new_type {function_params_struct_type, EdlTypeKind::Struct };
-        
-        // Add all parameters to the struct as fields first.
-        for (Declaration parameter : function.m_parameters)
-        {
-            parameter.m_name = "m_" + parameter.m_name;
-            parameter.m_parent_kind = DeclarationParentKind::Struct;
-            new_type.m_fields.push_back(parameter);
-        }
-
-        // Add the return type as the last field in the struct if the function does not return void.
-        if (!function.m_return_info.IsEdlType(EdlTypeKind::Void))
-        {
-            auto return_copy = function.m_return_info;
-            return_copy.m_name = "m_" + return_copy.m_name;
-            return_copy.m_parent_kind = DeclarationParentKind::Struct;
-            new_type.m_fields.push_back(return_copy);
-        }
-
-        return new_type;
-    }
-
-    inline std::vector<DeveloperType> CreateDeveloperTypesForABIFunctions(
-        const OrderedMap<std::string, Function>& trusted_functions,
-        const OrderedMap<std::string, Function>& untrusted_functions)
-    {
-        std::vector<DeveloperType> dev_types {};
-
-        for (auto& function: trusted_functions.values())
-        {
-            DeveloperType dev_type = GetDeveloperTypeStructForABI(function);
-            dev_types.push_back(dev_type);
-        }
-
-        for (const auto& function : untrusted_functions.values())
-        {
-            DeveloperType dev_type = GetDeveloperTypeStructForABI(function);
-            dev_types.push_back(dev_type);
-        }
-
-        return dev_types;
-    }
-
-    // std::format in C++20 requires the "format_string" to be known at compile time. 
-    // this is used for instances where we only know the format string at runtime.
-    template<typename... Args>
-    inline std::string FormatString(std::string_view format_string, Args&&... args)
-    {
-        return std::vformat(format_string, std::make_format_args(args...));
-    }
-
-    enum class CodeGenStructKind : std::uint32_t
-    {
-        DeveloperStruct,
-        NonDeveloperAbiStruct,
-    };
 
     inline std::string EdlTypeToCppType(const EdlTypeInfo& info)
     {

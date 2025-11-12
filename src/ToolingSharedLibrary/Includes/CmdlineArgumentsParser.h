@@ -19,9 +19,9 @@ namespace CmdlineParsingHelpers
 
         std::filesystem::path OutDirectory() const { return m_out_directory; }
 
-        std::string_view Vtl0ClassName() const { return m_vtl0_class_name; }
+        std::string Vtl0ClassName() const { return m_vtl0_class_name; }
 
-        std::string_view GeneratedNamespace() const { return m_generated_namespace_name; }
+        std::string GeneratedNamespace() const { return m_generated_namespace_name; }
 
         ErrorHandlingKind ErrorHandling() const { return m_error_handling_kind; }
 
@@ -49,7 +49,7 @@ namespace CmdlineParsingHelpers
         std::string m_generated_namespace_name {};
         bool m_should_display_help = false;
         SupportedLanguageKind m_supported_language = SupportedLanguageKind::Unknown;
-        const uint32_t m_required_args = 4;
+        const uint32_t m_required_args = 3;
         std::vector<std::filesystem::path> m_import_directories;
     };
 }

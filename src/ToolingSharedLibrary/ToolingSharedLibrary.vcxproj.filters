@@ -39,13 +39,13 @@
     <ClInclude Include="Includes\Edl\Parser.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Includes\CodeGeneration\CodeGeneration.h">
+    <ClInclude Include="Includes\CodeGeneration\Cpp\CodeGeneration.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Includes\CodeGeneration\Constants.h">
+    <ClInclude Include="Includes\CodeGeneration\Cpp\Constants.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Includes\CodeGeneration\CodeGenerationHelpers.h">
+    <ClInclude Include="Includes\CodeGeneration\Cpp\CodeGenerationHelpers.h">
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="Includes\VbsEnclaveABI\Enclave\EnclaveHelpers.h">
@@ -81,6 +81,15 @@
     <ClInclude Include="Includes\VbsEnclaveABI\Shared\Version.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="Includes\CodeGeneration\Common\Helpers.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Includes\CodeGeneration\Common\Types.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Includes\CodeGeneration\Common\Constants.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp">
@@ -95,10 +104,10 @@
     <ClCompile Include="ToolingExecutable\Edl\Parser.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="ToolingExecutable\CodeGeneration\CppCodeGenerator.cpp">
+    <ClCompile Include="ToolingExecutable\CodeGeneration\Cpp\CppCodeGenerator.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="ToolingExecutable\CodeGeneration\CppCodeBuilder.cpp">
+    <ClCompile Include="ToolingExecutable\CodeGeneration\Cpp\CppCodeBuilder.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="ToolingExecutable\CodeGeneration\Flatbuffers\BuilderHelpers.cpp">

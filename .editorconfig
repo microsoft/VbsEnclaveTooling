@@ -17,7 +17,6 @@ indent_size = 2
 cpp_generate_documentation_comments = xml 
 
 # Visual C++ Formatting settings 
-cpp_indent_braces = false 
 cpp_indent_multi_line_relative_to = statement_begin 
 cpp_indent_within_parentheses = indent 
 cpp_indent_preserve_within_parentheses = true 
@@ -28,7 +27,6 @@ cpp_indent_lambda_braces_when_parameter = false
 cpp_indent_goto_labels = none 
 cpp_indent_preprocessor = none 
 cpp_indent_access_specifiers = true 
-cpp_indent_namespace_contents = false 
 cpp_indent_preserve_comments = true 
 cpp_new_line_before_open_brace_namespace = new_line  
 cpp_new_line_before_open_brace_type = ignore 
@@ -87,3 +85,6 @@ cpp_sort_includes_priority_case_sensitive = false
 cpp_sort_includes_priority_style = quoted 
 cpp_includes_style = default 
 cpp_includes_use_forward_slash = false 
+
+[*.{cpp,h,hpp}]
+format_on_paste = false
