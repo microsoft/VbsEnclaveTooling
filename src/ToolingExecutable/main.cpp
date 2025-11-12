@@ -7,11 +7,13 @@
 #include <Edl\Parser.h>
 #include <CodeGeneration\Cpp\CodeGeneration.h>
 #include <CodeGeneration\Common\Types.h>
+#include <CodeGeneration\Rust\CodeGeneration.h>
 #include <wil\result_macros.h>
 
 using namespace EdlProcessor;
 using namespace CmdlineParsingHelpers;
 using namespace CodeGeneration::Cpp;
+using namespace CodeGeneration::Rust;
 
 int main(int argc, char* argv[])
 {
@@ -43,9 +45,17 @@ int main(int argc, char* argv[])
             argument_parser.VirtualTrustLayer(),
             argument_parser.GeneratedNamespace(),
             argument_parser.Vtl0ClassName(),
-            argument_parser.FlatbufferCompiler());
+            argument_parser.FlatbufferCompiler(),
+            argument_parser.SupportedLanguage());
 
-        CppCodeGenerator(metadata).Generate();
+        if (metadata.language_kind == SupportedLanguageKind::Cpp)
+        {
+            CppCodeGenerator(metadata).Generate();
+        }
+        else if (metadata.language_kind == SupportedLanguageKind::Rust)
+        {
+            RustCodeGenerator(metadata).Generate();
+        }
         
     }
     catch (const std::exception& exception)

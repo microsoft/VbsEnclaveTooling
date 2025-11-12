@@ -22,10 +22,10 @@ namespace CmdlineParsingHelpers
             << "\n"
             << "Usage: edlcodegen.exe --Language <cpp> --EdlPath <filePath.edl> --ErrorHandling [ErrorCode | Exception]\n"
             << "--OutputDirectory <DirectoryPath> --VirtualTrustLayer [HostApp | Enclave] --Vtl0ClassName <name_of_class> \n"
-            << "--Namespace <name_of_class> --FlatbuffersCompilerPath <absolute_path_to_file> --ImportDirectories <absolute_directory_paths> \n"
+            << "--Namespace <namespace_name> --FlatbuffersCompilerPath <absolute_path_to_file> --ImportDirectories <absolute_directory_paths> \n"
             << "\n"
             << "Mandatory arguments:\n"
-            << "  --Language [cpp]                                     The programming language that will be used in the generated code\n"
+            << "  --Language [cpp | rust]                              The programming language that will be used in the generated code\n"
             << "  --EdlPath <filePath.edl>                             Absolute path to the .edl file that we should use to generate code in the language outlined in '--language'\n"
             << "  --VirtualTrustLayer [HostApp | Enclave]              The virtual trust layer that the code should be generated for.\n"
             << "\n"
@@ -35,7 +35,7 @@ namespace CmdlineParsingHelpers
             << "  --ImportDirectories                                  A semicolon-separated list of fully qualified directory paths containing .edl files that may be imported by the .edl file specified with the --EdlPath argument. \n"
             << "  --OutputDirectory <DirectoryPath>                    Absolute path to directory where all generated files should be placed. (By default this is the current directory)\n"
             << "  --Vtl0ClassName <name_of_class>                      name of the vtl0 class that will be generated for use by the hostapp. (By default this is the name of the .edl file with the word 'Wrapper' appended to it).\n"
-            << "  --Namespace <name_of_class>                          name of the namespace that all generated code will be encapsulated in. (By default this is the name of the .edl file).\n"
+            << "  --Namespace <namespace_name>                         Name of the namespace that all generated code will be encapsulated in.\n"
             << "  --FlatbuffersCompilerPath <absolute_path_to_file>    Absolute path to the flatbuffer compiler for the language provided in '--Language'. (By default this is the current directory.). The executable must be called flatc.exe and must be an official version of the flatbuffer compiler. \n"
             << std::endl;
     }
@@ -51,6 +51,7 @@ namespace CmdlineParsingHelpers
     {
         Unknown,
         Cpp,
+        Rust,
     };
 
     enum class VirtualTrustLayerKind : std::uint32_t
@@ -84,6 +85,11 @@ namespace CmdlineParsingHelpers
         if (language == "c++")
         {
             supported_language = SupportedLanguageKind::Cpp;
+            return ErrorId::Success;
+        }
+        else if (language == "rust")
+        {
+            supported_language = SupportedLanguageKind::Rust;
             return ErrorId::Success;
         }
 
@@ -286,4 +292,30 @@ namespace CmdlineParsingHelpers
 
         return ErrorId::Success;
     }
+
+    inline bool IsLowerSnakeCase(const std::string& str)
+    {
+        if (str.empty())
+        {
+            return false;
+        }
+
+        for (unsigned char c : str)
+        {
+            if (c >= 'a' && c <= 'z')
+                continue;
+
+            if (c >= '0' && c <= '9')
+                continue;
+
+            if (c == '_')
+                continue;
+
+            // anything else is invalid
+            return false;
+        }
+
+        return true;
+    }
+
 }

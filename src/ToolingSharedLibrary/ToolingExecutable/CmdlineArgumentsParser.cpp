@@ -95,6 +95,13 @@ bool CmdlineArgumentsParser::ParseArguments(int argc, char* argv[])
         }
     }
 
+    if (m_supported_language == SupportedLanguageKind::Rust &&
+        !IsLowerSnakeCase(m_generated_namespace_name))
+    {
+        PrintError(ErrorId::RustNamespaceMustBeSnakeCase);
+        return false;
+    }
+
     if (args_found < m_required_args)
     {
         PrintError(
