@@ -78,4 +78,13 @@ table AllTypes {
   nested_struct_arr: [NestedData] (required);
 }
 
+table TestFuncArgs {
+  all_types: AllTypes (required);
+  return_val: string (required);
+}
+
+table TestFuncArgs2 {
+  return_val: string (required);
+}
+
 root_type AllTypes;

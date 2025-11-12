@@ -1,0 +1,18 @@
+[package]
+name = "edlcodegen-host"
+version = "0.1.0"
+edition.workspace = true
+
+[dependencies]
+edlcodegen-core = { workspace = true }
+
+[dependencies.windows]
+workspace = true
+features = [
+    "Win32_System",
+    "Win32_System_Memory",
+    "Win32_System_LibraryLoader"
+]
+
+[features]
+mock_functions = []

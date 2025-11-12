@@ -6,6 +6,7 @@ members = [
     "crates/libs/edlcodegen-tools",
     "crates/libs/edlcodegen-enclave",
     "crates/tests/edlcodegen",
+    "crates/libs/edlcodegen-host",
 ]
 
 [workspace.package]
@@ -14,10 +15,12 @@ edition = "2024"
 [workspace.dependencies]
 flatbuffers = {version = "25.9.23", default-features = false }
 edlcodegen-core = { version = "0.1.0", path = "crates/libs/edlcodegen-core", default-features = false }
+edlcodegen-host = { version = "0.1.0", path = "crates/libs/edlcodegen-host", default-features = false }
 edlcodegen-enclave = { version = "0.1.0", path = "crates/libs/edlcodegen-enclave", default-features = false }
 edlcodegen-macros = { version = "0.1.0", path = "crates/libs/edlcodegen-macros" }
 edlcodegen-tools = { version = "0.1.0", path = "crates/libs/edlcodegen-tools" }
 spin = "0.10.0"
+windows = "0.62.2"
 windows-link = "0.2.1"
 windows-result = {version = "0.4.1", default-features = false }
 windows-sys = "0.61.2"

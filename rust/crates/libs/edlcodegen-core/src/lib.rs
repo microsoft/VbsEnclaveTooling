@@ -9,4 +9,5 @@ pub use edlcodegen_macros::EdlDerive;
 pub mod edl_core_ffi;
 pub mod edl_core_types;
 pub mod flatbuffer_support;
+pub mod heap_pointer;
 pub mod helpers;
