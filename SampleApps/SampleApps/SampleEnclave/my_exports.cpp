@@ -13,6 +13,12 @@
 
 #include <VbsEnclave\Enclave\Implementation\Trusted.h>
 
+
+extern "C" __declspec(dllexport) void* TestFunc(void* function_context)
+{
+    return NULL;
+}
+
 namespace RunTaskpoolExamples
 {
     void Test_Dont_WaitForAllTasksToFinish(uint32_t threadCount)

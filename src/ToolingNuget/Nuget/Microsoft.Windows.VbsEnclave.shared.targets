@@ -7,9 +7,9 @@
 
     <ItemDefinitionGroup>
         
-        <Link Condition="'$(VbsEnclaveVirtualTrustLayer)' == 'Enclave'">
+        <!--<Link Condition="'$(VbsEnclaveVirtualTrustLayer)' == 'Enclave'">
             <AdditionalDependencies Condition="'$(VbsEnclaveConsumeCppSupportLib)' == 'true'">$(VbsEnclaveAbiCppSupportLib);%(AdditionalDependencies)</AdditionalDependencies>
-        </Link>
+        </Link>-->
 
     </ItemDefinitionGroup>
     
