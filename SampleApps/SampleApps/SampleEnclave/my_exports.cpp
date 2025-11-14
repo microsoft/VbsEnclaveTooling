@@ -696,7 +696,7 @@ HRESULT VbsEnclave::Trusted::Implementation::RunEncryptionKeyExample_CreateEncry
         logFilePath);
     debug_print("");
     
-    // Seal it so only our enclave may open it
+    // Seal the key using enclave sealing policy
     debug_print(L"4. Sealing the serialized key material for our enclave only");
     veil::vtl1::logger::add_log_from_enclave(
         L"[Enclave] Sealing the serialized key material for our enclave only",
@@ -704,7 +704,7 @@ HRESULT VbsEnclave::Trusted::Implementation::RunEncryptionKeyExample_CreateEncry
         activityLevel,
         logFilePath);
 
-    // Create a user-bound key with enclave sealing
+    // Seal the key using enclave sealing policy
     auto sealedKeyMaterial = veil::vtl1::crypto::seal_data(encryptionKeyBytes, ENCLAVE_IDENTITY_POLICY_SEAL_SAME_IMAGE, g_runtimePolicy);
     debug_print(L" ...CHECKPOINT: sealed key material byte count: %d", sealedKeyMaterial.size());
     logSizeStr = std::to_wstring(sealedKeyMaterial.size());
@@ -740,7 +740,7 @@ HRESULT RunEncryptionKeyExample_LoadEncryptionKeyImpl(
     _Inout_opt_  std::vector<std::uint8_t>* threadpool_encryptionTag = nullptr,
     _Inout_opt_  std::wstring* threadpool_decryptedInputBytes = nullptr)
 {
-   using namespace veil::vtl1::vtl0_functions;
+    using namespace veil::vtl1::vtl0_functions;
 
     auto activityLevel = (veil::any::logger::eventLevel)activity_level;
 
@@ -762,19 +762,14 @@ HRESULT RunEncryptionKeyExample_LoadEncryptionKeyImpl(
     debug_print(L" ...CHECKPOINT: unsealed byte count: = %d", unsealedBytes.size());
     debug_print("");
 
-   // Get the encryption key
+    // Create the symmetric key from unsealed bytes
     auto encryptionKey = veil::vtl1::crypto::create_symmetric_key(unsealedBytes);
 
    if (isToBeEncrypted)
    {
-       //
-       // Now let's encrypt the input data with our encryption key
-       //
-
-       // Encrypting the user input data
+       // Encrypt the user input data
        auto const SOME_PLAIN_TEXT = dataToEncrypt.c_str();
 
-       // Let's encrypt the input text
        debug_print("%ws", logPrefix.c_str());
        debug_print(L"2. Encrypting input text.");
        auto [encryptedText, encryptionTag] = veil::vtl1::crypto::encrypt(encryptionKey.get(), veil::vtl1::as_data_span(SOME_PLAIN_TEXT), veil::vtl1::crypto::zero_nonce);
@@ -797,7 +792,7 @@ HRESULT RunEncryptionKeyExample_LoadEncryptionKeyImpl(
    }
    else
    {
-       // Let's decrypt the stored encrypted input
+       // Decrypt the stored encrypted input
        debug_print("%ws", logPrefix.c_str());
        debug_print(L"3. Decrypting text...");
        auto decryptedText = veil::vtl1::crypto::decrypt(encryptionKey.get(), encryptedInputBytes, veil::vtl1::crypto::zero_nonce, tag);

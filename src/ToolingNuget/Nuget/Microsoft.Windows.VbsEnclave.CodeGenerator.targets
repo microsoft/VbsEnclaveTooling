@@ -73,6 +73,7 @@
             $(VC_LibraryPath_Enclave_Root)\..\$(Platform)\enclave\libcmt.lib;
             $(VC_LibraryPath_Enclave_Root)\..\$(Platform)\enclave\libvcruntime.lib;
             $(NugetSdkRoot)\um\$(Platform)\vertdll.lib;
+            $(NugetSdkRoot)\um\$(Platform)\veinterop.lib;
             $(NugetSdkRoot)\um\$(Platform)\bcrypt.lib;
             $(NugetSdkRoot)\ucrt_enclave\$(Platform)\ucrt.lib
         </VBS_Enclave_Dependencies>
@@ -87,6 +88,7 @@
         Condition="!Exists('$(NugetSdkRoot)')">
         <VBS_Enclave_Dependencies Condition="'$(VBS_Enclave_Dependencies)' == ''">
             vertdll.lib;
+            veinterop.lib
             bcrypt.lib;
             $(VC_LibraryPath_Enclave_Root)\enclave\libcmt.lib;
             $(VC_LibraryPath_Enclave_Root)\enclave\libvcruntime.lib;
