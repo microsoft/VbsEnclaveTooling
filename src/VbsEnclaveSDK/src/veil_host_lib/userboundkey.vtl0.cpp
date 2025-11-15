@@ -1,5 +1,6 @@
 #pragma once
 
+#include "pch.h"
 #include <functional>
 #include <future>
 #include <string>
@@ -25,10 +26,10 @@
 
 #include <VbsEnclave\HostApp\Implementation\Untrusted.h>
 #include <VbsEnclave\HostApp\Stubs\Trusted.h>
-#include <veinterop_kcm.h>
 #include <wil/token_helpers.h>
 #include <wil/resource.h>
 #include <sddl.h>
+#include "utils.vtl0.h"
 
 using namespace winrt::Windows::Security::Credentials;
 
@@ -336,6 +337,8 @@ std::vector<uint8_t> veil_abi::Untrusted::Implementation::userboundkey_get_autho
     const std::wstring& message,
     uintptr_t window_id)
 {
+    using namespace winrt::Windows::Security::Cryptography;
+
     std::wcout << L"DEBUG: userboundkey_get_authorization_context_from_credential called with credential: 0x" 
         << std::hex << credential_ptr << std::dec << std::endl;
 
@@ -350,9 +353,11 @@ std::vector<uint8_t> veil_abi::Untrusted::Implementation::userboundkey_get_autho
         std::wcout << L"DEBUG: Created non-owning KeyCredential wrapper" << std::endl;
 
         // Extract authorization context
-        auto authorizationContext = credential.RetrieveAuthorizationContext(
-        winrt::Windows::Security::Cryptography::CryptographicBuffer::CreateFromByteArray(encrypted_kcm_request_for_get_authorization_context));
+        auto encryptedBuffer = CryptographicBuffer::CreateFromByteArray(
+            encrypted_kcm_request_for_get_authorization_context
+        );
 
+        auto authorizationContext = veil::vtl0::internal::utils::GetAuthorizationContext(credential, encryptedBuffer);
         auto result = ConvertBufferToVector(authorizationContext);
 
         std::wcout << L"DEBUG: userboundkey_get_authorization_context_from_credential completed successfully" << std::endl;
