@@ -38,7 +38,7 @@ namespace CodeGeneration::Rust
         case EdlTypeKind::String:
             return "String";
         case EdlTypeKind::WString:
-            return "WString";
+            return "edl::WString";
         default:
             return info.m_name;
         }
@@ -130,7 +130,7 @@ namespace CodeGeneration::Rust
         for (auto& enum_value : developer_types.m_items.values())
         {
             pub_constants << std::format(
-                "pub const {}: u32 = {};\n",
+                "\npub const {}: u32 = {};\n",
                 enum_value.m_name,
                 GetEnumValueExpression(enum_value)
             );

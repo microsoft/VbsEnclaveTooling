@@ -118,7 +118,7 @@ namespace CodeGeneration::Flatbuffers
             case EdlTypeKind::String:
                 return "string"; // natively supported by flatbuffers
             case EdlTypeKind::WString:
-                return "edl_types.WString";
+                return "edl.WString";
             case EdlTypeKind::Enum:
             case EdlTypeKind::Struct:
                 return type_info.m_name;

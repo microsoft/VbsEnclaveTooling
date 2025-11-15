@@ -45,7 +45,8 @@ int main(int argc, char* argv[])
             argument_parser.VirtualTrustLayer(),
             argument_parser.GeneratedNamespace(),
             argument_parser.Vtl0ClassName(),
-            argument_parser.FlatbufferCompiler());
+            argument_parser.FlatbufferCompiler(),
+            argument_parser.SupportedLanguage());
 
         if (metadata.language_kind == SupportedLanguageKind::Cpp)
         {

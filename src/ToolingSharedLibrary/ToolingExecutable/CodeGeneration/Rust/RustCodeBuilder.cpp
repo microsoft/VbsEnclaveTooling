@@ -50,6 +50,7 @@ namespace CodeGeneration::Rust
         return std::format(
             c_dev_types_file,
             c_autogen_header_string,
+            developer_namespace_name,
             types_module.str());
     }
 
@@ -67,6 +68,7 @@ namespace CodeGeneration::Rust
         return std::format(
             c_abi_function_types_file,
             c_autogen_header_string,
+            developer_namespace_name,
             types_module.str());
     }
 
@@ -76,10 +78,8 @@ namespace CodeGeneration::Rust
         std::size_t num_of_tabs)
     {
         Definition definition{};
-        auto spaces = GenerateTabs(num_of_tabs);
-        definition.m_header << std::format("{}pub {} {} {}", spaces, type_name, identifier_name, LEFT_CURLY_BRACKET);
-        definition.m_body << std::format("\n{}", spaces);
-        definition.m_footer << std::format("{}{}\n", spaces, RIGHT_CURLY_BRACKET);
+        definition.m_header << std::format("pub {} {} {}\n", type_name, identifier_name, LEFT_CURLY_BRACKET);
+        definition.m_footer << std::format("{}\n", RIGHT_CURLY_BRACKET);
 
         return definition;
     }
@@ -88,34 +88,31 @@ namespace CodeGeneration::Rust
         std::string_view developer_namespace_name,
         const DeveloperType& developer_types)
     {
-        std::ostringstream enum_with_repr{};
+        std::ostringstream full_enum{};
 
-        auto [enum_header, enum_body, enum_footer] = BuildStartOfDefinition(
+        auto [enum_header, _, enum_footer] = BuildStartOfDefinition(
             "enum",
             developer_types.m_name,
             c_type_definition_tab_count
         );
 
-        enum_with_repr << "#[repr(C, u32)]\n";
-
         // Add top level enum attributes
-        enum_with_repr << std::format(c_type_attributes, "enum", developer_namespace_name, developer_types.m_name);
-
-        const auto body_tab_count = GenerateTabs(1);
-        enum_with_repr << enum_header.str();
-        enum_body << std::format("{}#[default]\n", body_tab_count);
+        full_enum << std::format(c_enum_attributes, developer_namespace_name, developer_types.m_name);
+        full_enum  << enum_header.str();
+        full_enum << std::format("{}#[default]\n", c_four_spaces);
 
         for (auto& enum_value : developer_types.m_items.values())
         {
-            enum_body << std::format(
+            full_enum << std::format(
                 "{}{} = {},\n",
-                body_tab_count,
+                c_four_spaces,
                 enum_value.m_name,
                 GetEnumValueExpression(enum_value)
             );
         }
 
-        return std::format("\n{}{}{}", enum_with_repr.str(), enum_body.str(), enum_footer.str());
+        full_enum << enum_footer.str();
+        return full_enum.str();
     }
 
     std::string CodeBuilder::BuildStructDefinition(
@@ -123,16 +120,16 @@ namespace CodeGeneration::Rust
         std::string_view developer_namespace_name,
         const std::vector<Declaration>& fields)
     {
-        auto [struct_header, struct_body, struct_footer] = BuildStartOfDefinition(
+        std::ostringstream full_struct {};
+        auto [struct_header, _, struct_footer] = BuildStartOfDefinition(
             EDL_STRUCT_KEYWORD,
             struct_name,
             c_type_definition_tab_count);
 
-        auto body_tab_count = GenerateTabs(1);
-
         // Add top level struct attributes
-        struct_header << std::format(c_type_attributes, "struct", developer_namespace_name, struct_name);
-
+        full_struct << std::format(c_struct_attributes, developer_namespace_name, struct_name);
+        full_struct << struct_header.str();
+        
         for (auto& field : fields)
         {
             if (field.IsEdlType(EdlTypeKind::Optional))
@@ -142,27 +139,25 @@ namespace CodeGeneration::Rust
                 {
                     // Add attribute for optional struct fields to direct edlcodegen-macro's
                     // flatbuffer conversion functions.
-                    struct_body << std::format("\n{}#[boxed_inner_target]\n", body_tab_count);
+                    full_struct << std::format("\n{}#[boxed_inner_target]\n", c_four_spaces);
                 }
             }
             else if (field.IsEdlType(EdlTypeKind::Struct) || field.IsEdlType(EdlTypeKind::WString))
             {
-                // Add attribute for plan struct fields to direct edlcodegen-macro's flatbuffer
+                // Add attribute for plain struct fields to direct edlcodegen-macro's flatbuffer
                 // conversion functions.
-                struct_body << std::format("\n{}#[boxed_target]\n", body_tab_count);
+                full_struct << std::format("\n{}#[boxed_target]\n", c_four_spaces);
             }
 
-            auto struct_field = std::format("{} {}", GetFullDeclarationType(field), field.m_name);
-            struct_body << std::format("{}{},\n",body_tab_count, struct_field);
+            auto struct_field = std::format("pub {} {}", GetFullDeclarationType(field), field.m_name);
+            full_struct << std::format("{}{},\n",c_four_spaces, struct_field);
         }
 
-        return std::format("\n{}{}{}",
-            struct_header.str(),
-            struct_body.str(),
-            struct_footer.str());
+        full_struct << struct_footer.str();
+        return full_struct.str();
     }
 
-    std::string CodeBuilder::GenerateFlatbuffersPackModuleFile(
+    std::string CodeBuilder::GenerateFlatbuffersWrapperModuleFile(
         std::string_view developer_namespace_name,
         std::span<const DeveloperType> abi_function_developer_types)
     {

@@ -1,0 +1,14 @@
+// Copyright (c) Microsoft Corporation.
+// Licensed under the MIT License.
+
+namespace edl;
+
+table WString {
+  wchars:[uint16] (required);
+}
+
+table AbiTable
+{
+}
+
+root_type AbiTable;

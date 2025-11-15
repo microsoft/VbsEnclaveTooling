@@ -25,7 +25,7 @@ namespace CodeGeneration::Rust
             std::string_view developer_namespace_name,
             std::span<const DeveloperType> abi_function_developer_types);
 
-        std::string GenerateFlatbuffersPackModuleFile(
+        std::string GenerateFlatbuffersWrapperModuleFile(
             std::string_view developer_namespace_name,
             std::span<const DeveloperType> abi_function_developer_types);
 
@@ -52,5 +52,18 @@ namespace CodeGeneration::Rust
         using CodeGeneratorBase::CodeGeneratorBase;
 
         void Generate() override;
+
+    private:
+        void GenerateAbiModules(
+            const std::filesystem::path& src_location,
+            const std::filesystem::path& abi_location);
+
+        void GenerateImplementationModules(
+            const std::filesystem::path& src_location,
+            const std::filesystem::path& implementation_location);
+
+        void GenerateStubModules(
+            const std::filesystem::path& src_location,
+            const std::filesystem::path& stubs_location);
     };
 }

@@ -1,0 +1,12 @@
+[package]
+name = "CodeGenTest_gen"
+version = "0.0.0"
+publish = false
+
+[lib]
+doc = false
+doctest = false
+
+[dependencies]
+edlcodegen-core = "0.1.0"
+edlcodegen-enclave = "0.1.0"
