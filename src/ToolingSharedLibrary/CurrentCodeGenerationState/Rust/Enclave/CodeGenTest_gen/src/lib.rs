@@ -5,5 +5,6 @@
 
 extern crate alloc;
 
-mod abi;
+pub mod abi;
+pub use abi::definitions::export_enclave_functions;
 pub mod implementation;

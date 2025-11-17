@@ -20,20 +20,20 @@ pub enum TestEnum {
 #[derive(Debug, Clone, PartialEq, Default, EdlDerive)]
 #[target_struct(CodeGenTest::TestStruct1T)]
 pub struct TestStruct1 {
-    pub i64 int64_val,
-    pub u64 uint64_val,
-    pub [i64;5] array1,
+    pub int64_val: i64,
+    pub uint64_val: u64,
+    pub array1: [i64;5],
 }
 
 #[derive(Debug, Clone, PartialEq, Default, EdlDerive)]
 #[target_struct(CodeGenTest::TestStruct2T)]
 pub struct TestStruct2 {
-    pub Option<i32> int32_opt,
+    pub int32_opt: Option<i32>,
 
     #[boxed_target]
-    pub TestStruct1 struct_no_opt,
+    pub struct_no_opt: TestStruct1,
 
     #[boxed_inner_target]
-    pub Option<TestStruct1> struct_opt,
+    pub struct_opt: Option<TestStruct1>,
 }
 

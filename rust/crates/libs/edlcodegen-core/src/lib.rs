@@ -2,7 +2,8 @@
 // Licensed under the MIT License.
 
 #![no_std]
-
+#![allow(unused_macros)]
+#![allow(dead_code)]
 extern crate alloc;
 
 pub use edlcodegen_macros::EdlDerive;
@@ -11,3 +12,4 @@ pub mod edl_core_types;
 pub mod flatbuffer_support;
 pub mod heap_pointer;
 pub mod helpers;
+pub use windows_result::HRESULT;

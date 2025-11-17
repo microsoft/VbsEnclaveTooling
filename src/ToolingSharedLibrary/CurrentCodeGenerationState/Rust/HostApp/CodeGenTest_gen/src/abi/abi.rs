@@ -2,4 +2,5 @@
 // Changes to this file may be lost if the file is regenerated.
 
 pub mod abi_types;
-pub mod flatbuffer_types;
+pub mod flatbuffers;
+pub mod definitions;

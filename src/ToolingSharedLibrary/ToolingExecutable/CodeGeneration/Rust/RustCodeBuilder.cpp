@@ -132,6 +132,18 @@ namespace CodeGeneration::Rust
         
         for (auto& field : fields)
         {
+            bool is_array = !field.m_array_dimensions.empty();
+            bool is_struct_or_wstring = 
+                field.IsEdlType(EdlTypeKind::Struct) || 
+                field.IsEdlType(EdlTypeKind::WString);
+            
+            if (!is_array && is_struct_or_wstring)
+            {
+                // Add attribute for plain struct fields to direct edlcodegen-macro's flatbuffer
+                // conversion functions.
+                full_struct << std::format("\n{}#[boxed_target]\n", c_four_spaces);
+            }
+
             if (field.IsEdlType(EdlTypeKind::Optional))
             {
                 auto inner_type = field.m_edl_type_info.inner_type;
@@ -142,14 +154,8 @@ namespace CodeGeneration::Rust
                     full_struct << std::format("\n{}#[boxed_inner_target]\n", c_four_spaces);
                 }
             }
-            else if (field.IsEdlType(EdlTypeKind::Struct) || field.IsEdlType(EdlTypeKind::WString))
-            {
-                // Add attribute for plain struct fields to direct edlcodegen-macro's flatbuffer
-                // conversion functions.
-                full_struct << std::format("\n{}#[boxed_target]\n", c_four_spaces);
-            }
 
-            auto struct_field = std::format("pub {} {}", GetFullDeclarationType(field), field.m_name);
+            auto struct_field = std::format("pub {}: {}", field.m_name, GetFullDeclarationType(field));
             full_struct << std::format("{}{},\n",c_four_spaces, struct_field);
         }
 
@@ -176,5 +182,107 @@ namespace CodeGeneration::Rust
             c_flatbuffers_module_content,
             c_autogen_header_string,
             statements.str());
+    }
+
+    std::string CodeBuilder::BuildImplTraitModule(
+        VirtualTrustLayerKind vtl_kind,
+        const OrderedMap<std::string, Function>& functions)
+    {
+        std::ostringstream trait_functions {};
+        for (auto& func : functions.values())
+        {
+            trait_functions << std::format(
+                c_trait_func,
+                func.m_name,
+                GenerateFunctionParametersList(func.m_parameters),
+                GetFullDeclarationType(func.m_return_info));
+
+            trait_functions << "\n";
+        }
+
+        if (vtl_kind == VirtualTrustLayerKind::Enclave)
+        {
+            return std::format(c_enclave_trusted_module, c_autogen_header_string, trait_functions.str());
+        }
+
+        return std::format(c_host_untrusted_module, c_autogen_header_string, trait_functions.str());
+    }
+
+    std::string CodeBuilder::BuildStubTraitModule(
+        VirtualTrustLayerKind vtl_kind,
+        const OrderedMap<std::string, Function>& functions)
+    {
+        std::string module_str_format = c_host_trusted_module.data();
+        std::string function_str_format = c_host_trusted_func.data();
+        uint32_t indentation = 2;
+        if (vtl_kind == VirtualTrustLayerKind::Enclave)
+        {
+            module_str_format = c_enclave_untrusted_module.data();
+            function_str_format = c_enclave_untrusted_func.data();
+            indentation = 0;
+        }
+           
+        std::ostringstream mod_content {};
+        for (auto& func : functions.values())
+        {
+
+            bool func_returns_void = func.m_return_info.IsEdlType(EdlTypeKind::Void);
+            auto abi_func_returned_value_name = func_returns_void ? "_" : "result";
+            auto return_statement_value = func_returns_void ? "()" : func.m_return_info.m_name;
+            std::string to_flatbuffer_statements = 
+                GetParamToFlatbufferStatements(indentation, func.m_parameters);
+
+            std::string to_inout_param_statements = 
+                GetReturnedDevTypeToParamStatements(indentation, func.m_parameters);
+
+            auto abi_func_struct_name = std::format(c_function_args_struct, func.m_name);
+            auto param_list = GenerateFunctionParametersList(func.m_parameters);
+            auto return_type = GetFullDeclarationType(func.m_return_info);
+
+            mod_content << FormatString(
+                function_str_format,
+                func.m_name,
+                param_list,
+                return_type,
+                abi_func_struct_name,
+                abi_func_struct_name,
+                to_flatbuffer_statements,
+                abi_func_returned_value_name,
+                func.m_name,
+                to_inout_param_statements,
+                return_statement_value);
+        }
+
+        return FormatString(module_str_format, c_autogen_header_string, mod_content.str());
+    }
+
+    std::string CodeBuilder::BuildAbiDefinitionModule(
+        VirtualTrustLayerKind vtl_kind,
+        const OrderedMap<std::string, Function>& functions)
+    {
+        std::string abi_def_funcs_format = c_host_abi_definition_func.data();
+        std::string abi_macro_format = c_define_host_funcs_macro.data();
+        if (vtl_kind == VirtualTrustLayerKind::Enclave)
+        {
+            abi_def_funcs_format = c_enclave_abi_definition_func.data();
+            abi_macro_format = c_export_enclave_funcs_macro.data();
+        }
+
+        std::ostringstream abi_functions {};
+        for (auto& func : functions.values())
+        {
+            auto abi_func_struct_name = std::format(c_function_args_struct, func.abi_m_name);
+            auto closure_statement = GetClosureFunctionStatement(func);
+            abi_functions << FormatString(
+                abi_def_funcs_format,
+                func.abi_m_name,
+                abi_func_struct_name,
+                abi_func_struct_name,
+                closure_statement);
+        }
+
+         auto module_content = FormatString(abi_macro_format, abi_functions.str());
+
+         return std::format(c_abi_definitions_module, c_autogen_header_string, module_content);
     }
 }

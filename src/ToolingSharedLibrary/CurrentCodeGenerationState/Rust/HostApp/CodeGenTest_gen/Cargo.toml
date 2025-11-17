@@ -1,5 +1,5 @@
 [package]
-name = "CodeGenTest_gen"
+name = "CodeGenTest_host_gen"
 version = "0.0.0"
 publish = false
 
@@ -10,3 +10,5 @@ doctest = false
 [dependencies]
 edlcodegen-core = "0.1.0"
 edlcodegen-host = "0.1.0"
+windows-strings = "0.5"
+

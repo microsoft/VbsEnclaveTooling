@@ -38,12 +38,22 @@ namespace CodeGeneration::Rust
             std::string_view developer_namespace_name,
             const DeveloperType& developer_types);
 
-        std::string BuildStructField(const Declaration& declaration);
-
         std::string BuildStructDefinition(
             std::string_view struct_name,
             std::string_view developer_namespace_name,
             const std::vector<Declaration>& fields);
+
+        std::string BuildImplTraitModule(
+            VirtualTrustLayerKind vtl_kind,
+            const OrderedMap<std::string, Function>& functions);
+
+        std::string BuildStubTraitModule(
+            VirtualTrustLayerKind vtl_kind,
+            const OrderedMap<std::string, Function>& functions);
+
+        std::string BuildAbiDefinitionModule(
+            VirtualTrustLayerKind vtl_kind,
+            const OrderedMap<std::string, Function>& functions);
     };
 
     struct RustCodeGenerator : public CodeGeneratorBase
@@ -54,16 +64,21 @@ namespace CodeGeneration::Rust
         void Generate() override;
 
     private:
-        void GenerateAbiModules(
-            const std::filesystem::path& src_location,
-            const std::filesystem::path& abi_location);
-
         void GenerateImplementationModules(
-            const std::filesystem::path& src_location,
             const std::filesystem::path& implementation_location);
 
         void GenerateStubModules(
+            const std::filesystem::path& stub_location);
+
+        void GenerateAbiModules(
             const std::filesystem::path& src_location,
-            const std::filesystem::path& stubs_location);
+            const std::filesystem::path& abi_location);
+        
+        void GenerateFlatbufferComponents(
+            const std::vector<DeveloperType>& abi_function_developer_types,
+            const std::filesystem::path& abi_location);
+
+        void GenerateAbiBoundaryModule(
+            const std::filesystem::path& abi_location);
     };
 }

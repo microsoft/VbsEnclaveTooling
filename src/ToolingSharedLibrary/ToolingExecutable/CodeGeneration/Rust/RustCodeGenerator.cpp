@@ -4,7 +4,6 @@
 #pragma once 
 #include <pch.h>
 #include <Edl\Structures.h>
-#include <Edl\Utils.h>
 #include <CodeGeneration\Rust\Constants.h>
 #include <CodeGeneration\Rust\CodeGeneration.h>
 #include <CodeGeneration\Flatbuffers\BuilderHelpers.h>
@@ -24,12 +23,14 @@ namespace CodeGeneration::Rust
         std::string lib_rs_content {};
         if (m_virtual_trust_layer_kind == VirtualTrustLayerKind::Enclave)
         {
-            cargo_toml_content = std::format(c_cargo_toml_content, m_generated_namespace_name, c_enclave_crate_dep);
+            std::string crate_name = std::format("{}_enclave_gen", m_generated_namespace_name);
+            cargo_toml_content = std::format(c_cargo_toml_content, crate_name, c_enclave_crate_dep);
             lib_rs_content = std::format(c_enclave_lib_rs, c_autogen_header_string);
         }
         else if (m_virtual_trust_layer_kind == VirtualTrustLayerKind::HostApp)
         {
-            cargo_toml_content = std::format(c_cargo_toml_content, m_generated_namespace_name, c_host_crate_dep);
+            std::string crate_name = std::format("{}_host_gen", m_generated_namespace_name);
+            cargo_toml_content = std::format(c_cargo_toml_content, crate_name, c_host_crate_dep);
             lib_rs_content = std::format(c_host_lib_rs, c_autogen_header_string);
         }
         else
@@ -43,60 +44,20 @@ namespace CodeGeneration::Rust
         SaveFileToOutputFolder("Cargo.toml", crate_location, cargo_toml_content);
 
         auto src_location = crate_location / "src";
-        auto abi_location = src_location / "abi";
         auto implementation_location = src_location / "implementation";
+        GenerateImplementationModules(implementation_location);
+
         auto stubs_location = src_location / "stubs";
+        GenerateStubModules(stubs_location);
+
+        auto abi_location = src_location / "abi";
+        GenerateAbiModules(src_location, abi_location);
 
         // Save the lib.rs file
         SaveFileToOutputFolder("lib.rs", src_location, lib_rs_content);
-
-        GenerateAbiModules(src_location, abi_location);
-        GenerateImplementationModules(src_location, implementation_location);
-        GenerateStubModules(src_location, stubs_location);
-    }
-
-    void RustCodeGenerator::GenerateAbiModules(
-        const std::filesystem::path& src_location,
-        const std::filesystem::path& abi_location)
-    {
-        auto abi_function_developer_types = CreateDeveloperTypesForABIFunctions(
-            m_edl.m_trusted_functions,
-            m_edl.m_untrusted_functions);
-
-        // Save function abi structs types module file
-        std::string abi_types_file = GenerateAbiTypesModuleFile(
-            m_generated_namespace_name,
-            abi_function_developer_types);
-
-        SaveFileToOutputFolder(c_abi_types_file_name, abi_location, abi_types_file);
-
-        // Save flatbuffer schema files
-        auto flatbuffer_schema = GenerateFlatbufferSchema(
-            m_generated_namespace_name,
-            m_edl.m_developer_types,
-            abi_function_developer_types);
-
-        auto generated_flatbuffer_location = abi_location / "flatbuffer_gen";
-        SaveFileToOutputFolder(c_flatbuffer_fbs_filename, generated_flatbuffer_location, flatbuffer_schema);
-        SaveFileToOutputFolder(c_abi_flatbuffers_file_name, generated_flatbuffer_location, c_abi_flatbuffers_content);
-
-        // Generate flatbuffer module using compiler
-        CompileFlatbufferFile(m_flatbuffer_compiler_path, c_rust_gen_args, generated_flatbuffer_location);
-
-        // Generate wrapper module for flatbuffer generated module.
-        auto pack_module = GenerateFlatbuffersWrapperModuleFile(
-            m_generated_namespace_name,
-            abi_function_developer_types);
-
-        SaveFileToOutputFolder(c_flatbuffers_module_name, abi_location, pack_module);
-
-        // Generate abi module file
-        std::string abi_rs_content = std::format(c_abi_rs, c_autogen_header_string);
-        SaveFileToOutputFolder("abi.rs", abi_location, abi_rs_content);
     }
 
     void RustCodeGenerator::GenerateImplementationModules(
-        const std::filesystem::path& src_location,
         const std::filesystem::path& implementation_location)
     {
         std::string developer_types_file = GenerateDeveloperTypesModuleFile(
@@ -110,10 +71,14 @@ namespace CodeGeneration::Rust
         if (m_virtual_trust_layer_kind == VirtualTrustLayerKind::Enclave)
         {
             impl_module_name = "trusted";
+            auto trusted_mod = BuildImplTraitModule(m_virtual_trust_layer_kind, m_edl.m_trusted_functions);
+            SaveFileToOutputFolder("trusted.rs", implementation_location, trusted_mod);
         }
         else
         {
             impl_module_name = "untrusted";
+            auto untrusted_mod = BuildImplTraitModule(m_virtual_trust_layer_kind, m_edl.m_untrusted_functions);
+            SaveFileToOutputFolder("untrusted.rs", implementation_location, untrusted_mod);
         }
 
         // Save implementation file
@@ -126,17 +91,20 @@ namespace CodeGeneration::Rust
     }
 
     void RustCodeGenerator::GenerateStubModules(
-        const std::filesystem::path& src_location,
         const std::filesystem::path& stubs_location)
     {
         std::string stub_module_name {};
         if (m_virtual_trust_layer_kind == VirtualTrustLayerKind::Enclave)
         {
             stub_module_name = "untrusted";
+            auto untrusted_mod = BuildStubTraitModule(m_virtual_trust_layer_kind, m_edl.m_untrusted_functions);
+            SaveFileToOutputFolder("untrusted.rs", stubs_location, untrusted_mod);
         }
         else
         {
             stub_module_name = "trusted";
+            auto trusted_mod = BuildStubTraitModule(m_virtual_trust_layer_kind, m_edl.m_trusted_functions);
+            SaveFileToOutputFolder("trusted.rs", stubs_location, trusted_mod);
         }
 
         std::string stubs_lib_rs_content = std::format(
@@ -145,5 +113,67 @@ namespace CodeGeneration::Rust
             stub_module_name);
 
         SaveFileToOutputFolder("stubs.rs", stubs_location, stubs_lib_rs_content);
+    }
+
+    void RustCodeGenerator::GenerateAbiModules(
+        const std::filesystem::path& src_location,
+        const std::filesystem::path& abi_location)
+    {
+        auto abi_developer_types = CreateDeveloperTypesForABIFunctions(
+            m_edl.m_trusted_functions,
+            m_edl.m_untrusted_functions);
+
+        GenerateFlatbufferComponents(abi_developer_types, abi_location);
+        GenerateAbiBoundaryModule(abi_location);
+
+        // Save function abi structs types module file
+        std::string abi_types_file = GenerateAbiTypesModuleFile(m_generated_namespace_name, abi_developer_types);
+
+        SaveFileToOutputFolder(c_abi_types_file_name, abi_location, abi_types_file);
+
+        // Generate abi module file
+        std::string abi_rs_content = std::format(c_abi_rs, c_autogen_header_string);
+        SaveFileToOutputFolder("abi.rs", abi_location, abi_rs_content);
+    }
+
+    void RustCodeGenerator::GenerateFlatbufferComponents(
+        const std::vector<DeveloperType>& abi_developer_types,
+        const std::filesystem::path& abi_location)
+    {
+        // Save flatbuffer schema files
+        auto flatbuffer_schema = GenerateFlatbufferSchema(
+            m_generated_namespace_name,
+            m_edl.m_developer_types,
+            abi_developer_types);
+
+        auto flatbuffer_location = abi_location / "flatbuffer_gen";
+        SaveFileToOutputFolder(c_flatbuffer_fbs_filename, flatbuffer_location, flatbuffer_schema);
+        SaveFileToOutputFolder(c_abi_flatbuffers_file_name, flatbuffer_location, c_abi_flatbuffers_content);
+
+        // Generate flatbuffer module using compiler
+        CompileFlatbufferFile(m_flatbuffer_compiler_path, c_rust_gen_args, flatbuffer_location);
+
+        // Generate wrapper module for flatbuffer generated module.
+        auto pack_module = GenerateFlatbuffersWrapperModuleFile(
+            m_generated_namespace_name,
+            abi_developer_types);
+
+        SaveFileToOutputFolder(c_flatbuffers_module_name, abi_location, pack_module);
+    }
+
+    void RustCodeGenerator::GenerateAbiBoundaryModule(
+        const std::filesystem::path& abi_location)
+    {
+        std::string module_content {};
+        if (m_virtual_trust_layer_kind == VirtualTrustLayerKind::Enclave)
+        {
+            module_content = BuildAbiDefinitionModule(m_virtual_trust_layer_kind, m_edl.m_trusted_functions);
+        }
+        else
+        {
+            module_content = BuildAbiDefinitionModule(m_virtual_trust_layer_kind, m_edl.m_untrusted_functions);
+        }
+
+        SaveFileToOutputFolder("definitions.rs", abi_location, module_content);
     }
 }

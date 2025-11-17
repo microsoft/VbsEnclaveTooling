@@ -11,42 +11,38 @@ use edlcodegen_core::EdlDerive;
 #[derive(Debug, Clone, PartialEq, Default, EdlDerive)]
 #[target_struct(CodeGenTest::FuncWithAllArgs_0_argsT)]
 pub struct FuncWithAllArgs_0_args {
-    pub bool m_arg1,
-    pub Option<u32> m_arg2,
-    pub Option<i32> m_arg3,
-    pub Option<u64> m_arg4,
+    pub m_arg1: bool,
+    pub m_arg2: Option<u32>,
+    pub m_arg3: Option<i32>,
+    pub m_arg4: Option<u64>,
 
     #[boxed_target]
-    pub TestStruct1 m_arg5,
+    pub m_arg5: TestStruct1,
 
     #[boxed_inner_target]
-    pub Option<TestStruct2> m_arg6,
-    pub Vec<TestStruct2> m_arg7,
-    pub Vec<i16> m_arg8,
-
-    #[boxed_target]
-    pub [edl::WString;2] m_arg9,
-    pub i32 m__return_value_,
+    pub m_arg6: Option<TestStruct2>,
+    pub m_arg7: Vec<TestStruct2>,
+    pub m_arg8: Vec<i16>,
+    pub m_arg9: [edl::WString;2],
+    pub m__return_value_: i32,
 }
 
 #[derive(Debug, Clone, PartialEq, Default, EdlDerive)]
 #[target_struct(CodeGenTest::FuncWithAllArgs_1_argsT)]
 pub struct FuncWithAllArgs_1_args {
-    pub bool m_arg1,
-    pub Option<u32> m_arg2,
-    pub Option<i32> m_arg3,
-    pub Option<u64> m_arg4,
+    pub m_arg1: bool,
+    pub m_arg2: Option<u32>,
+    pub m_arg3: Option<i32>,
+    pub m_arg4: Option<u64>,
 
     #[boxed_target]
-    pub TestStruct1 m_arg5,
+    pub m_arg5: TestStruct1,
 
     #[boxed_inner_target]
-    pub Option<TestStruct2> m_arg6,
-    pub Vec<TestStruct2> m_arg7,
-    pub Vec<i16> m_arg8,
-
-    #[boxed_target]
-    pub [edl::WString;2] m_arg9,
-    pub i32 m__return_value_,
+    pub m_arg6: Option<TestStruct2>,
+    pub m_arg7: Vec<TestStruct2>,
+    pub m_arg8: Vec<i16>,
+    pub m_arg9: [edl::WString;2],
+    pub m__return_value_: i32,
 }
 

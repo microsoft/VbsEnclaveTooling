@@ -64,6 +64,11 @@ namespace CodeGeneration::Rust
         EdlTypeKind type_kind = declaration.m_edl_type_info.m_type_kind;
         std::string type_name = EdlTypeToRustType(declaration.m_edl_type_info);
 
+        if (type_kind == EdlTypeKind::Void)
+        {
+            return "()";
+        }
+
         if (declaration.IsEdlType(EdlTypeKind::Vector))
         {
             return AddVectorEncapulation(declaration);
@@ -82,7 +87,7 @@ namespace CodeGeneration::Rust
         return type_name;
     }
 
-    inline std::string GetParameterDeclarator(const Declaration& declaration)
+    inline std::string GetParameterSyntax(const Declaration& declaration)
     {
         // Primitive in parameters should not have a borrow declarator.
         if (declaration.IsInParameterOnly() && declaration.IsPrimitiveType())
@@ -103,7 +108,7 @@ namespace CodeGeneration::Rust
     inline std::string GetParameterForFunction(const Declaration& declaration)
     {
         std::string full_type = GetFullDeclarationType(declaration);
-        std::string param_declarator = GetParameterDeclarator(declaration);
+        std::string param_declarator = GetParameterSyntax(declaration);
 
         return std::format("{}: {}{}", declaration.m_name, param_declarator, full_type);
     }
@@ -136,5 +141,93 @@ namespace CodeGeneration::Rust
             );
         }
         return pub_constants.str();
+    }
+
+    inline std::string GenerateFunctionParametersList(const std::vector<Declaration>& parameters)
+    {
+        std::ostringstream parameter_list {};
+        for (auto i = 0U; i < parameters.size(); i++)
+        {
+            parameter_list << GetParameterForFunction(parameters[i]);
+            if (i < parameters.size() - 1)
+            {
+                parameter_list << ", ";
+            }
+        }
+        return parameter_list.str();
+    }
+
+    inline std::string GetVecParamToFlatbufferStatement(
+        std::string first_part,
+        const Declaration& param)
+    {
+        auto inner_type = param.m_edl_type_info.inner_type;
+        if (param.IsEdlType(EdlTypeKind::String))
+        {
+            return first_part + ".iter().copied().map(String::from).collect();\n";
+        }
+
+        return first_part + ".iter().cloned().map(Into::into).collect();\n";
+    }
+
+    inline std::string GetParamToFlatbufferStatements(
+        uint32_t indentation,
+        const std::vector<Declaration>& parameters)
+    {
+        std::ostringstream conversion_statements {};
+        auto tabs = GenerateTabs(indentation);
+        for (auto& param : parameters)
+        {
+            auto first_part = std::format("{}fb_native.m_{} = {}", tabs, param.m_name, param.m_name);
+
+            if (param.IsEdlType(EdlTypeKind::Vector) || !param.m_array_dimensions.empty())
+            {
+                conversion_statements << GetVecParamToFlatbufferStatement(first_part, param);
+            }
+            else
+            {
+                conversion_statements << first_part + ".clone().into();\n";
+            }
+        }
+
+        return conversion_statements.str();
+    }
+
+    inline std::string GetReturnedDevTypeToParamStatements(
+        uint32_t indentation,
+        const std::vector<Declaration>& parameters)
+    {
+        std::ostringstream param_update_statements {};
+        auto tabs = GenerateTabs(indentation);
+        for (auto& param : parameters)
+        {
+            if (param.IsInOutOrOutParameter())
+            {
+                param_update_statements << std::format("{}{} = result.{}\n", tabs, param.m_name, param.m_name);
+            }
+        }
+
+        return param_update_statements.str();
+    }
+
+    inline std::string GetClosureFunctionStatement(const Function& function)
+    {
+        std::ostringstream abi_struct_fields {};
+        for (auto i = 0U; i < function.m_parameters.size(); i++)
+        {
+            Declaration param = function.m_parameters[i];
+            abi_struct_fields << std::format("{}{}", GetParameterSyntax(param), param.m_name);
+            if (i < function.m_parameters.size() - 1)
+            {
+                abi_struct_fields << ", ";
+            }
+        }
+
+        if (function.m_return_info.IsEdlType(EdlTypeKind::Void))
+        {
+            return std::format(c_closure_content_no_result, function.m_name, abi_struct_fields .str());
+        }
+
+        return std::format(c_closure_content_with_result, function.m_name, abi_struct_fields .str());
     }
 }
