@@ -543,8 +543,14 @@ int mainEncryptDecrypt(uint32_t activityLevel)
     return 0;
 }
 
+template <typename T>
+concept CanGetSecureId =
+    requires { { T::GetSecureId() }; };
+
 int mainEncryptDecryptUserBound(uint32_t activityLevel)
 {
+    using namespace winrt::Windows::Storage::Streams;
+
     int choice;
     std::wstring input;
     const fs::path encryptedKeyDirPath = fs::current_path();
@@ -579,7 +585,15 @@ int mainEncryptDecryptUserBound(uint32_t activityLevel)
     try
     {
         // Call the GetSecureId API directly on the static class
-        auto secureIdBuffer = KeyCredentialManager::GetSecureId();
+        auto secureIdBuffer = [&] () -> IBuffer
+        {
+            if constexpr (CanGetSecureId<KeyCredentialManager>)
+            {
+                return KeyCredentialManager::GetSecureId();
+            }
+
+            throw winrt::hresult_error(E_NOTIMPL, L"GetSecureId not yet available in the Windows SDK.");
+        }();
 
         if (secureIdBuffer && secureIdBuffer.Length() > 0)
         {

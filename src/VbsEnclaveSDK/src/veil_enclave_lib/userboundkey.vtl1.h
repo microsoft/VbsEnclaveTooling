@@ -1,11 +1,11 @@
 #pragma once
 
+#include "pch.h"
 #include <vector>
 #include <string>
 #include <cstdint>
 #include <wil/resource.h>
 #include "future.vtl1.h"
-#include <veinterop_kcm.h>
 #include <stdexcept>
 #include <VbsEnclave\Enclave\Implementation\Types.h>
 
