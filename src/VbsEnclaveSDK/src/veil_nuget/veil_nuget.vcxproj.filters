@@ -23,6 +23,6 @@
     <None Include="Nuget\Microsoft.Windows.VbsEnclave.SDK.targets" />
   </ItemGroup>
   <ItemGroup>
-    <Text Include="Nuget\Microsoft.Windows.VbsEnclave.SDK.props" />
+    <Natvis Include="$(MSBuildThisFileDirectory)..\..\natvis\wil.natvis" />
   </ItemGroup>
 </Project>

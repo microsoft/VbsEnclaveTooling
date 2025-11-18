@@ -294,7 +294,7 @@ int mainEncryptDecrpyt(uint32_t activityLevel)
 
     /******************************* Enclave setup *******************************/
     // Create app+user enclave identity
-    auto ownerId = veil::vtl0::appmodel::owner_id();
+    std::vector<uint8_t> ownerId = {};
 
     // Load enclave
     auto flags = ENCLAVE_VBS_FLAG_DEBUG;
@@ -365,7 +365,7 @@ int mainThreadPool(uint32_t /*activityLevel*/)
     std::wcout << L"Running sample: Taskpool..." << std::endl;
 
     // Create app+user enclave identity
-    auto ownerId = veil::vtl0::appmodel::owner_id();
+    std::vector<uint8_t> ownerId = {};
 
     // Load enclave
     auto flags = ENCLAVE_VBS_FLAG_DEBUG;
@@ -401,7 +401,7 @@ int mainEncryptDecrpytThreadpool(uint32_t activityLevel)
     std::wcout << L"Running sample: Encrypt decrypt in taskpool..." << std::endl;
 
     // Create app+user enclave identity
-    auto ownerId = veil::vtl0::appmodel::owner_id();
+    std::vector<uint8_t> ownerId = {};
 
     // Load enclave
     auto flags = ENCLAVE_VBS_FLAG_DEBUG;

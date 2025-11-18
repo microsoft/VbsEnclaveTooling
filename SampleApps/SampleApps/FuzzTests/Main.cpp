@@ -46,6 +46,7 @@ bool InitializeEnclaveForFuzzing() {
             
         TestFunc(NULL);
         auto enclave_module = GetModuleHandleW(L"sampleenclave.dll");
+        g_enclave = veil::vtl0::unique_enclave{enclave_module};
 
         // Register framework callbacks
         veil::vtl0::enclave_api::register_callbacks(reinterpret_cast<void*>(enclave_module));
