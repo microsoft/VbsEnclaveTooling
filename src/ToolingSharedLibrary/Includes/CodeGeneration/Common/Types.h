@@ -57,7 +57,7 @@ namespace CodeGeneration::Common
 
             if (m_generated_namespace_name.empty())
             {
-                m_generated_namespace_name = m_edl.m_name;
+                m_generated_namespace_name = "edl_generated";
             }
 
             if (m_generated_vtl0_class_name.empty())

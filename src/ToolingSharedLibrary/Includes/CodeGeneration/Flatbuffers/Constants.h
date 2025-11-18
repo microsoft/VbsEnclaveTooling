@@ -12,7 +12,9 @@ static inline constexpr std::string_view c_flatbuffer_compiler_name = "flatc.exe
 
 static inline constexpr std::string_view c_flatbuffer_compiler_default_path = "{}\\flatc.exe";
 
-static inline constexpr std::string_view c_cpp_gen_args = "--cpp --no-prefix --cpp-std c++17 --gen-object-api --force-empty --filename-suffix \"\"";
+static inline constexpr std::string_view c_cpp_gen_args = "--cpp --no-prefix --cpp-std c++17 --gen-object-api --force-empty --gen-all --filename-suffix \"\"";
+
+static inline constexpr std::string_view c_rust_gen_args = "--rust --gen-object-api --force-empty --no-prefix --rust-module-root-file --gen-all --filename-suffix \"\"";
 
 // Since we allow Hex inside the edl enum, we will default to uint64 to cover all scenarios.
 static inline constexpr std::string_view c_enum_definition = "\nenum {} : uint32 {{\n{}}}\n";
@@ -21,12 +23,7 @@ static inline constexpr std::string_view c_table_definition = "\ntable {} {{\n{}
 
 static inline constexpr std::string_view c_flatbuffer_namespace = "\nnamespace {}.FlatbufferTypes;\n";
 
-static inline constexpr std::string_view c_flatbuffer_wstring_table =
-R"(
-table WString {
-  wchars:[int16] (required);
-}
-)";
+static inline constexpr std::string_view c_edl_types_include = "\ninclude \"EdlTypes.fbs\";\n";
 
 static inline constexpr std::string_view c_flatbuffer_register_callback_tables =
 R"(
@@ -50,13 +47,7 @@ static inline std::string c_failed_to_compile_flatbuffer_msg = std::format("Comp
 
 static inline std::string c_succeeded_compiling_flatbuffer_msg = std::format("Flatbuffer schema {} compiled successfully", c_flatbuffer_fbs_filename);
 
-static inline constexpr std::string_view c_flatbuffer_root_type = "\nroot_type __root_table;\n";
-
-static inline constexpr std::string_view c_flatbuffer_root_table = R"(
-table __root_table
-{
-}
-)";
+    static inline constexpr std::string_view c_flatbuffer_root_type = "\nroot_type {};\n";
 
     static inline constexpr std::string_view c_flatbuffer_native_table_type_suffix = "{}T";
 }

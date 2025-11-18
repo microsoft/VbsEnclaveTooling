@@ -33,6 +33,7 @@ namespace ErrorHelpers
         InvalidArgument,
         IncorrectNonHelpArgsProvided,
         MissingArgument,
+        RustNamespaceMustBeSnakeCase,
         EdlCommentEndingNotFound,
         EdlStringEndingNotFound,
         EdlUnexpectedToken,
@@ -122,6 +123,7 @@ namespace ErrorHelpers
         { ErrorId::ImportDirectoriesNoMoreArgs,"Unable to find import directiories. No more commandline arguments available to find edl import directories." },
         { ErrorId::ImportDirectoryDoesNotExist,"The import directory '{}' does not exist or is not a directory." },
         { ErrorId::ImportedEdlFileDoesNotExist, "import file '{}' was not found for '{}'. Check that the .edl file exists in your import directories." },
+        { ErrorId::RustNamespaceMustBeSnakeCase, "Rust code generation only supports snake_case namespaces." },
         { ErrorId::ImportCycleFound, "Import cycle found when attempting to import '{}' into '{}'." },
 
         // Edl file lexical analysis errors

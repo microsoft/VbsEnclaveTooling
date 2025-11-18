@@ -1,0 +1,16 @@
+[package]
+name = "code_gen_test_host_gen"
+version = "0.0.0"
+edition = "2024"
+publish = false
+
+[lib]
+doc = false
+doctest = false
+
+[dependencies]
+edlcodegen-core = "0.1.0"
+edlcodegen-host = "0.1.0"
+windows-strings = "0.5"
+
+flatbuffers = "25.9.23"

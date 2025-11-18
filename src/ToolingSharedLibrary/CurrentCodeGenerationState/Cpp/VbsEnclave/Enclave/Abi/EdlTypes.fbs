@@ -1,0 +1,9 @@
+namespace edl;
+
+table WString {
+  wchars:[uint16] (required);
+}
+table AbiTable
+{
+}
+root_type AbiTable;
