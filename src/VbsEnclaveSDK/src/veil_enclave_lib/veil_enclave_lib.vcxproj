@@ -43,6 +43,12 @@
   <PropertyGroup>
     <IncludePath>$(VC_IncludePath);$(WindowsSDK_IncludePath)</IncludePath>
   </PropertyGroup>
+  
+  <!-- Toggle for _VEIL_INTERNAL_DEBUG - can be overridden via command line or parent props files -->
+  <PropertyGroup>
+    <EnableVeilInternalDebug Condition="'$(EnableVeilInternalDebug)' == ''">false</EnableVeilInternalDebug>
+  </PropertyGroup>
+  
   <ImportGroup Label="Shared">
     <Import Project="$(SolutionDir)packages\Microsoft.Windows.ImplementationLibrary.1.0.240803.1\build\native\Microsoft.Windows.ImplementationLibrary.targets" Condition="Exists('$(SolutionDir)packages\Microsoft.Windows.ImplementationLibrary.1.0.240803.1\build\native\Microsoft.Windows.ImplementationLibrary.targets')" />
     <Import Project="..\..\packages\Microsoft.Windows.VbsEnclave.CodeGenerator.0.1.2-prerelease.250820.1\build\native\Microsoft.Windows.VbsEnclave.CodeGenerator.targets" Condition="Exists('..\..\packages\Microsoft.Windows.VbsEnclave.CodeGenerator.0.1.2-prerelease.250820.1\build\native\Microsoft.Windows.VbsEnclave.CodeGenerator.targets')" />
@@ -61,22 +67,30 @@
   </PropertyGroup>
   <!-- Undocked UCRT configuration. -->
   <PropertyGroup>
-    <UndockedSettingsLoaded>True</UndockedSettingsLoaded>
+ <UndockedSettingsLoaded>True</UndockedSettingsLoaded>
     <UseCrtSDKReferenceStaticWarning>False</UseCrtSDKReferenceStaticWarning>
     <UseEnclave>True</UseEnclave>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)'=='Debug'">
     <ClCompile>
-      <PreprocessorDefinitions>_DEBUG;CONSOLE;_VEIL_INTERNAL_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_DEBUG;CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
     </ClCompile>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)'=='Release'">
     <ClCompile>
       <PreprocessorDefinitions>NDEBUG;CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
+ <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
     </ClCompile>
   </ItemDefinitionGroup>
+  
+  <!-- Conditional _VEIL_INTERNAL_DEBUG definition based on EnableVeilInternalDebug property -->
+  <ItemDefinitionGroup Condition="'$(EnableVeilInternalDebug)' == 'true'">
+    <ClCompile>
+      <PreprocessorDefinitions>_VEIL_INTERNAL_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+  </ItemDefinitionGroup>
+  
   <ItemDefinitionGroup>
     <ClCompile>
       <WarningLevel>Level4</WarningLevel>
@@ -94,21 +108,21 @@
       <GuardEHContMetadata>true</GuardEHContMetadata>
       <!-- 
           Add /FS to enable file-based locking on .pdb files. Without this, parallel cl.exe processes
-          (as used by vcpkg builds) can collide when writing debug info, causing error 
+       (as used by vcpkg builds) can collide when writing debug info, causing error 
           C1041 ("cannot open program database").
-        -->
+     -->
       <AdditionalOptions>/FS %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <AdditionalDependencies>$(VBS_Enclave_Dependencies)</AdditionalDependencies>
       <AdditionalOptions>/INTEGRITYCHECK /ENCLAVE /GUARD:MIXED</AdditionalOptions>
-      <ModuleDefinitionFile>veil_enclave_lib.def</ModuleDefinitionFile>
+    <ModuleDefinitionFile>veil_enclave_lib.def</ModuleDefinitionFile>
       <CETCompat Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</CETCompat>
       <IgnoreAllDefaultLibraries>true</IgnoreAllDefaultLibraries>
     </Link>
     <PostBuildEvent>
-      <Message>Apply VEIID Protection</Message>
+   <Message>Apply VEIID Protection</Message>
       <!--
         Skip veiid.exe for static library
       <Command>$(VEIID_Command)</Command>
@@ -133,7 +147,7 @@
   <ItemGroup>
     <ClCompile Include="logger.vtl1.cpp" />
     <ClCompile Include="pch.cpp">
-      <PrecompiledHeader>Create</PrecompiledHeader>
+    <PrecompiledHeader>Create</PrecompiledHeader>
     </ClCompile>
     <ClCompile Include="taskpool.vtl1.cpp" />
     <ClCompile Include="userboundkey.vtl1.cpp" />
@@ -147,7 +161,7 @@
     <PropertyGroup>
       <ErrorText>This project references NuGet package(s) that are missing on this computer. Use NuGet Package Restore to download them.  For more information, see http://go.microsoft.com/fwlink/?LinkID=322105. The missing file is {0}.</ErrorText>
     </PropertyGroup>
-    <Error Condition="!Exists('$(SolutionDir)packages\Microsoft.Windows.ImplementationLibrary.1.0.240803.1\build\native\Microsoft.Windows.ImplementationLibrary.targets')" Text="$([System.String]::Format('$(ErrorText)', '$(SolutionDir)packages\Microsoft.Windows.ImplementationLibrary.1.0.240803.1\build\native\Microsoft.Windows.ImplementationLibrary.targets'))" />
+  <Error Condition="!Exists('$(SolutionDir)packages\Microsoft.Windows.ImplementationLibrary.1.0.240803.1\build\native\Microsoft.Windows.ImplementationLibrary.targets')" Text="$([System.String]::Format('$(ErrorText)', '$(SolutionDir)packages\Microsoft.Windows.ImplementationLibrary.1.0.240803.1\build\native\Microsoft.Windows.ImplementationLibrary.targets'))" />
     <Error Condition="!Exists('..\..\packages\Microsoft.Windows.VbsEnclave.CodeGenerator.0.1.2-prerelease.250820.1\build\native\Microsoft.Windows.VbsEnclave.CodeGenerator.props')" Text="$([System.String]::Format('$(ErrorText)', '..\..\packages\Microsoft.Windows.VbsEnclave.CodeGenerator.0.1.2-prerelease.250820.1\build\native\Microsoft.Windows.VbsEnclave.CodeGenerator.props'))" />
     <Error Condition="!Exists('..\..\packages\Microsoft.Windows.VbsEnclave.CodeGenerator.0.1.2-prerelease.250820.1\build\native\Microsoft.Windows.VbsEnclave.CodeGenerator.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\..\packages\Microsoft.Windows.VbsEnclave.CodeGenerator.0.1.2-prerelease.250820.1\build\native\Microsoft.Windows.VbsEnclave.CodeGenerator.targets'))" />
   </Target>
