@@ -9,6 +9,7 @@
         <VbsEnclaveSDKSrc>$(VbsEnclaveSdkPackageDir)src</VbsEnclaveSDKSrc>
         <VbsEnclaveNugetPackEnclaveLibPath>$(VbsEnclaveSdkPackageDir)lib\native\$(Platform)\veil_enclave_$(Platform)_$(Configuration)_lib.lib</VbsEnclaveNugetPackEnclaveLibPath>
         <VbsEnclaveNugetPackHostLibPath>$(VbsEnclaveSdkPackageDir)lib\native\$(Platform)\veil_host_$(Platform)_$(Configuration)_lib.lib</VbsEnclaveNugetPackHostLibPath>
+        <NugetSdkRoot>$(WindowsSDK_LibraryPath)\..</NugetSdkRoot>
     </PropertyGroup>
 
     <Import Project="$(VbsEnclaveSdkPackageDir)build\native\Microsoft.Windows.VbsEnclave.shared.targets" Condition="Exists('$(VbsEnclaveSdkPackageDir)build\native\Microsoft.Windows.VbsEnclave.shared.targets')" />
@@ -20,7 +21,7 @@
 
         <!-- Add the enclave lib for the SDK -->
         <Link Condition="'$(VbsEnclaveVirtualTrustLayer)' == 'Enclave'">
-            <AdditionalDependencies>$(VbsEnclaveNugetPackEnclaveLibPath);%(AdditionalDependencies)</AdditionalDependencies>
+            <AdditionalDependencies>$(VbsEnclaveNugetPackEnclaveLibPath);"$(NugetSdkRoot)\um\$(Platform)\veinterop.lib";%(AdditionalDependencies)</AdditionalDependencies>
         </Link>
 
         <Link Condition="'$(VbsEnclaveVirtualTrustLayer)' == 'HostApp' ">
