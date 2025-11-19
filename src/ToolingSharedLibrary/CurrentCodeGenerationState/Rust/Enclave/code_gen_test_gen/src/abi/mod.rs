@@ -3,3 +3,4 @@
 
 pub mod abi_types;
 pub mod fb_support;
+pub mod definitions;

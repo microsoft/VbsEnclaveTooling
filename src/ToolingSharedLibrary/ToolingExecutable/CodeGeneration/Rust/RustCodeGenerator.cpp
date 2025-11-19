@@ -33,7 +33,7 @@ namespace CodeGeneration::Rust
         {
             std::string crate_name = std::format("{}_host_gen", m_generated_namespace_name);
             cargo_toml_content = std::format(c_cargo_toml_content, crate_name, c_host_crate_dep);
-            lib_rs_content = std::format(c_host_lib_rs, c_autogen_header_string);
+            lib_rs_content = std::format(c_host_lib_rs, c_autogen_header_string, m_generated_vtl0_class_name);
         }
         else
         {
@@ -48,6 +48,9 @@ namespace CodeGeneration::Rust
         auto src_location = crate_location / "src";
         auto implementation_location = src_location / "implementation";
         GenerateImplementationModules(implementation_location);
+
+        auto stubs_location = src_location / "stubs";
+        GenerateStubModules(stubs_location);
 
         auto abi_location = src_location / "abi";
         GenerateAbiModules(src_location, abi_location);
@@ -67,12 +70,62 @@ namespace CodeGeneration::Rust
         // Save developer types module file
         SaveFileToOutputFolder(c_types_file_name, implementation_location, developer_types_file);
 
+        std::string impl_module_name {};
+        if (m_virtual_trust_layer_kind == VirtualTrustLayerKind::Enclave)
+        {
+            impl_module_name = "trusted";
+            auto trusted_mod = BuildImplTraitModule(m_virtual_trust_layer_kind, m_edl.m_trusted_functions);
+            SaveFileToOutputFolder("trusted.rs", implementation_location, trusted_mod);
+        }
+        else
+        {
+            impl_module_name = "untrusted";
+            auto untrusted_mod = BuildImplTraitModule(m_virtual_trust_layer_kind, m_edl.m_untrusted_functions);
+            SaveFileToOutputFolder("untrusted.rs", implementation_location, untrusted_mod);
+        }
+
         // Save implementation file
         std::string impl_rs_content = std::format(
             c_implementation_mod_rs,
-            c_autogen_header_string);
+            c_autogen_header_string,
+            impl_module_name);
 
         SaveFileToOutputFolder("mod.rs", implementation_location, impl_rs_content);
+    }
+
+    void RustCodeGenerator::GenerateStubModules(
+        const std::filesystem::path& stubs_location)
+    {
+        std::string stub_module_name {};
+        if (m_virtual_trust_layer_kind == VirtualTrustLayerKind::Enclave)
+        {
+            stub_module_name = "untrusted";
+            auto untrusted_mod = BuildStubTraitModule(
+                m_virtual_trust_layer_kind,
+                "",
+                m_generated_namespace_name,
+                m_edl.m_untrusted_functions);
+
+            SaveFileToOutputFolder("untrusted.rs", stubs_location, untrusted_mod);
+        }
+        else
+        {
+            stub_module_name = "trusted";
+            auto trusted_mod = BuildStubTraitModule(
+                m_virtual_trust_layer_kind, 
+                m_generated_vtl0_class_name,
+                m_generated_namespace_name, 
+                m_edl.m_trusted_functions);
+
+            SaveFileToOutputFolder("trusted.rs", stubs_location, trusted_mod);
+        }
+
+        std::string stubs_lib_rs_content = std::format(
+            c_stubs_lib_mod_rs,
+            c_autogen_header_string,
+            stub_module_name);
+
+        SaveFileToOutputFolder("mod.rs", stubs_location, stubs_lib_rs_content);
     }
 
     void RustCodeGenerator::GenerateAbiModules(
@@ -84,6 +137,7 @@ namespace CodeGeneration::Rust
             m_edl.m_untrusted_functions);
 
         GenerateFlatbufferComponents(abi_developer_types, abi_location);
+        GenerateAbiBoundaryModule(abi_location);
 
         // Save function abi structs types module file
         std::string abi_types_file = GenerateAbiTypesModuleFile(
@@ -118,8 +172,31 @@ namespace CodeGeneration::Rust
         // Generate wrapper module for flatbuffer generated module.
         auto pack_module = GenerateFlatbuffersWrapperModuleFile(
             m_generated_namespace_name,
+            m_virtual_trust_layer_kind,
             abi_developer_types);
 
         SaveFileToOutputFolder(c_flatbuffers_module_name, abi_location, pack_module);
+    }
+
+    void RustCodeGenerator::GenerateAbiBoundaryModule(
+        const std::filesystem::path& abi_location)
+    {
+        std::string module_content {};
+        if (m_virtual_trust_layer_kind == VirtualTrustLayerKind::Enclave)
+        {
+            module_content = BuildAbiDefinitionModule(
+                m_virtual_trust_layer_kind, 
+                m_generated_namespace_name,
+                m_edl.m_trusted_functions);
+        }
+        else
+        {
+            module_content = BuildAbiDefinitionModule(
+            m_virtual_trust_layer_kind,
+            m_generated_namespace_name,
+            m_edl.m_untrusted_functions);
+        }
+
+        SaveFileToOutputFolder("definitions.rs", abi_location, module_content);
     }
 }

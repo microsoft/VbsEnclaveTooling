@@ -6,8 +6,8 @@
 #![allow(non_snake_case)]
 
 use crate::abi::fb_support::fb_types::code_gen_test::flatbuffer_types;
-use crate::abi::abi_types::edl;
-use edlcodegen_core::EdlDerive;
+pub use crate::abi::abi_types::edl;
+use edlcodegen_host::EdlDerive;
 
 pub const VALUE1: u32 = 1;
 
