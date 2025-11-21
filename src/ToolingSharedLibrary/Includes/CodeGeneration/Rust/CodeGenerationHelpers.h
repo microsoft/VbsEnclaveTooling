@@ -46,6 +46,16 @@ namespace CodeGeneration::Rust
         }
     }
 
+    inline std::string TransformCaseToUpper(const std::string& str)
+    {
+        std::string result(str);
+        std::transform(
+            result.begin(), result.end(), result.begin(),
+            [] (unsigned char c) { return std::toupper(c); }
+        );
+        return result;
+    }
+
     inline std::string AddVectorEncapulation(const Declaration& vector_declaration)
     {
         auto inner_type = vector_declaration.m_edl_type_info.inner_type;
@@ -83,7 +93,8 @@ namespace CodeGeneration::Rust
 
         if (!declaration.m_array_dimensions.empty())
         {
-            type_name = std::format(c_array_initializer, type_name, declaration.m_array_dimensions.front());
+            auto arr_size = declaration.m_array_dimensions.front();
+            type_name = std::format(c_array_initializer, type_name, TransformCaseToUpper(arr_size));
         }
 
         return type_name;
@@ -131,16 +142,6 @@ namespace CodeGeneration::Rust
         return Uint64ToDecimal(enum_value.m_declared_position);
     }
 
-    inline std::string TransformCaseToUpper(const std::string& str)
-    {
-        std::string result(str);
-        std::transform(
-            result.begin(), result.end(), result.begin(),
-            [] (unsigned char c) { return std::toupper(c); }
-        );
-        return result;
-    }
-
     inline std::string GenerateConstantsFromAnonEnum(const DeveloperType& developer_types)
     {
         std::ostringstream pub_constants {};
@@ -148,7 +149,7 @@ namespace CodeGeneration::Rust
         {
             // Rust expects constants to be all uppercased
             pub_constants << std::format(
-                "\npub const {}: u32 = {};\n",
+                "\npub const {}: usize = {};",
                 TransformCaseToUpper(enum_value.m_name),
                 GetEnumValueExpression(enum_value)
             );

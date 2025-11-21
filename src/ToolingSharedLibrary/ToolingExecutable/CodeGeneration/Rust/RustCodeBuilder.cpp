@@ -294,29 +294,36 @@ namespace CodeGeneration::Rust
 
     std::string CodeBuilder::BuildAbiDefinitionModule(
         VirtualTrustLayerKind vtl_kind,
+        std::string_view trait_name,
         std::string_view generated_namespace_name,
         const OrderedMap<std::string, Function>& functions)
     {
-        std::string abi_def_funcs_format = c_host_abi_definition_function.data();
-        std::string trait_name = "Untrusted";
-        if (vtl_kind == VirtualTrustLayerKind::Enclave)
-        {
-            abi_def_funcs_format = c_enclave_abi_definition_function.data();
-            trait_name = "Trusted";
-        }
-
         std::ostringstream abi_functions {};
         for (auto& func : functions.values())
         {
             auto abi_func_struct_name = std::format(c_function_args_struct, func.abi_m_name);
             auto closure_statement = GetClosureFunctionStatement(func, vtl_kind, trait_name);
             auto abi_function_name = std::format(c_generated_stub_name_no_quotes, func.abi_m_name);
-            abi_functions << FormatString(
-                abi_def_funcs_format,
-                abi_function_name,
-                abi_func_struct_name,
-                abi_func_struct_name,
-                closure_statement);
+
+            if (vtl_kind == VirtualTrustLayerKind::HostApp)
+            {
+                abi_functions << std::format(
+                    c_host_abi_definition_function,
+                    abi_function_name,
+                    abi_func_struct_name,
+                    generated_namespace_name,
+                    abi_func_struct_name,
+                    closure_statement);
+            }
+            else
+            {
+                abi_functions << std::format(
+                    c_enclave_abi_definition_function,
+                    abi_function_name,
+                    abi_func_struct_name,
+                    abi_func_struct_name,
+                    closure_statement);
+            }
         }
 
         if (vtl_kind == VirtualTrustLayerKind::HostApp)

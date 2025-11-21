@@ -56,6 +56,7 @@ namespace CodeGeneration::Rust
 
         std::string BuildAbiDefinitionModule(
             VirtualTrustLayerKind vtl_kind,
+            std::string_view trait_name,
             std::string_view developer_namespace_name,
             const OrderedMap<std::string, Function>& functions);
     };

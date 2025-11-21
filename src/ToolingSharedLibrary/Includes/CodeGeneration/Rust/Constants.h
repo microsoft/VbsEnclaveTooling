@@ -133,7 +133,7 @@ R"(
     inline constexpr std::string_view c_enum_attributes =
 R"(
 #[repr(u32)]
-#[derive(Debug, Clone, PartialEq, Default, EdlDerive)]
+#[derive(Debug, Copy, Clone, PartialEq, Default, EdlDerive)]
 #[target_enum(flatbuffer_types::{})]
 )";
 
@@ -367,7 +367,7 @@ R"(
         {{
             use $crate::{{abi_func_to_address, return_hr_as_pvoid, call_vtl0_callback_from_vtl0}};
             use $crate::abi::abi_types::{} as AbiTypeT;
-            use $crate::abi::fb_support::fb_types::code_gen_test::flatbuffer_types::{}T as FlatBufferT;
+            use $crate::abi::fb_support::fb_types::{}::flatbuffer_types::{}T as FlatBufferT;
             let abi_func = |abi_type: &mut AbiTypeT| {{
                 {}
             }};

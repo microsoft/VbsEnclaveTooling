@@ -185,7 +185,8 @@ namespace CodeGeneration::Rust
         if (m_virtual_trust_layer_kind == VirtualTrustLayerKind::Enclave)
         {
             module_content = BuildAbiDefinitionModule(
-                m_virtual_trust_layer_kind, 
+                m_virtual_trust_layer_kind,
+                "Trusted",
                 m_generated_namespace_name,
                 m_edl.m_trusted_functions);
         }
@@ -193,6 +194,7 @@ namespace CodeGeneration::Rust
         {
             module_content = BuildAbiDefinitionModule(
             m_virtual_trust_layer_kind,
+            "Untrusted",
             m_generated_namespace_name,
             m_edl.m_untrusted_functions);
         }

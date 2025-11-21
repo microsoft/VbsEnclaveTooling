@@ -209,7 +209,8 @@ namespace CodeGeneration::Flatbuffers
                     optional_val);
             }
             else if (declaration.IsEdlType(EdlTypeKind::Struct) ||
-                     declaration.IsEdlType(EdlTypeKind::WString))
+                     declaration.IsEdlType(EdlTypeKind::WString) ||
+                     declaration.IsEdlType(EdlTypeKind::String))
             {
                 // We generate structs as tables using the Flatbuffer object api. Unfortunately for C++ it generates nested
                 // tables as unique_ptr<T> where T is the Flatbuffer representation of the struct. There is currently
