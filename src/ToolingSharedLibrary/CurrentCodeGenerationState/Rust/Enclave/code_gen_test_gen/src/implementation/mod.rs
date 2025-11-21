@@ -2,3 +2,4 @@
 // Changes to this file may be lost if the file is regenerated.
 
 pub mod types;
+pub mod trusted;

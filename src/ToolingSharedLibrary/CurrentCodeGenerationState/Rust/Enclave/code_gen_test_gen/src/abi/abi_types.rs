@@ -6,10 +6,11 @@
 #![allow(non_snake_case)]
 use alloc::string::String;
 use alloc::vec::Vec;
+use alloc::boxed::Box;
 use crate::implementation::types::*;
 use crate::abi::fb_support::fb_types::code_gen_test::flatbuffer_types;
 use crate::abi::fb_support::fb_types::edl::WStringT;
-use edlcodegen_core::EdlDerive;
+use edlcodegen_enclave::EdlDerive;
 
 
 #[derive(Debug, Clone, PartialEq, Default, EdlDerive)]
@@ -50,8 +51,17 @@ pub struct FuncWithAllArgs_1_args {
     pub m__return_value_: i32,
 }
 
+#[derive(Debug, Clone, PartialEq, Default, EdlDerive)]
+#[target_struct(flatbuffer_types::AbiRegisterVtl0Callbacks_argsT)]
+pub struct AbiRegisterVtl0Callbacks_args
+{
+    pub m_callback_addresses: Vec<u64>,
+    pub m_callback_names: Vec<String>,
+    pub m__return_value_: i32,
+}
 
 pub mod edl {
+    use alloc::vec::Vec;
     #[derive(Debug, Clone, PartialEq, Default, super::EdlDerive)]
     #[target_struct(super::WStringT)]
     pub struct WString {

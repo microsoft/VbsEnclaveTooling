@@ -42,8 +42,6 @@ namespace CodeGeneration::Cpp
 
     static inline constexpr std::string_view c_generated_stub_name = "\"{}_Generated_Stub\"";
 
-    static inline constexpr std::string_view c_generated_stub_name_no_quotes = "{}_Generated_Stub";
-
     static inline constexpr std::string_view c_vtl1_enforce_mem_restriction_func = 
 R"(namespace Abi::Runtime
     {
@@ -230,8 +228,6 @@ R"(     {}_Generated_Stub
             return return_params.m__return_value_;
         }}
 )";
-
-    static inline constexpr std::string_view c_vtl1_register_callbacks_abi_export_name = "__AbiRegisterVtl0Callbacks_{}__";
 
     static inline constexpr std::string_view c_vtl1_register_callbacks_abi_export = R"(
         void* {}(void* function_context)

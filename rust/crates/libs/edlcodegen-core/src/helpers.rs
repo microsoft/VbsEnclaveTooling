@@ -73,3 +73,14 @@ pub fn copy_slice_to_buffer<T>(buffer: *mut c_void, data: &[T]) -> Result<(), Ab
 
     Ok(())
 }
+
+#[macro_export]
+macro_rules! return_hr_as_pvoid {
+    ($result:expr) => {{
+        if let Some(err) = $result.err() {
+            return $crate::helpers::hresult_to_pvoid(err.to_hresult().0);
+        }
+
+        return $crate::edl_core_ffi::S_OK as *mut core::ffi::c_void;
+    }};
+}

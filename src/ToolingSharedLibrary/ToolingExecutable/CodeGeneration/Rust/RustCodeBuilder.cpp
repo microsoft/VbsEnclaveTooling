@@ -46,12 +46,14 @@ namespace CodeGeneration::Rust
             }
         }
 
-        std::string vec_and_str_imports = vtl_kind == VirtualTrustLayerKind::Enclave ? c_enclave_vec_str.data() : "";
+        EdlCrateInfo crate_info = GetEdlCrateInfo(vtl_kind);
+
         return std::format(
             c_dev_types_file,
             c_autogen_header_string,
-            vec_and_str_imports,
+            crate_info.m_alloc_imports,
             developer_namespace_name,
+            crate_info.m_crate_name,
             types_module.str());
     }
 
@@ -67,14 +69,16 @@ namespace CodeGeneration::Rust
             types_module << BuildStructDefinition(type.m_name, type.m_fields);
         }
 
-        std::string vec_and_str_imports = vtl_kind == VirtualTrustLayerKind::Enclave ? c_enclave_vec_str.data() : "";
+        EdlCrateInfo crate_info = GetEdlCrateInfo(vtl_kind);
 
         return std::format(
             c_abi_function_types_file,
             c_autogen_header_string,
-            vec_and_str_imports,
+            crate_info.m_alloc_imports,
             developer_namespace_name,
-            types_module.str());
+            crate_info.m_crate_name,
+            types_module.str(),
+            crate_info.m_vec_import);
     }
 
     Definition CodeBuilder::BuildStartOfDefinition(
@@ -167,6 +171,7 @@ namespace CodeGeneration::Rust
 
     std::string CodeBuilder::GenerateFlatbuffersWrapperModuleFile(
         std::string_view developer_namespace_name,
+        VirtualTrustLayerKind vtl_kind,
         std::span<const DeveloperType> abi_function_developer_types)
     {
         std::ostringstream statements {};
@@ -178,10 +183,173 @@ namespace CodeGeneration::Rust
                 type.m_name);
         }
 
+        auto crate_info = GetEdlCrateInfo(vtl_kind);
         return std::format(
             c_flatbuffers_module_content,
             c_autogen_header_string,
+            crate_info.m_crate_name,
+            crate_info.m_crate_name,
             developer_namespace_name,
             statements.str());
+    }
+
+    std::string CodeBuilder::BuildImplTraitModule(
+        VirtualTrustLayerKind vtl_kind,
+        const OrderedMap<std::string, Function>& functions)
+    {
+        std::ostringstream trait_functions {};
+        for (auto& func : functions.values())
+        {
+            trait_functions << std::format(
+                c_trait_function,
+                func.m_name,
+                GenerateFunctionParametersList(func.m_parameters),
+                GetFullDeclarationType(func.m_return_info));
+
+            trait_functions << "\n";
+        }
+
+        if (vtl_kind == VirtualTrustLayerKind::Enclave)
+        {
+            return std::format(c_enclave_trusted_module_outline, c_autogen_header_string, trait_functions.str());
+        }
+
+        return std::format(c_host_untrusted_module_outline, c_autogen_header_string, trait_functions.str());
+    }
+
+    std::string CodeBuilder::BuildStubTraitModule(
+        VirtualTrustLayerKind vtl_kind,
+        std::string_view stub_class_name,
+        std::string_view developer_namespace_name,
+        const OrderedMap<std::string, Function>& functions)
+    {
+        std::string function_str_format = c_host_trusted_function.data();
+        uint32_t indentation = 2;
+        if (vtl_kind == VirtualTrustLayerKind::Enclave)
+        {
+            function_str_format = c_enclave_untrusted_function.data();
+            indentation = 1;
+        }
+
+        std::ostringstream mod_content {};
+        for (auto& func : functions.values())
+        {
+
+            bool func_returns_void = func.m_return_info.IsEdlType(EdlTypeKind::Void);
+            auto abi_func_returned_value_name = func_returns_void ? "_" : "result";
+            std::string return_statement_value = "()";
+
+            if (!func_returns_void)
+            { 
+                return_statement_value = std::format("result.m_{}", func.m_return_info.m_name);
+            }
+
+            std::string to_flatbuffer_statements =
+                GetCloneToAbiStructStatements(indentation, func.m_parameters);
+
+            std::string to_inout_param_statements =
+                GetMoveFromAbiStructToParamStatements(indentation, func.m_parameters);
+
+            auto abi_func_struct_name = std::format(c_function_args_struct, func.abi_m_name);
+            auto param_list = GenerateFunctionParametersList(func.m_parameters);
+            auto return_type = GetFullDeclarationType(func.m_return_info);
+            auto abi_stub_func_name = std::format(c_generated_stub_name_no_quotes, func.abi_m_name);
+
+            mod_content << FormatString(
+                function_str_format,
+                func.m_name,
+                param_list,
+                return_type,
+                abi_func_struct_name,
+                abi_func_struct_name,
+                to_flatbuffer_statements,
+                abi_func_returned_value_name,
+                abi_stub_func_name,
+                to_inout_param_statements,
+                return_statement_value);
+        }
+        
+        if (vtl_kind == VirtualTrustLayerKind::HostApp)
+        {
+            auto register_callbacks_function = std::format(
+                c_vtl1_register_callbacks_abi_export_name,
+                developer_namespace_name);
+
+            return std::format(
+                c_host_trusted_module_outline,
+                c_autogen_header_string,
+                developer_namespace_name,
+                stub_class_name,
+                stub_class_name,
+                mod_content.str(),
+                register_callbacks_function);
+        }
+
+        return std::format(
+            c_enclave_untrusted_module_outline,
+            c_autogen_header_string,
+            developer_namespace_name,
+            mod_content.str());
+    }
+
+    std::string CodeBuilder::BuildAbiDefinitionModule(
+        VirtualTrustLayerKind vtl_kind,
+        std::string_view trait_name,
+        std::string_view generated_namespace_name,
+        const OrderedMap<std::string, Function>& functions)
+    {
+        std::ostringstream abi_functions {};
+        for (auto& func : functions.values())
+        {
+            auto abi_func_struct_name = std::format(c_function_args_struct, func.abi_m_name);
+            auto closure_statement = GetClosureFunctionStatement(func, vtl_kind, trait_name);
+            auto abi_function_name = std::format(c_generated_stub_name_no_quotes, func.abi_m_name);
+
+            if (vtl_kind == VirtualTrustLayerKind::HostApp)
+            {
+                abi_functions << std::format(
+                    c_host_abi_definition_function,
+                    abi_function_name,
+                    abi_func_struct_name,
+                    generated_namespace_name,
+                    abi_func_struct_name,
+                    closure_statement);
+            }
+            else
+            {
+                abi_functions << std::format(
+                    c_enclave_abi_definition_function,
+                    abi_function_name,
+                    abi_func_struct_name,
+                    abi_func_struct_name,
+                    closure_statement);
+            }
+        }
+
+        if (vtl_kind == VirtualTrustLayerKind::HostApp)
+        {
+            auto [names, addresses, total] = GetRegisterCallbacksFunctionStatements(functions);
+            auto macro_info = std::format(
+                c_define_host_functions_macro,
+                abi_functions.str(),
+                total,
+                names,
+                total,
+                addresses);
+            
+            return std::format(c_abi_definitions_module_outline, c_autogen_header_string, macro_info);
+        }
+
+        auto register_callbacks_function = std::format(
+            c_vtl1_register_callbacks_abi_export_name,
+            generated_namespace_name);
+
+        auto module_content = std::format(
+            c_export_enclave_functions_macro,
+            generated_namespace_name,
+            abi_functions.str(),
+            register_callbacks_function);
+
+        return std::format(c_abi_definitions_module_outline, c_autogen_header_string, module_content);
     }
 }
