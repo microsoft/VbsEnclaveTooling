@@ -39,6 +39,10 @@
   <PropertyGroup>
     <UseFullStaticPrivate>true</UseFullStaticPrivate>
   </PropertyGroup>
+  <!-- Toggle for _VEIL_INTERNAL_DEBUG - can be overridden via command line or parent props files -->
+  <PropertyGroup>
+    <EnableVeilInternalDebug Condition="'$(EnableVeilInternalDebug)' == ''">false</EnableVeilInternalDebug>
+  </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|ARM64'">
     <TargetName>veil_host_$(Platform)_$(Configuration)_lib</TargetName>
   </PropertyGroup>
@@ -100,11 +104,17 @@
       <OptimizeReferences>false</OptimizeReferences>
     </Link>
   </ItemDefinitionGroup>
+  <!-- Conditional _VEIL_INTERNAL_DEBUG definition based on EnableVeilInternalDebug property -->
+  <ItemDefinitionGroup Condition="'$(EnableVeilInternalDebug)' == 'true'">
+    <ClCompile>
+      <PreprocessorDefinitions>_VEIL_INTERNAL_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+  </ItemDefinitionGroup>
   <ItemDefinitionGroup>
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;_VEIL_INTERNAL_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PrecompiledHeader>NotUsing</PrecompiledHeader>

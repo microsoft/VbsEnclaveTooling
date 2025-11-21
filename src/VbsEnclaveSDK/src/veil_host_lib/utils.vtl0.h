@@ -14,18 +14,18 @@ namespace veil::vtl0::implementation
 
 namespace veil::vtl0::implementation::debug
 {
-    // Debug printing function that only outputs when HOST is in debug mode
+    // Debug printing function that only outputs when VEIL is in debug mode
     inline void w_debug_print(const std::wstring& str)
     {
-        #ifdef _DEBUG
+        #ifdef _VEIL_INTERNAL_DEBUG
             std::wcout << str << std::endl;
         #endif
     }
 
-    // Debug printing function for narrow strings that only outputs when HOST is in debug mode
+    // Debug printing function for narrow strings that only outputs when VEIL is in debug mode
     inline void debug_print(const std::string& str)
     {
-        #ifdef _DEBUG
+        #ifdef _VEIL_INTERNAL_DEBUG
             std::cout << str << std::endl;
         #endif
     }

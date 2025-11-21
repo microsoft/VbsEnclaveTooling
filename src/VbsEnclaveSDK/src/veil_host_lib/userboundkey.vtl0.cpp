@@ -346,7 +346,7 @@ std::vector<uint8_t> veil_abi::Untrusted::Implementation::userboundkey_get_autho
     uintptr_t window_id)
 {
     w_debug_print(L"DEBUG: userboundkey_get_authorization_context_from_credential called with credential: 0x" + 
-    std::to_wstring(credential_ptr));
+        std::to_wstring(credential_ptr));
 
     try
     {
