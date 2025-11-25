@@ -8,6 +8,7 @@
 #include "userboundkey.any.h"
 #include "userboundkey.vtl1.h" // Function declarations
 #include "vtl0_functions.vtl1.h"
+#include "debug.vtl1.h"
 #include "object_table.vtl1.h"
 #include <VbsEnclave\Enclave\Implementation\Trusted.h>
 #include <VbsEnclave\Enclave\Stubs\Untrusted.h>

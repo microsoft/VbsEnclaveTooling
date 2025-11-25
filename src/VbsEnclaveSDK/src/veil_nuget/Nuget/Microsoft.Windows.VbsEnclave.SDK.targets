@@ -9,20 +9,24 @@
         <VbsEnclaveSDKSrc>$(VbsEnclaveSdkPackageDir)src</VbsEnclaveSDKSrc>
         <VbsEnclaveNugetPackEnclaveLibPath>$(VbsEnclaveSdkPackageDir)lib\native\$(Platform)\veil_enclave_$(Platform)_$(Configuration)_lib.lib</VbsEnclaveNugetPackEnclaveLibPath>
         <VbsEnclaveNugetPackHostLibPath>$(VbsEnclaveSdkPackageDir)lib\native\$(Platform)\veil_host_$(Platform)_$(Configuration)_lib.lib</VbsEnclaveNugetPackHostLibPath>
-        <NugetSdkRoot>$(WindowsSDK_LibraryPath)\..</NugetSdkRoot>
+        <NugetSdkRoot Condition="$(Platform) == x64">$(winsdk_cpp_x64_root)</NugetSdkRoot>
+	<NugetSdkRoot Condition="$(Platform) == ARM64">$(winsdk_cpp_arm64_root)</NugetSdkRoot>
+	<VeInteropLib Condition="Exists('$(NugetSdkRoot)')">$(NugetSdkRoot)\um\$(Platform)\veinterop.lib</VeInteropLib>
+	<VeInteropLib Condition="!Exists('$(NugetSdkRoot)')">veinterop.lib;</VeInteropLib>
     </PropertyGroup>
 
     <Import Project="$(VbsEnclaveSdkPackageDir)build\native\Microsoft.Windows.VbsEnclave.shared.targets" Condition="Exists('$(VbsEnclaveSdkPackageDir)build\native\Microsoft.Windows.VbsEnclave.shared.targets')" />
 
     <ItemDefinitionGroup>
         <ClCompile>
+            <PreprocessorDefinitions Condition="'$(EnableVeilInternalDebug)' == 'true'">_VEIL_INTERNAL_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
             <AdditionalIncludeDirectories>$(VbsEnclaveSDKSrc);$(VbsEnclaveSdkPackageDir)\src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
         </ClCompile>
 
         <!-- Add the enclave lib for the SDK -->
         <Link Condition="'$(VbsEnclaveVirtualTrustLayer)' == 'Enclave'">
-            <AdditionalDependencies>$(VbsEnclaveNugetPackEnclaveLibPath);"$(NugetSdkRoot)\um\$(Platform)\veinterop.lib";%(AdditionalDependencies)</AdditionalDependencies>
-        </Link>
+  	    <AdditionalDependencies>$(VeInteropLib);$(VbsEnclaveNugetPackEnclaveLibPath);%(AdditionalDependencies)</AdditionalDependencies>
+	</Link>
 
         <Link Condition="'$(VbsEnclaveVirtualTrustLayer)' == 'HostApp' ">
             <!-- The onecore.lib static library is required for host app projects and host lib for SDK. Add it by default to the host app-->

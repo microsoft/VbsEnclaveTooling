@@ -15,7 +15,7 @@ namespace veil::vtl0::implementation
 namespace veil::vtl0::implementation::debug
 {
     // Debug printing function that only outputs when VEIL is in debug mode
-    inline void w_debug_print(const std::wstring& str)
+    inline void debug_wprint(const std::wstring& str)
     {
         #ifdef _VEIL_INTERNAL_DEBUG
             std::wcout << str << std::endl;
