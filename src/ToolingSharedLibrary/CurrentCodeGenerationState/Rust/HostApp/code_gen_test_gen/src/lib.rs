@@ -2,4 +2,9 @@
 // Changes to this file may be lost if the file is regenerated.
 
 pub mod abi;
+pub use abi::abi_types::edl::WString;
 pub mod implementation;
+pub mod stubs;
+pub use stubs::trusted::CodeGenTestClass;
+pub use edlcodegen_host::{AbiError, abi_func_to_address, return_hr_as_pvoid};
+pub use edlcodegen_host::host_helpers::call_vtl0_callback_from_vtl0;

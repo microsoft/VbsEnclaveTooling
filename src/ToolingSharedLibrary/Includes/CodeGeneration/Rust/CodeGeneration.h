@@ -29,6 +29,7 @@ namespace CodeGeneration::Rust
 
         std::string GenerateFlatbuffersWrapperModuleFile(
             std::string_view developer_namespace_name,
+            VirtualTrustLayerKind vtl_kind,
             std::span<const DeveloperType> abi_function_developer_types);
 
         Definition BuildStartOfDefinition(
@@ -42,6 +43,22 @@ namespace CodeGeneration::Rust
         std::string BuildStructDefinition(
             std::string_view struct_name,
             const std::vector<Declaration>& fields);
+
+        std::string BuildImplTraitModule(
+            VirtualTrustLayerKind vtl_kind,
+            const OrderedMap<std::string, Function>& functions);
+
+        std::string BuildStubTraitModule(
+            VirtualTrustLayerKind vtl_kind,
+            std::string_view stub_class_name,
+            std::string_view developer_namespace_name,
+            const OrderedMap<std::string, Function>& functions);
+
+        std::string BuildAbiDefinitionModule(
+            VirtualTrustLayerKind vtl_kind,
+            std::string_view trait_name,
+            std::string_view developer_namespace_name,
+            const OrderedMap<std::string, Function>& functions);
     };
 
     struct RustCodeGenerator : public CodeGeneratorBase
@@ -62,6 +79,12 @@ namespace CodeGeneration::Rust
 
         void GenerateFlatbufferComponents(
             const std::vector<DeveloperType>& abi_function_developer_types,
+            const std::filesystem::path& abi_location);
+
+        void GenerateStubModules(
+            const std::filesystem::path& stub_location);
+
+        void GenerateAbiBoundaryModule(
             const std::filesystem::path& abi_location);
     };
 }

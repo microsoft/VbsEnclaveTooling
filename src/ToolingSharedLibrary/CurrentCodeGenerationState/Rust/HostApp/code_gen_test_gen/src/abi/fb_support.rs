@@ -15,12 +15,13 @@
     clippy::missing_safety_doc
 )]
 pub mod fb_types{
-    use edlcodegen_core::flatbuffer_support::FlatbufferPack;
-    use edlcodegen_core::impl_flatbuffer_pack;
+    use edlcodegen_host::FlatbufferPack;
+    use edlcodegen_host::impl_flatbuffer_pack;
     use code_gen_test::flatbuffer_types::*;
 
     include!("flatbuffer_gen/mod.rs");
 
     impl_flatbuffer_pack!(FuncWithAllArgs_0_argsT, FuncWithAllArgs_0_args<'a>);
     impl_flatbuffer_pack!(FuncWithAllArgs_1_argsT, FuncWithAllArgs_1_args<'a>);
+    impl_flatbuffer_pack!(AbiRegisterVtl0Callbacks_argsT, AbiRegisterVtl0Callbacks_args<'a>);
 }
