@@ -4,11 +4,9 @@
 #pragma once
 
 #include <string>
-
 #include <array>
 
 #include "wil/stl.h"
-
 #include "utils.vtl1.h"
 
 namespace veil::vtl1::implementation::vtl0_functions::callouts

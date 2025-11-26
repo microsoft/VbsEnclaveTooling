@@ -42,6 +42,18 @@
     <ClInclude Include="userboundkey.vtl1.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\..\Common\veil_enclave_wil_inc\wil\enclave\pop_enable_wil_logging.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\Common\veil_enclave_wil_inc\wil\enclave\push_disable_wil_logging.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\Common\veil_enclave_wil_inc\wil\enclave\wil_for_enclaves.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="debug.vtl1.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp">

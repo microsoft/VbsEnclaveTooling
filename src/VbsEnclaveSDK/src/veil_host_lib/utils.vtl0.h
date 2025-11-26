@@ -5,12 +5,33 @@
 
 #include "pch.h"
 #include <mutex>
+#include <string>
+#include <iostream>
 #include <winrt/Windows.Security.Credentials.h>
 #include <winrt/Windows.Storage.Streams.h>
 
 namespace veil::vtl0::implementation
 {
     extern std::mutex g_printMutex;
+}
+
+namespace veil::vtl0::implementation::debug
+{
+    // Debug printing function that only outputs when VEIL is in debug mode
+    inline void debug_wprint(const std::wstring& str)
+    {
+        #ifdef _VEIL_INTERNAL_DEBUG
+            std::wcout << str << std::endl;
+        #endif
+    }
+
+    // Debug printing function for narrow strings that only outputs when VEIL is in debug mode
+    inline void debug_print(const std::string& str)
+    {
+        #ifdef _VEIL_INTERNAL_DEBUG
+            std::cout << str << std::endl;
+        #endif
+    }
 }
 
 namespace veil::vtl0::internal::utils
@@ -33,3 +54,4 @@ namespace veil::vtl0::internal::utils
         #endif
     }
 }
+

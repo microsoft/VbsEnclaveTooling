@@ -3,5 +3,6 @@
         <!-- Additional infrastructure props -->
         <VbsEnclaveConsumeCppSupportLib>false</VbsEnclaveConsumeCppSupportLib>
         <VbsEnclaveGeneratedFilesDir Condition="$(VbsEnclaveGeneratedFilesDir) == ''"></VbsEnclaveGeneratedFilesDir>
+	<EnableVeilInternalDebug Condition="'$(EnableVeilInternalDebug)' == ''">false</EnableVeilInternalDebug>
     </PropertyGroup>
 </Project>
