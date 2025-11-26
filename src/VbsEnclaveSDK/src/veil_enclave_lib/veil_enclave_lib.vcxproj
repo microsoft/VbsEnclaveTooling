@@ -43,6 +43,10 @@
   <PropertyGroup>
     <IncludePath>$(VC_IncludePath);$(WindowsSDK_IncludePath)</IncludePath>
   </PropertyGroup>
+  <!-- Toggle for _VEIL_INTERNAL_DEBUG - can be overridden via command line or parent props files -->
+  <PropertyGroup>
+    <EnableVeilInternalDebug Condition="'$(EnableVeilInternalDebug)' == ''">false</EnableVeilInternalDebug>
+  </PropertyGroup>
   <ImportGroup Label="Shared">
     <Import Project="$(SolutionDir)packages\Microsoft.Windows.ImplementationLibrary.1.0.240803.1\build\native\Microsoft.Windows.ImplementationLibrary.targets" Condition="Exists('$(SolutionDir)packages\Microsoft.Windows.ImplementationLibrary.1.0.240803.1\build\native\Microsoft.Windows.ImplementationLibrary.targets')" />
     <Import Project="..\..\packages\Microsoft.Windows.VbsEnclave.CodeGenerator.0.1.2-prerelease.250820.1\build\native\Microsoft.Windows.VbsEnclave.CodeGenerator.targets" Condition="Exists('..\..\packages\Microsoft.Windows.VbsEnclave.CodeGenerator.0.1.2-prerelease.250820.1\build\native\Microsoft.Windows.VbsEnclave.CodeGenerator.targets')" />
@@ -77,6 +81,12 @@
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
     </ClCompile>
   </ItemDefinitionGroup>
+  <!-- Conditional _VEIL_INTERNAL_DEBUG definition based on EnableVeilInternalDebug property -->
+  <ItemDefinitionGroup Condition="'$(EnableVeilInternalDebug)' == 'true'">
+    <ClCompile>
+      <PreprocessorDefinitions>_VEIL_INTERNAL_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+  </ItemDefinitionGroup>
   <ItemDefinitionGroup>
     <ClCompile>
       <WarningLevel>Level4</WarningLevel>
@@ -94,9 +104,9 @@
       <GuardEHContMetadata>true</GuardEHContMetadata>
       <!-- 
           Add /FS to enable file-based locking on .pdb files. Without this, parallel cl.exe processes
-          (as used by vcpkg builds) can collide when writing debug info, causing error 
+       (as used by vcpkg builds) can collide when writing debug info, causing error 
           C1041 ("cannot open program database").
-        -->
+     -->
       <AdditionalOptions>/FS %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
     <Link>
@@ -121,6 +131,7 @@
     <ClInclude Include="..\..\..\..\Common\veil_enclave_wil_inc\wil\enclave\push_disable_wil_logging.h" />
     <ClInclude Include="..\..\..\..\Common\veil_enclave_wil_inc\wil\enclave\wil_for_enclaves.h" />
     <ClInclude Include="crypto.vtl1.h" />
+    <ClInclude Include="debug.vtl1.h" />
     <ClInclude Include="future.vtl1.h" />
     <ClInclude Include="object_table.vtl1.h" />
     <ClInclude Include="logger.vtl1.h" />

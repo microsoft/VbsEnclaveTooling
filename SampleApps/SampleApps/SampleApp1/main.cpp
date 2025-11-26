@@ -2,7 +2,7 @@
 #include <fstream>
 #include <string>
 #include <conio.h> // For getch()
-#include <filesystem> // For directory validation
+#include <filesystem> // For filesystem operations
 #include <chrono>
 
 #include <windows.h>
@@ -12,7 +12,6 @@
 #include <span>
 #include <sddl.h>
 #include <limits>
-#include <ncrypt.h>  // Added for NCrypt functions
 
 #include <winrt/base.h>
 #include <winrt/Windows.Foundation.h>
@@ -136,10 +135,10 @@ void UserBoundEncryptFlow(
         resealedEncryptionKeyBytes
     ));
 
-    // VBS has a fixed sized key ring. The VBS keys rotate on roughly every OS upgrade. 
-    // Eventually enough rotations happen and the sealing key used to seal the encrypted key is rotated out and no longer available. 
-    // This is notified through the second return parameter unsealingFlags in the unseal_data API. 
-    // It tells the caller whether the underlying keyring has rotated the sealing key out and we need to re-seal the encrypted key. 
+    // VBS has a fixed sized key ring. The VBS keys rotate on roughly every OS upgrade.
+    // Eventually enough rotations happen and the sealing key used to seal the encrypted key is rotated out and no longer available.
+    // This is notified through the second return parameter unsealingFlags in the unseal_data API.
+    // It tells the caller whether the underlying keyring has rotated the sealing key out and we need to re-seal the encrypted key.
     // At this point, if the reseal is not performed, it would not be possible to unseal the encrypted key the next time.
     if (needsReseal && !resealedEncryptionKeyBytes.empty())
     {
@@ -188,10 +187,10 @@ void UserBoundDecryptFlow(
         resealedEncryptionKeyBytes
     ));
 
-    // VBS has a fixed sized key ring. The VBS keys rotate on roughly every OS upgrade. 
-    // Eventually enough rotations happen and the sealing key used to seal the encrypted key is rotated out and no longer available. 
-    // This is notified through the second return parameter unsealingFlags in the unseal_data API. 
-    // It tells the caller whether the underlying keyring has rotated the sealing key out and we need to re-seal the encrypted key. 
+    // VBS has a fixed sized key ring. The VBS keys rotate on roughly every OS upgrade.
+    // Eventually enough rotations happen and the sealing key used to seal the encrypted key is rotated out and no longer available.
+    // This is notified through the second return parameter unsealingFlags in the unseal_data API.
+    // It tells the caller whether the underlying keyring has rotated the sealing key out and we need to re-seal the encrypted key.
     // At this point, if the reseal is not performed, it would not be possible to unseal the encrypted key the next time.
     if (needsReseal && !resealedEncryptionKeyBytes.empty())
     {
@@ -411,7 +410,7 @@ int DecryptFlowThreadpool(
     //
     // [Load flow]
     // 
-    //Get (encrypted) key bytes from disk, then pass into enclave to decrypt the encrypted input
+    //  Load user-bound key bytes and encrypted data from disk, then pass into enclave to decrypt
     //
 
     auto encryptedInputBytes1 = LoadBinaryData(fs::path(encryptedInputFilePath.string() + "1"));
@@ -476,7 +475,7 @@ int mainEncryptDecrypt(uint32_t activityLevel)
 
     veilLog.AddTimestampedLog(L"[Host] Starting from host", veil::any::logger::eventLevel::EVENT_LEVEL_CRITICAL);
 
-    // Create app+user enclave identity
+    // Create user enclave identity
     std::vector<uint8_t> ownerId = {};
 
     // Load enclave
@@ -515,7 +514,7 @@ int mainEncryptDecrypt(uint32_t activityLevel)
                 std::cin.ignore();
                 std::getline(std::wcin, input);
                 EncryptFlow(enclave.get(), input, keyFilePath, encryptedOutputFilePath, tagFilePath, veilLog);
-                std::wcout << L"Encryption in Enclave completed. \n Encrypted bytes are saved to disk in " << encryptedOutputFilePath << std::endl;
+                std::wcout << L"Encryption in Enclave completed. \nEncrypted bytes are saved to disk in " << encryptedOutputFilePath << std::endl;
                 veilLog.AddTimestampedLog(
                     L"[Host] Encryption in Enclave completed. Encrypted bytes are saved to disk in " + encryptedOutputFilePath.wstring(),
                     veil::any::logger::eventLevel::EVENT_LEVEL_CRITICAL);
@@ -579,7 +578,7 @@ int mainEncryptDecryptUserBound(uint32_t activityLevel)
     veilLog.AddTimestampedLog(L"[Host] Starting user-bound encryption from host", veil::any::logger::eventLevel::EVENT_LEVEL_CRITICAL);
 
     /******************************* Enclave setup *******************************/
-    // Create app+user enclave identity - use the new GetSecureId API from IKeyCredentialManagerStatics2
+    // Create user enclave identity using GetSecureId API
     std::vector<uint8_t> ownerId;
 
     try
@@ -610,7 +609,7 @@ int mainEncryptDecryptUserBound(uint32_t activityLevel)
     }
     catch (winrt::hresult_error const& ex)
     {
-        // If the new API is not available or fails, log the error and return
+        // API call failed, log the error and return
         std::wcout << L"Error: Failed to get secure ID using GetSecureId API (HRESULT: 0x"
             << std::hex << ex.code() << L")." << std::endl;
         std::wcout << L"Cannot proceed without a valid secure ID for user-bound encryption." << std::endl;
@@ -665,9 +664,9 @@ int mainEncryptDecryptUserBound(uint32_t activityLevel)
                 std::getline(std::wcin, input);
                 CreateEncryptionKeyOnFirstRun(enclave.get(), keyFilePath, config);
                 UserBoundEncryptFlow(enclave.get(), input, keyFilePath, encryptedOutputFilePath, config);
-                std::wcout << L"User-bound encryption in Enclave completed. \n Encrypted bytes are saved to disk in " << encryptedOutputFilePath << std::endl;
+                std::wcout << L"User-bound encryption in Enclave completed. \nEncrypted bytes are saved to disk in " << encryptedOutputFilePath << std::endl;
                 veilLog.AddTimestampedLog(
-                    L"[Host] User-bound encryption in Enclave completed. Encrypted bytes are saved to disk in " + encryptedOutputFilePath.wstring(),
+                    L"[Host] User-bound encryption in Enclave completed. \nEncrypted bytes are saved to disk in " + encryptedOutputFilePath.wstring(),
                 veil::any::logger::eventLevel::EVENT_LEVEL_CRITICAL);
                 programExecuted = true;
                 break;
@@ -696,7 +695,7 @@ int mainThreadPool(uint32_t /*activityLevel*/)
 {
     std::wcout << L"Running sample: Taskpool..." << std::endl;
 
-    // Create app+user enclave identity
+    // Create user enclave identity
     std::vector<uint8_t> ownerId = {};
 
     // Load enclave
@@ -732,7 +731,7 @@ int mainEncryptDecryptThreadpool(uint32_t activityLevel)
 {
     std::wcout << L"Running sample: Encrypt decrypt in taskpool..." << std::endl;
 
-    // Create app+user enclave identity
+    // Create user enclave identity
     std::vector<uint8_t> ownerId = {};
 
     // Load enclave
@@ -790,9 +789,9 @@ int mainEncryptDecryptThreadpool(uint32_t activityLevel)
                 std::cout << "Enter second string to encrypt: ";
                 std::getline(std::wcin, input2);
                 EncryptFlowThreadpool(enclave.get(), input1, input2, keyFilePath, encryptedInputFilePath, tagFilePath, veilLog);
-                std::wcout << L"Encryption in Enclave threadpool completed. \n Encrypted bytes are saved to disk in " << encryptedDataDirPath << std::endl;
+                std::wcout << L"Encryption in Enclave threadpool completed. \nEncrypted bytes are saved to disk in " << encryptedDataDirPath << std::endl;
                 veilLog.AddTimestampedLog(
-                    L"[Host] Encryption in Enclave threadpool completed. \n Encrypted bytes are saved to disk in " + encryptedDataDirPath.wstring(),
+                    L"[Host] Encryption in Enclave threadpool completed. \nEncrypted bytes are saved to disk in " + encryptedDataDirPath.wstring(),
                     veil::any::logger::eventLevel::EVENT_LEVEL_CRITICAL);
                 programExecuted = true;
                 break;

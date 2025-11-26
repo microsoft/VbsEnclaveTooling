@@ -31,7 +31,10 @@
 #include <sddl.h>
 #include "utils.vtl0.h"
 
+#include "utils.vtl0.h"
+
 using namespace winrt::Windows::Security::Credentials;
+using namespace veil::vtl0::implementation::debug;
 
 namespace veil::vtl0::userboundkey::implementation
 {
@@ -75,19 +78,21 @@ class unique_sessionhandle
         {
             try
             {
-                std::wcout << L"DEBUG: VTL0 unique_sessionhandle cleanup - calling into VTL1" << std::endl;
+                debug_wprint(L"DEBUG: VTL0 unique_sessionhandle cleanup - calling into VTL1");
                 auto sessionInfo = reinterpret_cast<uintptr_t>(m_handle);
                 auto enclaveInterface = veil_abi::Trusted::Stubs::export_interface(m_enclavePtr);
                 enclaveInterface.userboundkey_close_session(sessionInfo);
-                std::wcout << L"DEBUG: VTL0 session cleanup completed successfully" << std::endl;
+                debug_wprint(L"DEBUG: VTL0 session cleanup completed successfully");
             }
             catch (const std::exception& e)
             {
-                std::wcout << L"ERROR: Exception during VTL0 session cleanup: " << e.what() << std::endl;
+                std::wstring errorMsg = L"ERROR: Exception during VTL0 session cleanup: ";
+                errorMsg += std::wstring(e.what(), e.what() + strlen(e.what()));
+                debug_wprint(errorMsg);
             }
             catch (...)
             {
-                std::wcout << L"ERROR: Unknown exception during VTL0 session cleanup" << std::endl;
+                debug_wprint(L"ERROR: Unknown exception during VTL0 session cleanup");
             }
         }
         m_handle = nullptr;
@@ -131,40 +136,46 @@ CreateChallengeCallback(std::shared_ptr<veil::vtl0::userboundkey::implementation
 {
     return [sessionInfo, enclaveptr, callbackType](const auto& challenge) mutable -> winrt::Windows::Storage::Streams::IBuffer
     {
-        std::wcout << L"DEBUG: " << callbackType << L" callback challenge invoked! Challenge size: " << challenge.Length() << std::endl;
+        debug_wprint(L"DEBUG: " + callbackType + L" callback challenge invoked! Challenge size: " + std::to_wstring(challenge.Length()));
   
-        try {
+        try 
+        {
             auto enclaveInterface = veil_abi::Trusted::Stubs::export_interface(enclaveptr);
 
-            std::wcout << L"DEBUG: Converting challenge buffer..." << std::endl;
+            debug_wprint(L"DEBUG: Converting challenge buffer...");
             auto challengeVector = ConvertBufferToVector(challenge);
-            std::wcout << L"DEBUG: Challenge vector size: " << challengeVector.size() << std::endl;
+            debug_wprint(L"DEBUG: Challenge vector size: " + std::to_wstring(challengeVector.size()));
 
-            std::wcout << L"DEBUG: About to call userboundkey_get_attestation_report (" << callbackType << L" callback)..." << std::endl;
+            debug_wprint(L"DEBUG: About to call userboundkey_get_attestation_report (" + callbackType + L" callback)...");
             auto attestationReportAndSessionInfo = enclaveInterface.userboundkey_get_attestation_report(challengeVector);
-            std::wcout << L"DEBUG: userboundkey_get_attestation_report returned successfully (" << callbackType << L" callback)!" << std::endl;
+            debug_wprint(L"DEBUG: userboundkey_get_attestation_report returned successfully (" + callbackType + L" callback)!");
 
             // Store the session handle in the RAII wrapper with enclave pointer
             sessionInfo->set(
                 reinterpret_cast<USER_BOUND_KEY_SESSION_HANDLE>(attestationReportAndSessionInfo.sessionInfo),
                 enclaveptr
             );
-            if (callbackType == L"Challenge") {
-                std::wcout << L"DEBUG: Session stored: " << reinterpret_cast<uintptr_t>(sessionInfo->get()) << std::endl;
+            if (callbackType == L"Challenge") 
+            {
+                debug_wprint(L"DEBUG: Session stored: " + std::to_wstring(reinterpret_cast<uintptr_t>(sessionInfo->get())));
             }
       
             // Convert std::vector<uint8_t> back to IBuffer for return
-            std::wcout << L"DEBUG: Converting attestation report back to IBuffer..." << std::endl;
+            debug_wprint(L"DEBUG: Converting attestation report back to IBuffer...");
             auto result = winrt::Windows::Security::Cryptography::CryptographicBuffer::CreateFromByteArray(attestationReportAndSessionInfo.attestationReport);
-            std::wcout << L"DEBUG: " << callbackType << L" callback completed successfully!" << std::endl;
+            debug_wprint(L"DEBUG: " + callbackType + L" callback completed successfully!");
             return result;
         }
-        catch (const std::exception& e) {
-            std::wcout << L"DEBUG: Exception in " << callbackType << L" callback: " << e.what() << std::endl;
+        catch (const std::exception& e) 
+        {
+            std::wstring errorMsg = L"DEBUG: Exception in " + callbackType + L" callback: ";
+            errorMsg += std::wstring(e.what(), e.what() + strlen(e.what()));
+            debug_wprint(errorMsg);
             throw;
         }
-        catch (...) {
-            std::wcout << L"DEBUG: Unknown exception in " << callbackType << L" callback!" << std::endl;
+        catch (...) 
+        {
+            debug_wprint(L"DEBUG: Unknown exception in " + callbackType + L" callback!");
             throw;
         }
     };
@@ -243,7 +254,7 @@ veil_abi::Types::credentialAndSessionInfo veil_abi::Untrusted::Implementation::u
     const veil_abi::Types::keyCredentialCacheConfig& cache_config,
     uint32_t key_credential_creation_option)
 {
-    std::wcout << L"Inside userboundkey_establish_session_for_create_callback"<< std::endl;
+    debug_wprint(L"DEBUG: userboundkey_establish_session_for_create called");
     auto algorithm = GetAlgorithm(ecdh_protocol);
 
     // Convert the cacheConfig parameter to KeyCredentialCacheConfiguration
@@ -255,15 +266,15 @@ veil_abi::Types::credentialAndSessionInfo veil_abi::Untrusted::Implementation::u
     try
     {
         auto op = KeyCredentialManager::DeleteAsync(key_name);
-        std::wcout << "Deletion worked" << std::endl;
+        debug_wprint(L"Deletion worked");
         op.get();
     }
     catch (...)
     {
-        std::wcout << "Deletion failed" << std::endl;
+        debug_wprint(L"Deletion failed");
     }
-  
-    std::wcout << L"Calling RequestCreateAsync" << std::endl;
+
+    debug_wprint(L"Calling RequestCreateAsync");
     auto credentialResult = KeyCredentialManager::RequestCreateAsync(
         key_name,
         static_cast<KeyCredentialCreationOption>(key_credential_creation_option),
@@ -275,7 +286,7 @@ veil_abi::Types::credentialAndSessionInfo veil_abi::Untrusted::Implementation::u
         CreateChallengeCallback(sessionInfo, enclaveptr, L"Create")
     ).get();
 
-    std::wcout << L"RequestCreateAsync returned" << std::endl;
+    debug_wprint(L"RequestCreateAsync returned");
 
     // Check if the operation was successful
     auto status = credentialResult.Status();
@@ -284,7 +295,7 @@ veil_abi::Types::credentialAndSessionInfo veil_abi::Untrusted::Implementation::u
         THROW_HR(static_cast<HRESULT>(status));
     }
 
-    std::wcout << L"DEBUG: Transferring credential and session ownership to VTL1" << std::endl;
+    debug_wprint(L"DEBUG: Transferring credential and session ownership to VTL1");
 
     credentialAndSessionInfo result;
     void* tempCredential = nullptr;
@@ -317,8 +328,8 @@ veil_abi::Types::credentialAndSessionInfo veil_abi::Untrusted::Implementation::u
     {
         THROW_HR(static_cast<HRESULT>(status));
     }
-    
-    std::wcout << L"DEBUG: Transferring credential and session ownership to VTL1" << std::endl;
+
+    debug_wprint(L"DEBUG: Transferring credential and session ownership to VTL1");
 
     credentialAndSessionInfo result;
     void* tempCredential = nullptr;
@@ -338,9 +349,8 @@ std::vector<uint8_t> veil_abi::Untrusted::Implementation::userboundkey_get_autho
     uintptr_t window_id)
 {
     using namespace winrt::Windows::Security::Cryptography;
-
-    std::wcout << L"DEBUG: userboundkey_get_authorization_context_from_credential called with credential: 0x" 
-        << std::hex << credential_ptr << std::dec << std::endl;
+    debug_wprint(L"DEBUG: userboundkey_get_authorization_context_from_credential called with credential: 0x" + 
+        std::to_wstring(credential_ptr));
 
     try
     {
@@ -349,8 +359,8 @@ std::vector<uint8_t> veil_abi::Untrusted::Implementation::userboundkey_get_autho
         void* abi = reinterpret_cast<void*>(credential_ptr);
         KeyCredential credential { nullptr };
         winrt::copy_from_abi(credential, abi);
-   
-        std::wcout << L"DEBUG: Created non-owning KeyCredential wrapper" << std::endl;
+
+        debug_wprint(L"DEBUG: Created non-owning KeyCredential wrapper");
 
         // Extract authorization context
         auto encryptedBuffer = CryptographicBuffer::CreateFromByteArray(
@@ -360,18 +370,20 @@ std::vector<uint8_t> veil_abi::Untrusted::Implementation::userboundkey_get_autho
         auto authorizationContext = veil::vtl0::internal::utils::GetAuthorizationContext(credential, encryptedBuffer);
         auto result = ConvertBufferToVector(authorizationContext);
 
-        std::wcout << L"DEBUG: userboundkey_get_authorization_context_from_credential completed successfully" << std::endl;
+        debug_wprint(L"DEBUG: userboundkey_get_authorization_context_from_credential completed successfully");
   
         return result;
     }
     catch (const std::exception& e)
     {
-        std::wcout << L"DEBUG: Exception in userboundkey_get_authorization_context_from_credential: " << e.what() << std::endl;
+        std::wstring errorMsg = L"DEBUG: Exception in userboundkey_get_authorization_context_from_credential: ";
+        errorMsg += std::wstring(e.what(), e.what() + strlen(e.what()));
+        debug_wprint(errorMsg);
         throw;
     }
     catch (...)
     {
-        std::wcout << L"DEBUG: Unknown exception in userboundkey_get_authorization_context_from_credential" << std::endl;
+        debug_wprint(L"DEBUG: Unknown exception in userboundkey_get_authorization_context_from_credential");
         throw;
     }
 }
@@ -383,8 +395,8 @@ std::vector<uint8_t> veil_abi::Untrusted::Implementation::userboundkey_get_secre
     const std::wstring& message,
     uintptr_t window_id)
 {
-    std::wcout << L"DEBUG: userboundkey_get_secret_from_credential called with credential: 0x" 
-        << std::hex << credential_ptr << std::dec << std::endl;
+    debug_wprint(L"DEBUG: userboundkey_get_secret_from_credential called with credential: 0x" + 
+        std::to_wstring(credential_ptr));
 
     try
     {
@@ -394,28 +406,30 @@ std::vector<uint8_t> veil_abi::Untrusted::Implementation::userboundkey_get_secre
         KeyCredential credential {nullptr};
         winrt::copy_from_abi(credential, abi);
 
-        std::wcout << L"DEBUG: Created non-owning KeyCredential wrapper" << std::endl;
+        debug_wprint(L"DEBUG: Created non-owning KeyCredential wrapper");
 
-        // Derive shared secret. This prompts for the hello PIN.
+        // Derive shared secret. This prompts for the Windows Hello PIN/biometric.
         auto secret = credential.RequestDeriveSharedSecretAsync(
             (winrt::Windows::UI::WindowId)window_id,
             message,
             winrt::Windows::Security::Cryptography::CryptographicBuffer::CreateFromByteArray(encrypted_kcm_request_for_derive_shared_secret)).get();
 
         auto result = ConvertBufferToVector(secret.Result());
-  
-        std::wcout << L"DEBUG: userboundkey_get_secret_from_credential completed successfully" << std::endl;
+
+        debug_wprint(L"DEBUG: userboundkey_get_secret_from_credential completed successfully");
 
         return result;
     }
     catch (const std::exception& e)
     {
-        std::wcout << L"DEBUG: Exception in userboundkey_get_secret_from_credential: " << e.what() << std::endl;
+        std::wstring errorMsg = L"DEBUG: Exception in userboundkey_get_secret_from_credential: ";
+        errorMsg += std::wstring(e.what(), e.what() + strlen(e.what()));
+        debug_wprint(errorMsg);
         throw;
     }
     catch (...)
     {
-        std::wcout << L"DEBUG: Unknown exception in userboundkey_get_secret_from_credential" << std::endl;
+        debug_wprint(L"DEBUG: Unknown exception in userboundkey_get_secret_from_credential");
         throw;
     }
 }
@@ -429,12 +443,12 @@ std::wstring veil_abi::Untrusted::Implementation::userboundkey_format_key_name(c
 // VTL0 function to safely delete/release a credential using WinRT ownership patterns
 void veil_abi::Untrusted::Implementation::userboundkey_delete_credential(uintptr_t credential_ptr)
 {
-    std::wcout << L"DEBUG: userboundkey_delete_credential called with credential: 0x" 
-        << std::hex << credential_ptr << std::dec << std::endl;
+    debug_wprint(L"DEBUG: userboundkey_delete_credential called with credential: 0x" + 
+    std::to_wstring(credential_ptr));
 
     if (credential_ptr == 0)
     {
-        std::wcout << L"DEBUG: userboundkey_delete_credential - credential_ptr is null, nothing to delete" << std::endl;
+        debug_wprint(L"DEBUG: userboundkey_delete_credential - credential_ptr is null, nothing to delete");
         return;
     }
 
@@ -442,24 +456,26 @@ void veil_abi::Untrusted::Implementation::userboundkey_delete_credential(uintptr
     {
         void* abi = reinterpret_cast<void*>(credential_ptr);
         KeyCredential credential{ abi, winrt::take_ownership_from_abi };
-  
-        std::wcout << L"DEBUG: userboundkey_delete_credential - Created owning KeyCredential wrapper via take_ownership_from_abi" << std::endl;
+
+        debug_wprint(L"DEBUG: userboundkey_delete_credential - Created owning KeyCredential wrapper via take_ownership_from_abi");
 
         auto released_abi = winrt::detach_abi(credential);
-     
-        std::wcout << L"DEBUG: userboundkey_delete_credential - Called detach_abi, released_abi: 0x" 
-            << std::hex << reinterpret_cast<uintptr_t>(released_abi) << std::dec << std::endl;
-        
-        std::wcout << L"DEBUG: userboundkey_delete_credential - KeyCredential wrapper going out of scope, will call proper cleanup" << std::endl;
+
+        debug_wprint(L"DEBUG: userboundkey_delete_credential - Called detach_abi, released_abi: 0x" + 
+        std::to_wstring(reinterpret_cast<uintptr_t>(released_abi)));
+
+        debug_wprint(L"DEBUG: userboundkey_delete_credential - KeyCredential wrapper going out of scope, will call proper cleanup");
     }
     catch (const std::exception& e)
     {
-        std::wcout << L"DEBUG: Exception in userboundkey_delete_credential: " << e.what() << std::endl;
+        std::wstring errorMsg = L"DEBUG: Exception in userboundkey_delete_credential: ";
+        errorMsg += std::wstring(e.what(), e.what() + strlen(e.what()));
+        debug_wprint(errorMsg);
     }
     catch (...)
     {
-        std::wcout << L"DEBUG: Unknown exception in userboundkey_delete_credential" << std::endl;
+        debug_wprint(L"DEBUG: Unknown exception in userboundkey_delete_credential");
     }
-    
-    std::wcout << L"DEBUG: userboundkey_delete_credential completed" << std::endl;
+
+    debug_wprint(L"DEBUG: userboundkey_delete_credential completed");
 }
