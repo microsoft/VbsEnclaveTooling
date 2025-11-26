@@ -51,5 +51,7 @@ namespace veil::vtl0::internal::utils
             // are available. This should mean that the updates to the KCM APIs are available as well.
             throw wil::ResultException(E_NOTIMPL);
         }
+        #endif
     }
 }
+
