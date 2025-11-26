@@ -2,6 +2,8 @@
 // Licensed under the MIT License.
 
 #include <pch.h>
+#include <algorithm>
+#include <cctype>
 #include <CmdlineArgumentsParser.h>
 
 using namespace ErrorHelpers;
@@ -29,9 +31,10 @@ bool CmdlineArgumentsParser::ParseArguments(int argc, char* argv[])
     }
 
     uint32_t args_found = 0U;
-    for(int i = 1; i < argc; ++i)
+    for (int i = 1; i < argc; ++i)
     {
         std::string arg = argv[i];
+        TransformCaseToLower(arg);
 
         if (arg == "-h" || arg == "--help")
         {
@@ -39,47 +42,48 @@ bool CmdlineArgumentsParser::ParseArguments(int argc, char* argv[])
             m_should_display_help = true;
             return m_should_display_help;
         }
-        else if (arg == "--Language")
+        else if (arg == "--language")
         {
             CHECK_SUCCESS(GetSupportedLanguageForCodeGen(++i, argv, argc, m_supported_language));
             args_found++;
         }
-        else if (arg == "--EdlPath")
+        else if (arg == "--edlpath")
         {
             CHECK_SUCCESS(GetEdlPathFromArgs(++i, argv, argc, m_edl_path));
             args_found++;
         }
-        else if (arg == "--OutputDirectory")
+        else if (arg == "--outputdirectory")
         {
             CHECK_SUCCESS(GetPathToOutputDirectoryFromArgs(++i, argv, argc, m_out_directory));
             args_found++;
         }
-        else if (arg == "--ErrorHandling")
+        else if (arg == "--errorhandling")
         {
+            // Value is no longer used in codegen but we keep it for backwards compatibility.
             CHECK_SUCCESS(GetErrorHandlingFromArg(++i, argv, argc, m_error_handling_kind));
             args_found++;
         }
-        else if (arg == "--VirtualTrustLayer")
+        else if (arg == "--virtualtrustlayer")
         {
             CHECK_SUCCESS(GetVirtualTrustLayerFromArg(++i, argv, argc, m_virtual_trust_layer_kind));
             args_found++;
         }
-        else if (arg == "--Namespace")
+        else if (arg == "--namespace")
         {
             m_generated_namespace_name = argv[++i];
             args_found++;
         }
-        else if (arg == "--Vtl0ClassName")
+        else if (arg == "--vtl0classname")
         {
             m_vtl0_class_name = argv[++i];
             args_found++;
         }
-        else if (arg == "--ImportDirectories")
+        else if (arg == "--importdirectories")
         {
             CHECK_SUCCESS(GetImportDirectoriesFromArgs(++i, argv, argc, m_import_directories));
             args_found++;
         }
-        else if (arg == "--FlatbuffersCompilerPath")
+        else if (arg == "--flatbufferscompilerpath")
         {
             CHECK_SUCCESS(GetFlatbuffersCompilerPathFromArgs(++i, argv, argc, m_flatbuffer_compiler_path));
             args_found++;
@@ -97,9 +101,9 @@ bool CmdlineArgumentsParser::ParseArguments(int argc, char* argv[])
             ErrorId::IncorrectNonHelpArgsProvided,
             m_required_args,
             args_found);
-
         return false;
     }
 
     return true;
 }
+

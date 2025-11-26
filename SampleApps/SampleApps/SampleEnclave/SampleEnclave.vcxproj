@@ -59,15 +59,15 @@
     <VC_LibraryPath_Enclave Condition="'$(Platform)'=='x64'">$(VC_LibraryPath_VC_x64_Desktop)\enclave</VC_LibraryPath_Enclave>
     <VC_LibraryPath_Enclave Condition="'$(Platform)'=='ARM64'">$(VC_LibraryPath_VC_arm64_Desktop)\enclave</VC_LibraryPath_Enclave>
     <WindowsSDK_LibraryPath_Enclave>
-		"$(WindowsSDK_LibraryPath)\..\ucrt_enclave\$(Platform)"
-	</WindowsSDK_LibraryPath_Enclave>
+		  "$(WindowsSDK_LibraryPath)\..\ucrt_enclave\$(Platform)"
+	  </WindowsSDK_LibraryPath_Enclave>
     <VBS_Enclave_Dependencies>
-	  vertdll.lib;
-	  veinterop.lib;
-	  bcrypt.lib;
-	  $(VC_LibraryPath_Enclave)\libcmt.lib;
-	  $(VC_LibraryPath_Enclave)\libvcruntime.lib;
-	  "C:\Program Files (x86)\Windows Kits\10\Lib\10.0.26499.0\ucrt_enclave\x64\ucrt.lib";
+	    vertdll.lib;
+	    veinterop.lib;
+	    bcrypt.lib;
+	    $(VC_LibraryPath_Enclave)\libcmt.lib;
+	    $(VC_LibraryPath_Enclave)\libvcruntime.lib;
+	    "C:\Program Files (x86)\Windows Kits\10\Lib\10.0.26499.0\ucrt_enclave\x64\ucrt.lib";
     </VBS_Enclave_Dependencies>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
@@ -118,6 +118,26 @@
     <VbsEnclaveConsumeCppSupportLib>true</VbsEnclaveConsumeCppSupportLib>
   </PropertyGroup>
   <PropertyGroup Label="UserMacros" />
+  <PropertyGroup>
+    <VC_LibraryPath_Enclave Condition="'$(Platform)'=='x64'">$(VC_LibraryPath_VC_x64_Desktop)\enclave</VC_LibraryPath_Enclave>
+    <VC_LibraryPath_Enclave Condition="'$(Platform)'=='ARM64'">$(VC_LibraryPath_VC_arm64_Desktop)\enclave</VC_LibraryPath_Enclave>
+    <WindowsSDK_LibraryPath_Enclave>$(WindowsSDK_LibraryPath)\..\ucrt_enclave\$(Platform)</WindowsSDK_LibraryPath_Enclave>
+    <VeInteropLibPath>$(WindowsSDK_LibraryPath)\$(Platform)\veinterop.lib</VeInteropLibPath>
+      
+    <!-- For use when veinterop does not exist in Windows SDK. -->
+    <VeInteropLib Condition="!Exists('$(VeInteropLibPath)')"></VeInteropLib>
+
+    <!-- For use when veinterop exists in Windows SDK. -->
+    <VeInteropLib Condition="Exists('$(VeInteropLibPath)')">$(VeInteropLibPath)</VeInteropLib>
+    <VBS_Enclave_Dependencies>
+        vertdll.lib;
+        $(VeInteropLib);
+        bcrypt.lib;
+        $(VC_LibraryPath_Enclave)\libcmt.lib;
+        $(VC_LibraryPath_Enclave)\libvcruntime.lib;
+        $(WindowsSDK_LibraryPath_Enclave)\ucrt.lib;
+    </VBS_Enclave_Dependencies>
+  </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|ARM64'">
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>

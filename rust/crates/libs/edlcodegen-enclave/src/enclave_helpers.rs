@@ -73,7 +73,7 @@ where
     enclave_copy_out_of_enclave(
         // SAFETY:
         // We are obtaining a raw pointer to the VTL0 `buffer_size` field inside
-        // the context struct and copying the enclave's the size of the slice into it.
+        // the context struct and copying the size of the slice into it.
         // This is unsafe since we're dereferencing a raw pointer to access the
         // buffer_size .
         unsafe { &raw mut (*vtl0_context_ptr).returned_parameters.buffer_size },

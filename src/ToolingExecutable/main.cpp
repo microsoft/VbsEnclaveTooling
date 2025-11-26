@@ -5,13 +5,13 @@
 #include <CmdlineParsingHelpers.h>
 #include <CmdlineArgumentsParser.h>
 #include <Edl\Parser.h>
-#include <CodeGeneration\CodeGeneration.h>
+#include <CodeGeneration\Cpp\CodeGeneration.h>
+#include <CodeGeneration\Common\Types.h>
 #include <wil\result_macros.h>
 
 using namespace EdlProcessor;
 using namespace CmdlineParsingHelpers;
-using namespace CodeGeneration;
-
+using namespace CodeGeneration::Cpp;
 
 int main(int argc, char* argv[])
 {
@@ -36,7 +36,7 @@ int main(int argc, char* argv[])
         auto edl_parser = EdlParser(argument_parser.EdlFilePath(), argument_parser.ImportDirectories());
         Edl edl = edl_parser.Parse();
 
-        auto cpp_code_generator = CppCodeGenerator(
+        auto metadata = CmdlineMetadata(
             std::move(edl),
             argument_parser.OutDirectory(),
             argument_parser.ErrorHandling(),
@@ -45,7 +45,8 @@ int main(int argc, char* argv[])
             argument_parser.Vtl0ClassName(),
             argument_parser.FlatbufferCompiler());
 
-        cpp_code_generator.Generate();
+        CppCodeGenerator(metadata).Generate();
+        
     }
     catch (const std::exception& exception)
     {

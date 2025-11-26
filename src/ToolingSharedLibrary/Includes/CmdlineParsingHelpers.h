@@ -25,13 +25,13 @@ namespace CmdlineParsingHelpers
             << "--Namespace <name_of_class> --FlatbuffersCompilerPath <absolute_path_to_file> --ImportDirectories <absolute_directory_paths> \n"
             << "\n"
             << "Mandatory arguments:\n"
-            << "  --Language [cpp]                                     The progamming language that will be used in the generated code\n"
+            << "  --Language [cpp]                                     The programming language that will be used in the generated code\n"
             << "  --EdlPath <filePath.edl>                             Absolute path to the .edl file that we should use to generate code in the language outlined in '--language'\n"
-            << "  --ErrorHandling [ErrorCode | Exception]              The error handling the generated code should use\n"
             << "  --VirtualTrustLayer [HostApp | Enclave]              The virtual trust layer that the code should be generated for.\n"
             << "\n"
             << "Optional arguments:\n"
             << "  -h, --help                                           Print this help message\n"
+            << "  --ErrorHandling [ErrorCode | Exception]              Deprecated; has no effect and will be removed in a future version\n"
             << "  --ImportDirectories                                  A semicolon-separated list of fully qualified directory paths containing .edl files that may be imported by the .edl file specified with the --EdlPath argument. \n"
             << "  --OutputDirectory <DirectoryPath>                    Absolute path to directory where all generated files should be placed. (By default this is the current directory)\n"
             << "  --Vtl0ClassName <name_of_class>                      name of the vtl0 class that will be generated for use by the hostapp. (By default this is the name of the .edl file with the word 'Wrapper' appended to it).\n"
@@ -60,6 +60,12 @@ namespace CmdlineParsingHelpers
         Enclave,
     };
 
+    inline void TransformCaseToLower(std::string& str)
+    {
+        std::transform(str.begin(), str.end(), str.begin(),
+            [] (unsigned char c) { return std::tolower(c); });
+    }
+
     static ErrorId inline GetSupportedLanguageForCodeGen(
         std::uint32_t index,
         char* args[],
@@ -73,12 +79,14 @@ namespace CmdlineParsingHelpers
         }
 
         std::string language{args[index]};
-        if (language == "c++" || language == "C++")
+        TransformCaseToLower(language);
+
+        if (language == "c++")
         {
             supported_language = SupportedLanguageKind::Cpp;
             return ErrorId::Success;
         }
-        
+
         PrintError(ErrorId::UnsupportedLanguage, language);
         PRINT_AND_RETURN_ERROR(ErrorId::UnsupportedLanguage, language);
     }
@@ -143,13 +151,14 @@ namespace CmdlineParsingHelpers
         }
 
         std::string error_handling(args[index]);
+        TransformCaseToLower(error_handling);
 
-        if(error_handling == "ErrorCode")
+        if(error_handling == "errorcode")
         {
             errorKind = ErrorHandlingKind::ErrorCode;
             return ErrorId::Success;
         }
-        else if (error_handling == "Exception")
+        else if (error_handling == "exception")
         {
             errorKind = ErrorHandlingKind::Exception;
             return ErrorId::Success;
@@ -171,13 +180,14 @@ namespace CmdlineParsingHelpers
         }
 
         std::string error_handling(args[index]);
+        TransformCaseToLower(error_handling);
 
-        if (error_handling == "HostApp")
+        if (error_handling == "hostapp")
         {
             layer_kind = VirtualTrustLayerKind::HostApp;
             return ErrorId::Success;
         }
-        else if (error_handling == "Enclave")
+        else if (error_handling == "enclave")
         {
             layer_kind = VirtualTrustLayerKind::Enclave;
             return ErrorId::Success;
