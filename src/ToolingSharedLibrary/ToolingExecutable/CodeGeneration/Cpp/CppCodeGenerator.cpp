@@ -116,6 +116,7 @@ namespace CodeGeneration::Cpp
         SaveFileToOutputFolder("TypeMetadata.h", abi_save_location, abi_metadata_types_header);
 
         SaveFileToOutputFolder(c_flatbuffer_fbs_filename, abi_save_location, flatbuffer_schema);
+        SaveFileToOutputFolder(c_abi_flatbuffers_file_name, abi_save_location, c_abi_flatbuffers_content);
         CompileFlatbufferFile(m_flatbuffer_compiler_path,c_cpp_gen_args, abi_save_location);
     }
 

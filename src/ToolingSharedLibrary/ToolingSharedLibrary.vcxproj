@@ -194,6 +194,9 @@
     <ClInclude Include="Includes\CodeGeneration\Common\Types.h" />
     <ClInclude Include="Includes\CodeGeneration\Flatbuffers\BuilderHelpers.h" />
     <ClInclude Include="Includes\CodeGeneration\Flatbuffers\Constants.h" />
+    <ClInclude Include="Includes\CodeGeneration\Rust\CodeGeneration.h" />
+    <ClInclude Include="Includes\CodeGeneration\Rust\CodeGenerationHelpers.h" />
+    <ClInclude Include="Includes\CodeGeneration\Rust\Constants.h" />
     <ClInclude Include="Includes\Utils\Helpers.h" />
     <ClInclude Include="Includes\VbsEnclaveABI\Enclave\EnclaveHelpers.h">
       <!-- Eventually Includes MemoryChecks.h. See comment about MemoryChecks.h below. -->
@@ -239,6 +242,8 @@
     <ClCompile Include="ToolingExecutable\CodeGeneration\Cpp\CppCodeBuilder.cpp" />
     <ClCompile Include="ToolingExecutable\CodeGeneration\Cpp\CppCodeGenerator.cpp" />
     <ClCompile Include="ToolingExecutable\CodeGeneration\Flatbuffers\BuilderHelpers.cpp" />
+    <ClCompile Include="ToolingExecutable\CodeGeneration\Rust\RustCodeBuilder.cpp" />
+    <ClCompile Include="ToolingExecutable\CodeGeneration\Rust\RustCodeGenerator.cpp" />
     <ClCompile Include="ToolingExecutable\Edl\LexicalAnalyzer.cpp" />
     <ClCompile Include="ToolingExecutable\Edl\Parser.cpp" />
   </ItemGroup>

@@ -2,18 +2,17 @@
 // Licensed under the MIT License.
 
 #include <pch.h>
-#include <CodeGeneration\Cpp\CodeGeneration.h>
-#include <CodeGeneration\Cpp\CodeGenerationHelpers.h>
-#include <CodeGeneration\Cpp\Constants.h>
 #include <CodeGeneration\Common\Constants.h>
 #include <CodeGeneration\Flatbuffers\Constants.h>
 #include <CodeGeneration\Flatbuffers\BuilderHelpers.h>
+#include <Exceptions.h>
 #include <Edl\Structures.h>
 #include <Edl\Utils.h>
 #include <sstream>
 
 using namespace EdlProcessor;
 using namespace CodeGeneration::Common;
+using namespace ToolingExceptions;
 
 namespace CodeGeneration::Flatbuffers
 {
@@ -26,7 +25,8 @@ namespace CodeGeneration::Flatbuffers
     {
         std::ostringstream schema {};
         auto schema_namespace = std::format(c_flatbuffer_namespace, developer_namespace_name);
-        schema << c_autogen_header_string << schema_namespace;
+        schema << c_autogen_header_string << c_edl_types_include << schema_namespace;
+        std::string first_found_struct {};
 
         for (const auto& dev_type : developer_types.values())
         {
@@ -36,6 +36,11 @@ namespace CodeGeneration::Flatbuffers
             }
             else if (dev_type.IsEdlType(EdlTypeKind::Struct))
             {
+                if (first_found_struct.empty())
+                {
+                    first_found_struct = dev_type.m_name;
+                }
+
                 schema << BuildTable(dev_type.m_fields, dev_type.m_name);
             }
         }
@@ -44,14 +49,17 @@ namespace CodeGeneration::Flatbuffers
         {
             // type will only ever be structs
             schema << BuildTable(dev_type.m_fields, dev_type.m_name);
-        }
 
-        // Add Wstring table by default
-        schema << c_flatbuffer_wstring_table;
+            if (first_found_struct.empty())
+            {
+                first_found_struct = dev_type.m_name;
+            }
+        }
 
         schema << c_flatbuffer_register_callback_tables;
 
-        schema << c_flatbuffer_root_table << c_flatbuffer_root_type;
+        // Make first found struct the root type.
+        schema << std::format(c_flatbuffer_root_type, first_found_struct);
 
         return schema.str();
     }
@@ -121,7 +129,7 @@ namespace CodeGeneration::Flatbuffers
             case EdlTypeKind::String:
                 return "string"; // natively supported by flatbuffers
             case EdlTypeKind::WString:
-                return "WString"; // array of uint16s that we convert to std::wstring
+                return "edl.WString";
             case EdlTypeKind::Enum:
             case EdlTypeKind::Struct:
                 return type_info.m_name;
@@ -145,6 +153,10 @@ namespace CodeGeneration::Flatbuffers
             info.m_type_kind == EdlTypeKind::WString)
         {
             inline_type_string = "(native_inline, required)";
+        }
+        else
+        {
+            inline_type_string = "(required)";
         }
 
         return inline_type_string;
@@ -196,7 +208,9 @@ namespace CodeGeneration::Flatbuffers
                     GetFlatBufferType(*inner_type),
                     optional_val);
             }
-            else if (declaration.IsEdlType(EdlTypeKind::Struct))
+            else if (declaration.IsEdlType(EdlTypeKind::Struct) ||
+                     declaration.IsEdlType(EdlTypeKind::WString) ||
+                     declaration.IsEdlType(EdlTypeKind::String))
             {
                 // We generate structs as tables using the Flatbuffer object api. Unfortunately for C++ it generates nested
                 // tables as unique_ptr<T> where T is the Flatbuffer representation of the struct. There is currently
@@ -206,7 +220,7 @@ namespace CodeGeneration::Flatbuffers
                 table_body << std::format(
                     "    {} : {} {};\n",
                     declaration.m_name,
-                    declaration.m_edl_type_info.m_name,
+                    GetFlatBufferType(declaration.m_edl_type_info),
                     GetRequiredStringForField(declaration));
             }
             else if (declaration.IsEdlType(EdlTypeKind::Enum))
