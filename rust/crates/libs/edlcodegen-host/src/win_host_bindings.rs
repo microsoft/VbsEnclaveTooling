@@ -31,7 +31,7 @@ windows::core::link!("kernel32.dll" "system" fn HeapFree(
 // For testing we use the mock_functions feature so calls to CallEnclave and GetProcAddress
 // can be mocked for testing.
 #[cfg(not(feature = "mock_functions"))]
-windows::core::link!("kernel32.dll" "system" fn CallEnclave(
+windows::core::link!("kernelbase.dll" "system" fn CallEnclave(
     lproutine : isize,
     lpparameter : *const core::ffi::c_void,
     fwaitforthread : windows::core::BOOL,

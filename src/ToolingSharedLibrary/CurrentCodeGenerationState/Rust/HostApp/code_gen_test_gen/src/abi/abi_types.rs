@@ -12,8 +12,8 @@ use edlcodegen_host::EdlDerive;
 
 
 #[derive(Debug, Clone, PartialEq, Default, EdlDerive)]
-#[target_struct(flatbuffer_types::FuncWithAllArgs_0_argsT)]
-pub struct FuncWithAllArgs_0_args {
+#[target_struct(flatbuffer_types::FuncWithAllArgs_0_ArgsT)]
+pub struct FuncWithAllArgs_0_Args {
     pub m_arg1: bool,
     pub m_arg2: Option<u32>,
     pub m_arg3: Option<i32>,
@@ -31,8 +31,8 @@ pub struct FuncWithAllArgs_0_args {
 }
 
 #[derive(Debug, Clone, PartialEq, Default, EdlDerive)]
-#[target_struct(flatbuffer_types::FuncWithAllArgs_1_argsT)]
-pub struct FuncWithAllArgs_1_args {
+#[target_struct(flatbuffer_types::FuncWithAllArgs_1_ArgsT)]
+pub struct FuncWithAllArgs_1_Args {
     pub m_arg1: bool,
     pub m_arg2: Option<u32>,
     pub m_arg3: Option<i32>,

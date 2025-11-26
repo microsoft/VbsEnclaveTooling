@@ -34,7 +34,7 @@ doctest = false
 
 [dependencies]
 {}
-flatbuffers = "25.9.23"
+flatbuffers = {{ version = "25.9.23", default-features = false }}
 )";
 
     inline constexpr std::string_view c_abi_types_file_name = "abi_types.rs";

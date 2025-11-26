@@ -21,7 +21,7 @@ table TestStruct2 {
     struct_opt : TestStruct1 ;
  }
 
-table FuncWithAllArgs_0_args {
+table FuncWithAllArgs_0_Args {
     m_arg1 : bool;
     m_arg2 : uint32 = null;
     m_arg3 : int32 = null;
@@ -34,7 +34,7 @@ table FuncWithAllArgs_0_args {
     m__return_value_ : int32;
  }
 
-table FuncWithAllArgs_1_args {
+table FuncWithAllArgs_1_Args {
     m_arg1 : bool;
     m_arg2 : uint32 = null;
     m_arg3 : int32 = null;

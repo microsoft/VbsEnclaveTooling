@@ -7,8 +7,6 @@ edition =  { workspace = true }
 edlcodegen-core = { workspace = true }
 spin = { workspace = true }
 windows-link = { workspace = true }
-windows-result = { workspace = true }
-windows-sys = { workspace = true, features = ["Win32_System"] }
 
 [features]
 mock_functions = []

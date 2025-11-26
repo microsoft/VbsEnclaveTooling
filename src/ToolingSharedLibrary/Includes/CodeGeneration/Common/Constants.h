@@ -12,7 +12,7 @@ namespace CodeGeneration::Common
 
     static inline constexpr std::string_view c_vtl0_enclave_class_name = "{}Wrapper";
 
-    static inline constexpr std::string_view c_function_args_struct = "{}_args";
+    static inline constexpr std::string_view c_function_args_struct = "{}_Args";
 
     static inline constexpr std::string_view c_generated_stub_name_no_quotes = "{}_Generated_Stub";
 

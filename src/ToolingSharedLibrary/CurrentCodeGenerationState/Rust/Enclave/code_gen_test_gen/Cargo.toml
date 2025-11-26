@@ -9,5 +9,5 @@ doc = false
 doctest = false
 
 [dependencies]
-edlcodegen-enclave = { git = "https://github.com/microsoft/VbsEnclaveTooling", subdir = "rust" }
-flatbuffers = "25.9.23"
+edlcodegen-enclave = { path = "../../../../../libs/edlcodegen-enclave" }
+flatbuffers = { version = "25.9.23", default-features = false }
