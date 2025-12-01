@@ -280,7 +280,7 @@ namespace CodeGeneration::Rust
         for (auto& func : functions.values())
         {
             auto generated_stub_name = std::format(c_generated_stub_name_no_quotes, func.abi_m_name);
-            std::string callbacks_name_with_quotes = std::format("\"Untrusted::{}\",", generated_stub_name);
+            std::string callbacks_name_with_quotes = std::format("\"{}\",", generated_stub_name);
             callback_names << callbacks_name_with_quotes;
             callback_addresses << std::format("abi_func_to_address(Self::{}), ", generated_stub_name);
         }

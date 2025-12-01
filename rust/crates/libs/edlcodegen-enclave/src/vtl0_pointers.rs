@@ -13,10 +13,7 @@ pub struct Vtl0MemoryPtr<T> {
 
 impl<T> Vtl0MemoryPtr<T> {
     /// Creates a wrapper around an existing pointer allocated by the host.
-    ///
-    /// # Safety
-    /// The pointer must be valid and allocated through the enclave host ABI.
-    pub const unsafe fn from_raw(ptr: *mut T) -> Self {
+    pub const fn from_raw(ptr: *mut T) -> Self {
         Self { ptr }
     }
 
@@ -53,10 +50,8 @@ impl<T> Drop for Vtl0MemoryPtr<T> {
         }
 
         // TODO: Should figure out how we can Log somehow.
-        let _ = unsafe {
-            vtl0_function_map()
-                .read()
-                .deallocate_vtl0_memory(self.ptr as *mut c_void)
-        };
+        let _ = vtl0_function_map()
+            .read()
+            .deallocate_vtl0_memory(self.ptr as *mut c_void);
     }
 }

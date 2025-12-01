@@ -9,15 +9,14 @@ use crate::win_enclave_bindings::{
 use core::{ffi::c_void, mem};
 
 #[allow(unused_imports)]
-use edlcodegen_core::edl_core_ffi::{S_OK, WIN32_FALSE, WIN32_TRUE};
-use edlcodegen_core::edl_core_types::AbiError;
+use edlcodegen_core::edl_core_types::{AbiError, BOOL, S_OK, WIN32_FALSE, WIN32_TRUE};
 use spin::Once;
 
 #[cfg(not(debug_assertions))]
-const SHOULD_RESTRICT_ACCESS: windows_result::BOOL = WIN32_TRUE; // for release
+const SHOULD_RESTRICT_ACCESS: BOOL = WIN32_TRUE; // for release
 
 #[cfg(debug_assertions)]
-const SHOULD_RESTRICT_ACCESS: windows_result::BOOL = WIN32_FALSE; // for debug
+const SHOULD_RESTRICT_ACCESS: BOOL = WIN32_FALSE; // for debug
 
 #[allow(dead_code)]
 pub fn enable_enclave_restrict_containing_process_access_once() {

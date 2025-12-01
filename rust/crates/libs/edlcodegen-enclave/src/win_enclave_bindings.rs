@@ -1,8 +1,7 @@
 // The below code is used so rust code can call into the C Apis in vertdll. There is
 // only a minimal amount of enclave specific Win32 apis needed by this crate.
 #![allow(non_camel_case_types, non_snake_case, unused_imports)]
-use edlcodegen_core::edl_core_ffi::{HANDLE, HEAP_FLAGS, HEAP_ZERO_MEMORY, WIN32_ERROR};
-use windows_sys::core::{BOOL, HRESULT};
+use core::ffi::c_void;
 
 #[repr(C, packed(1))]
 #[derive(Clone, Copy)]
@@ -30,7 +29,7 @@ impl Default for ENCLAVE_IDENTITY {
 pub struct ENCLAVE_INFORMATION {
     pub EnclaveType: u32,
     pub Reserved: u32,
-    pub BaseAddress: *mut core::ffi::c_void,
+    pub BaseAddress: *mut c_void,
     pub Size: usize,
     pub Identity: ENCLAVE_IDENTITY,
 }
@@ -46,79 +45,79 @@ impl Default for ENCLAVE_INFORMATION {
 #[cfg(not(feature = "mock_functions"))]
 windows_link::link!("vertdll.dll" "system" fn CallEnclave(
     lproutine : isize,
-    lpparameter : *const core::ffi::c_void,
-    fwaitforthread : BOOL,
-    lpreturnvalue : *mut *mut core::ffi::c_void)
--> BOOL);
+    lpparameter : *const c_void,
+    fwaitforthread : i32,
+    lpreturnvalue : *mut *mut c_void)
+-> i32);
 
 #[cfg(not(feature = "mock_functions"))]
-windows_link::link!("vertdll.dll" "system" fn GetLastError() -> WIN32_ERROR);
+windows_link::link!("vertdll.dll" "system" fn GetLastError() -> u32);
 
 #[cfg(not(feature = "mock_functions"))]
-windows_link::link!("vertdll.dll" "system" fn GetProcessHeap() -> HANDLE);
+windows_link::link!("vertdll.dll" "system" fn GetProcessHeap() -> *mut c_void);
 
 #[cfg(not(feature = "mock_functions"))]
 windows_link::link!("vertdll.dll" "system" fn HeapAlloc(
-    hheap : HANDLE,
-    dwflags : HEAP_FLAGS,
+    hheap : *mut c_void,
+    dwflags : u32,
     dwbytes : usize)
--> *mut core::ffi::c_void);
+-> *mut c_void);
 
 #[cfg(not(feature = "mock_functions"))]
 windows_link::link!("vertdll.dll" "system" fn HeapFree(
-    hheap : HANDLE,
-    dwflags : HEAP_FLAGS,
-    lpmem : *const core::ffi::c_void)
--> BOOL);
+    hheap : *mut c_void,
+    dwflags : u32,
+    lpmem : *const c_void)
+-> i32);
 
 #[cfg(not(feature = "mock_functions"))]
 windows_link::link!("vertdll.dll" "system" fn EnclaveCopyIntoEnclave(
-    enclaveaddress: *mut core::ffi::c_void,
-    unsecureaddress: *const core::ffi::c_void,
+    enclaveaddress: *mut c_void,
+    unsecureaddress: *const c_void,
     numberofbytes: usize)
--> HRESULT);
+-> i32);
 
 #[cfg(not(feature = "mock_functions"))]
 windows_link::link!("vertdll.dll" "system" fn EnclaveCopyOutOfEnclave(
-    unsecureaddress: *mut core::ffi::c_void,
-    enclaveaddress: *const core::ffi::c_void,
+    unsecureaddress: *mut c_void,
+    enclaveaddress: *const c_void,
     numberofbytes: usize)
--> HRESULT);
+-> i32);
 
 #[cfg(not(feature = "mock_functions"))]
 windows_link::link!("vertdll.dll" "system" fn EnclaveRestrictContainingProcessAccess(
-    restrictaccess: BOOL,
-    previouslyrestricted: *mut BOOL)
--> HRESULT);
+    restrictaccess: i32,
+    previouslyrestricted: *mut i32)
+-> i32);
 
 #[cfg(not(feature = "mock_functions"))]
 windows_link::link!("vertdll.dll" "system" fn EnclaveGetEnclaveInformation(
     informationsize : u32,
     enclaveinformation : *mut ENCLAVE_INFORMATION)
--> HRESULT);
+-> i32);
 
 // Mocked in tests so we only need to declare and not implement them here.
 #[cfg(feature = "mock_functions")]
 unsafe extern "system" {
     pub fn EnclaveCopyIntoEnclave(
-        enclaveaddress: *mut core::ffi::c_void,
-        unsecureaddress: *const core::ffi::c_void,
+        enclaveaddress: *mut c_void,
+        unsecureaddress: *const c_void,
         numberofbytes: usize,
-    ) -> HRESULT;
+    ) -> i32;
 
     pub fn EnclaveCopyOutOfEnclave(
-        unsecureaddress: *mut core::ffi::c_void,
-        enclaveaddress: *const core::ffi::c_void,
+        unsecureaddress: *mut c_void,
+        enclaveaddress: *const c_void,
         numberofbytes: usize,
-    ) -> HRESULT;
+    ) -> i32;
 
     pub fn EnclaveRestrictContainingProcessAccess(
-        restrictaccess: BOOL,
-        previouslyrestricted: *mut BOOL,
-    ) -> HRESULT;
+        restrictaccess: i32,
+        previouslyrestricted: *mut i32,
+    ) -> i32;
 
     pub fn EnclaveGetEnclaveInformation(
         informationsize: u32,
         enclaveinformation: *mut ENCLAVE_INFORMATION,
-    ) -> HRESULT;
+    ) -> i32;
 }
