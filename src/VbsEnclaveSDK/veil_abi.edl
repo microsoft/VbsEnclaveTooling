@@ -42,8 +42,8 @@ enclave
     untrusted
     {
         // infra
-        HRESULT printf(string str);
-        HRESULT wprintf(wstring str);
+        HRESULT internal_printf(string str);
+        HRESULT internal_wprintf(wstring str);
 
         // taskpool
         HRESULT taskpool_make(

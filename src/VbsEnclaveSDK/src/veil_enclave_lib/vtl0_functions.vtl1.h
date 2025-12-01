@@ -11,8 +11,8 @@
 
 namespace veil::vtl1::implementation::vtl0_functions::callouts
 {
-    HRESULT printf(_In_ const std::string& str);
-    HRESULT wprintf(_In_ const std::wstring& str);
+    HRESULT internal_printf(_In_ const std::string& str);
+    HRESULT internal_wprintf(_In_ const std::wstring& str);
 }
 
 namespace veil::vtl1::vtl0_functions
@@ -21,25 +21,25 @@ namespace veil::vtl1::vtl0_functions
     {
         // printf_callout
         template <typename string_type>
-        struct printf_callout;
+        struct internal_printf_callout;
 
         template <>
-        struct printf_callout<std::string>
+        struct internal_printf_callout<std::string>
         {
             template <typename... Args>
             static void call(const std::string& str)
             {
-                THROW_IF_FAILED(veil::vtl1::implementation::vtl0_functions::callouts::printf(str));
+                THROW_IF_FAILED(veil::vtl1::implementation::vtl0_functions::callouts::internal_printf(str));
             }
         };
 
         template <>
-        struct printf_callout<std::wstring>
+        struct internal_printf_callout<std::wstring>
         {
             template <typename... Args>
             static void call(const std::wstring& str)
             {
-                THROW_IF_FAILED(veil::vtl1::implementation::vtl0_functions::callouts::wprintf(str));
+                THROW_IF_FAILED(veil::vtl1::implementation::vtl0_functions::callouts::internal_wprintf(str));
             }
         };
 
@@ -82,12 +82,12 @@ namespace veil::vtl1::vtl0_functions
 
         // debug print string
         template <typename string_type, typename... Ts>
-        inline void debug_print_impl(const typename string_type::value_type* formatString, Ts&&... args)
+        inline void internal_debug_print_impl(const typename string_type::value_type* formatString, Ts&&... args)
         {
             if (veil::vtl1::is_enclave_full_debug_enabled())
             {
                 auto str = details::format_string<string_type>::call(formatString, std::forward<Ts>(args)...);
-                details::printf_callout<string_type>::call(str);
+                details::internal_printf_callout<string_type>::call(str);
             }
             else
             {
@@ -98,14 +98,14 @@ namespace veil::vtl1::vtl0_functions
     }
 
     template <typename... Ts>
-    inline void debug_print(PCSTR formatString, Ts&&... args)
+    inline void internal_debug_print(PCSTR formatString, Ts&&... args)
     {
-        details::debug_print_impl<std::string>(formatString, std::forward<Ts>(args)...);
+        details::internal_debug_print_impl<std::string>(formatString, std::forward<Ts>(args)...);
     }
 
     template <typename... Ts>
-    inline void debug_print(PCWSTR formatString, Ts&&... args)
+    inline void internal_debug_print(PCWSTR formatString, Ts&&... args)
     {
-        details::debug_print_impl<std::wstring>(formatString, std::forward<Ts>(args)...);
+        details::internal_debug_print_impl<std::wstring>(formatString, std::forward<Ts>(args)...);
     }
 }
