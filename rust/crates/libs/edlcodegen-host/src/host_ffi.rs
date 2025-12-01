@@ -55,6 +55,6 @@ pub extern "system" fn allocate_memory_ffi(context: *mut c_void) -> *mut c_void 
 /// A deallocation function that can be called via `CallEnclave`.
 #[unsafe(no_mangle)]
 pub extern "system" fn deallocate_memory_ffi(memory: *mut c_void) -> *mut c_void {
-    let hr =  edlcodegen_core::helpers::deallocate_memory(memory);
+    let hr = edlcodegen_core::helpers::deallocate_memory(memory);
     hr.0 as *mut c_void
 }

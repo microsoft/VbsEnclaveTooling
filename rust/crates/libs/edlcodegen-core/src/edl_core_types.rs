@@ -1,8 +1,8 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
-use core::ffi::c_void;
 use crate::edl_core_ffi::HRESULT;
+use core::ffi::c_void;
 
 /// Represents a buffer and its size used for enclave data exchange.
 #[repr(C)]

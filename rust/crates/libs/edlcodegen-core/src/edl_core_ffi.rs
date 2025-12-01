@@ -57,11 +57,7 @@ unsafe extern "system" {
     pub fn GetLastError() -> WIN32_ERROR;
     pub fn GetProcessHeap() -> HANDLE;
     pub fn HeapAlloc(hheap: HANDLE, dwflags: HEAP_FLAGS, dwbytes: usize) -> *mut c_void;
-    pub fn HeapFree(
-        hheap: HANDLE,
-        dwflags: HEAP_FLAGS,
-        lpmem: *const c_void,
-    ) -> WIN32_BOOL;
+    pub fn HeapFree(hheap: HANDLE, dwflags: HEAP_FLAGS, lpmem: *const c_void) -> WIN32_BOOL;
 }
 
 /// Safely calls the `CallEnclave` Win32 API.
@@ -77,8 +73,7 @@ pub unsafe fn call_enclave(
     in_param: *const c_void,
     out_param: *mut *mut c_void,
 ) -> Result<(), AbiError> {
-    let func_res =
-        unsafe { BOOL(CallEnclave(func, in_param, TRUE.0, out_param)) };
+    let func_res = unsafe { BOOL(CallEnclave(func, in_param, TRUE.0, out_param)) };
     if !func_res.as_bool() {
         let last_err = unsafe { GetLastError() };
         return Err(AbiError::Win32Error(last_err));

@@ -9,7 +9,7 @@ use crate::win_enclave_bindings::{
 use core::{ffi::c_void, mem};
 
 #[allow(unused_imports)]
-use edlcodegen_core::edl_core_ffi::{S_OK, BOOL, TRUE, FALSE};
+use edlcodegen_core::edl_core_ffi::{BOOL, FALSE, S_OK, TRUE};
 use edlcodegen_core::edl_core_types::AbiError;
 use spin::Once;
 

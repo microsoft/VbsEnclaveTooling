@@ -11,8 +11,8 @@ use crate::common::test_types::{
 };
 
 use edlcodegen_core::helpers::abi_func_to_address;
-use edlcodegen_host::host_ffi::{allocate_memory_ffi, deallocate_memory_ffi};
 use edlcodegen_enclave::enclave_helpers::register_vtl0_callouts;
+use edlcodegen_host::host_ffi::{allocate_memory_ffi, deallocate_memory_ffi};
 
 pub fn create_nested_data_struct() -> dev_types::NestedData {
     dev_types::NestedData {

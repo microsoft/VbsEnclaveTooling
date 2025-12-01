@@ -3,8 +3,8 @@
 
 use crate::{
     edl_core_ffi::{
-        E_FAIL, E_INVALIDARG, GetProcessHeap, HEAP_ZERO_MEMORY, HeapAlloc, HeapFree, S_OK,
-        HRESULT,BOOL
+        BOOL, E_FAIL, E_INVALIDARG, GetProcessHeap, HEAP_ZERO_MEMORY, HRESULT, HeapAlloc, HeapFree,
+        S_OK,
     },
     edl_core_types::AbiError,
 };
