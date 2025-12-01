@@ -23,10 +23,10 @@
   <PropertyGroup Label="Globals">
     <VCProjectVersion>17.0</VCProjectVersion>
     <Keyword>Win32Proj</Keyword>
-    <ProjectGuid>{11fb32ad-e46a-4755-ae54-edd286ff17d9}</ProjectGuid>
-    <RootNamespace>SampleApp1</RootNamespace>
+    <ProjectGuid>{11fb32ad-e46a-4755-ae54-edd286ff17d3}</ProjectGuid>
+    <RootNamespace>HostAppEncryptDecryptThreadpool</RootNamespace>
     <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
-    <ProjectName>SampleHostApp</ProjectName>
+    <ProjectName>HostAppEncryptDecryptThreadpool</ProjectName>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <Import Project="$(ProjectDir)..\SampleEnclave.props" />

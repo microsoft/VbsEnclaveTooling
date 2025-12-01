@@ -23,7 +23,7 @@
 #include <veil\host\enclave_api.vtl0.h>
 #include <veil\host\logger.vtl0.h>
 
-#include "sample_utils.h"
+#include "../Common/sample_utils.h"
 
 #include <VbsEnclave\HostApp\Stubs\Trusted.h>
 
