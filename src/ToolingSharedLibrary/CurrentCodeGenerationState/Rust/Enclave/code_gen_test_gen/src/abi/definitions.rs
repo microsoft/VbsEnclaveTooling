@@ -12,8 +12,8 @@ macro_rules! export_enclave_functions {
         #[unsafe(no_mangle)]
         pub extern "system" fn FuncWithAllArgs_0_Generated_Stub(fn_context: *mut core::ffi::c_void) -> *mut core::ffi::c_void
         {
-            use abi_types::FuncWithAllArgs_0_args as AbiTypeT;
-            use flatbuffer_types::FuncWithAllArgs_0_argsT as FlatBufferT;
+            use abi_types::FuncWithAllArgs_0_Args as AbiTypeT;
+            use flatbuffer_types::FuncWithAllArgs_0_ArgsT as FlatBufferT;
             let abi_func = |abi_type: &mut AbiTypeT| {
                 abi_type.m__return_value_ = <$T>::FuncWithAllArgs(abi_type.m_arg1, &abi_type.m_arg2, &mut abi_type.m_arg3, &mut abi_type.m_arg4, &mut abi_type.m_arg5, &mut abi_type.m_arg6, &mut abi_type.m_arg7, &mut abi_type.m_arg8, &mut abi_type.m_arg9);
             };

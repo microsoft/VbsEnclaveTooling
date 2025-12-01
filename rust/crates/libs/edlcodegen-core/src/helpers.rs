@@ -4,6 +4,7 @@
 use crate::{
     edl_core_ffi::{
         E_FAIL, E_INVALIDARG, GetProcessHeap, HEAP_ZERO_MEMORY, HeapAlloc, HeapFree, S_OK,
+        HRESULT,BOOL
     },
     edl_core_types::AbiError,
 };
@@ -33,31 +34,18 @@ pub fn allocate_memory(size: usize) -> *mut c_void {
     unsafe { HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY, size) }
 }
 
-pub fn deallocate_memory(mem: *mut c_void) -> windows_result::HRESULT {
+pub fn deallocate_memory(mem: *mut c_void) -> HRESULT {
     if mem.is_null() {
-        return windows_result::HRESULT(S_OK);
+        return HRESULT(S_OK);
     }
 
-    let res = unsafe { windows_result::BOOL(HeapFree(GetProcessHeap(), 0, mem as *const c_void)) };
+    let res = unsafe { BOOL(HeapFree(GetProcessHeap(), 0, mem as *const c_void)) };
 
     if !res.as_bool() {
-        return windows_result::HRESULT(E_FAIL);
+        return HRESULT(E_FAIL);
     }
 
-    windows_result::HRESULT(S_OK)
-}
-
-/// A allocation function that can be called via `CallEnclave`.
-#[unsafe(no_mangle)]
-pub extern "system" fn allocate_memory_ffi(context: *mut c_void) -> *mut c_void {
-    allocate_memory(context as usize)
-}
-
-/// A deallocation function that can be called via `CallEnclave`.
-#[unsafe(no_mangle)]
-pub extern "system" fn deallocate_memory_ffi(memory: *mut c_void) -> *mut c_void {
-    let hr = deallocate_memory(memory);
-    hr.0 as *mut c_void
+    HRESULT(S_OK)
 }
 
 /// Performs a raw memory copy from a Rust slice into a raw buffer.

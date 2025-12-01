@@ -9,7 +9,7 @@ namespace CodeGenTest::Abi::Types
 {
     using namespace CodeGenTest::Types;
 
-    struct FuncWithAllArgs_0_args
+    struct FuncWithAllArgs_0_Args
     {
         bool m_arg1 {};
         std::optional<std::uint32_t> m_arg2 {};
@@ -23,7 +23,7 @@ namespace CodeGenTest::Abi::Types
         HRESULT m__return_value_ {};
     };
 
-    struct FuncWithAllArgs_1_args
+    struct FuncWithAllArgs_1_Args
     {
         bool m_arg1 {};
         std::optional<std::uint32_t> m_arg2 {};

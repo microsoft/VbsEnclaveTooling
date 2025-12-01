@@ -14,8 +14,8 @@ use edlcodegen_enclave::enclave_helpers::call_vtl0_callback_from_vtl1;
 
 pub fn FuncWithAllArgs(arg1: bool, arg2: &Option<u32>, arg3: &mut Option<i32>, arg4: &mut Option<u64>, arg5: &mut TestStruct1, arg6: &mut Option<TestStruct2>, arg7: &mut Vec<TestStruct2>, arg8: &mut Vec<i16>, arg9: &mut [edl::WString;2]) -> Result<i32, edlcodegen_enclave::AbiError>
 {
-    use abi_types::FuncWithAllArgs_1_args as AbiTypeT;
-    use flatbuffer_types::FuncWithAllArgs_1_argsT as FlatBufferT;
+    use abi_types::FuncWithAllArgs_1_Args as AbiTypeT;
+    use flatbuffer_types::FuncWithAllArgs_1_ArgsT as FlatBufferT;
     let mut abi_type : AbiTypeT = AbiTypeT::default();
     abi_type.m_arg1 = arg1.clone();
     abi_type.m_arg2 = arg2.clone();

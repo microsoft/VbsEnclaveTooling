@@ -24,8 +24,8 @@ impl CodeGenTestClass {
 
     pub fn FuncWithAllArgs(&self, arg1: bool, arg2: &Option<u32>, arg3: &mut Option<i32>, arg4: &mut Option<u64>, arg5: &mut TestStruct1, arg6: &mut Option<TestStruct2>, arg7: &mut Vec<TestStruct2>, arg8: &mut Vec<i16>, arg9: &mut [edl::WString;2]) -> Result<i32, edlcodegen_host::AbiError>
     {
-        use abi_types::FuncWithAllArgs_0_args as AbiTypeT;
-        use flatbuffer_types::FuncWithAllArgs_0_argsT as FlatBufferT;
+        use abi_types::FuncWithAllArgs_0_Args as AbiTypeT;
+        use flatbuffer_types::FuncWithAllArgs_0_ArgsT as FlatBufferT;
         let mut abi_type : AbiTypeT = AbiTypeT::default();
         abi_type.m_arg1 = arg1.clone();
         abi_type.m_arg2 = arg2.clone();

@@ -2,6 +2,7 @@
 // Licensed under the MIT License.
 
 use core::ffi::c_void;
+use crate::edl_core_ffi::HRESULT;
 
 /// Represents a buffer and its size used for enclave data exchange.
 #[repr(C)]
@@ -29,10 +30,10 @@ pub enum AbiError {
 }
 
 impl AbiError {
-    pub fn to_hresult(&self) -> windows_result::HRESULT {
+    pub fn to_hresult(&self) -> HRESULT {
         match *self {
-            AbiError::Win32Error(code) => windows_result::HRESULT::from_win32(code),
-            AbiError::Hresult(hr) => windows_result::HRESULT(hr),
+            AbiError::Win32Error(code) => HRESULT::from_win32(code),
+            AbiError::Hresult(hr) => HRESULT(hr),
         }
     }
 }

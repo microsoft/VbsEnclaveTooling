@@ -32,9 +32,45 @@ publish = false
 doc = false
 doctest = false
 
+[build-dependencies]
+edlcodegen-tools = {{ git = "https://github.com/microsoft/VbsEnclaveTooling", subdir = "rust" }}
+
 [dependencies]
 {}
-flatbuffers = "25.9.23"
+flatbuffers = {{ version = "25.9.23", default-features = false }}
+)";
+
+    inline constexpr std::string_view c_build_rs_file_content =
+R"({}
+use edlcodegen_tools::flatc_path;
+use std::{{env, path::PathBuf, process::Command}};
+
+fn main() {{
+    let manifest_dir = PathBuf::from(env::var("CARGO_MANIFEST_DIR").unwrap());
+    let schema_path = manifest_dir.join("src\\abi\\flatbuffer_gen\\FlatbufferTypes.fbs");
+    let out_dir = std::env::var("OUT_DIR").unwrap();
+    let gen_out_path = format!("{{out_dir}}/flatbuffer_gen");
+
+    let status = Command::new(flatc_path())
+        .current_dir(&manifest_dir)
+        .args([
+            "--rust",
+            "--gen-object-api",
+            "--force-empty",
+            "--no-prefix",
+            "--rust-module-root-file",
+            "--gen-all",
+            "--filename-suffix",
+            "", // So --filename-suffix takes empty string as suffix
+            "-o",
+            &gen_out_path,
+            schema_path.to_str().unwrap(),
+        ])
+        .status()
+        .expect("failed to run flatc");
+
+    assert!(status.success(), "flatc failed with status {{}}", status);
+}}
 )";
 
     inline constexpr std::string_view c_abi_types_file_name = "abi_types.rs";
@@ -118,7 +154,7 @@ pub mod fb_types{{
     use {}::impl_flatbuffer_pack;
     use {}::flatbuffer_types::*;
 
-    include!("flatbuffer_gen/mod.rs");
+    include!(concat!(env!("OUT_DIR"), "/flatbuffer_gen/mod.rs"));
 {}
     impl_flatbuffer_pack!(AbiRegisterVtl0Callbacks_argsT, AbiRegisterVtl0Callbacks_args<'a>);
 }}
