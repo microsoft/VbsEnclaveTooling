@@ -448,3 +448,6 @@ bin
 # Ignore flatbuffer generated files in the shared tooling directory
 src/ToolingSharedLibrary/CurrentCodeGenerationState/**/flatbufferTypes.h
 src/ToolingSharedLibrary/CurrentCodeGenerationState/**/flatbuffer_gen/
+
+# Ignore generated folders in Rust projects
+rust/**/generated/

@@ -1,0 +1,11 @@
+[package]
+name = "host"
+version = "0.1.0"
+edition =  { workspace = true }
+
+[dependencies]
+windows = { workspace = true }
+
+# Add generated crate.
+# Note: To generate crate run rust/crates/samples/helloworld/generate_edl_crates.ps1 once
+test_host_gen = {path = "generated/test_gen" }
