@@ -1,0 +1,18 @@
+# workspace for the host and enclave projects.
+[workspace]
+resolver = "3"
+members = [
+    "host",
+    "host/generated/test_gen",
+    "enclave",
+    "enclave/generated/test_gen",
+]
+
+[workspace.package]
+edition = "2024"
+
+[workspace.dependencies]
+windows = "0.62.2"
+
+# TODO: once edlcodegen-tools is published we should be able to use the version in crates.io
+edlcodegen-tools = { path = "../../libs/edlcodegen-tools" }

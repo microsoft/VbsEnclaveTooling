@@ -1,0 +1,15 @@
+[package]
+name = "enclave"
+version = "0.1.0"
+edition =  { workspace = true }
+
+[lib]
+# Make sure crate builds a dll and not a static lib
+crate-type = ["cdylib"]
+
+[build-dependencies]
+edlcodegen-tools = { workspace = true }
+
+[dependencies]
+# Note: To generate crate run rust/crates/samples/helloworld/generate_edl_crates.ps1 at least once
+test_enclave_gen = {path = "generated/test_gen" }
