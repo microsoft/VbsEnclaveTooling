@@ -173,3 +173,39 @@ Thumbprint                                Subject
 - [VBS Enclave Development Guide](https://learn.microsoft.com/windows/win32/trusted-execution/vbs-enclaves-dev-guide)
 - [Visual Studio Remote Debugging](https://learn.microsoft.com/visualstudio/debugger/remote-debugging?view=vs-2022)
 - [Windows Hello for Business](https://docs.microsoft.com/windows/security/identity-protection/hello-for-business/)
+
+## Debug Print Flags and Scenarios
+
+Understanding debug output behavior is crucial for effective development and troubleshooting of VBS enclave applications. Different debug flags control output at various layers of the system.
+
+### Debug Flags Summary
+
+1. **`_DEBUG`**: Standard Visual Studio debug build configuration flag
+2. **`is_enclave_full_debug_enabled()`**: Derived from the `ENCLAVE_VBS_FLAG_DEBUG` flag passed to `CreateEnclave`
+3. **`_VEIL_INTERNAL_DEBUG`**: VEIL framework internal debug flag that can be overridden via command line or parent props files
+
+### Enabling _VEIL_INTERNAL_DEBUG
+
+To enable VEIL internal debug output, add the following to your command line arguments:
+```
+/D_VEIL_INTERNAL_DEBUG
+```
+
+Or add it to your project's preprocessor definitions.
+
+### Debug Output Scenarios
+
+| Scenario | VTL0 (Host) Debug Prints | VTL1 (Enclave) Debug Prints | Requirements |
+|----------|-------------------------|------------------------------|-------------|
+| **Sample VTL0** | ✅ Enabled | ❌ Disabled | `_DEBUG` enabled |
+| **Sample VTL1** | ❌ Disabled | ✅ Enabled | `is_enclave_full_debug_enabled()` enabled |
+| **VEIL VTL0** | ✅ Enabled | ❌ Disabled | `_VEIL_INTERNAL_DEBUG` enabled |
+| **VEIL VTL1** | ❌ Disabled | ✅ Enabled | `_VEIL_INTERNAL_DEBUG` AND `is_enclave_full_debug_enabled()` enabled |
+
+### Usage Guidelines
+
+- **Sample Applications**: Use `is_enclave_full_debug_enabled()` for enclave debug output that respects the enclave debug policy
+- **Host Applications**: Use `_DEBUG` flag for standard debug builds
+- **VEIL Framework**: Use `_VEIL_INTERNAL_DEBUG` for framework-level debugging
+- **Production**: Ensure all debug flags are disabled for production builds to maintain security
+
