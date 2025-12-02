@@ -46,22 +46,17 @@ int EncryptFlowThreadpool(
     auto encryptedInputBytes2 = std::vector<uint8_t> {};
     auto tag1 = std::vector<uint8_t> {};
     auto tag2 = std::vector<uint8_t> {};
-    auto decryptedInputBytes1 = std::wstring {};
-    auto decryptedInputBytes2 = std::wstring {};
-    THROW_IF_FAILED(enclaveInterface.RunEncryptionKeyExample_LoadEncryptionKeyThreadpool(
+    THROW_IF_FAILED(enclaveInterface.RunEncryptionKeyExample_LoadEncryptionKeyAndEncryptThreadpool(
         securedEncryptionKeyBytes,
         input1,
         input2,
-        true,
         (const uint32_t)veilLog.GetLogLevel(),
         veilLog.GetLogFilePath(),
         resealedEncryptionKeyBytes,
         encryptedInputBytes1,
         encryptedInputBytes2,
         tag1,
-        tag2,
-        decryptedInputBytes1,
-        decryptedInputBytes2
+        tag2
     ));
 
     SaveBinaryData(fs::path(encryptedInputFilePath.string() + "1"), encryptedInputBytes1);
@@ -92,18 +87,15 @@ int DecryptFlowThreadpool(
     auto resealedEncryptionKeyBytes = std::vector<uint8_t> {};
     auto decryptedInputBytes1 = std::wstring {};
     auto decryptedInputBytes2 = std::wstring {};
-    THROW_IF_FAILED(enclaveInterface.RunEncryptionKeyExample_LoadEncryptionKeyThreadpool(
+    THROW_IF_FAILED(enclaveInterface.RunEncryptionKeyExample_LoadEncryptionKeyAndDecryptThreadpool(
         securedEncryptionKeyBytes,
-        {},
-        {},
-        false,
         (const uint32_t)veilLog.GetLogLevel(),
         veilLog.GetLogFilePath(),
-        resealedEncryptionKeyBytes,
         encryptedInputBytes1,
         encryptedInputBytes2,
         tag1,
         tag2,
+        resealedEncryptionKeyBytes,
         decryptedInputBytes1,
         decryptedInputBytes2
     ));

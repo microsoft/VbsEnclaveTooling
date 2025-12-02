@@ -47,17 +47,14 @@ int EncryptFlow(
     auto resealedEncryptionKeyBytes = std::vector<uint8_t> {};
     auto encryptedInputBytes = std::vector<uint8_t> {};
     auto tag = std::vector<uint8_t> {};
-    auto decryptedData = std::wstring {};
-    THROW_IF_FAILED(enclaveInterface.RunEncryptionKeyExample_LoadEncryptionKey(
+    THROW_IF_FAILED(enclaveInterface.RunEncryptionKeyExample_LoadEncryptionKeyAndEncrypt(
         securedEncryptionKeyBytes,
         input,
-        true,
         (const uint32_t)veilLog.GetLogLevel(),
         veilLog.GetLogFilePath(),
         resealedEncryptionKeyBytes,
         encryptedInputBytes,
-        tag,
-        decryptedData
+        tag
     ));
 
     SaveBinaryData(encryptedInputFilePath, encryptedInputBytes);
@@ -82,15 +79,13 @@ int DecryptFlow(
 
     auto resealedEncryptionKeyBytes = std::vector<uint8_t> {};
     auto decryptedData = std::wstring {};
-    THROW_IF_FAILED(enclaveInterface.RunEncryptionKeyExample_LoadEncryptionKey(
+    THROW_IF_FAILED(enclaveInterface.RunEncryptionKeyExample_LoadEncryptionKeyAndDecrypt(
         securedEncryptionKeyBytes,
-        {},
-        false,
         (const uint32_t)veilLog.GetLogLevel(),
         veilLog.GetLogFilePath(),
-        resealedEncryptionKeyBytes,
         encryptedInputBytes,
         tag,
+        resealedEncryptionKeyBytes,
         decryptedData
     ));
 
