@@ -10,7 +10,7 @@ use common::test_types::{
 };
 
 use core::ffi::c_void;
-use edlcodegen_core::{edl_core_ffi::S_OK, helpers::hresult_to_pvoid};
+use edlcodegen_core::{edl_core_types::S_OK, helpers::hresult_to_pvoid};
 use edlcodegen_enclave::enclave_helpers::call_vtl1_export_from_vtl1;
 use edlcodegen_host::host_helpers::*;
 

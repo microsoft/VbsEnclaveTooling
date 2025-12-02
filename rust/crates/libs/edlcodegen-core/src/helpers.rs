@@ -2,10 +2,8 @@
 // Licensed under the MIT License.
 
 use crate::{
-    edl_core_ffi::{
-        E_FAIL, E_INVALIDARG, GetProcessHeap, HEAP_ZERO_MEMORY, HeapAlloc, HeapFree, S_OK,
-    },
-    edl_core_types::{AbiError, BOOL, HRESULT},
+    edl_core_ffi::{GetProcessHeap, HeapAlloc, HeapFree},
+    edl_core_types::{AbiError, BOOL, E_FAIL, E_INVALIDARG, HEAP_ZERO_MEMORY, HRESULT, S_OK},
 };
 use core::ffi::c_void;
 

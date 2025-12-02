@@ -1,22 +1,8 @@
-#![allow(non_camel_case_types, non_snake_case, unused_imports)]
-use crate::edl_core_types::{AbiError, BOOL};
-use core::ffi::c_void;
+// Copyright (c) Microsoft Corporation.
+// Licensed under the MIT License.
 
-// The following subset of types/consts were taken from the windows_sys::Win32::Foundation.
-// We need to make sure that this crate can be usable in both the host and the enclave
-// and not accidentally bring in things that are not usable inside an enclave.
-pub type EnclaveRoutine = isize;
-pub type AbiFuncPtr = unsafe extern "system" fn(*mut c_void) -> *mut c_void;
-pub type HANDLE = *mut core::ffi::c_void;
-pub type HEAP_FLAGS = u32;
-pub type WIN32_ERROR = u32;
-pub type WIN32_BOOL = i32;
-pub const HEAP_ZERO_MEMORY: HEAP_FLAGS = 8u32;
-pub const S_OK: i32 = 0x0_u32 as _;
-pub const E_FAIL: i32 = 0x80004005_u32 as _;
-pub const E_INVALIDARG: i32 = 0x80070057_u32 as _;
-pub static WIN32_FALSE: BOOL = BOOL(0);
-pub static WIN32_TRUE: BOOL = BOOL(1);
+use crate::edl_core_types::{AbiError, BOOL, WIN32_TRUE};
+use core::ffi::c_void;
 
 // The consuming crate will link these in based on which side of the trust boundary the crate exists
 // in. Either Kernel32 for the host or vertdll for the enclave.
@@ -24,13 +10,13 @@ unsafe extern "system" {
     pub fn CallEnclave(
         lproutine: isize,
         lpparameter: *const c_void,
-        fwaitforthread: WIN32_BOOL,
+        fwaitforthread: i32,
         lpreturnvalue: *mut *mut c_void,
-    ) -> WIN32_BOOL;
-    pub fn GetLastError() -> WIN32_ERROR;
-    pub fn GetProcessHeap() -> HANDLE;
-    pub fn HeapAlloc(hheap: HANDLE, dwflags: HEAP_FLAGS, dwbytes: usize) -> *mut c_void;
-    pub fn HeapFree(hheap: HANDLE, dwflags: HEAP_FLAGS, lpmem: *const c_void) -> WIN32_BOOL;
+    ) -> i32;
+    pub fn GetLastError() -> u32;
+    pub fn GetProcessHeap() -> *mut c_void;
+    pub fn HeapAlloc(hheap: *mut c_void, dwflags: u32, dwbytes: usize) -> *mut c_void;
+    pub fn HeapFree(hheap: *mut c_void, dwflags: u32, lpmem: *const c_void) -> i32;
 }
 
 /// Safely calls the `CallEnclave` Win32 API.

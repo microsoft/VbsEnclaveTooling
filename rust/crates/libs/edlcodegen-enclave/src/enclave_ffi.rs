@@ -9,8 +9,7 @@ use crate::win_enclave_bindings::{
 use core::{ffi::c_void, mem};
 
 #[allow(unused_imports)]
-use edlcodegen_core::edl_core_ffi::{S_OK, WIN32_FALSE, WIN32_TRUE};
-use edlcodegen_core::edl_core_types::{AbiError, BOOL};
+use edlcodegen_core::edl_core_types::{AbiError, BOOL, S_OK, WIN32_FALSE, WIN32_TRUE};
 use spin::Once;
 
 #[cfg(not(debug_assertions))]
