@@ -69,7 +69,7 @@ veil::vtl1::userboundkey::keyCredentialCacheConfig CreateSecureKeyCredentialCach
     secureConfig.cacheTimeoutInSeconds = 0; // No timeout when not caching
     secureConfig.cacheUsageCount = 0; // No usage count when not caching
 
-    internal_debug_print(L"VTL1 created secure cache config - NoCache policy for maximum security");
+    debug_print(L"VTL1 created secure cache config - NoCache policy for maximum security");
     
     return secureConfig;
 }
@@ -89,12 +89,12 @@ static HRESULT EnsureUserBoundKeyLoaded(
     // Only load the user-bound key if it's not already loaded
     if (!IsUBKLoaded())
     {
-        internal_debug_print(L"UBK not loaded, loading user-bound key");
+        debug_print(L"UBK not loaded, loading user-bound key");
 
         // VTL1 creates secure cache configuration - VTL0 input is ignored
         auto secureConfig = CreateSecureKeyCredentialCacheConfig();
 
-        internal_debug_print(L"Created secure cache configuration in VTL1");
+        debug_print(L"Created secure cache configuration in VTL1");
 
         std::vector<std::uint8_t> loadedKeyBytes;
         bool loadSucceeded = false;
@@ -110,18 +110,18 @@ static HRESULT EnsureUserBoundKeyLoaded(
                 securedEncryptionKeyBytes,
                 needsReseal);
             loadSucceeded = true;
-            internal_debug_print(L"Successfully loaded user-bound key on first attempt");
+            debug_print(L"Successfully loaded user-bound key on first attempt");
         }
         catch (...)
         {
-            internal_debug_print(L"First load attempt failed, checking if reseal is needed");
+            debug_print(L"First load attempt failed, checking if reseal is needed");
             loadSucceeded = false;
         }
 
         // If load failed and reseal is needed, attempt reseal and retry
         if (!loadSucceeded && needsReseal)
         {
-            internal_debug_print(L"Attempting to reseal user-bound key");
+            debug_print(L"Attempting to reseal user-bound key");
       
             try
             {
@@ -130,7 +130,7 @@ static HRESULT EnsureUserBoundKeyLoaded(
                     ENCLAVE_SEALING_IDENTITY_POLICY::ENCLAVE_IDENTITY_POLICY_SEAL_SAME_IMAGE,
                     g_runtimePolicy);
 
-                internal_debug_print(L"Reseal completed, attempting to load with resealed key");
+                debug_print(L"Reseal completed, attempting to load with resealed key");
 
                 // Store resealed bytes in output parameter
                 resealedEncryptionKeyBytes.assign(resealedBytes.begin(), resealedBytes.end());
@@ -148,28 +148,28 @@ static HRESULT EnsureUserBoundKeyLoaded(
                     needsReseal);
 
                 loadSucceeded = true;
-                internal_debug_print(L"Successfully loaded user-bound key after reseal");
+                debug_print(L"Successfully loaded user-bound key after reseal");
             }
             catch (...)
             {
-                internal_debug_print(L"Failed to reseal or load after reseal");
+                debug_print(L"Failed to reseal or load after reseal");
                 throw;
             }
         }
         else if (!loadSucceeded)
         {
-            internal_debug_print(L"Load failed and reseal not needed or not indicated");
+            debug_print(L"Load failed and reseal not needed or not indicated");
             throw; // Re-throw the original exception
         }
 
         // NOW we can create a symmetric key from the loaded raw key material
         auto newEncryptionKey = veil::vtl1::crypto::create_symmetric_key(loadedKeyBytes);
         SetEncryptionKey(std::move(newEncryptionKey));
-        internal_debug_print(L"Created symmetric key from loaded user-bound key material");
+        debug_print(L"Created symmetric key from loaded user-bound key material");
     }
     else
     {
-        internal_debug_print(L"UBK already loaded, using cached key");
+        debug_print(L"UBK already loaded, using cached key");
     }
 
     return S_OK;
@@ -181,7 +181,7 @@ namespace RunTaskpoolExamples
     {
         using namespace veil::vtl1::vtl0_functions;
 
-        internal_debug_print(L"Creating taskpool with '%d' threads...", threadCount);
+        debug_print(L"Creating taskpool with '%d' threads...", threadCount);
 
         auto tasks = std::vector<veil::vtl1::future<void>>();
 
@@ -196,7 +196,7 @@ namespace RunTaskpoolExamples
             {
                 auto task = taskpool.queue_task([=] ()
                 {
-                    internal_debug_print(L"hello from task: %d", i);
+                    debug_print(L"hello from task: %d", i);
                     veil::vtl1::sleep(500);
                 });
                 tasks.push_back(std::move(task));
@@ -205,22 +205,22 @@ namespace RunTaskpoolExamples
             auto task = taskpool.queue_task([&ranLastTask] ()
             {
                 ranLastTask = true;
-                internal_debug_print(L"...you SHOULD NOT see this message...");
+                debug_print(L"...you SHOULD NOT see this message...");
             });
 
             // Detach the future from the shared state so its destructor doesn't block on waiting forever (it's never scheduled)
             task.detach();
 
-            internal_debug_print(L"Waiting for taskpool to destruct...");
+            debug_print(L"Waiting for taskpool to destruct...");
         }
 
         if (ranLastTask)
         {
-            internal_debug_print(L"ERROR: Taskpool destructed after all tasks finished.");
+            debug_print(L"ERROR: Taskpool destructed after all tasks finished.");
         }
         else
         {
-            internal_debug_print(L"SUCCESS: Taskpool destructed before all tasks finished.");
+            debug_print(L"SUCCESS: Taskpool destructed before all tasks finished.");
         }
 
         // We must detach all unfinished tasks that still exist after the lifetime of the taskpool.
@@ -235,7 +235,7 @@ namespace RunTaskpoolExamples
     {
         using namespace veil::vtl1::vtl0_functions;
 
-        internal_debug_print(L"Creating taskpool with '%d' threads...", threadCount);
+        debug_print(L"Creating taskpool with '%d' threads...", threadCount);
 
         auto tasks = std::vector<veil::vtl1::future<void>>();
 
@@ -250,7 +250,7 @@ namespace RunTaskpoolExamples
             {
                 auto task = taskpool.queue_task([=] ()
                 {
-                    internal_debug_print(L"hello from task: %d", i);
+                    debug_print(L"hello from task: %d", i);
                     veil::vtl1::sleep(500);
                 });
                 tasks.push_back(std::move(task));
@@ -259,20 +259,20 @@ namespace RunTaskpoolExamples
             auto task = taskpool.queue_task([&ranLastTask] ()
             {
                 ranLastTask = true;
-                internal_debug_print(L"...you SHOULD see this message...");
+                debug_print(L"...you SHOULD see this message...");
             });
             tasks.push_back(std::move(task));
 
-            internal_debug_print(L"Waiting for taskpool to destruct...");
+            debug_print(L"Waiting for taskpool to destruct...");
         }
 
         if (!ranLastTask)
         {
-            internal_debug_print(L"ERROR: Taskpool destructed before all tasks finished.");
+            debug_print(L"ERROR: Taskpool destructed before all tasks finished.");
         }
         else
         {
-            internal_debug_print(L"SUCCESS: Taskpool destructed after all tasks finished.");
+            debug_print(L"SUCCESS: Taskpool destructed after all tasks finished.");
         }
     }
 
@@ -280,7 +280,7 @@ namespace RunTaskpoolExamples
     {
         using namespace veil::vtl1::vtl0_functions;
 
-        internal_debug_print(L"Creating taskpool with '%d' threads...", threadCount);
+        debug_print(L"Creating taskpool with '%d' threads...", threadCount);
 
         auto tasks = std::vector<veil::vtl1::future<void>>();
 
@@ -295,7 +295,7 @@ namespace RunTaskpoolExamples
             {
                 auto task = taskpool.queue_task([=] ()
                 {
-                    internal_debug_print(L"hello from task: %d", i);
+                    debug_print(L"hello from task: %d", i);
                     veil::vtl1::sleep(500);
                 });
                 task.detach();
@@ -304,22 +304,22 @@ namespace RunTaskpoolExamples
             auto task = taskpool.queue_task([&ranLastTask] ()
             {
                 ranLastTask = true;
-                internal_debug_print(L"...you SHOULD NOT see this message...");
+                debug_print(L"...you SHOULD NOT see this message...");
             });
             task.detach();
 
             taskpool.cancel_queued_tasks();
 
-            internal_debug_print(L"Waiting for taskpool to destruct...");
+            debug_print(L"Waiting for taskpool to destruct...");
         }
 
         if (ranLastTask)
         {
-            internal_debug_print(L"ERROR: Taskpool destructed after all tasks finished.");
+            debug_print(L"ERROR: Taskpool destructed after all tasks finished.");
         }
         else
         {
-            internal_debug_print(L"SUCCESS: Taskpool destructed before all tasks finished.");
+            debug_print(L"SUCCESS: Taskpool destructed before all tasks finished.");
         }
     }
 
@@ -327,20 +327,20 @@ namespace RunTaskpoolExamples
     {
         using namespace veil::vtl1::vtl0_functions;
 
-        internal_debug_print(L"Creating taskpool with '%d' threads...", threadCount);
+        debug_print(L"Creating taskpool with '%d' threads...", threadCount);
 
         auto taskpool = veil::vtl1::taskpool(threadCount, true);
 
         auto task_1 = taskpool.queue_task([=] ()
         {
             veil::vtl1::sleep(500);
-            internal_debug_print(L"hello from task 1");
+            debug_print(L"hello from task 1");
         });
 
         auto task_2 = taskpool.queue_task([=] ()
         {
             veil::vtl1::sleep(500);
-            internal_debug_print(L"hello from task 2");
+            debug_print(L"hello from task 2");
         });
 
         struct complex_struct
@@ -351,26 +351,26 @@ namespace RunTaskpoolExamples
         auto a_complex_task = taskpool.queue_task([=] ()
         {
             veil::vtl1::sleep(500);
-            internal_debug_print(L"hello from complex task");
+            debug_print(L"hello from complex task");
             return complex_struct {L"this is a complex struct!"};
         });
 
-        internal_debug_print(L"Waiting for tasks...");
+        debug_print(L"Waiting for tasks...");
 
         task_1.get();
         task_2.get();
         auto a_complex_struct = a_complex_task.get();
 
-        internal_debug_print(L"complex task returned a complex struct: %ls", a_complex_struct.contents.c_str());
+        debug_print(L"complex task returned a complex struct: %ls", a_complex_struct.contents.c_str());
 
-        internal_debug_print(L"Waiting for taskpool to destruct...");
+        debug_print(L"Waiting for taskpool to destruct...");
     }
 
     void UsageExceptionExample(uint32_t threadCount)
     {
         using namespace veil::vtl1::vtl0_functions;
 
-        internal_debug_print(L"Creating taskpool with '%d' threads...", threadCount);
+        debug_print(L"Creating taskpool with '%d' threads...", threadCount);
 
         auto taskpool = veil::vtl1::taskpool(threadCount, true);
 
@@ -399,7 +399,7 @@ namespace RunTaskpoolExamples
         }
         catch (std::runtime_error e)
         {
-            internal_debug_print("Caught exception from running task: %s", e.what());
+            debug_print("Caught exception from running task: %s", e.what());
         }
 
         try
@@ -408,10 +408,10 @@ namespace RunTaskpoolExamples
         }
         catch (std::runtime_error e)
         {
-            internal_debug_print("Caught exception from running task: %s", e.what());
+            debug_print("Caught exception from running task: %s", e.what());
         }
 
-        internal_debug_print(L"Waiting for taskpool to destruct...");
+        debug_print(L"Waiting for taskpool to destruct...");
     }
 }
 
@@ -422,25 +422,25 @@ HRESULT VbsEnclave::Trusted::Implementation::RunTaskpoolExample(_In_ const std::
 {
     using namespace veil::vtl1::vtl0_functions;
 
-    internal_debug_print(L"TEST: Taskpool destruction, don't wait for all tasks to finish");
+    debug_print(L"TEST: Taskpool destruction, don't wait for all tasks to finish");
     RunTaskpoolExamples::Test_Dont_WaitForAllTasksToFinish(threadCount);
-    internal_debug_print(L"");
+    debug_print(L"");
 
-    internal_debug_print(L"TEST: Taskpool destruction, wait for all tasks to finish");
+    debug_print(L"TEST: Taskpool destruction, wait for all tasks to finish");
     RunTaskpoolExamples::Test_Do_WaitForAllTasksToFinish(threadCount);
-    internal_debug_print(L"");
+    debug_print(L"");
 
-    internal_debug_print(L"TEST: Taskpool cancellation");
+    debug_print(L"TEST: Taskpool cancellation");
     RunTaskpoolExamples::Test_Cancellation(threadCount);
-    internal_debug_print(L"");
+    debug_print(L"");
 
-    internal_debug_print(L"USAGE");
+    debug_print(L"USAGE");
     RunTaskpoolExamples::UsageExample(threadCount);
-    internal_debug_print(L"");
+    debug_print(L"");
 
-    internal_debug_print(L"USAGE EXCEPTIONS");
+    debug_print(L"USAGE EXCEPTIONS");
     RunTaskpoolExamples::UsageExceptionExample(threadCount);
-    internal_debug_print(L"");
+    debug_print(L"");
 
     return S_OK;
 }
@@ -459,12 +459,12 @@ HRESULT VbsEnclave::Trusted::Implementation::MyEnclaveCreateUserBoundKey(
 
     try
     {
-        internal_debug_print(L"Start MyEnclaveCreateUserBoundKey");
+        debug_print(L"Start MyEnclaveCreateUserBoundKey");
 
         // VTL1 creates secure cache configuration - VTL0 input is ignored
         auto secureConfig = CreateSecureKeyCredentialCacheConfig();
 
-        internal_debug_print(L"Created secure cache configuration in VTL1");
+        debug_print(L"Created secure cache configuration in VTL1");
 
         // Create a user-bound key with enclave sealing
         auto keyBytes = veil::vtl1::userboundkey::create_user_bound_key(
@@ -475,7 +475,7 @@ HRESULT VbsEnclave::Trusted::Implementation::MyEnclaveCreateUserBoundKey(
             ENCLAVE_SEALING_IDENTITY_POLICY::ENCLAVE_IDENTITY_POLICY_SEAL_SAME_IMAGE,
             g_runtimePolicy,
             keyCredentialCacheOption);
-        internal_debug_print(L"create_user_bound_key returned");
+        debug_print(L"create_user_bound_key returned");
 
         // Store the user-bound key bytes directly - do NOT try to create a symmetric key from them
         securedEncryptionKeyBytes.assign(keyBytes.begin(), keyBytes.end());
@@ -509,7 +509,7 @@ HRESULT VbsEnclave::Trusted::Implementation::MyEnclaveLoadUserBoundKeyAndEncrypt
 
     try
     {
-        internal_debug_print(L"Start MyEnclaveLoadUserBoundKeyAndEncryptData");
+        debug_print(L"Start MyEnclaveLoadUserBoundKeyAndEncryptData");
 
         // Ensure the user-bound key is loaded (handles reseal if needed)
         RETURN_IF_FAILED(EnsureUserBoundKeyLoaded(
@@ -521,14 +521,14 @@ HRESULT VbsEnclave::Trusted::Implementation::MyEnclaveLoadUserBoundKeyAndEncrypt
             resealedEncryptionKeyBytes));
 
         // Use the global key for encryption
-        internal_debug_print(L"Encrypting input data");
+        debug_print(L"Encrypting input data");
         auto keyHandle = GetEncryptionKeyHandle();
         auto [encryptedText, encryptionTag] = veil::vtl1::crypto::encrypt(
             keyHandle, 
             veil::vtl1::as_data_span(inputData.c_str()), 
             veil::vtl1::crypto::zero_nonce);
 
-        internal_debug_print(L"Encryption completed, encrypted size: %d, tag size: %d", 
+        debug_print(L"Encryption completed, encrypted size: %d, tag size: %d", 
             encryptedText.size(), encryptionTag.size());
 
         // Combine tag and encrypted data into single output
@@ -547,7 +547,7 @@ HRESULT VbsEnclave::Trusted::Implementation::MyEnclaveLoadUserBoundKeyAndEncrypt
         // Append encrypted data
         combinedOutputData.insert(combinedOutputData.end(), encryptedText.begin(), encryptedText.end());
 
-        internal_debug_print(L"Combined data created, total size: %u (tag_size: %u, tag: %u, encrypted: %u)", 
+        debug_print(L"Combined data created, total size: %u (tag_size: %u, tag: %u, encrypted: %u)", 
             static_cast<uint32_t>(combinedOutputData.size()), 
             static_cast<uint32_t>(sizeof(tagSize)),
             static_cast<uint32_t>(encryptionTag.size()), 
@@ -579,13 +579,13 @@ HRESULT VbsEnclave::Trusted::Implementation::MyEnclaveLoadUserBoundKeyAndDecrypt
 
     try
     {
-        internal_debug_print(L"Start MyEnclaveLoadUserBoundKeyAndDecryptData");
+        debug_print(L"Start MyEnclaveLoadUserBoundKeyAndDecryptData");
 
         // Extract tag from the combined input data
         // Format: [tag_size (4 bytes)][tag_data][encrypted_data]
         if (combinedInputData.size() < sizeof(uint32_t))
         {
-            internal_debug_print(L"ERROR: Combined input data too small, size: %u", static_cast<uint32_t>(combinedInputData.size()));
+            debug_print(L"ERROR: Combined input data too small, size: %u", static_cast<uint32_t>(combinedInputData.size()));
             return E_INVALIDARG;
         }
 
@@ -593,12 +593,12 @@ HRESULT VbsEnclave::Trusted::Implementation::MyEnclaveLoadUserBoundKeyAndDecrypt
         uint32_t tagSize;
         std::memcpy(&tagSize, combinedInputData.data(), sizeof(uint32_t));
  
-        internal_debug_print(L"Extracted tag size: %d", tagSize);
+        debug_print(L"Extracted tag size: %d", tagSize);
 
         // Validate tag size
         if (tagSize > combinedInputData.size() - sizeof(uint32_t) || tagSize == 0)
         {  
-            internal_debug_print(L"ERROR: Invalid tag size: %u, combined data size: %u", tagSize, static_cast<uint32_t>(combinedInputData.size()));
+            debug_print(L"ERROR: Invalid tag size: %u, combined data size: %u", tagSize, static_cast<uint32_t>(combinedInputData.size()));
             return E_INVALIDARG;
         }
 
@@ -617,7 +617,7 @@ HRESULT VbsEnclave::Trusted::Implementation::MyEnclaveLoadUserBoundKeyAndDecrypt
             combinedInputData.end()
         );
 
-        internal_debug_print(L"Extracted tag size: %u, encrypted data size: %u", 
+        debug_print(L"Extracted tag size: %u, encrypted data size: %u", 
             static_cast<uint32_t>(tag.size()), 
             static_cast<uint32_t>(encryptedInputBytes.size()));
 
@@ -631,7 +631,7 @@ HRESULT VbsEnclave::Trusted::Implementation::MyEnclaveLoadUserBoundKeyAndDecrypt
             resealedEncryptionKeyBytes));
 
         // Use the global key for decryption
-        internal_debug_print(L"Decrypting input data, encrypted size: %u, tag size: %u", 
+        debug_print(L"Decrypting input data, encrypted size: %u, tag size: %u", 
             static_cast<uint32_t>(encryptedInputBytes.size()), 
             static_cast<uint32_t>(tag.size()));
   
@@ -645,7 +645,7 @@ HRESULT VbsEnclave::Trusted::Implementation::MyEnclaveLoadUserBoundKeyAndDecrypt
         // Convert decrypted bytes to wstring
         decryptedData = veil::vtl1::to_wstring(decryptedBytes);
         
-        internal_debug_print(L"Decryption completed, decrypted string: %ws", decryptedData.c_str());
+        debug_print(L"Decryption completed, decrypted string: %ws", decryptedData.c_str());
     }
     CATCH_RETURN();
 
@@ -667,36 +667,36 @@ HRESULT VbsEnclave::Trusted::Implementation::RunEncryptionKeyExample_CreateEncry
         activityLevel,
         logFilePath);
 
-    internal_debug_print("");
-    internal_debug_print(L"[Create flow]");
-    internal_debug_print("");
+    debug_print("");
+    debug_print(L"[Create flow]");
+    debug_print("");
     veil::vtl1::logger::add_log_from_enclave(
         L"[Enclave] Create flow", 
         veil::any::logger::eventLevel::EVENT_LEVEL_VERBOSE,
         activityLevel,
         logFilePath);
     
-    internal_debug_print("");
+    debug_print("");
 
     // Generate our encryption key
-    internal_debug_print(L"1. Generating our encryption key");
+    debug_print(L"1. Generating our encryption key");
     veil::vtl1::logger::add_log_from_enclave(
         L"[Enclave] Generating our encryption key",
         veil::any::logger::eventLevel::EVENT_LEVEL_INFO,
         activityLevel,
         logFilePath);
     auto encryptionKeyBytes = veil::vtl1::crypto::generate_symmetric_key_bytes();
-    internal_debug_print(L" ...CHECKPOINT: encryption key byte count: %d", encryptionKeyBytes.size());
+    debug_print(L" ...CHECKPOINT: encryption key byte count: %d", encryptionKeyBytes.size());
     std::wstring logSizeStr = std::to_wstring(encryptionKeyBytes.size());
     veil::vtl1::logger::add_log_from_enclave(
         L"[Enclave] Encryption key byte count: " + logSizeStr,
         veil::any::logger::eventLevel::EVENT_LEVEL_CRITICAL,
         activityLevel,
         logFilePath);
-    internal_debug_print("");
+    debug_print("");
     
     // Seal the key using enclave sealing policy
-    internal_debug_print(L"4. Sealing the serialized key material for our enclave only");
+    debug_print(L"4. Sealing the serialized key material for our enclave only");
     veil::vtl1::logger::add_log_from_enclave(
         L"[Enclave] Sealing the serialized key material for our enclave only",
         veil::any::logger::eventLevel::EVENT_LEVEL_INFO,
@@ -705,14 +705,14 @@ HRESULT VbsEnclave::Trusted::Implementation::RunEncryptionKeyExample_CreateEncry
 
     // Seal the key using enclave sealing policy
     auto sealedKeyMaterial = veil::vtl1::crypto::seal_data(encryptionKeyBytes, ENCLAVE_IDENTITY_POLICY_SEAL_SAME_IMAGE, g_runtimePolicy);
-    internal_debug_print(L" ...CHECKPOINT: sealed key material byte count: %d", sealedKeyMaterial.size());
+    debug_print(L" ...CHECKPOINT: sealed key material byte count: %d", sealedKeyMaterial.size());
     logSizeStr = std::to_wstring(sealedKeyMaterial.size());
     veil::vtl1::logger::add_log_from_enclave(
         L"[Enclave] Sealed key material byte count: " + logSizeStr,
         veil::any::logger::eventLevel::EVENT_LEVEL_CRITICAL,
         activityLevel,
         logFilePath);
-    internal_debug_print("");
+    debug_print("");
 
     // Erase our plain-text encryption key, (not necessary, but being explicit that we do not need this data anymore)
     encryptionKeyBytes.fill(0);
@@ -749,17 +749,17 @@ HRESULT RunEncryptionKeyExample_LoadEncryptionKeyImpl(
         activityLevel,
         logFilePath);
 
-    internal_debug_print("%ws", logPrefix.c_str());
-    internal_debug_print("");
-    internal_debug_print(L"[Load flow]");
-    internal_debug_print("");
+    debug_print("%ws", logPrefix.c_str());
+    debug_print("");
+    debug_print(L"[Load flow]");
+    debug_print("");
 
-    internal_debug_print("%ws", logPrefix.c_str());
-    internal_debug_print(L"1. Unsealing our encryption key (only our enclave can succeed this operation)");
+    debug_print("%ws", logPrefix.c_str());
+    debug_print(L"1. Unsealing our encryption key (only our enclave can succeed this operation)");
     auto [unsealedBytes, unsealingFlags] = veil::vtl1::crypto::unseal_data(securedEncryptionKeyBytes);
-    internal_debug_print("%ws", logPrefix.c_str());
-    internal_debug_print(L" ...CHECKPOINT: unsealed byte count: = %d", unsealedBytes.size());
-    internal_debug_print("");
+    debug_print("%ws", logPrefix.c_str());
+    debug_print(L" ...CHECKPOINT: unsealed byte count: = %d", unsealedBytes.size());
+    debug_print("");
 
     // Create the symmetric key from unsealed bytes
     auto encryptionKey = veil::vtl1::crypto::create_symmetric_key(unsealedBytes);
@@ -769,12 +769,12 @@ HRESULT RunEncryptionKeyExample_LoadEncryptionKeyImpl(
        // Encrypt the user input data
        auto const SOME_PLAIN_TEXT = dataToEncrypt.c_str();
 
-       internal_debug_print("%ws", logPrefix.c_str());
-       internal_debug_print(L"2. Encrypting input text.");
+       debug_print("%ws", logPrefix.c_str());
+       debug_print(L"2. Encrypting input text.");
        auto [encryptedText, encryptionTag] = veil::vtl1::crypto::encrypt(encryptionKey.get(), veil::vtl1::as_data_span(SOME_PLAIN_TEXT), veil::vtl1::crypto::zero_nonce);
-       internal_debug_print("%ws", logPrefix.c_str());
-       internal_debug_print(L" ...CHECKPOINT: encrypted text's byte count: = %d", encryptedText.size());
-       internal_debug_print("");
+       debug_print("%ws", logPrefix.c_str());
+       debug_print(L" ...CHECKPOINT: encrypted text's byte count: = %d", encryptedText.size());
+       debug_print("");
 
        if (!calledFromThreadpool)
        {
@@ -792,13 +792,13 @@ HRESULT RunEncryptionKeyExample_LoadEncryptionKeyImpl(
    else
    {
        // Decrypt the stored encrypted input
-       internal_debug_print("%ws", logPrefix.c_str());
-       internal_debug_print(L"3. Decrypting text...");
+       debug_print("%ws", logPrefix.c_str());
+       debug_print(L"3. Decrypting text...");
        auto decryptedText = veil::vtl1::crypto::decrypt(encryptionKey.get(), encryptedInputBytes, veil::vtl1::crypto::zero_nonce, tag);
        std::wstring decryptedString = veil::vtl1::to_wstring(decryptedText);
-       internal_debug_print("%ws", logPrefix.c_str());
-       internal_debug_print(L" ...CHECKPOINT: decrypted text: = %ws", decryptedString.c_str());
-       internal_debug_print("");
+       debug_print("%ws", logPrefix.c_str());
+       debug_print(L" ...CHECKPOINT: decrypted text: = %ws", decryptedString.c_str());
+       debug_print("");
 
        if (!calledFromThreadpool)
        {
@@ -844,7 +844,7 @@ HRESULT VbsEnclave::Trusted::Implementation::RunEncryptionKeyExample_LoadEncrypt
     using namespace veil::vtl1::vtl0_functions;
     auto threadCount = 2u;
 
-    internal_debug_print(L"Creating taskpool with '%d' threads...", threadCount);
+    debug_print(L"Creating taskpool with '%d' threads...", threadCount);
 
     auto tasks = std::vector<veil::vtl1::future<void>>();
 
@@ -863,7 +863,7 @@ HRESULT VbsEnclave::Trusted::Implementation::RunEncryptionKeyExample_LoadEncrypt
                 {
                     auto logPrefix = L"[THREAD " + std::to_wstring(i) + L"]";
                     auto helloStr = logPrefix + L" Hello from encryption task.";
-                    internal_debug_print(helloStr.c_str());
+                    debug_print(helloStr.c_str());
 
                     auto a = std::vector<uint8_t> {};
                     auto b = std::vector<uint8_t> {};
@@ -887,7 +887,7 @@ HRESULT VbsEnclave::Trusted::Implementation::RunEncryptionKeyExample_LoadEncrypt
                 }
                 else
                 {
-                    internal_debug_print(L"hello from decryption task: %d", i);
+                    debug_print(L"hello from decryption task: %d", i);
 
                     auto a = std::vector<uint8_t> {};
                     auto b = std::wstring {};
@@ -916,20 +916,20 @@ HRESULT VbsEnclave::Trusted::Implementation::RunEncryptionKeyExample_LoadEncrypt
         auto task = taskpool.queue_task([&ranLastTask] ()
         {
             ranLastTask = true;
-            internal_debug_print(L"...you SHOULD see this message...");
+            debug_print(L"...you SHOULD see this message...");
         });
         tasks.push_back(std::move(task));
 
-        internal_debug_print(L"Waiting for taskpool to destruct...");
+        debug_print(L"Waiting for taskpool to destruct...");
     }
 
     if (!ranLastTask)
     {
-        internal_debug_print(L"ERROR: Taskpool destructed before all tasks finished.");
+        debug_print(L"ERROR: Taskpool destructed before all tasks finished.");
     }
     else
     {
-        internal_debug_print(L"SUCCESS: Taskpool destructed after all tasks finished.");
+        debug_print(L"SUCCESS: Taskpool destructed after all tasks finished.");
     }
 
     return S_OK;

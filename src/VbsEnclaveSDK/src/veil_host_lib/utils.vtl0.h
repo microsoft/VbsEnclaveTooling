@@ -32,6 +32,18 @@ namespace veil::vtl0::implementation::debug
             std::cout << str << std::endl;
         #endif
     }
+
+    // External debug printing functions (not gated by _VEIL_INTERNAL_DEBUG)
+    inline void debug_wprint(const std::wstring& str)
+    {
+        std::wcout << str << std::endl;
+    }
+
+    // External debug printing function for narrow strings
+    inline void debug_print(const std::string& str)
+    {
+        std::cout << str << std::endl;
+    }
 }
 
 namespace veil::vtl0::internal::utils

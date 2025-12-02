@@ -46,4 +46,31 @@ namespace veil::vtl1::debug
             (void)sizeof...(args);
         #endif
     }
+
+    // External debug functions for VTL1 callers outside the SDK
+    // These are not gated by _VEIL_INTERNAL_DEBUG and are available to all external consumers
+    namespace external
+    {
+        // External debug print function for const wchar_t* - always available
+        inline void debug_print(const wchar_t* str)
+        {
+            veil::vtl1::vtl0_functions::debug_print(str);
+        }
+
+        // External debug print function for std::wstring - always available
+        inline void debug_print(const std::wstring& str)
+        {
+            veil::vtl1::vtl0_functions::debug_print(str.c_str());
+        }
+
+        // External debug printf function for formatted strings - always available
+        template<typename... Args>
+        inline void debug_printf(const wchar_t* format, Args&&... args)
+        {
+            // Use a buffer to format the string
+            wchar_t buffer[1024];
+            swprintf_s(buffer, format, std::forward<Args>(args)...);
+            veil::vtl1::vtl0_functions::debug_print(buffer);
+        }
+    }
 }
