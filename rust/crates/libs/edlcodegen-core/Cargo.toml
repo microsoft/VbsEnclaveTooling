@@ -12,4 +12,3 @@ edlcodegen-tools = { workspace = true }
 [dependencies]
 edlcodegen-macros = { workspace = true }
 flatbuffers = { workspace = true }
-windows-sys = { workspace = true, features = ["Win32_System"] }

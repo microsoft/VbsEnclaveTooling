@@ -3,10 +3,10 @@
 
 use crate::{
     edl_core_ffi::{
-        BOOL, E_FAIL, E_INVALIDARG, GetProcessHeap, HEAP_ZERO_MEMORY, HRESULT, HeapAlloc, HeapFree,
+        E_FAIL, E_INVALIDARG, GetProcessHeap, HEAP_ZERO_MEMORY, HeapAlloc, HeapFree,
         S_OK,
     },
-    edl_core_types::AbiError,
+    edl_core_types::{AbiError, BOOL, HRESULT},
 };
 use core::ffi::c_void;
 
@@ -48,6 +48,19 @@ pub fn deallocate_memory(mem: *mut c_void) -> HRESULT {
     HRESULT(S_OK)
 }
 
+/// A allocation function that can be called via `CallEnclave`.
+#[unsafe(no_mangle)]
+pub extern "system" fn allocate_memory_ffi(context: *mut c_void) -> *mut c_void {
+    allocate_memory(context as usize)
+}
+
+/// A deallocation function that can be called via `CallEnclave`.
+#[unsafe(no_mangle)]
+pub extern "system" fn deallocate_memory_ffi(memory: *mut c_void) -> *mut c_void {
+    let hr = deallocate_memory(memory);
+    hr.0 as *mut c_void
+}
+
 /// Performs a raw memory copy from a Rust slice into a raw buffer.
 pub fn copy_slice_to_buffer<T>(buffer: *mut c_void, data: &[T]) -> Result<(), AbiError> {
     if buffer.is_null() {
@@ -72,3 +85,4 @@ macro_rules! return_hr_as_pvoid {
         return $crate::edl_core_ffi::S_OK as *mut core::ffi::c_void;
     }};
 }
+
