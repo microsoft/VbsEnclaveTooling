@@ -3,8 +3,7 @@
 
 use crate::{
     edl_core_ffi::{
-        E_FAIL, E_INVALIDARG, GetProcessHeap, HEAP_ZERO_MEMORY, HeapAlloc, HeapFree,
-        S_OK,
+        E_FAIL, E_INVALIDARG, GetProcessHeap, HEAP_ZERO_MEMORY, HeapAlloc, HeapFree, S_OK,
     },
     edl_core_types::{AbiError, BOOL, HRESULT},
 };
@@ -85,4 +84,3 @@ macro_rules! return_hr_as_pvoid {
         return $crate::edl_core_ffi::S_OK as *mut core::ffi::c_void;
     }};
 }
-
