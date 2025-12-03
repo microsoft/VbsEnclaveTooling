@@ -9,9 +9,12 @@ use crate::enclave_ffi::{
 use crate::memory_helpers::vtl0_function_map;
 use crate::vtl0_pointers::Vtl0MemoryPtr;
 use alloc::string::String;
-use core::{ffi::c_void, ptr};
+use core::ffi::c_void;
 use edlcodegen_core::{
-    edl_core_ffi, edl_core_types, edl_core_types::AbiError, edl_core_types::EnclaveFunctionContext,
+    edl_core_ffi::{CallEnclaveInput, call_enclave},
+    edl_core_types,
+    edl_core_types::AbiError,
+    edl_core_types::EnclaveFunctionContext,
     flatbuffer_support,
 };
 
@@ -20,7 +23,7 @@ pub fn call_vtl1_export_from_vtl1<F, DevTypeT, FlatbufferT>(
     context: *mut c_void,
 ) -> Result<(), AbiError>
 where
-    F: FnMut(&mut DevTypeT),
+    F: FnMut(&mut DevTypeT) -> Result<(), AbiError>,
     DevTypeT: Clone + From<FlatbufferT> + Into<FlatbufferT>,
     FlatbufferT: for<'a> flatbuffer_support::FlatbufferPack<'a>,
 {
@@ -51,7 +54,7 @@ where
     let mut dev_input: DevTypeT = fb_input.into();
 
     // Call developer implementation.
-    dev_impl_func(&mut dev_input);
+    dev_impl_func(&mut dev_input)?;
 
     // Convert updated developer type back into its flatbuffer struct and pack it into an array of bytes.
     let fb_output: FlatbufferT = dev_input.into();
@@ -139,16 +142,12 @@ where
         &vtl1_outgoing_context_obj,
     )?;
 
+    let call_enclave_input = CallEnclaveInput::new(
+        vtl0_function,
+        vtl0_input_context_ptr.as_ptr() as *const c_void,
+    );
     // Call into VTL0 function.
-    let mut call_result: *mut c_void = ptr::null_mut();
-
-    unsafe {
-        edl_core_ffi::call_enclave(
-            vtl0_function,
-            vtl0_input_context_ptr.as_ptr() as *const c_void,
-            &mut call_result as *mut *mut c_void,
-        )?;
-    }
+    call_enclave::<()>(call_enclave_input)?;
 
     // Copy result context back into enclave.
     let mut vtl1_incoming_context_obj = EnclaveFunctionContext::default();
@@ -166,7 +165,7 @@ where
 
     // Make sure we free the returned buffer before we exit
     let _return_buffer_ptr =
-        unsafe { Vtl0MemoryPtr::from_raw(vtl1_incoming_context_obj.returned_parameters.buffer) };
+        Vtl0MemoryPtr::from_raw(vtl1_incoming_context_obj.returned_parameters.buffer);
 
     let mut local_buf = alloc::vec![0u8; ret_size];
     enclave_copy_buffer_in(local_buf.as_mut_ptr(), ret_buf, ret_size)?;

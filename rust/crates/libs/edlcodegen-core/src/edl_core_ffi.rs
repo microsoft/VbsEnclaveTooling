@@ -1,7 +1,7 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
-use crate::edl_core_types::{AbiError, BOOL, WIN32_TRUE};
+use crate::edl_core_types::{AbiError, BOOL, S_OK, WIN32_TRUE};
 use core::ffi::c_void;
 
 // The consuming crate will link these in based on which side of the trust boundary the crate exists
@@ -19,23 +19,59 @@ unsafe extern "system" {
     pub fn HeapFree(hheap: *mut c_void, dwflags: u32, lpmem: *const c_void) -> i32;
 }
 
-/// Safely calls the `CallEnclave` Win32 API.
-///
-/// # Safety
-/// Rust cannot guarantee the validity, alignment, or lifetime of the pointers involved.
-/// The caller must ensure:
-/// - `func` points to a valid function.
-/// - The function pointer adheres to the expected ABI:
-///   `extern "system" fn(*mut c_void) -> *mut c_void`.
-pub unsafe fn call_enclave(
+pub struct CallEnclaveInput {
     func: isize,
-    in_param: *const c_void,
-    out_param: *mut *mut c_void,
-) -> Result<(), AbiError> {
-    let func_res = unsafe { BOOL(CallEnclave(func, in_param, WIN32_TRUE.0, out_param)) };
+    in_params_ptr: *const c_void,
+}
+
+impl CallEnclaveInput {
+    pub const fn new(func: isize, ptr: *const c_void) -> Self {
+        Self {
+            func,
+            in_params_ptr: ptr,
+        }
+    }
+}
+pub fn call_enclave<T>(input: CallEnclaveInput) -> Result<T, AbiError>
+where
+    T: CallEnclaveReturn,
+{
+    let mut out: *mut c_void = core::ptr::null_mut();
+    let out_ptr: *mut *mut c_void = &mut out;
+    let func_res = unsafe {
+        BOOL(CallEnclave(
+            input.func,
+            input.in_params_ptr,
+            WIN32_TRUE.0,
+            out_ptr,
+        ))
+    };
+
     if !func_res.as_bool() {
         let last_err = unsafe { GetLastError() };
         return Err(AbiError::Win32Error(last_err));
     }
-    Ok(())
+
+    T::from_edl_framework(out)
+}
+
+pub trait CallEnclaveReturn: Sized {
+    fn from_edl_framework(ptr: *mut c_void) -> Result<Self, AbiError>;
+}
+
+impl CallEnclaveReturn for *mut c_void {
+    fn from_edl_framework(ptr: *mut c_void) -> Result<Self, AbiError> {
+        Ok(ptr)
+    }
+}
+impl CallEnclaveReturn for () {
+    fn from_edl_framework(ptr: *mut c_void) -> Result<Self, AbiError> {
+        let hr = crate::helpers::pvoid_to_hresult(ptr);
+
+        if hr == S_OK {
+            return Ok(());
+        }
+
+        Err(AbiError::Hresult(hr))
+    }
 }

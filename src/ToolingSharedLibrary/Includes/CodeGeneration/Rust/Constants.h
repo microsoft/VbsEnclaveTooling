@@ -331,16 +331,16 @@ R"(
 )";
 
     inline constexpr std::string_view c_enclave_closure_content_with_result =
-R"(abi_type.m__return_value_ = <$T>::{}({});)";
+R"(abi_type.m__return_value_ = <$T>::{}({})?;)";
 
     inline constexpr std::string_view c_enclave_closure_content_no_result =
-R"(<$T>::{}({});)";
+R"(<$T>::{}({})?;)";
 
 inline constexpr std::string_view c_host_closure_content_with_result =
- R"(abi_type.m__return_value_ = Self::{}({});)";
+ R"(abi_type.m__return_value_ = Self::{}({})?;)";
 
 inline constexpr std::string_view c_host_closure_content_no_result =
- R"(Self::{}({});)";
+ R"(Self::{}({})?;)";
 
     inline constexpr std::string_view c_enclave_abi_definition_function =
 R"(
@@ -349,8 +349,9 @@ R"(
         {{
             use abi_types::{} as AbiTypeT;
             use flatbuffer_types::{}T as FlatBufferT;
-            let abi_func = |abi_type: &mut AbiTypeT| {{
+            let abi_func = |abi_type: &mut AbiTypeT| -> Result<(), AbiError> {{
                 {}
+                Ok(())
             }};
             $crate::enable_enclave_restrict_containing_process_access_once();
             return_hr_as_pvoid!(call_vtl1_export_from_vtl1::<_, AbiTypeT, FlatBufferT>(abi_func, fn_context))
@@ -364,20 +365,17 @@ macro_rules! export_enclave_functions {{
         use $crate::abi::abi_types;
         use $crate::abi::fb_support::fb_types::{}::flatbuffer_types;
         use $crate::implementation::trusted::Trusted;
-        use $crate::{{return_hr_as_pvoid, call_vtl1_export_from_vtl1, register_vtl0_callouts}};
+        use $crate::{{AbiError, return_hr_as_pvoid, call_vtl1_export_from_vtl1, register_vtl0_callouts}};
         {}
         #[unsafe(no_mangle)]
         pub extern "system" fn {}(fn_context: *mut core::ffi::c_void) -> *mut core::ffi::c_void
         {{
             use abi_types::AbiRegisterVtl0Callbacks_args as AbiTypeT;
             use flatbuffer_types::AbiRegisterVtl0Callbacks_argsT as FlatBufferT;
-            let abi_func = |abi_type: &mut AbiTypeT| {{
-                let res = register_vtl0_callouts(&abi_type.m_callback_addresses, &abi_type.m_callback_names);
-                if let Some(err) = res.err() {{
-                    abi_type.m__return_value_ = err.to_hresult().0;
-                }} else {{
-                    abi_type.m__return_value_ = 0;
-                }}
+            let abi_func = |abi_type: &mut AbiTypeT| -> Result<(), AbiError> {{
+                register_vtl0_callouts(&abi_type.m_callback_addresses, &abi_type.m_callback_names)?;
+                abi_type.m__return_value_ = 0;
+                Ok(())
             }};
             $crate::enable_enclave_restrict_containing_process_access_once();
             return_hr_as_pvoid!(call_vtl1_export_from_vtl1::<_, AbiTypeT, FlatBufferT>(abi_func, fn_context))
@@ -401,11 +399,12 @@ R"({}
 R"(
         extern "system" fn {}(fn_context: *mut core::ffi::c_void) -> *mut core::ffi::c_void
         {{
-            use $crate::{{abi_func_to_address, return_hr_as_pvoid, call_vtl0_callback_from_vtl0}};
+            use $crate::{{AbiError, abi_func_to_address, return_hr_as_pvoid, call_vtl0_callback_from_vtl0}};
             use $crate::abi::abi_types::{} as AbiTypeT;
             use $crate::abi::fb_support::fb_types::{}::flatbuffer_types::{}T as FlatBufferT;
-            let abi_func = |abi_type: &mut AbiTypeT| {{
+            let abi_func = |abi_type: &mut AbiTypeT| -> Result<(), AbiError> {{
                 {}
+                Ok(())
             }};
             return_hr_as_pvoid!(call_vtl0_callback_from_vtl0::<_, AbiTypeT, FlatBufferT>(abi_func, fn_context))
         }}

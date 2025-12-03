@@ -2,9 +2,9 @@
 // Licensed under the MIT License.
 
 use crate::host_ffi::get_enclave_function;
-use core::{ffi::c_void, ptr};
+use core::ffi::c_void;
 use edlcodegen_core::{
-    edl_core_ffi::call_enclave,
+    edl_core_ffi::{CallEnclaveInput, call_enclave},
     edl_core_types::{AbiError, EnclaveFunctionContext, EnclaveHandle},
     flatbuffer_support,
     heap_pointer::HeapPtr,
@@ -29,7 +29,7 @@ pub fn call_vtl0_callback_from_vtl0<F, DevTypeT, FlatbufferT>(
     context: *mut c_void,
 ) -> Result<(), AbiError>
 where
-    F: FnMut(&mut DevTypeT),
+    F: FnMut(&mut DevTypeT) -> Result<(), AbiError>,
     DevTypeT: Clone + From<FlatbufferT> + Into<FlatbufferT>,
     FlatbufferT: for<'a> flatbuffer_support::FlatbufferPack<'a>,
 {
@@ -49,7 +49,7 @@ where
     let mut dev_input: DevTypeT = fb_input.into();
 
     // Call developer implementation.
-    dev_impl_func(&mut dev_input);
+    dev_impl_func(&mut dev_input)?;
 
     // Convert updated developer type back into its flatbuffer struct and pack it into an array of bytes.
     let fb_output: FlatbufferT = dev_input.into();
@@ -84,17 +84,13 @@ where
     let enclave_handle = EnclaveHandle(enclave_instance);
 
     let proc_address = get_enclave_function(&enclave_handle, func_name)?;
+    let call_enclave_input = CallEnclaveInput::new(
+        proc_address_to_isize(proc_address),
+        &raw const context as *const c_void,
+    );
 
     // Call into VTL0 function.
-    let mut call_result: *mut c_void = ptr::null_mut();
-
-    unsafe {
-        call_enclave(
-            proc_address_to_isize(proc_address),
-            &raw const context as *const c_void,
-            &mut call_result as *mut *mut c_void,
-        )?;
-    }
+    call_enclave::<()>(call_enclave_input)?;
 
     // Copy the returned buffer into enclave memory.
     let ret_buf = context.returned_parameters.buffer as *const u8;
@@ -105,7 +101,7 @@ where
     }
 
     // Make sure we free the returned buffer before we exit
-    let _return_buffer_ptr = unsafe { HeapPtr::from_raw(context.returned_parameters.buffer) };
+    let _return_buffer_ptr = HeapPtr::from_raw(context.returned_parameters.buffer);
 
     // Unpack the flatbuffer and return updated developer type back to the caller.
     let ret_slice = unsafe { core::slice::from_raw_parts(ret_buf, ret_size) };
