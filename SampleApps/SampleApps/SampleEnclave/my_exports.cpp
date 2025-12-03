@@ -815,7 +815,6 @@ HRESULT RunEncryptionKeyExample_LoadEncryptionKeyImpl(
    return true;
 }
 
-// New dedicated encryption function
 HRESULT VbsEnclave::Trusted::Implementation::RunEncryptionKeyExample_LoadEncryptionKeyAndEncrypt(
     _In_ const std::vector<std::uint8_t>& securedEncryptionKeyBytes,
     _In_ const std::wstring& dataToEncrypt,
@@ -840,7 +839,6 @@ HRESULT VbsEnclave::Trusted::Implementation::RunEncryptionKeyExample_LoadEncrypt
     return S_OK;
 }
 
-// New dedicated decryption function
 HRESULT VbsEnclave::Trusted::Implementation::RunEncryptionKeyExample_LoadEncryptionKeyAndDecrypt(
     _In_ const std::vector<std::uint8_t>& securedEncryptionKeyBytes,
     _In_ const std::uint32_t activity_level,
@@ -868,7 +866,6 @@ HRESULT VbsEnclave::Trusted::Implementation::RunEncryptionKeyExample_LoadEncrypt
     return S_OK;
 }
 
-// New dedicated encryption threadpool function
 HRESULT VbsEnclave::Trusted::Implementation::RunEncryptionKeyExample_LoadEncryptionKeyAndEncryptThreadpool(
     _In_ const std::vector<std::uint8_t>& securedEncryptionKeyBytes,
     _In_ const std::wstring& dataToEncrypt1,
@@ -948,7 +945,6 @@ HRESULT VbsEnclave::Trusted::Implementation::RunEncryptionKeyExample_LoadEncrypt
     return S_OK;
 }
 
-// New dedicated decryption threadpool function
 HRESULT VbsEnclave::Trusted::Implementation::RunEncryptionKeyExample_LoadEncryptionKeyAndDecryptThreadpool(
     _In_ const std::vector<std::uint8_t>& securedEncryptionKeyBytes,
     _In_ const std::uint32_t activity_level,

@@ -185,7 +185,6 @@ int main(int argc, char* argv[])
     const fs::path encryptedKeyDirPath = fs::current_path();
     const fs::path encryptedDataDirPath = fs::current_path();
     const fs::path encryptedOutputFilePath = encryptedDataDirPath / "encrypted_userbound";
-    bool programExecuted = false;
 
     bool areUserBindingApisAvailable;
     auto config = InitializeUserBindingConfig(areUserBindingApisAvailable);
@@ -194,7 +193,7 @@ int main(int argc, char* argv[])
     {
         std::wcout << L"Error: User Binding APIs are not available on this system." << std::endl;
         std::wcout << L"This feature requires Windows Hello and appropriate hardware support." << std::endl;
-        std::cout << "\nPress any key to return to main menu..." << std::endl;
+        std::cout << "\nPress any key to exit..." << std::endl;
         _getch();
         return 1;
     }
@@ -245,7 +244,7 @@ int main(int argc, char* argv[])
     {
         std::wcout << L"Error: Exception occurred while getting secure ID." << std::endl;
         std::wcout << L"Cannot proceed without a valid secure ID for user-bound encryption." << std::endl;
-        std::cout << "\nPress any key to return to exit..." << std::endl;
+        std::cout << "\nPress any key to exit..." << std::endl;
         _getch();
         return -1;
     }
@@ -261,15 +260,17 @@ int main(int argc, char* argv[])
     constexpr PCWSTR keyMoniker = KEY_NAME.data();
     auto keyFilePath = encryptedKeyDirPath / keyMoniker;
 
-    do
+    while (true)
     {
         std::cout << "\n*** User-Bound String Encryption and Decryption Menu ***\n";
         std::cout << "1. Encrypt a string (user-bound)\n";
         std::cout << "2. Decrypt the string (user-bound)\n";
+        std::cout << "3. Exit\n";
         std::cout << "Enter your choice: ";
+        
         if (!(std::cin >> choice))
         {
-            std::cout << "Invalid input. Please enter a valid option (1 or 2).\n";
+            std::cout << "Invalid input. Please enter a valid option (1, 2, or 3).\n";
             std::cin.clear();
             std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
             continue;
@@ -286,25 +287,21 @@ int main(int argc, char* argv[])
                 std::wcout << L"User-bound encryption in Enclave completed. \nEncrypted bytes are saved to disk in " << encryptedOutputFilePath << std::endl;
                 veilLog.AddTimestampedLog(
                     L"[Host] User-bound encryption in Enclave completed. \nEncrypted bytes are saved to disk in " + encryptedOutputFilePath.wstring(),
-                veil::any::logger::eventLevel::EVENT_LEVEL_CRITICAL);
-                programExecuted = true;
+                    veil::any::logger::eventLevel::EVENT_LEVEL_CRITICAL);
                 break;
 
             case 2:
                 UserBoundDecryptFlow(enclave.get(), keyFilePath, encryptedOutputFilePath, config);
                 fs::remove(keyFilePath);
                 fs::remove(encryptedOutputFilePath);
-                programExecuted = true;
                 break;
+
+            case 3:
+                std::cout << "Exiting program...\n";
+                return 0;
 
             default:
                 std::cout << "Invalid choice. Please try again.\n";
         }
     }
-    while (!programExecuted);
-
-    std::cout << "\n\nPress any key to exit..." << std::endl;
-    _getch();
-
-    return 0;
 }

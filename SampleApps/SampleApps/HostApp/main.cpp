@@ -120,7 +120,6 @@ int main(int argc, char* argv[])
     const fs::path encryptedDataDirPath = fs::current_path();
     const fs::path encryptedOutputFilePath = encryptedDataDirPath / "encrypted";
     const fs::path tagFilePath = encryptedKeyDirPath / "tag";
-    bool programExecuted = false;
 
     veil::vtl0::logger::logger veilLog(
         L"HostApp",
@@ -141,18 +140,20 @@ int main(int argc, char* argv[])
     constexpr PCWSTR keyMoniker = KEY_NAME.data();
     auto keyFilePath = encryptedKeyDirPath / keyMoniker;
 
-    do
+    while (true)
     {
         std::cout << "\n*** String Encryption and Decryption Menu ***\n";
         std::cout << "1. Encrypt a string\n";
         std::cout << "2. Decrypt the string\n";
+        std::cout << "3. Exit\n";
         std::cout << "Enter your choice: ";
+        
         if (!(std::cin >> choice))
         {
-            std::cout << "Invalid input. Please enter a valid option (1 or 2).\n";
+            std::cout << "Invalid input. Please enter a valid option (1, 2, or 3).\n";
             std::cin.clear();
             std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
-           continue;
+            continue;
         }
 
         switch (choice)
@@ -166,7 +167,6 @@ int main(int argc, char* argv[])
                 veilLog.AddTimestampedLog(
                     L"[Host] Encryption in Enclave completed. Encrypted bytes are saved to disk in " + encryptedOutputFilePath.wstring(),
                     veil::any::logger::eventLevel::EVENT_LEVEL_CRITICAL);
-                programExecuted = true;
                 break;
 
             case 2:
@@ -174,17 +174,14 @@ int main(int argc, char* argv[])
                 fs::remove(keyFilePath);
                 fs::remove(encryptedOutputFilePath);
                 fs::remove(tagFilePath);
-                programExecuted = true;
                 break;
+
+            case 3:
+                std::cout << "Exiting program...\n";
+                return 0;
 
             default:
                 std::cout << "Invalid choice. Please try again.\n";
         }
     }
-    while (!programExecuted);
-
-    std::cout << "\n\nPress any key to exit..." << std::endl;
-    _getch();
-
-    return 0;
 }

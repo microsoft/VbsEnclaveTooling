@@ -148,7 +148,6 @@ int main(int argc, char* argv[])
     const fs::path encryptedDataDirPath = fs::current_path();
     const fs::path encryptedInputFilePath = encryptedDataDirPath / "encrypted";
     const fs::path tagFilePath = encryptedKeyDirPath / "tag";
-    bool programExecuted = false;
 
     veil::vtl0::logger::logger veilLog(
         L"HostAppEncryptDecryptThreadpool",
@@ -159,15 +158,17 @@ int main(int argc, char* argv[])
     constexpr PCWSTR keyMoniker = KEY_NAME.data();
     auto keyFilePath = encryptedKeyDirPath / keyMoniker;
 
-    do
+    while (true)
     {
         std::cout << "\n*** Multi-threaded encryption and decryption menu ***\n";
         std::cout << "1. Encrypt two strings\n";
         std::cout << "2. Decrypt the strings\n";
+        std::cout << "3. Exit\n";
         std::cout << "Enter your choice: ";
+        
         if (!(std::cin >> choice))
         {
-            std::cout << "Invalid input. Please enter a valid option (1 or 2).\n";
+            std::cout << "Invalid input. Please enter a valid option (1, 2, or 3).\n";
             std::cin.clear();
             std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
             continue;
@@ -186,7 +187,6 @@ int main(int argc, char* argv[])
                 veilLog.AddTimestampedLog(
                     L"[Host] Encryption in Enclave threadpool completed. \nEncrypted bytes are saved to disk in " + encryptedDataDirPath.wstring(),
                     veil::any::logger::eventLevel::EVENT_LEVEL_CRITICAL);
-                programExecuted = true;
                 break;
 
             case 2:
@@ -196,19 +196,15 @@ int main(int argc, char* argv[])
                 fs::remove(fs::path(encryptedInputFilePath.string() + "2"));
                 fs::remove(fs::path(tagFilePath.string() + "1"));
                 fs::remove(fs::path(tagFilePath.string() + "2"));
-                programExecuted = true;
                 break;
+
+            case 3:
+                std::wcout << L"Finished sample: Encrypt Decrypt in taskpool..." << std::endl;
+                std::cout << "Exiting program...\n";
+                return 0;
 
             default:
                 std::cout << "Invalid choice. Please try again.\n";
         }
     }
-    while (!programExecuted);
-
-    std::wcout << L"Finished sample: Encrypt Decrypt in taskpool..." << std::endl;
-
-    std::cout << "\n\nPress any key to exit..." << std::endl;
-    _getch();
-
-    return 0;
 }
