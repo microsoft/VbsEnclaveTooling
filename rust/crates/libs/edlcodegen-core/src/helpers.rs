@@ -79,6 +79,6 @@ macro_rules! return_hr_as_pvoid {
             return $crate::helpers::hresult_to_pvoid(err.to_hresult().0);
         }
 
-        return $crate::edl_core_ffi::S_OK as *mut core::ffi::c_void;
+        return $crate::edl_core_types::S_OK as *mut core::ffi::c_void;
     }};
 }
