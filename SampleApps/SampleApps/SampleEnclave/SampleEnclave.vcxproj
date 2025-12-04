@@ -272,17 +272,26 @@
     </ClCompile>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="Common\globals.h" />
+    <ClInclude Include="Encryption\basic_encryption.h" />
+    <ClInclude Include="Encryption\threaded_encryption.h" />
     <ClInclude Include="pch.h" />
+    <ClInclude Include="Taskpool\taskpool_examples.h" />
+    <ClInclude Include="UserBound\userbound_keys.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="Common\globals.cpp" />
     <ClCompile Include="dllmain.cpp" />
-    <ClCompile Include="my_exports.cpp" />
+    <ClCompile Include="Encryption\basic_encryption.cpp" />
+    <ClCompile Include="Encryption\threaded_encryption.cpp" />
     <ClCompile Include="pch.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|ARM64'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|ARM64'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
     </ClCompile>
+    <ClCompile Include="Taskpool\taskpool_examples.cpp" />
+    <ClCompile Include="UserBound\userbound_keys.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ItemGroup>

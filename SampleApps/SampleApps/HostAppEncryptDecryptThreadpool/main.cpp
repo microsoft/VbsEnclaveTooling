@@ -34,7 +34,7 @@ int EncryptFlowThreadpool(
 
     auto securedEncryptionKeyBytes = std::vector<uint8_t> {};
     THROW_IF_FAILED(enclaveInterface.RunEncryptionKeyExample_CreateEncryptionKey(
-        (const uint32_t)veilLog.GetLogLevel(),
+        (uint32_t)veilLog.GetLogLevel(),
         veilLog.GetLogFilePath(),
         securedEncryptionKeyBytes
     ));
@@ -50,7 +50,7 @@ int EncryptFlowThreadpool(
         securedEncryptionKeyBytes,
         input1,
         input2,
-        (const uint32_t)veilLog.GetLogLevel(),
+        (uint32_t)veilLog.GetLogLevel(),
         veilLog.GetLogFilePath(),
         resealedEncryptionKeyBytes,
         encryptedInputBytes1,
@@ -89,7 +89,7 @@ int DecryptFlowThreadpool(
     auto decryptedInputBytes2 = std::wstring {};
     THROW_IF_FAILED(enclaveInterface.RunEncryptionKeyExample_LoadEncryptionKeyAndDecryptThreadpool(
         securedEncryptionKeyBytes,
-        (const uint32_t)veilLog.GetLogLevel(),
+        (uint32_t)veilLog.GetLogLevel(),
         veilLog.GetLogFilePath(),
         encryptedInputBytes1,
         encryptedInputBytes2,
