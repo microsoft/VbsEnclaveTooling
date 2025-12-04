@@ -9,6 +9,11 @@ use enclave_constants::*;
 use core::panic::PanicInfo;
 
 // Developer creates their own panic handler for no_std environments.
+// Note: The rust analyzer in VSCode shows red squiggly lines in the IDE.
+// That said, the code still compiles and works correctly.
+// To remove it add "rust-analyzer.check.allTargets": false in your
+// VSCode -> Preferences: Open Workspace settings (JSON).
+// See: https://github.com/rust-lang/rust-analyzer/issues/4490#issuecomment-3241437252
 #[panic_handler]
 fn panic(_panic: &PanicInfo<'_>) -> ! {
     loop {}

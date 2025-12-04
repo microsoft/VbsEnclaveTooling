@@ -1,19 +1,22 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
-use windows::core::{BOOL, HRESULT, Error, Result};
+use windows::core::{HRESULT, Error, Result};
+use windows::Win32::Foundation::TRUE;
 use crate::enclave_api_ffi::*;
+use windows::Win32::System::Threading::GetCurrentProcess;
+use core::ffi::c_void;
 
 /// Temporary container for managing the lifecycle of the VBS enclave.
 /// Once the Vbs enclave sdk crate is available, this can be replaced with
-/// APIs from that crate.
+/// the use of lifecycle APIs from that crate.
 pub struct EnclaveContainer {
-    pub enclave: *mut core::ffi::c_void,
+    pub enclave: *mut c_void,
 }
 
 impl EnclaveContainer {
     pub fn new() -> Result<Self> {
-        let mut enclave: *mut core::ffi::c_void = core::ptr::null_mut();
+        let mut enclave: *mut c_void = core::ptr::null_mut();
         
         let mut creation_attempt = || -> Result<()> {
             if unsafe { !IsEnclaveTypeSupported(ENCLAVE_TYPE_VBS) }.as_bool() { 
@@ -36,11 +39,11 @@ impl EnclaveContainer {
                 ],
             };
 
-            let info_ptr = &raw const create_info as *const core::ffi::c_void;
+            let info_ptr = &raw const create_info as *const c_void;
 
             enclave = unsafe {
                 CreateEnclave(
-                    GetCurrentProcess(),
+                    GetCurrentProcess().0,
                     core::ptr::null_mut(),
                     0x10000000,
                     0,
@@ -67,14 +70,13 @@ impl EnclaveContainer {
                 }
             }
 
-            // Initialize the enclave
             let mut init_info = ENCLAVE_INIT_INFO_VBS::default();
             init_info.Length = ENCLAVE_INIT_INFO_VBS_SIZE;
             init_info.ThreadCount = 1;
             
             unsafe {
                 if !InitializeEnclave(
-                    GetCurrentProcess(),
+                    GetCurrentProcess().0,
                     enclave,
                     &init_info as *const _ as _,
                     init_info.Length,
@@ -90,7 +92,6 @@ impl EnclaveContainer {
             Ok(())
         };
 
-        // Execute attempt() and ensure cleanup on failure.
         if let Err(e) = creation_attempt() {
             unsafe { Self::unload_enclave(enclave) };
             return Err(e);
@@ -99,10 +100,10 @@ impl EnclaveContainer {
         Ok(Self { enclave })
     }
 
-    unsafe fn unload_enclave(enclave: *mut core::ffi::c_void) {
+    unsafe fn unload_enclave(enclave: *mut c_void) {
         if !enclave.is_null() {
             unsafe {
-                if !TerminateEnclave(enclave,  BOOL(1)).as_bool() {
+                if !TerminateEnclave(enclave,  TRUE).as_bool() {
                     print_unload_error("Failed to terminate enclave before deletion", HRESULT::from_thread());
                     return;
                 }
