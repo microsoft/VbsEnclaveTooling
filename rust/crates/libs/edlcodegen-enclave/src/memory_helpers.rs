@@ -5,9 +5,11 @@ extern crate alloc;
 use crate::enclave_ffi::enclave_get_enclave_information;
 use crate::vtl0_pointers::Vtl0MemoryPtr;
 use alloc::{collections::BTreeMap, string::String};
-use core::{ffi::c_void, ptr};
+use core::ffi::c_void;
 use edlcodegen_core::{
-    edl_core_ffi, edl_core_types, edl_core_types::AbiError, helpers::pvoid_to_hresult,
+    edl_core_ffi::{CallEnclaveInput, call_enclave},
+    edl_core_types,
+    edl_core_types::AbiError,
 };
 use spin::{Once, RwLock};
 
@@ -129,57 +131,23 @@ impl Vtl0FunctionMap {
         let func = self
             .alloc_func
             .ok_or(AbiError::Hresult(edl_core_types::E_INVALIDARG))?;
-        let mut memory_output: *mut c_void = ptr::null_mut();
-
-        unsafe {
-            edl_core_ffi::call_enclave(
-                func,
-                size as *const c_void,
-                &mut memory_output as *mut *mut c_void,
-            )?;
-        }
+        let call_enclave_input = CallEnclaveInput::new(func, size as *const c_void);
+        let memory_output: *mut c_void = call_enclave(call_enclave_input)?;
 
         if memory_output.is_null() {
             // memory_output should never be null unless host's memory is exhausted.
             panic!("memory_output from CallEnclaves allocate_vtl0_memory was null");
         }
 
-        // SAFETY:
-        // The host allocated this buffer through a verified enclave ABI callback.
-        // It is valid for the specified size and must later be deallocated through
-        // the corresponding VTL0 free callback.
-        Ok(unsafe { Vtl0MemoryPtr::from_raw(memory_output as *mut T) })
+        Ok(Vtl0MemoryPtr::from_raw(memory_output as *mut T))
     }
 
-    /// Calls into the host’s deallocation routine through CallEnclave.
-    ///
-    /// # Safety
-    /// This function performs a cross-VTL call into the host’s memory space using the
-    /// Win32 `CallEnclave` API. Rust cannot verify pointer validity or the safety of
-    /// this external call. The following invariants must be upheld by the caller:
-    /// - `ptr` must point to a valid VTL0-allocated buffer previously returned from
-    ///   `allocate_vtl0_memory`.
-    /// - The host callback registered in `self.dealloc_func` must be a trusted
-    ///   function pointer matching the expected signature `fn(*mut c_void) -> *mut c_void`.
-    ///
-    /// The unsafe block exists because `CallEnclave` is an external C API that
-    /// cannot be memory- or type-checked by the Rust compiler.
-    pub unsafe fn deallocate_vtl0_memory(&self, ptr: *mut c_void) -> Result<(), AbiError> {
+    pub fn deallocate_vtl0_memory(&self, ptr: *mut c_void) -> Result<(), AbiError> {
         let func = self
             .dealloc_func
             .ok_or(AbiError::Hresult(edl_core_types::E_INVALIDARG))?;
-        let mut returned_hr_ptr: *mut c_void = ptr::null_mut();
-
-        unsafe {
-            edl_core_ffi::call_enclave(func, ptr, &mut returned_hr_ptr as *mut *mut c_void)?;
-        }
-
-        let hr = pvoid_to_hresult(returned_hr_ptr);
-
-        if hr != edl_core_types::S_OK {
-            return Err(AbiError::Hresult(hr));
-        }
-
+        let call_enclave_input = CallEnclaveInput::new(func, ptr as *const c_void);
+        call_enclave::<()>(call_enclave_input)?;
         Ok(())
     }
 

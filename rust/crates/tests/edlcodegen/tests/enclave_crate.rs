@@ -21,7 +21,7 @@ use windows::Win32::Foundation::S_OK;
 #[cfg(test)]
 mod edl_enclave {
     use edlcodegen_core::helpers::hresult_to_pvoid;
-    use edlcodegen_host::host_helpers::call_vtl0_callback_from_vtl0;
+    use edlcodegen_host::{AbiError, host_helpers::call_vtl0_callback_from_vtl0};
 
     use crate::common::test_types::{
         dev_types::TestFuncArgs2, fb_generated::flatbuffer_test::TestFuncArgs2T,
@@ -48,8 +48,9 @@ mod edl_enclave {
         context.forwarded_parameters.buffer_size = fb_data.len();
 
         // Test function to be called by call_vtl1_export_from_vtl1.
-        let dev_func = |dev_type: &mut AllTypes| {
+        let dev_func = |dev_type: &mut AllTypes| -> Result<(), AbiError> {
             dev_type.i32_field = 1999; // simple mutation to verify roundtrip logic
+            Ok(())
         };
 
         register_vtl0_callouts_helper(None, None);
@@ -84,9 +85,10 @@ mod edl_enclave {
     // function. This is used during "call_vtl0_callback_from_vtl1_succeeds" test.
     extern "system" fn generated_developer_host_impl_ffi(context: *mut c_void) -> *mut c_void {
         // Use closure to call the developers impl function.
-        let dev_func = |dev_type: &mut TestFuncArgs2| {
+        let dev_func = |dev_type: &mut TestFuncArgs2| -> Result<(), AbiError> {
             // simple mutation to verify roundtrip logic
             dev_type.return_val = developer_host_impl();
+            Ok(())
         };
 
         let result =

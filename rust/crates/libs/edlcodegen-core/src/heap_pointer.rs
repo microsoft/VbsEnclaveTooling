@@ -25,7 +25,7 @@ impl<T> HeapPtr<T> {
     ///
     /// # Safety
     /// The pointer must be valid and allocated through HeapAlloc.
-    pub const unsafe fn from_raw(ptr: *mut T) -> Self {
+    pub const fn from_raw(ptr: *mut T) -> Self {
         Self { ptr }
     }
 
