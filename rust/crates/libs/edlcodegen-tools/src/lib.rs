@@ -24,8 +24,13 @@ pub fn flatc_path() -> PathBuf {
 const PROGRAM_FILES_X86: &str = "ProgramFiles(x86)";
 const VCTOOLS_DEFAULT_PATH: &str = "VC\\Auxiliary\\Build\\Microsoft.VCToolsVersion.default.txt";
 const MSVC_PATH: &str = "VC\\Tools\\MSVC";
-const ENCLAVE_LIB_PATH: &str = "lib\\x64\\enclave";
-const UCRT_LIB_PATH: &str = "ucrt_enclave\\x64\\ucrt.lib";
+const VC_TOOLS_X64: &str = "Microsoft.VisualStudio.Component.VC.Tools.x86.x64";
+const ENCLAVE_LIB_X64_PATH: &str = "lib\\x64\\enclave";
+const UCRT_LIB_X64_PATH: &str = "ucrt_enclave\\x64\\ucrt.lib";
+
+const VC_TOOLS_ARM64: &str = "Microsoft.VisualStudio.Component.VC.Tools.ARM64";
+const ENCLAVE_LIB_ARM64_PATH: &str = "lib\\arm64\\enclave";
+const UCRT_LIB_ARM64_PATH: &str = "ucrt_enclave\\arm64\\ucrt.lib";
 
 const SDK_SCRIPT: &str = r#"& {
     $kits_root_10 = (Get-ItemProperty -Path "HKLM:\SOFTWARE\Wow6432Node\Microsoft\Windows Kits\Installed Roots\" -Name KitsRoot10).KitsRoot10
@@ -34,8 +39,18 @@ const SDK_SCRIPT: &str = r#"& {
 }
 "#;
 
+fn architecture_paths() -> (&'static str, &'static str, &'static str) {
+    match env::consts::ARCH {
+        "x86_64" => (VC_TOOLS_X64, ENCLAVE_LIB_X64_PATH, UCRT_LIB_X64_PATH),
+        "aarch64" => (VC_TOOLS_ARM64, ENCLAVE_LIB_ARM64_PATH, UCRT_LIB_ARM64_PATH),
+        _ => panic!("Unsupported architecture: {}", env::consts::ARCH),
+    }
+}
+
 /// Locates the Windows SDK and MSVC toolchain and emits the linker arguments
 /// needed to build a VBS enclave (UCRT enclave libs + MSVC enclave libs + vertdll).
+/// This function should be called from a build.rs file of an enclave crate.
+/// Note: This function assumes that the Windows SDK and MSVC toolchain are installed.
 pub fn link_win_sdk_enclave_libs() -> Result<(), Box<dyn std::error::Error>> {
     println!("cargo::rustc-link-arg=/ENCLAVE");
     println!("cargo::rustc-link-arg=/NODEFAULTLIB");
@@ -53,6 +68,7 @@ pub fn link_win_sdk_enclave_libs() -> Result<(), Box<dyn std::error::Error>> {
     let sdk_path = str::from_utf8(&powershell_output)?.trim();
 
     println!("{}", sdk_path);
+    let (vc_tools, enclave_lib_sub_path, ucrt_lib_sub_path) = architecture_paths();
 
     let vswhere =
         Path::new(&program_files_x86).join("Microsoft Visual Studio\\Installer\\vswhere.exe");
@@ -63,7 +79,7 @@ pub fn link_win_sdk_enclave_libs() -> Result<(), Box<dyn std::error::Error>> {
             "-products",
             "*",
             "-requires",
-            "Microsoft.VisualStudio.Component.VC.Tools.x86.x64",
+            vc_tools,
             "-property",
             "installationPath",
         ])
@@ -79,12 +95,12 @@ pub fn link_win_sdk_enclave_libs() -> Result<(), Box<dyn std::error::Error>> {
 
     let msvc = install_path.join(MSVC_PATH).join(default_path.trim());
 
-    let enclave_lib_path = msvc.join(ENCLAVE_LIB_PATH);
+    let msvc_with_enclave_lib_path = msvc.join(enclave_lib_sub_path);
 
     println!(
         "cargo::rustc-link-arg={}",
         Path::new(sdk_path)
-            .join(UCRT_LIB_PATH)
+            .join(ucrt_lib_sub_path)
             .to_str()
             .expect("Couldn't make string from ucrt.lib path")
     );
@@ -92,14 +108,14 @@ pub fn link_win_sdk_enclave_libs() -> Result<(), Box<dyn std::error::Error>> {
     // libvcruntime must come before vertdll or there will be duplicate external errors
     println!(
         "cargo::rustc-link-arg={}",
-        enclave_lib_path
+        msvc_with_enclave_lib_path
             .join("libvcruntime.lib")
             .to_str()
             .expect("Couldn't make string from libvcruntime.lib path")
     );
     println!(
         "cargo::rustc-link-arg={}",
-        enclave_lib_path
+        msvc_with_enclave_lib_path
             .join("libcmt.lib")
             .to_str()
             .expect("Couldn't make string from libcmt.lib path")
