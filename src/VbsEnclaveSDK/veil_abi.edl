@@ -42,8 +42,6 @@ enclave
     untrusted
     {
         // infra
-        HRESULT internal_printf(string str);
-        HRESULT internal_wprintf(wstring str);
         HRESULT printf(string str);
         HRESULT wprintf(wstring str);
 

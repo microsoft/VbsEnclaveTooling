@@ -11,8 +11,6 @@
 
 namespace veil::vtl1::implementation::vtl0_functions::callouts
 {
-    HRESULT internal_printf(_In_ const std::string& str);
-    HRESULT internal_wprintf(_In_ const std::wstring& str);
     HRESULT printf(_In_ const std::string& str);
     HRESULT wprintf(_In_ const std::wstring& str);
 }
@@ -21,31 +19,7 @@ namespace veil::vtl1::vtl0_functions
 {
     namespace details
     {
-        // Internal printf_callout (for VEIL internal use)
-        template <typename string_type>
-        struct internal_printf_callout;
-
-        template <>
-        struct internal_printf_callout<std::string>
-        {
-            template <typename... Args>
-            static void call(const std::string& str)
-            {
-                THROW_IF_FAILED(veil::vtl1::implementation::vtl0_functions::callouts::internal_printf(str));
-            }
-        };
-
-        template <>
-        struct internal_printf_callout<std::wstring>
-        {
-            template <typename... Args>
-            static void call(const std::wstring& str)
-            {
-                THROW_IF_FAILED(veil::vtl1::implementation::vtl0_functions::callouts::internal_wprintf(str));
-            }
-        };
-
-        // External printf_callout (for external callers)
+        // Printf callout (unified for both internal and external use)
         template <typename string_type>
         struct printf_callout;
 
@@ -110,16 +84,16 @@ namespace veil::vtl1::vtl0_functions
         template <typename string_type, typename... Ts>
         inline void internal_debug_print_impl(const typename string_type::value_type* formatString, Ts&&... args)
         {
-            if (veil::vtl1::is_enclave_full_debug_enabled())
-            {
-                auto str = details::format_string<string_type>::call(formatString, std::forward<Ts>(args)...);
-                details::internal_printf_callout<string_type>::call(str);
-            }
-            else
-            {
-                UNREFERENCED_PARAMETER(formatString);
-                UNREFERENCED_PARAMETER_PACK(Ts, args);
-            }
+            #ifdef _VEIL_INTERNAL_DEBUG
+                if (veil::vtl1::is_enclave_full_debug_enabled())
+                {
+                    auto str = details::format_string<string_type>::call(formatString, std::forward<Ts>(args)...);
+                    details::printf_callout<string_type>::call(str);
+                }
+            #else
+                (void)formatString;
+                ((void)args, ...);
+            #endif
         }
 
         // External debug print implementation (for external callers)
@@ -133,8 +107,8 @@ namespace veil::vtl1::vtl0_functions
             }
             else
             {
-                UNREFERENCED_PARAMETER(formatString);
-                UNREFERENCED_PARAMETER_PACK(Ts, args);
+                (void)formatString;
+                ((void)args, ...);
             }
         }
     }
@@ -143,18 +117,37 @@ namespace veil::vtl1::vtl0_functions
     // Simple string overloads
     inline void internal_debug_print(PCSTR str)
     {
-        if (veil::vtl1::is_enclave_full_debug_enabled())
-        {
-            details::internal_printf_callout<std::string>::call(std::string(str));
-        }
+        #ifdef _VEIL_INTERNAL_DEBUG
+            if (veil::vtl1::is_enclave_full_debug_enabled())
+            {
+                details::printf_callout<std::string>::call(std::string(str));
+            }
+        #else
+            (void)str;
+        #endif
     }
 
     inline void internal_debug_print(PCWSTR str)
     {
-        if (veil::vtl1::is_enclave_full_debug_enabled())
-        {
-            details::internal_printf_callout<std::wstring>::call(std::wstring(str));
-        }
+        #ifdef _VEIL_INTERNAL_DEBUG
+            if (veil::vtl1::is_enclave_full_debug_enabled())
+            {
+                details::printf_callout<std::wstring>::call(std::wstring(str));
+            }
+        #else
+            (void)str;
+        #endif
+    }
+
+    // std::string overloads for convenience
+    inline void internal_debug_print(const std::string& str)
+    {
+        internal_debug_print(str.c_str());
+    }
+
+    inline void internal_debug_print(const std::wstring& str)
+    {
+        internal_debug_print(str.c_str());
     }
 
     // Formatted string overloads

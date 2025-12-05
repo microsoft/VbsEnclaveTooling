@@ -17,29 +17,32 @@ namespace veil::vtl0::implementation
 
 namespace veil::vtl0::implementation::debug
 {
-    // Debug printing function that only outputs when VEIL is in debug mode
+    // Internal debug printing function for VEIL internal VTL0 debugging
     inline void internal_debug_wprint(const std::wstring& str)
     {
         #ifdef _VEIL_INTERNAL_DEBUG
             std::wcout << str << std::endl;
+        #else
+            (void)str;
         #endif
     }
 
-    // Debug printing function for narrow strings that only outputs when VEIL is in debug mode
+    // Internal debug printing function for narrow strings for VEIL internal VTL0 debugging  
     inline void internal_debug_print(const std::string& str)
     {
         #ifdef _VEIL_INTERNAL_DEBUG
             std::cout << str << std::endl;
+        #else
+            (void)str;
         #endif
     }
 
-    // External debug printing functions (not gated by _VEIL_INTERNAL_DEBUG)
+    // External debug printing functions (always available)
     inline void debug_wprint(const std::wstring& str)
     {
         std::wcout << str << std::endl;
     }
 
-    // External debug printing function for narrow strings
     inline void debug_print(const std::string& str)
     {
         std::cout << str << std::endl;
