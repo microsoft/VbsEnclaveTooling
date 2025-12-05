@@ -107,7 +107,7 @@
        (as used by vcpkg builds) can collide when writing debug info, causing error 
           C1041 ("cannot open program database").
      -->
-      <AdditionalOptions>/FS  /D_VEIL_INTERNAL_DEBUG %(AdditionalOptions)</AdditionalOptions>
+      <AdditionalOptions>/FS %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>

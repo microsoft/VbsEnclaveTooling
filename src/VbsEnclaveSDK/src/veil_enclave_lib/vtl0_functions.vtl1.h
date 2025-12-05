@@ -113,54 +113,57 @@ namespace veil::vtl1::vtl0_functions
         }
     }
 
+    namespace internal
+    {
     // Internal debug functions (for VEIL internal use)
     // Simple string overloads
-    inline void internal_debug_print(PCSTR str)
-    {
-        #ifdef _VEIL_INTERNAL_DEBUG
+        inline void debug_print(PCSTR str)
+        {
+            #ifdef _VEIL_INTERNAL_DEBUG
             if (veil::vtl1::is_enclave_full_debug_enabled())
             {
                 details::printf_callout<std::string>::call(std::string(str));
             }
-        #else
+            #else
             (void)str;
-        #endif
-    }
+            #endif
+        }
 
-    inline void internal_debug_print(PCWSTR str)
-    {
-        #ifdef _VEIL_INTERNAL_DEBUG
+        inline void debug_print(PCWSTR str)
+        {
+            #ifdef _VEIL_INTERNAL_DEBUG
             if (veil::vtl1::is_enclave_full_debug_enabled())
             {
                 details::printf_callout<std::wstring>::call(std::wstring(str));
             }
-        #else
+            #else
             (void)str;
-        #endif
-    }
+            #endif
+        }
 
-    // std::string overloads for convenience
-    inline void internal_debug_print(const std::string& str)
-    {
-        internal_debug_print(str.c_str());
-    }
+        // std::string overloads for convenience
+        inline void debug_print(const std::string& str)
+        {
+            debug_print(str.c_str());
+        }
 
-    inline void internal_debug_print(const std::wstring& str)
-    {
-        internal_debug_print(str.c_str());
-    }
+        inline void debug_print(const std::wstring& str)
+        {
+            debug_print(str.c_str());
+        }
 
-    // Formatted string overloads
-    template <typename... Ts>
-    inline void internal_debug_print(PCSTR formatString, Ts&&... args)
-    {
-        details::internal_debug_print_impl<std::string>(formatString, std::forward<Ts>(args)...);
-    }
+        // Formatted string overloads
+        template <typename... Ts>
+        inline void debug_print(PCSTR formatString, Ts&&... args)
+        {
+            details::debug_print_impl<std::string>(formatString, std::forward<Ts>(args)...);
+        }
 
-    template <typename... Ts>
-    inline void internal_debug_print(PCWSTR formatString, Ts&&... args)
-    {
-        details::internal_debug_print_impl<std::wstring>(formatString, std::forward<Ts>(args)...);
+        template <typename... Ts>
+        inline void debug_print(PCWSTR formatString, Ts&&... args)
+        {
+            details::debug_print_impl<std::wstring>(formatString, std::forward<Ts>(args)...);
+        }
     }
 
     // External debug functions (for external callers)
