@@ -12,13 +12,13 @@ namespace CodeGeneration::Rust
     // Temporary crate dependency string for edlcodegen-enclave until we publish to crates.io.
     // When testing not yet merged changes to edlcodegen-enclave, add the following: rev = "<commit hash from Github branch>"
     // after the subdir specification below.
-    inline constexpr std::string_view c_enclave_crate_dep = R"(edlcodegen-enclave = { git = "https://github.com/microsoft/VbsEnclaveTooling", subdir = "rust" })";
+    inline constexpr std::string_view c_enclave_crate_dep = R"(edlcodegen-enclave = { git = "https://github.com/microsoft/VbsEnclaveTooling" })";
 
     // Temporary crate dependency string for edlcodegen-host until we publish to crates.io.
     // When testing not yet merged changes to edlcodegen-host, add the following: rev = "<commit hash from Github branch>"
     // after the subdir specification below.
     inline constexpr std::string_view c_host_crate_dep =
-R"(edlcodegen-host = { git = "https://github.com/microsoft/VbsEnclaveTooling", subdir = "rust" }
+R"(edlcodegen-host = { git = "https://github.com/microsoft/VbsEnclaveTooling" }
 windows-strings = "0.5")";
 
     inline constexpr std::string_view c_cargo_toml_content =
@@ -33,7 +33,7 @@ doc = false
 doctest = false
 
 [build-dependencies]
-edlcodegen-tools = {{ git = "https://github.com/microsoft/VbsEnclaveTooling", subdir = "rust" }}
+edlcodegen-tools = {{ git = "https://github.com/microsoft/VbsEnclaveTooling" }}
 
 [dependencies]
 {}

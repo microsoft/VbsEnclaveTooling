@@ -9,9 +9,9 @@ doc = false
 doctest = false
 
 [build-dependencies]
-edlcodegen-tools = { git = "https://github.com/microsoft/VbsEnclaveTooling", subdir = "rust" }
+edlcodegen-tools = { git = "https://github.com/microsoft/VbsEnclaveTooling" }
 
 [dependencies]
-edlcodegen-host = { git = "https://github.com/microsoft/VbsEnclaveTooling", subdir = "rust" }
+edlcodegen-host = { git = "https://github.com/microsoft/VbsEnclaveTooling" }
 windows-strings = "0.5"
 flatbuffers = { version = "25.9.23", default-features = false }
