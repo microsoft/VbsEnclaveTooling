@@ -16,6 +16,7 @@
     <dependencies>
       <group targetFramework="native0.0">
         <dependency id="Microsoft.Windows.ImplementationLibrary" version="1.0.240803.1" />
+        <dependency id="Microsoft.Windows.SDK.CPP" version="10.0.26100.7175" />
       </group>
     </dependencies>
   </metadata>

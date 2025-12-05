@@ -158,10 +158,6 @@ void UserBoundDecryptFlow(
     std::wcout << L"Decryption completed in Enclave. Decrypted string: " << decryptedData << std::endl;
 }
 
-template <typename T>
-concept CanGetSecureId =
-    requires { { T::GetSecureId() }; };
-
 int main(int argc, char* argv[])
 {
     wil::SetResultLoggingCallback([] (wil::FailureInfo const& failure) noexcept
@@ -209,15 +205,7 @@ int main(int argc, char* argv[])
 
     try
     {
-        auto secureIdBuffer = [&] () -> IBuffer
-        {
-            if constexpr (CanGetSecureId<KeyCredentialManager>)
-            {
-                return KeyCredentialManager::GetSecureId();
-            }
-
-            throw winrt::hresult_error(E_NOTIMPL, L"GetSecureId not yet available in the Windows SDK.");
-        }();
+        auto secureIdBuffer = KeyCredentialManager::GetSecureId();
 
         if (secureIdBuffer && secureIdBuffer.Length() > 0)
         {
