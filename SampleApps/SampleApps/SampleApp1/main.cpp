@@ -76,7 +76,17 @@ EncryptionConfig InitializeUserBindingConfig(bool& areUserBindingApisAvailable)
     return config;
 }
 
-EncryptionConfig CreateEncryptionKeyOnFirstRun(void* enclave, const fs::path& keyFilePath, const EncryptionConfig& config)
+void HandleKeyResealing(bool needsReseal, const std::vector<uint8_t>& resealedBytes, const fs::path& filePath)
+{
+    if (needsReseal && !resealedBytes.empty())
+    {
+        std::wcout << L"Key needs re-sealing, saving resealed key to disk..." << std::endl;
+        std::wcout << L"Resealed key size: " << resealedBytes.size() << std::endl;
+        SaveBinaryData(filePath, resealedBytes);
+    }
+}
+
+void CreateEncryptionKeyOnFirstRun(void* enclave, const fs::path& keyFilePath, const EncryptionConfig& config)
 {
     // Initialize enclave interface
     auto enclaveInterface = VbsEnclave::Trusted::Stubs::SampleEnclave(enclave);
@@ -94,9 +104,98 @@ EncryptionConfig CreateEncryptionKeyOnFirstRun(void* enclave, const fs::path& ke
 
     // *** securedEncryptionKeyBytes persisted to disk
     SaveBinaryData(keyFilePath, securedEncryptionKeyBytes);
+}
+
+// Asymmetric key functions for digital signatures
+void CreateAsymmetricKeyOnFirstRun(void* enclave, const fs::path& privateKeyFilePath, const fs::path& publicKeyFilePath, const EncryptionConfig& config)
+{
+    // Initialize enclave interface
+    auto enclaveInterface = VbsEnclave::Trusted::Stubs::SampleEnclave(enclave);
+    THROW_IF_FAILED(enclaveInterface.RegisterVtl0Callbacks());
+
+    // Call into enclave to create asymmetric key pair
+    auto securedPrivateKeyBytes = std::vector<uint8_t> {};
+    auto publicKeyBytes = std::vector<uint8_t> {};
+
+    THROW_IF_FAILED(enclaveInterface.MyEnclaveCreateAsymmetricUserBoundKey(
+        config.helloKeyName,
+        config.pinMessage,
+        reinterpret_cast<uintptr_t>(config.hCurWnd),
+        static_cast<uint32_t>(KeyCredentialCreationOption::ReplaceExisting),
+        securedPrivateKeyBytes,
+        publicKeyBytes));
+
+    // *** securedPrivateKeyBytes persisted to disk (Windows Hello protected)
+    SaveBinaryData(privateKeyFilePath, securedPrivateKeyBytes);
     
-    // Return the config so it can be used by subsequent functions
-    return config;
+    // *** publicKeyBytes persisted to disk (plaintext)
+    SaveBinaryData(publicKeyFilePath, publicKeyBytes);
+}
+
+void AsymmetricSignFlow(
+    void* enclave,
+    const std::wstring& input,
+    const fs::path& privateKeyFilePath,
+    const fs::path& signatureFilePath,
+    const EncryptionConfig& config)
+{
+    // Initialize enclave interface
+    auto enclaveInterface = VbsEnclave::Trusted::Stubs::SampleEnclave(enclave);
+    THROW_IF_FAILED(enclaveInterface.RegisterVtl0Callbacks());
+
+    // Load secured private key bytes from disk
+    auto securedPrivateKeyBytes = LoadBinaryData(privateKeyFilePath);
+
+    // Call into enclave for signing - the enclave returns signature
+    auto signature = std::vector<uint8_t> {};
+    auto resealedPrivateKeyBytes = std::vector<uint8_t> {};
+    bool needsReseal = false;
+
+    THROW_IF_FAILED(enclaveInterface.MyEnclaveSignDataWithUserBoundKey(
+        config.helloKeyName,
+        config.pinMessage,
+        reinterpret_cast<uintptr_t>(config.hCurWnd),
+        securedPrivateKeyBytes,
+        input,
+        signature,
+        needsReseal,
+        resealedPrivateKeyBytes
+    ));
+
+    // Handle resealing if needed
+    HandleKeyResealing(needsReseal, resealedPrivateKeyBytes, privateKeyFilePath);
+
+    // Save signature to disk
+    SaveBinaryData(signatureFilePath, signature);
+}
+
+void AsymmetricVerifyFlow(
+    void* enclave,
+    const std::wstring& input,
+    const fs::path& publicKeyFilePath,
+    const fs::path& signatureFilePath)
+{
+    // Initialize enclave interface
+    auto enclaveInterface = VbsEnclave::Trusted::Stubs::SampleEnclave(enclave);
+    THROW_IF_FAILED(enclaveInterface.RegisterVtl0Callbacks());
+
+    // Load data from disk
+    auto publicKeyBytes = LoadBinaryData(publicKeyFilePath);
+    auto signature = LoadBinaryData(signatureFilePath);
+
+    // Call into enclave for verification - no Windows Hello needed for verification
+    bool isValid = false;
+
+    THROW_IF_FAILED(enclaveInterface.MyEnclaveVerifySignatureWithPublicKey(
+        publicKeyBytes,
+        input,
+        signature,
+        isValid
+    ));
+
+    // Display the verification result
+    std::wcout << L"Signature verification completed in Enclave. Result: " 
+               << (isValid ? L"VALID" : L"INVALID") << std::endl;
 }
 
 void UserBoundEncryptFlow(
@@ -140,13 +239,7 @@ void UserBoundEncryptFlow(
     // This is notified through the second return parameter unsealingFlags in the unseal_data API.
     // It tells the caller whether the underlying keyring has rotated the sealing key out and we need to re-seal the encrypted key.
     // At this point, if the reseal is not performed, it would not be possible to unseal the encrypted key the next time.
-    if (needsReseal && !resealedEncryptionKeyBytes.empty())
-    {
-        std::wcout << L"Key needs re-sealing, saving resealed key to disk..." << std::endl;
-        std::wcout << L"Resealed key size: " << resealedEncryptionKeyBytes.size() << std::endl;
-        // Save the re-sealed data back to disk to avoid re-sealing on subsequent runs
-        SaveBinaryData(keyFilePath, resealedEncryptionKeyBytes);
-    }
+    HandleKeyResealing(needsReseal, resealedEncryptionKeyBytes, keyFilePath);
     // Save combined data directly to disk (enclave handles the tag appending)
     SaveBinaryData(encryptedOutputFilePath, combinedOutputData);
 }
@@ -192,13 +285,7 @@ void UserBoundDecryptFlow(
     // This is notified through the second return parameter unsealingFlags in the unseal_data API.
     // It tells the caller whether the underlying keyring has rotated the sealing key out and we need to re-seal the encrypted key.
     // At this point, if the reseal is not performed, it would not be possible to unseal the encrypted key the next time.
-    if (needsReseal && !resealedEncryptionKeyBytes.empty())
-    {
-        std::wcout << L"Key needs re-sealing, saving resealed key to disk..." << std::endl;
-        std::wcout << L"Resealed key size: " << resealedEncryptionKeyBytes.size() << std::endl;
-        // Save the re-sealed data back to disk to avoid re-sealing on subsequent runs
-        SaveBinaryData(keyFilePath, resealedEncryptionKeyBytes);
-    }
+    HandleKeyResealing(needsReseal, resealedEncryptionKeyBytes, keyFilePath);
 
     // Display the decrypted result
     std::wcout << L"Decryption completed in Enclave. Decrypted string: " << decryptedData << std::endl;
@@ -546,39 +633,9 @@ template <typename T>
 concept CanGetSecureId =
     requires { { T::GetSecureId() }; };
 
-int mainEncryptDecryptUserBound(uint32_t activityLevel)
+std::optional<std::vector<uint8_t>> GetEnclaveOwnerId()
 {
     using namespace winrt::Windows::Storage::Streams;
-
-    int choice;
-    std::wstring input;
-    const fs::path encryptedKeyDirPath = fs::current_path();
-    const fs::path encryptedDataDirPath = fs::current_path();
-    const fs::path encryptedOutputFilePath = encryptedDataDirPath / "encrypted_userbound";
-    bool programExecuted = false;
-
-    // Initialize configuration for user-bound keys
-    bool areUserBindingApisAvailable;
-    auto config = InitializeUserBindingConfig(areUserBindingApisAvailable);
-
-    if (!areUserBindingApisAvailable)
-    {
-        std::wcout << L"Error: User Binding APIs are not available on this system." << std::endl;
-        std::wcout << L"This feature requires Windows Hello and appropriate hardware support." << std::endl;
-        std::cout << "\nPress any key to return to main menu..." << std::endl;
-        _getch();
-        return 1;
-    }
-
-    veil::vtl0::logger::logger veilLog(
-        L"VeilSampleApp",
-        L"70F7212C-1F84-4B86-B550-3D5AE82EC779" /*Generated GUID*/,
-    static_cast<veil::any::logger::eventLevel>(activityLevel));
-
-    veilLog.AddTimestampedLog(L"[Host] Starting user-bound encryption from host", veil::any::logger::eventLevel::EVENT_LEVEL_CRITICAL);
-
-    /******************************* Enclave setup *******************************/
-    // Create user enclave identity using GetSecureId API
     std::vector<uint8_t> ownerId;
 
     try
@@ -613,29 +670,77 @@ int mainEncryptDecryptUserBound(uint32_t activityLevel)
         std::wcout << L"Error: Failed to get secure ID using GetSecureId API (HRESULT: 0x"
             << std::hex << ex.code() << L")." << std::endl;
         std::wcout << L"Cannot proceed without a valid secure ID for user-bound encryption." << std::endl;
-        std::cout << "\nPress any key to exit..." << std::endl;
-        _getch();
-        return -1;
+        return std::nullopt;
     }
     catch (...)
     {
         // If any other exception occurs, log error and return
         std::wcout << L"Error: Exception occurred while getting secure ID." << std::endl;
         std::wcout << L"Cannot proceed without a valid secure ID for user-bound encryption." << std::endl;
-        std::cout << "\nPress any key to return to exit..." << std::endl;
-        _getch();
-        return -1;
+        return std::nullopt;
     }
+    return ownerId;
+}
 
+auto LoadAndInitializeEnclave(const std::vector<uint8_t>& ownerId, DWORD threadCount = 2)
+{
     // Load enclave
     auto flags = ENCLAVE_VBS_FLAG_DEBUG;
 
     auto enclave = veil::vtl0::enclave::create(ENCLAVE_TYPE_VBS, ownerId, flags, veil::vtl0::enclave::megabytes(512));
     veil::vtl0::enclave::load_image(enclave.get(), L"sampleenclave.dll");
-    veil::vtl0::enclave::initialize(enclave.get(), 2); // Note we need at 2 threads, otherwise we will have a reentrancy deadlock
+    veil::vtl0::enclave::initialize(enclave.get(), threadCount); 
 
     // Register framework callbacks
     veil::vtl0::enclave_api::register_callbacks(enclave.get());
+    
+    return enclave;
+}
+
+int mainEncryptDecryptUserBound(uint32_t activityLevel)
+{
+    using namespace winrt::Windows::Storage::Streams;
+
+    int choice;
+    std::wstring input;
+    const fs::path encryptedKeyDirPath = fs::current_path();
+    const fs::path encryptedDataDirPath = fs::current_path();
+    const fs::path encryptedOutputFilePath = encryptedDataDirPath / "encrypted_userbound";
+    bool programExecuted = false;
+
+    // Initialize configuration for user-bound keys
+    bool areUserBindingApisAvailable;
+    auto config = InitializeUserBindingConfig(areUserBindingApisAvailable);
+
+    if (!areUserBindingApisAvailable)
+    {
+        std::wcout << L"Error: User Binding APIs are not available on this system." << std::endl;
+        std::wcout << L"This feature requires Windows Hello and appropriate hardware support." << std::endl;
+        std::cout << "\nPress any key to return to main menu..." << std::endl;
+        _getch();
+        return 1;
+    }
+
+    veil::vtl0::logger::logger veilLog(
+        L"VeilSampleApp",
+        L"70F7212C-1F84-4B86-B550-3D5AE82EC779" /*Generated GUID*/,
+    static_cast<veil::any::logger::eventLevel>(activityLevel));
+
+    veilLog.AddTimestampedLog(L"[Host] Starting user-bound encryption from host", veil::any::logger::eventLevel::EVENT_LEVEL_CRITICAL);
+
+    /******************************* Enclave setup *******************************/
+    // Create user enclave identity using GetSecureId API
+    auto ownerIdOpt = GetEnclaveOwnerId();
+    if (!ownerIdOpt)
+    {
+        std::cout << "\nPress any key to exit..." << std::endl;
+        _getch();
+        return -1;
+    }
+    auto ownerId = *ownerIdOpt;
+
+    // Load enclave
+    auto enclave = LoadAndInitializeEnclave(ownerId);
 
     constexpr PCWSTR keyMoniker = KEY_NAME.data();
 
@@ -675,6 +780,110 @@ int mainEncryptDecryptUserBound(uint32_t activityLevel)
                 UserBoundDecryptFlow(enclave.get(), keyFilePath, encryptedOutputFilePath, config);
                 fs::remove(keyFilePath);
                 fs::remove(encryptedOutputFilePath);
+                programExecuted = true;
+                break;
+
+            default:
+                std::cout << "Invalid choice. Please try again.\n";
+        }
+    }
+    while (!programExecuted);
+
+    // Wait for a key press before exiting
+    std::cout << "\n\nPress any key to exit..." << std::endl;
+    _getch();
+
+    return 0;
+}
+
+int mainSignVerifyAsymmetric(uint32_t activityLevel)
+{
+    using namespace winrt::Windows::Storage::Streams;
+
+    int choice;
+    std::wstring input;
+    const fs::path encryptedKeyDirPath = fs::current_path();
+    const fs::path encryptedDataDirPath = fs::current_path();
+    const fs::path signatureFilePath = encryptedDataDirPath / "signature";
+    bool programExecuted = false;
+
+    // Initialize configuration for user-bound keys
+    bool areUserBindingApisAvailable;
+    auto config = InitializeUserBindingConfig(areUserBindingApisAvailable);
+
+    if (!areUserBindingApisAvailable)
+    {
+        std::wcout << L"Error: User Binding APIs are not available on this system." << std::endl;
+        std::wcout << L"This feature requires Windows Hello and appropriate hardware support." << std::endl;
+        std::cout << "\nPress any key to return to main menu..." << std::endl;
+        _getch();
+        return 1;
+    }
+
+    veil::vtl0::logger::logger veilLog(
+        L"VeilSampleApp",
+        L"70F7212C-1F84-4B86-B550-3D5AE82EC779" /*Generated GUID*/,
+        static_cast<veil::any::logger::eventLevel>(activityLevel));
+
+    veilLog.AddTimestampedLog(L"[Host] Starting asymmetric signing from host", veil::any::logger::eventLevel::EVENT_LEVEL_CRITICAL);
+
+    /******************************* Enclave setup *******************************/
+    // Create user enclave identity using GetSecureId API
+    auto ownerIdOpt = GetEnclaveOwnerId();
+    if (!ownerIdOpt)
+    {
+        std::cout << "\nPress any key to exit..." << std::endl;
+        _getch();
+        return -1;
+    }
+    auto ownerId = *ownerIdOpt;
+
+    // Load enclave
+    auto enclave = LoadAndInitializeEnclave(ownerId);
+
+    constexpr PCWSTR keyMoniker = KEY_NAME.data();
+
+    // Files for asymmetric keys
+    auto privateKeyFilePath = encryptedKeyDirPath / (std::wstring(keyMoniker) + L".private");
+    auto publicKeyFilePath = encryptedKeyDirPath / (std::wstring(keyMoniker) + L".public");
+
+    do
+    {
+        std::cout << "\n*** Asymmetric Digital Signature Menu ***\n";
+        std::cout << "1. Sign a string (requires Windows Hello)\n";
+        std::cout << "2. Verify a signature (no Windows Hello required)\n";
+        std::cout << "Enter your choice: ";
+        if (!(std::cin >> choice)) // Check if input is not an integer
+        {
+            std::cout << "Invalid input. Please enter a valid option (1 or 2).\n";
+            std::cin.clear(); // Clear the error flag
+            std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n'); // Discard invalid input
+            continue;
+        }
+
+        switch (choice)
+        {
+            case 1:
+                std::cout << "Enter the string to sign: ";
+                std::cin.ignore();
+                std::getline(std::wcin, input);
+                CreateAsymmetricKeyOnFirstRun(enclave.get(), privateKeyFilePath, publicKeyFilePath, config);
+                AsymmetricSignFlow(enclave.get(), input, privateKeyFilePath, signatureFilePath, config);
+                std::wcout << L"Digital signature completed in Enclave. \nSignature saved to disk in " << signatureFilePath << std::endl;
+                veilLog.AddTimestampedLog(
+                    L"[Host] Digital signature completed in Enclave. \nSignature saved to disk in " + signatureFilePath.wstring(),
+                    veil::any::logger::eventLevel::EVENT_LEVEL_CRITICAL);
+                programExecuted = true;
+                break;
+
+            case 2:
+                std::cout << "Enter the string to verify: ";
+                std::cin.ignore();
+                std::getline(std::wcin, input);
+                AsymmetricVerifyFlow(enclave.get(), input, publicKeyFilePath, signatureFilePath);
+                fs::remove(privateKeyFilePath);
+                fs::remove(publicKeyFilePath);
+                fs::remove(signatureFilePath);
                 programExecuted = true;
                 break;
 
@@ -849,10 +1058,11 @@ int main(int argc, char* argv[])
         std::cout << "2. Explore executing a threadpool in the enclave\n";
         std::cout << "3. Encrypt, decrypt multiple strings using threadpool and enclave\n";
         std::cout << "4. Encrypt, decrypt a string using user-bound keys (Windows Hello)\n";
+        std::cout << "5. Sign and verify strings using asymmetric keys (Windows Hello)\n";
         std::cout << "Enter your choice: ";
         if (!(std::cin >> choice)) // Check if input is not an integer
         {
-            std::cout << "Invalid input. Please enter a valid option (1, 2, 3 or 4).\n";
+            std::cout << "Invalid input. Please enter a valid option (1, 2, 3, 4 or 5).\n";
             std::cin.clear(); // Clear the error flag
             std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n'); // Discard invalid input
             continue;
@@ -877,6 +1087,11 @@ int main(int argc, char* argv[])
 
             case 4:
                 mainEncryptDecryptUserBound(activityLevel);
+                programExecuted = true;
+                break;
+
+            case 5:
+                mainSignVerifyAsymmetric(activityLevel);
                 programExecuted = true;
                 break;
 

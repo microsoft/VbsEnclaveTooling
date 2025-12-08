@@ -20,6 +20,12 @@ wil::unique_bcrypt_key g_encryptionKey;
 // SRW lock to protect access to g_encryptionKey (enclave-compatible)
 wil::srwlock g_encryptionKeyLock;
 
+// Store the asymmetric private key object for signing
+wil::unique_bcrypt_key g_asymmetricPrivateKey;
+
+// SRW lock to protect access to g_asymmetricPrivateKey (enclave-compatible)
+wil::srwlock g_asymmetricPrivateKeyLock;
+
 // Global runtime policy for enclave operations
 // 
 // ENCLAVE_RUNTIME_POLICY_ALLOW_FULL_DEBUG:
@@ -53,6 +59,29 @@ void SetEncryptionKey(wil::unique_bcrypt_key&& newKey)
 {
     auto lock = g_encryptionKeyLock.lock_exclusive();
     g_encryptionKey = std::move(newKey);
+}
+
+// Check if asymmetric private key is loaded
+bool IsAsymmetricPrivateKeyLoaded()
+{
+    // Thread-safe check if the asymmetric private key object is valid
+    auto lock = g_asymmetricPrivateKeyLock.lock_shared();
+    return static_cast<bool>(g_asymmetricPrivateKey);
+}
+
+// Helper function to safely get the asymmetric private key handle
+// Returns nullptr if key is not loaded
+BCRYPT_KEY_HANDLE GetAsymmetricPrivateKeyHandle()
+{
+    auto lock = g_asymmetricPrivateKeyLock.lock_shared();
+    return g_asymmetricPrivateKey.get();
+}
+
+// Helper function to safely set the asymmetric private key
+void SetAsymmetricPrivateKey(wil::unique_bcrypt_key&& newKey)
+{
+    auto lock = g_asymmetricPrivateKeyLock.lock_exclusive();
+    g_asymmetricPrivateKey = std::move(newKey);
 }
 
 // VTL1 function to create secure cache configuration
@@ -170,6 +199,107 @@ static HRESULT EnsureUserBoundKeyLoaded(
     else
     {
         debug_print(L"UBK already loaded, using cached key");
+    }
+
+    return S_OK;
+}
+
+// Helper function to ensure asymmetric user-bound key (private key) is loaded
+// Handles initial load attempt and optional reseal if needed
+static HRESULT EnsureAsymmetricUserBoundKeyLoaded(
+    _In_ const std::wstring& helloKeyName,
+    _In_ const std::wstring& pinMessage,
+    _In_ const uintptr_t windowId,
+    _In_ const std::vector<std::uint8_t>& securedPrivateKeyBytes,
+    _Inout_ bool& needsReseal,
+    _Out_ std::vector<std::uint8_t>& resealedPrivateKeyBytes)
+{
+    using namespace veil::vtl1::vtl0_functions;
+
+    // Only load the asymmetric private key if it's not already loaded
+    if (!IsAsymmetricPrivateKeyLoaded())
+    {
+        debug_print(L"Asymmetric private key not loaded, loading user-bound key");
+
+        // VTL1 creates secure cache configuration - VTL0 input is ignored
+        auto secureConfig = CreateSecureKeyCredentialCacheConfig();
+
+        debug_print(L"Created secure cache configuration in VTL1");
+
+        std::vector<std::uint8_t> loadedKeyBytes;
+        bool loadSucceeded = false;
+
+        // First attempt to load the user-bound private key
+        try
+        {
+            loadedKeyBytes = veil::vtl1::userboundkey::load_user_bound_key(
+                helloKeyName,
+                secureConfig,
+                pinMessage,
+                windowId,
+                securedPrivateKeyBytes,
+                needsReseal);
+            loadSucceeded = true;
+            debug_print(L"Successfully loaded user-bound private key on first attempt");
+        }
+        catch (...)
+        {
+            debug_print(L"First load attempt failed, checking if reseal is needed");
+            loadSucceeded = false;
+        }
+
+        // If load failed and reseal is needed, attempt reseal and retry
+        if (!loadSucceeded && needsReseal)
+        {
+            debug_print(L"Attempting to reseal user-bound private key");
+      
+            try
+            {
+                auto resealedBytes = veil::vtl1::userboundkey::reseal_user_bound_key(
+                    securedPrivateKeyBytes,
+                    ENCLAVE_SEALING_IDENTITY_POLICY::ENCLAVE_IDENTITY_POLICY_SEAL_SAME_IMAGE,
+                    g_runtimePolicy);
+
+                debug_print(L"Reseal completed, attempting to load with resealed key");
+
+                // Store resealed bytes in output parameter
+                resealedPrivateKeyBytes.assign(resealedBytes.begin(), resealedBytes.end());
+
+                // Reset needsReseal for the retry
+                needsReseal = false;
+
+                // Retry loading with resealed bytes
+                loadedKeyBytes = veil::vtl1::userboundkey::load_user_bound_key(
+                    helloKeyName,
+                    secureConfig,
+                    pinMessage,
+                    windowId,
+                    resealedBytes,
+                    needsReseal);
+
+                loadSucceeded = true;
+                debug_print(L"Successfully loaded user-bound private key after reseal");
+            }
+            catch (...)
+            {
+                debug_print(L"Failed to reseal or load after reseal");
+                throw;
+            }
+        }
+        else if (!loadSucceeded)
+        {
+            debug_print(L"Load failed and reseal not needed or not indicated");
+            throw; // Re-throw the original exception
+        }
+
+        // NOW we can import the private key from the loaded raw key material
+        auto newAsymmetricPrivateKey = veil::vtl1::crypto::bcrypt_import_private_key(loadedKeyBytes);
+        SetAsymmetricPrivateKey(std::move(newAsymmetricPrivateKey));
+        debug_print(L"Imported ECDSA private key from loaded user-bound key material");
+    }
+    else
+    {
+        debug_print(L"Asymmetric private key already loaded, using cached key");
     }
 
     return S_OK;
@@ -933,4 +1063,182 @@ HRESULT VbsEnclave::Trusted::Implementation::RunEncryptionKeyExample_LoadEncrypt
     }
 
     return S_OK;
+}
+
+//
+// Create asymmetric user-bound key pair (ECDSA)
+//
+HRESULT VbsEnclave::Trusted::Implementation::MyEnclaveCreateAsymmetricUserBoundKey(
+    _In_ const std::wstring& helloKeyName,
+    _In_ const std::wstring& pinMessage,
+    _In_ const uintptr_t windowId,
+    _In_ const uint32_t keyCredentialCreationOption,
+    _Out_ std::vector<std::uint8_t>& securedPrivateKeyBytes,
+    _Out_ std::vector<std::uint8_t>& publicKeyBytes)
+{
+    using namespace veil::vtl1::vtl0_functions;
+
+    try
+    {
+        debug_print(L"Start MyEnclaveCreateAsymmetricUserBoundKey");
+
+        // Generate ECDSA key pair
+        auto keyPair = veil::vtl1::crypto::generate_ecdsa_key_pair();
+        debug_print(L"Generated ECDSA key pair");
+
+        // Export private key bytes
+        auto privateKeyBytes = veil::vtl1::crypto::bcrypt_export_private_key(keyPair.get());
+        debug_print((L"Exported private key, size: " + std::to_wstring(privateKeyBytes.size())).c_str());
+
+        // Export public key bytes
+        publicKeyBytes = veil::vtl1::crypto::bcrypt_export_public_key(keyPair.get());
+        debug_print((L"Exported public key, size: " + std::to_wstring(publicKeyBytes.size())).c_str());
+
+        // VTL1 creates secure cache configuration - VTL0 input is ignored
+        auto secureConfig = CreateSecureKeyCredentialCacheConfig();
+        debug_print(L"Created secure cache configuration in VTL1");
+
+        // Create user-bound key using custom private key bytes
+        auto sealedPrivateKeyBytes = veil::vtl1::userboundkey::create_user_bound_key(
+            helloKeyName,
+            secureConfig,
+            pinMessage,
+            windowId,
+            ENCLAVE_SEALING_IDENTITY_POLICY::ENCLAVE_IDENTITY_POLICY_SEAL_SAME_IMAGE,
+            g_runtimePolicy,
+            keyCredentialCreationOption,
+            privateKeyBytes);
+        debug_print(L"create_user_bound_key with custom key bytes returned");
+
+        // Store the secured private key bytes
+        securedPrivateKeyBytes.assign(sealedPrivateKeyBytes.begin(), sealedPrivateKeyBytes.end());
+
+        return S_OK;
+    }
+    CATCH_RETURN();
+}
+
+// Helper function to convert wstring to UTF-8 bytes for signing/verification
+std::vector<uint8_t> wstring_to_utf8_bytes(const std::wstring& wstr)
+{
+    if (wstr.empty())
+    {
+        return {};
+    }
+
+    // Get the required buffer size
+    int bytesNeeded = WideCharToMultiByte(
+        CP_UTF8, 
+        0, 
+        wstr.c_str(), 
+        static_cast<int>(wstr.length()),
+        nullptr, 
+        0, 
+        nullptr, 
+        nullptr);
+
+    if (bytesNeeded <= 0)
+    {
+        THROW_HR(HRESULT_FROM_WIN32(GetLastError()));
+    }
+
+    // Convert to UTF-8
+    std::vector<uint8_t> utf8Bytes(bytesNeeded);
+    int result = WideCharToMultiByte(
+        CP_UTF8,
+        0,
+        wstr.c_str(),
+        static_cast<int>(wstr.length()),
+        reinterpret_cast<char*>(utf8Bytes.data()),
+        bytesNeeded,
+        nullptr,
+        nullptr);
+
+    if (result != bytesNeeded)
+    {
+        THROW_HR(HRESULT_FROM_WIN32(GetLastError()));
+    }
+
+    return utf8Bytes;
+}
+
+//
+// Sign data with user-bound private key
+//
+HRESULT VbsEnclave::Trusted::Implementation::MyEnclaveSignDataWithUserBoundKey(
+    _In_ const std::wstring& helloKeyName,
+    _In_ const std::wstring& pinMessage,
+    _In_ const uintptr_t windowId,
+    _In_ const std::vector<std::uint8_t>& securedPrivateKeyBytes,
+    _In_ const std::wstring& dataToSign,
+    _Out_ std::vector<std::uint8_t>& signature,
+    _Out_ bool& needsReseal,
+    _Out_ std::vector<std::uint8_t>& resealedPrivateKeyBytes)
+{
+    using namespace veil::vtl1::vtl0_functions;
+
+    // Initialize output parameters
+    needsReseal = false;
+    resealedPrivateKeyBytes.clear();
+
+    try
+    {
+        debug_print(L"Start MyEnclaveSignDataWithUserBoundKey");
+
+        // Ensure the user-bound private key is loaded (handles reseal if needed)
+        RETURN_IF_FAILED(EnsureAsymmetricUserBoundKeyLoaded(
+            helloKeyName,
+            pinMessage,
+            windowId,
+            securedPrivateKeyBytes,
+            needsReseal,
+            resealedPrivateKeyBytes));
+
+        // Use the global cached private key for signing
+        debug_print(L"Signing data with cached private key");
+        auto privateKeyHandle = GetAsymmetricPrivateKeyHandle();
+
+        // Convert wstring to UTF-8 bytes for signing
+        auto utf8Data = wstring_to_utf8_bytes(dataToSign);
+        debug_print((L"Converted data to UTF-8, size: " + std::to_wstring(utf8Data.size())).c_str());
+
+        // Sign the data
+        signature = veil::vtl1::crypto::ecdsa_sign(privateKeyHandle, utf8Data);
+        debug_print((L"Signed data, signature size: " + std::to_wstring(signature.size())).c_str());
+
+        return S_OK;
+    }
+    CATCH_RETURN();
+}
+
+//
+// Verify signature with public key (no user interaction required)
+//
+HRESULT VbsEnclave::Trusted::Implementation::MyEnclaveVerifySignatureWithPublicKey(
+    _In_ const std::vector<std::uint8_t>& publicKeyBytes,
+    _In_ const std::wstring& dataToVerify,
+    _In_ const std::vector<std::uint8_t>& signature,
+    _Out_ bool& isValid)
+{
+    using namespace veil::vtl1::vtl0_functions;
+
+    try
+    {
+        debug_print(L"Start MyEnclaveVerifySignatureWithPublicKey");
+
+        // Import the public key
+        auto publicKey = veil::vtl1::crypto::bcrypt_import_public_key_for_signature(publicKeyBytes);
+        debug_print(L"Imported ECDSA public key");
+
+        // Convert wstring to UTF-8 bytes for verification
+        auto utf8Data = wstring_to_utf8_bytes(dataToVerify);
+        debug_print((L"Converted data to UTF-8, size: " + std::to_wstring(utf8Data.size())).c_str());
+
+        // Verify the signature
+        isValid = veil::vtl1::crypto::ecdsa_verify(publicKey.get(), utf8Data, signature);
+        debug_print((L"Signature verification result: " + std::wstring(isValid ? L"VALID" : L"INVALID")).c_str());
+
+        return S_OK;
+    }
+    CATCH_RETURN();
 }

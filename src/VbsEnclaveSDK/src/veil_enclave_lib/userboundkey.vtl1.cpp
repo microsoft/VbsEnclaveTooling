@@ -328,7 +328,35 @@ wil::secure_vector<uint8_t> create_user_bound_key(
     uint32_t runtimePolicy,
     uint32_t keyCredentialCreationOption)
 {
-    veil::vtl1::debug::debug_print(L"DEBUG: create_user_bound_key - Function entered");
+    veil::vtl1::debug::debug_print(L"DEBUG: create_user_bound_key - Generating symmetric key and delegating");
+
+    // Generate random symmetric key
+    auto userkeyBytes = veil::vtl1::crypto::generate_symmetric_key_bytes();
+
+    // Delegate to the overload that accepts custom key bytes
+    return create_user_bound_key(
+        keyName,
+        cacheConfig,
+        message,
+        windowId,
+        sealingPolicy,
+        runtimePolicy,
+        keyCredentialCreationOption,
+        userkeyBytes);
+}
+
+// Overload function to support custom key bytes (for asymmetric keys)
+wil::secure_vector<uint8_t> create_user_bound_key(
+    const std::wstring& keyName,
+    const veil::vtl1::userboundkey::keyCredentialCacheConfig& cacheConfig,
+    const std::wstring& message,
+    uintptr_t windowId,
+    ENCLAVE_SEALING_IDENTITY_POLICY sealingPolicy,
+    uint32_t runtimePolicy,
+    uint32_t keyCredentialCreationOption,
+    std::span<const uint8_t> customKeyBytes)
+{
+    veil::vtl1::debug::debug_print(L"DEBUG: create_user_bound_key (with custom key bytes) - Function entered");
     
     try
     {
@@ -341,12 +369,11 @@ wil::secure_vector<uint8_t> create_user_bound_key(
         // Format the key name before establishing session
         veil::vtl1::debug::debug_print(L"DEBUG: create_user_bound_key - Formatting key name");
         std::wstring formattedKeyName = veil::vtl1::implementation::userboundkey::callouts::userboundkey_format_key_name(keyName);
-        veil::vtl1::debug::debug_print((L"DEBUG: create_user_bound_key - formattedKeyName: " + formattedKeyName).c_str());
-
-        // SECURITY: Validate formatted key name to prevent malicious key name attacks
         validate_formatted_key_name(formattedKeyName, keyName, L"create_user_bound_key");
 
         // SESSION
+        veil::vtl1::debug::debug_print(L"DEBUG: create_user_bound_key - About to call userboundkey_establish_session_for_create");
+
         void* enclave = veil::vtl1::enclave_information().BaseAddress;
         auto credentialAndSessionInfo = veil::vtl1::implementation::userboundkey::callouts::userboundkey_establish_session_for_create(
             enclave,
@@ -366,6 +393,8 @@ wil::secure_vector<uint8_t> create_user_bound_key(
         veil::vtl1::debug::debug_print((L"DEBUG: create_user_bound_key - credential pointer: 0x" + std::to_wstring(credentialWrapper.get())).c_str());
 
         // Call to veinterop to create the encrypted KCM request for RetrieveAuthorizationContext
+        // Note: encryptedKcmRequestRac and encryptedKcmRequestRacSize are already declared at the top of the function
+
         // Use the function that accepts session handle and handles nonce manipulation internally
         THROW_IF_FAILED(CreateUserBoundKeyRequestForRetrieveAuthorizationContext(
             sessionHandle.get(),  // Pass session handle - nonce manipulation is handled internally
@@ -380,15 +409,12 @@ wil::secure_vector<uint8_t> create_user_bound_key(
             static_cast<uint8_t*>(encryptedKcmRequestRac.get()),
             static_cast<uint8_t*>(encryptedKcmRequestRac.get()) + encryptedKcmRequestRacSize);
 
-        // Second call to extract authorization context from credential
         veil::vtl1::debug::debug_print(L"DEBUG: create_user_bound_key - About to call userboundkey_get_authorization_context_from_credential");
-
         auto authContextBlob = veil::vtl1::implementation::userboundkey::callouts::userboundkey_get_authorization_context_from_credential(
-            credentialWrapper.get(),  // VTL0 callbacks handle their own reference management
+            credentialWrapper.get(),
             encryptedKcmRequestForRetrieveAuthorizationContext,
             message,
             windowId);
-
         veil::vtl1::debug::debug_print(L"DEBUG: create_user_bound_key - userboundkey_get_authorization_context_from_credential completed");
 
         // AUTH CONTEXT
@@ -400,7 +426,6 @@ wil::secure_vector<uint8_t> create_user_bound_key(
             localNonce,
             authContext.put()
         )); // OS CALL
-  
         veil::vtl1::debug::debug_print(L"DEBUG: create_user_bound_key - GetUserBoundKeyAuthContext completed");
 
         // Validate
@@ -408,7 +433,6 @@ wil::secure_vector<uint8_t> create_user_bound_key(
         propCacheConfig.name = UserBoundKeyAuthContextPropertyCacheConfig;
         propCacheConfig.size = sizeof(cacheConfig);
         propCacheConfig.value = &(const_cast<veil::vtl1::userboundkey::keyCredentialCacheConfig&>(cacheConfig));
-
         THROW_IF_FAILED(ValidateUserBoundKeyAuthContext(
             formattedKeyName.c_str(),
             authContext.get(),
@@ -416,9 +440,9 @@ wil::secure_vector<uint8_t> create_user_bound_key(
             &propCacheConfig)); // OS CALL
         veil::vtl1::debug::debug_print(L"DEBUG: create_user_bound_key - ValidateUserBoundKeyAuthContext completed");
 
-        // USERKEY
-        auto userkeyBytes = veil::vtl1::crypto::generate_symmetric_key_bytes();
-        veil::vtl1::debug::debug_print(L"DEBUG: create_user_bound_key - Generated user key bytes");
+        // USE CUSTOM KEY BYTES instead of generating symmetric key
+        veil::vtl1::debug::debug_print((L"DEBUG: create_user_bound_key - Using custom key bytes, size: " + std::to_wstring(customKeyBytes.size())).c_str());
+        std::vector<uint8_t> userkeyBytes(customKeyBytes.begin(), customKeyBytes.end());
 
         // ENCRYPT USERKEY  
         wil::unique_process_heap_ptr<void> boundKey;
