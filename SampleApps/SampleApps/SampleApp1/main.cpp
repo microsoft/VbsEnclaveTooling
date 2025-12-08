@@ -76,7 +76,7 @@ EncryptionConfig InitializeUserBindingConfig(bool& areUserBindingApisAvailable)
     return config;
 }
 
-void HandleKeyResealing(bool needsReseal, const std::vector<uint8_t>& resealedBytes, const fs::path& filePath)
+void HandleKeyResealing(bool needsReseal, std::vector<uint8_t>& resealedBytes, const fs::path& filePath)
 {
     if (needsReseal && !resealedBytes.empty())
     {
