@@ -52,7 +52,7 @@ fn get_sdk_lib_path() -> Result<String, Box<dyn std::error::Error>> {
     let newest_version = root
         .enum_keys()
         .flatten()
-        .filter(|k| k.chars().next().map_or(false, |c| c.is_ascii_digit())) // only version keys
+        .filter(|k| k.chars().next().is_some_and(|c| c.is_ascii_digit())) // only version keys
         .max()
         .ok_or("No Windows SDK version keys found")?;
 
