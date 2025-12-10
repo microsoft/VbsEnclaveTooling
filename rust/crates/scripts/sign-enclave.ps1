@@ -69,9 +69,18 @@ Write-Host "Signing DLL with signtool..."
 & $signToolPath sign /ph /a /fd SHA256 /r $CertName $DllPath
 
 # Check for errors (non-zero exit code) or warning (exit code 2)
+# There is a bug in signtool where even though it signs the enclave correctly
+# it returns a non zero exit code for warnings and outputs:
+# SignTool Warning: Note that VBS enclave support is changing and updating your
+# VBS enclave may cause you to lose support on older OSes
+# So we will say the signing failed if the signtool returns 0 or 2.
 if ($LASTEXITCODE -ne 0 -and $LASTEXITCODE -ne 2) {
     Write-Host "signtool signing failed."
     throw "signtool signing failed with exit code $LASTEXITCODE"
 }
 
-Write-Host "`nEnclave DLL successfully signed."
+if ($LASTEXITCODE -ne 0) {
+    Write-Host "Enclave DLL signing completed with warnings (exit code $LASTEXITCODE)."
+} else {
+    Write-Host "Enclave DLL signing completed with no warnings."
+}

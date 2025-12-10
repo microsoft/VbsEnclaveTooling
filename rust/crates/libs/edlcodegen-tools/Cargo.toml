@@ -3,3 +3,5 @@ name = "edlcodegen-tools"
 version = "0.1.0"
 edition =  { workspace = true }
 
+[dependencies]
+winreg = "0.55.0"

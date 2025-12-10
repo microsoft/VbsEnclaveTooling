@@ -2,10 +2,10 @@
 // Licensed under the MIT License.
 
 use std::env;
-use std::io::Read;
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 use std::process::Command;
 use std::str;
+use winreg::RegKey;
 
 pub fn exes_path() -> PathBuf {
     let manifest_dir = env!("CARGO_MANIFEST_DIR");
@@ -22,7 +22,8 @@ pub fn flatc_path() -> PathBuf {
 }
 
 const PROGRAM_FILES_X86: &str = "ProgramFiles(x86)";
-const VCTOOLS_DEFAULT_PATH: &str = "VC\\Auxiliary\\Build\\Microsoft.VCToolsVersion.default.txt";
+const DEFAULT_VCTOOLS_VERSION_FILE_PATH: &str =
+    "VC\\Auxiliary\\Build\\Microsoft.VCToolsVersion.default.txt";
 const MSVC_PATH: &str = "VC\\Tools\\MSVC";
 const VC_TOOLS_X64: &str = "Microsoft.VisualStudio.Component.VC.Tools.x86.x64";
 const ENCLAVE_LIB_X64_PATH: &str = "lib\\x64\\enclave";
@@ -32,14 +33,7 @@ const VC_TOOLS_ARM64: &str = "Microsoft.VisualStudio.Component.VC.Tools.ARM64";
 const ENCLAVE_LIB_ARM64_PATH: &str = "lib\\arm64\\enclave";
 const UCRT_LIB_ARM64_PATH: &str = "ucrt_enclave\\arm64\\ucrt.lib";
 
-const SDK_SCRIPT: &str = r#"& {
-    $kits_root_10 = (Get-ItemProperty -Path "HKLM:\SOFTWARE\Wow6432Node\Microsoft\Windows Kits\Installed Roots\" -Name KitsRoot10).KitsRoot10
-    $sdk_version = (Get-ChildItem -Path "HKLM:\SOFTWARE\Wow6432Node\Microsoft\Windows Kits\Installed Roots\" | Sort-Object -Descending)[0] | Split-Path -Leaf
-    Write-Host "$($kits_root_10)Lib\$sdk_version"
-}
-"#;
-
-fn architecture_paths() -> (&'static str, &'static str, &'static str) {
+fn get_architecture_sub_paths() -> (&'static str, &'static str, &'static str) {
     match env::consts::ARCH {
         "x86_64" => (VC_TOOLS_X64, ENCLAVE_LIB_X64_PATH, UCRT_LIB_X64_PATH),
         "aarch64" => (VC_TOOLS_ARM64, ENCLAVE_LIB_ARM64_PATH, UCRT_LIB_ARM64_PATH),
@@ -47,33 +41,32 @@ fn architecture_paths() -> (&'static str, &'static str, &'static str) {
     }
 }
 
-/// Locates the Windows SDK and MSVC toolchain and emits the linker arguments
-/// needed to build a VBS enclave (UCRT enclave libs + MSVC enclave libs + vertdll).
-/// This function should be called from a build.rs file of an enclave crate.
-/// Note: This function assumes that the Windows SDK and MSVC toolchain are installed.
-pub fn link_win_sdk_enclave_libs() -> Result<(), Box<dyn std::error::Error>> {
-    println!("cargo::rustc-link-arg=/ENCLAVE");
-    println!("cargo::rustc-link-arg=/NODEFAULTLIB");
-    println!("cargo::rustc-link-arg=/INCREMENTAL:NO");
-    println!("cargo::rustc-link-arg=/INTEGRITYCHECK");
-    println!("cargo::rustc-link-arg=/GUARD:MIXED");
+fn get_sdk_lib_path() -> Result<String, Box<dyn std::error::Error>> {
+    let hklm = RegKey::predef(winreg::enums::HKEY_LOCAL_MACHINE);
+    let root = hklm.open_subkey(r"SOFTWARE\Wow6432Node\Microsoft\Windows Kits\Installed Roots")?;
 
-    let program_files_x86 =
-        env::var(PROGRAM_FILES_X86).expect("Program Files (x86) path not in environment variables");
+    let kits_root_10: String = root.get_value("KitsRoot10")?;
 
-    let powershell_output = Command::new("powershell.exe")
-        .arg(SDK_SCRIPT)
-        .output()?
-        .stdout;
-    let sdk_path = str::from_utf8(&powershell_output)?.trim();
+    // Pick newest installed Windows SDK version.
+    // E.g HLKM\SOFTWARE\Wow6432Node\Microsoft\Windows Kits\Installed Roots\10.0.22000.0
+    let newest_version = root
+        .enum_keys()
+        .flatten()
+        .filter(|k| k.chars().next().map_or(false, |c| c.is_ascii_digit())) // only version keys
+        .max()
+        .ok_or("No Windows SDK version keys found")?;
 
-    println!("{}", sdk_path);
-    let (vc_tools, enclave_lib_sub_path, ucrt_lib_sub_path) = architecture_paths();
+    Ok(format!("{}/Lib/{}", kits_root_10, newest_version))
+}
 
-    let vswhere =
-        Path::new(&program_files_x86).join("Microsoft Visual Studio\\Installer\\vswhere.exe");
+fn find_latest_msvc_install(vc_tools: &str) -> Result<String, Box<dyn std::error::Error>> {
+    let program_files_x86 = env::var(PROGRAM_FILES_X86)
+        .map_err(|_| "ProgramFiles(x86) environment variable not set")?;
 
-    let vswhere_output = Command::new(vswhere)
+    let vswhere = format!("{program_files_x86}\\Microsoft Visual Studio\\Installer\\vswhere.exe");
+
+    // Run vswhere
+    let output = Command::new(vswhere)
         .args([
             "-latest",
             "-products",
@@ -86,42 +79,44 @@ pub fn link_win_sdk_enclave_libs() -> Result<(), Box<dyn std::error::Error>> {
         .output()?
         .stdout;
 
-    let install_path = Path::new(str::from_utf8(&vswhere_output)?.trim());
+    // Convert output to a cleaned-up string
+    let install_path = String::from_utf8(output)?.trim().to_owned();
 
-    let mut default_path = String::new();
-    std::fs::File::open(install_path.join(VCTOOLS_DEFAULT_PATH))
-        .expect("Could not open Microsoft.VCToolsVersion.default.txt")
-        .read_to_string(&mut default_path)?;
+    Ok(install_path)
+}
 
-    let msvc = install_path.join(MSVC_PATH).join(default_path.trim());
+/// Locates the Windows SDK and MSVC toolchain and emits the linker arguments
+/// needed to build a VBS enclave (UCRT enclave libs + MSVC enclave libs + vertdll).
+/// This function should be called from a build.rs file of an enclave crate.
+/// Note: This function assumes that the Windows SDK and MSVC toolchain are installed.
+pub fn link_win_sdk_enclave_libs() -> Result<(), Box<dyn std::error::Error>> {
+    let sdk_path = get_sdk_lib_path()?;
+    let (vc_tools, enclave_lib_sub_path, ucrt_lib_sub_path) = get_architecture_sub_paths();
+    let install_path = find_latest_msvc_install(vc_tools)?;
 
-    let msvc_with_enclave_lib_path = msvc.join(enclave_lib_sub_path);
+    // Read VCToolsVersion.default.txt to get the default MSVC version subpath
+    let vc_tool_file = format!("{install_path}/{DEFAULT_VCTOOLS_VERSION_FILE_PATH}");
+    let vc_tool_version = std::fs::read_to_string(vc_tool_file)?;
 
-    println!(
-        "cargo::rustc-link-arg={}",
-        Path::new(sdk_path)
-            .join(ucrt_lib_sub_path)
-            .to_str()
-            .expect("Couldn't make string from ucrt.lib path")
-    );
+    // Emit linker arguments
+    println!("cargo::rustc-link-arg=/ENCLAVE");
+    println!("cargo::rustc-link-arg=/NODEFAULTLIB");
+    println!("cargo::rustc-link-arg=/INCREMENTAL:NO");
+    println!("cargo::rustc-link-arg=/INTEGRITYCHECK");
+    println!("cargo::rustc-link-arg=/GUARD:MIXED");
 
-    // libvcruntime must come before vertdll or there will be duplicate external errors
-    println!(
-        "cargo::rustc-link-arg={}",
-        msvc_with_enclave_lib_path
-            .join("libvcruntime.lib")
-            .to_str()
-            .expect("Couldn't make string from libvcruntime.lib path")
-    );
-    println!(
-        "cargo::rustc-link-arg={}",
-        msvc_with_enclave_lib_path
-            .join("libcmt.lib")
-            .to_str()
-            .expect("Couldn't make string from libcmt.lib path")
-    );
+    // link libraries
     println!("cargo::rustc-link-arg=vertdll.lib");
     println!("cargo::rustc-link-arg=bcrypt.lib");
+
+    let full_msvc_path = format!("{}/{}/{}", install_path, MSVC_PATH, vc_tool_version.trim());
+    let msvc_with_enclave_lib_path = format!("{}/{}", full_msvc_path, enclave_lib_sub_path);
+    let ucrt_lib_path = format!("{}/{}", sdk_path, ucrt_lib_sub_path);
+    let libvcruntime_path = format!("{}/libvcruntime.lib", msvc_with_enclave_lib_path);
+    let libcmt_path = format!("{}/libcmt.lib", msvc_with_enclave_lib_path);
+    println!("cargo::rustc-link-arg={}", ucrt_lib_path);
+    println!("cargo::rustc-link-arg={}", libvcruntime_path);
+    println!("cargo::rustc-link-arg={}", libcmt_path);
 
     Ok(())
 }
