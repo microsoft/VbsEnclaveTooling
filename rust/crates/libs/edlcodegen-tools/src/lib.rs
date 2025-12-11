@@ -85,10 +85,21 @@ fn find_latest_msvc_install(vc_tools: &str) -> Result<String, Box<dyn std::error
     Ok(install_path)
 }
 
-/// Locates the Windows SDK and MSVC toolchain and emits the linker arguments
-/// needed to build a VBS enclave (UCRT enclave libs + MSVC enclave libs + vertdll).
-/// This function should be called from a build.rs file of an enclave crate.
-/// Note: This function assumes that the Windows SDK and MSVC toolchain are installed.
+/// Emits the linker arguments needed to build this crate as a VBS enclave.
+/// See: https://learn.microsoft.com/windows/win32/trusted-execution/vbs-enclaves-dev-guide
+/// This function should be called from the build.rs file of an enclave crate.
+pub fn set_enclave_linker_flags() {
+    println!("cargo::rustc-link-arg=/ENCLAVE");
+    println!("cargo::rustc-link-arg=/NODEFAULTLIB");
+    println!("cargo::rustc-link-arg=/INCREMENTAL:NO");
+    println!("cargo::rustc-link-arg=/INTEGRITYCHECK");
+    println!("cargo::rustc-link-arg=/GUARD:MIXED");
+}
+
+/// Locates the Windows SDK and MSVC toolchain and links the the libraries
+/// necessary to build a vbs enclave as outlined by the devellopment guide.
+/// See: https://learn.microsoft.com/windows/win32/trusted-execution/vbs-enclaves-dev-guide
+/// This function should be called from the build.rs file of an enclave crate.
 pub fn link_win_sdk_enclave_libs() -> Result<(), Box<dyn std::error::Error>> {
     let sdk_path = get_sdk_lib_path()?;
     let (vc_tools, enclave_lib_sub_path, ucrt_lib_sub_path) = get_architecture_sub_paths();
@@ -98,24 +109,20 @@ pub fn link_win_sdk_enclave_libs() -> Result<(), Box<dyn std::error::Error>> {
     let vc_tool_file = format!("{install_path}/{DEFAULT_VCTOOLS_VERSION_FILE_PATH}");
     let vc_tool_version = std::fs::read_to_string(vc_tool_file)?;
 
-    // Emit linker arguments
-    println!("cargo::rustc-link-arg=/ENCLAVE");
-    println!("cargo::rustc-link-arg=/NODEFAULTLIB");
-    println!("cargo::rustc-link-arg=/INCREMENTAL:NO");
-    println!("cargo::rustc-link-arg=/INTEGRITYCHECK");
-    println!("cargo::rustc-link-arg=/GUARD:MIXED");
-
     // link libraries
     println!("cargo::rustc-link-arg=vertdll.lib");
     println!("cargo::rustc-link-arg=bcrypt.lib");
 
+    let ucrt_lib_path = format!("{}/{}", sdk_path, ucrt_lib_sub_path);
+    println!("cargo::rustc-link-arg={}", ucrt_lib_path);
+
     let full_msvc_path = format!("{}/{}/{}", install_path, MSVC_PATH, vc_tool_version.trim());
     let msvc_with_enclave_lib_path = format!("{}/{}", full_msvc_path, enclave_lib_sub_path);
-    let ucrt_lib_path = format!("{}/{}", sdk_path, ucrt_lib_sub_path);
+
     let libvcruntime_path = format!("{}/libvcruntime.lib", msvc_with_enclave_lib_path);
-    let libcmt_path = format!("{}/libcmt.lib", msvc_with_enclave_lib_path);
-    println!("cargo::rustc-link-arg={}", ucrt_lib_path);
     println!("cargo::rustc-link-arg={}", libvcruntime_path);
+
+    let libcmt_path = format!("{}/libcmt.lib", msvc_with_enclave_lib_path);
     println!("cargo::rustc-link-arg={}", libcmt_path);
 
     Ok(())

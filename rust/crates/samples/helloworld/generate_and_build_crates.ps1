@@ -39,7 +39,8 @@ $hostCrate    = Join-Path $PSScriptRoot "host"
     --Vtl0ClassName TestVtl0Host `
     --OutputDirectory "$hostCrate\generated"
 
-# Build both crates
+# Build both crates individually instead of as a workspace since they both have
+# different panic configurations.
 & "$scriptsDir\invoke_cargo_build.ps1" -Path $enclaveCrate -Configuration $Configuration
 & "$scriptsDir\invoke_cargo_build.ps1" -Path $hostCrate -Configuration $Configuration
 
