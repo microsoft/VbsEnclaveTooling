@@ -293,7 +293,7 @@ static HRESULT EnsureAsymmetricUserBoundKeyLoaded(
         }
 
         // NOW we can import the private key from the loaded raw key material
-        auto newAsymmetricPrivateKey = veil::vtl1::crypto::bcrypt_import_private_key(loadedKeyBytes);
+        auto newAsymmetricPrivateKey = veil::vtl1::crypto::bcrypt_import_private_key(BCRYPT_ECDSA_P384_ALG_HANDLE, BCRYPT_ECCPRIVATE_BLOB, loadedKeyBytes);
         SetAsymmetricPrivateKey(std::move(newAsymmetricPrivateKey));
         debug_print(L"Imported ECDSA private key from loaded user-bound key material");
     }
@@ -1083,11 +1083,11 @@ HRESULT VbsEnclave::Trusted::Implementation::MyEnclaveCreateAsymmetricUserBoundK
         debug_print(L"Start MyEnclaveCreateAsymmetricUserBoundKey");
 
         // Generate ECDSA key pair
-        auto keyPair = veil::vtl1::crypto::generate_ecdsa_key_pair();
+        auto keyPair = veil::vtl1::crypto::generate_ecdsa_key_pair(BCRYPT_ECDSA_P384_ALG_HANDLE, veil::vtl1::crypto::SIGNATURE_KEY_SIZE_BITS);
         debug_print(L"Generated ECDSA key pair");
 
         // Export private key bytes
-        auto privateKeyBytes = veil::vtl1::crypto::bcrypt_export_private_key(keyPair.get());
+        auto privateKeyBytes = veil::vtl1::crypto::bcrypt_export_private_key(keyPair.get(), BCRYPT_ECCPRIVATE_BLOB);
         debug_print((L"Exported private key, size: " + std::to_wstring(privateKeyBytes.size())).c_str());
 
         // Export public key bytes
@@ -1203,7 +1203,7 @@ HRESULT VbsEnclave::Trusted::Implementation::MyEnclaveSignDataWithUserBoundKey(
         debug_print((L"Converted data to UTF-8, size: " + std::to_wstring(utf8Data.size())).c_str());
 
         // Sign the data
-        signature = veil::vtl1::crypto::ecdsa_sign(privateKeyHandle, utf8Data);
+        signature = veil::vtl1::crypto::ecdsa_sign(privateKeyHandle, BCRYPT_SHA384_ALG_HANDLE, utf8Data);
         debug_print((L"Signed data, signature size: " + std::to_wstring(signature.size())).c_str());
 
         return S_OK;
@@ -1227,7 +1227,7 @@ HRESULT VbsEnclave::Trusted::Implementation::MyEnclaveVerifySignatureWithPublicK
         debug_print(L"Start MyEnclaveVerifySignatureWithPublicKey");
 
         // Import the public key
-        auto publicKey = veil::vtl1::crypto::bcrypt_import_public_key_for_signature(publicKeyBytes);
+        auto publicKey = veil::vtl1::crypto::bcrypt_import_public_key_for_signature(BCRYPT_ECDSA_P384_ALG_HANDLE, BCRYPT_ECCPUBLIC_BLOB, publicKeyBytes);
         debug_print(L"Imported ECDSA public key");
 
         // Convert wstring to UTF-8 bytes for verification

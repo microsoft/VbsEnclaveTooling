@@ -27,7 +27,6 @@ namespace veil::vtl1::userboundkey
         uint32_t runtimePolicy,
         uint32_t keyCredentialCreationOption);
 
-    // Overload function to support custom key bytes (for asymmetric keys)
     wil::secure_vector<uint8_t> create_user_bound_key(
         const std::wstring& keyName,
         const veil::vtl1::userboundkey::keyCredentialCacheConfig& cacheConfig,

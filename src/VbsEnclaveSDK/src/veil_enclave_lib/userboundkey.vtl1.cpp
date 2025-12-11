@@ -328,7 +328,7 @@ wil::secure_vector<uint8_t> create_user_bound_key(
     uint32_t runtimePolicy,
     uint32_t keyCredentialCreationOption)
 {
-    veil::vtl1::debug::debug_print(L"DEBUG: create_user_bound_key - Generating symmetric key and delegating");
+    veil::vtl1::debug::debug_print(L"DEBUG: create_user_bound_key - Generating symmetric key");
 
     // Generate random symmetric key
     auto userkeyBytes = veil::vtl1::crypto::generate_symmetric_key_bytes();
