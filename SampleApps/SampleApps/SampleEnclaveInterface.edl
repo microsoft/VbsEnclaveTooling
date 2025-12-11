@@ -71,33 +71,5 @@ enclave
             [out] bool needsReseal,
             [out] vector<uint8_t> resealedEncryptionKeyBytes
             );
-
-        // Asymmetric key functions for digital signatures
-        HRESULT MyEnclaveCreateAsymmetricUserBoundKey(
-            wstring keyName,
-            wstring pinMessage,
-            uintptr_t windowId,
-            uint32_t keyCredentialCreationOption,
-            [out] vector<uint8_t> securedPrivateKeyBytes,
-            [out] vector<uint8_t> publicKeyBytes
-        );        
-        
-        HRESULT MyEnclaveSignDataWithUserBoundKey(
-            wstring keyName,
-            wstring pinMessage,
-            uintptr_t windowId,
-            vector<uint8_t> securedPrivateKeyBytes,
-            wstring dataToSign,
-            [out] vector<uint8_t> signature,
-            [out] bool needsReseal,
-            [out] vector<uint8_t> resealedPrivateKeyBytes
-        );        
-        
-        HRESULT MyEnclaveVerifySignatureWithPublicKey(
-            vector<uint8_t> publicKeyBytes,
-            wstring dataToVerify,
-            vector<uint8_t> signature,
-            [out] bool isValid
-        );
     };
 };
