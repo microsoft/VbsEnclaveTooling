@@ -177,7 +177,7 @@ namespace EdlProcessor
         // Merge using OrderedMap's merge function with conflict resolution lambdas
         dest_edl.m_developer_types.merge(
             src_edl.m_developer_types,
-            [&](const std::string& key, const auto& src_value, const auto& dest_value)
+            [&](const std::string& key)
             {
                 if (key == EDL_ANONYMOUS_ENUM_KEYWORD)
                 {
@@ -1224,8 +1224,6 @@ namespace EdlProcessor
                     continue;
                 }
 
-                bool identifier_in_anonymous_enum = false;
-
                 // Identifier types for the size/count attributes should be enum
                 // values from the anonymous enum type, or an unsigned integer literal
                 // or an unsigned value field within a struct or an unsigned value
@@ -1306,6 +1304,7 @@ namespace EdlProcessor
     {
         auto import_file_token = GetCurrentTokenAndMoveToNextToken();
         std::filesystem::path import_file = RemoveOuterQuotes(import_file_token.ToString());
+        auto import_file_str = import_file.generic_string();
         std::filesystem::path full_file_path{};
 
         // first check if this is an absolute path
@@ -1336,7 +1335,7 @@ namespace EdlProcessor
                 m_file_name,
                 m_cur_line,
                 m_cur_column,
-                import_file.generic_string(),
+                import_file_str,
                 importer.generic_string());
         }
 

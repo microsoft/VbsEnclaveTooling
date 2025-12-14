@@ -63,8 +63,10 @@ namespace CmdlineParsingHelpers
 
     inline void TransformCaseToLower(std::string& str)
     {
-        std::transform(str.begin(), str.end(), str.begin(),
-            [] (unsigned char c) { return std::tolower(c); });
+        std::transform(str.begin(), str.end(), str.begin(), [] (char c)
+        {
+            return static_cast<char>(std::tolower(c));
+        });
     }
 
     static ErrorId inline GetSupportedLanguageForCodeGen(

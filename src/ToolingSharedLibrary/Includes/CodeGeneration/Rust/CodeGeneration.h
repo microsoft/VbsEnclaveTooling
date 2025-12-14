@@ -34,8 +34,7 @@ namespace CodeGeneration::Rust
 
         Definition BuildStartOfDefinition(
             std::string_view type_name,
-            std::string_view identifier_name,
-            std::size_t num_of_tabs = 0U);
+            std::string_view identifier_name);
 
         std::string BuildEnumDefinition(
             const DeveloperType& developer_types);
@@ -56,7 +55,6 @@ namespace CodeGeneration::Rust
 
         std::string BuildAbiDefinitionModule(
             VirtualTrustLayerKind vtl_kind,
-            std::string_view trait_name,
             std::string_view developer_namespace_name,
             const OrderedMap<std::string, Function>& functions);
     };
@@ -74,7 +72,6 @@ namespace CodeGeneration::Rust
             const std::filesystem::path& implementation_location);
 
         void GenerateAbiModules(
-            const std::filesystem::path& src_location,
             const std::filesystem::path& abi_location);
 
         void GenerateFlatbufferComponents(

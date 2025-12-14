@@ -230,6 +230,6 @@ namespace ErrorHelpers
     {
         std::stringstream string_stream;
         string_stream << "0x" << std::hex << hr;
-        PrintError(ErrorId::GeneralFailure, string_stream.str());
+        PrintError(id, string_stream.str());
     }
 }
