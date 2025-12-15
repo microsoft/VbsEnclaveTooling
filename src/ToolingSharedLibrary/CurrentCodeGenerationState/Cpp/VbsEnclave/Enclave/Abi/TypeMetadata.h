@@ -32,27 +32,27 @@ namespace VbsEnclaveABI::Shared::Converters
     };
 
     template <>
-    struct StructMetadata<CodeGenTest::Abi::Types::FuncWithAllArgs_0_args>
+    struct StructMetadata<CodeGenTest::Abi::Types::FuncWithAllArgs_0_Args>
     {
-        static constexpr auto members = std::make_tuple(&CodeGenTest::Abi::Types::FuncWithAllArgs_0_args::m_arg1,&CodeGenTest::Abi::Types::FuncWithAllArgs_0_args::m_arg2,&CodeGenTest::Abi::Types::FuncWithAllArgs_0_args::m_arg3,&CodeGenTest::Abi::Types::FuncWithAllArgs_0_args::m_arg4,&CodeGenTest::Abi::Types::FuncWithAllArgs_0_args::m_arg5,&CodeGenTest::Abi::Types::FuncWithAllArgs_0_args::m_arg6,&CodeGenTest::Abi::Types::FuncWithAllArgs_0_args::m_arg7,&CodeGenTest::Abi::Types::FuncWithAllArgs_0_args::m_arg8,&CodeGenTest::Abi::Types::FuncWithAllArgs_0_args::m_arg9,&CodeGenTest::Abi::Types::FuncWithAllArgs_0_args::m__return_value_);
+        static constexpr auto members = std::make_tuple(&CodeGenTest::Abi::Types::FuncWithAllArgs_0_Args::m_arg1,&CodeGenTest::Abi::Types::FuncWithAllArgs_0_Args::m_arg2,&CodeGenTest::Abi::Types::FuncWithAllArgs_0_Args::m_arg3,&CodeGenTest::Abi::Types::FuncWithAllArgs_0_Args::m_arg4,&CodeGenTest::Abi::Types::FuncWithAllArgs_0_Args::m_arg5,&CodeGenTest::Abi::Types::FuncWithAllArgs_0_Args::m_arg6,&CodeGenTest::Abi::Types::FuncWithAllArgs_0_Args::m_arg7,&CodeGenTest::Abi::Types::FuncWithAllArgs_0_Args::m_arg8,&CodeGenTest::Abi::Types::FuncWithAllArgs_0_Args::m_arg9,&CodeGenTest::Abi::Types::FuncWithAllArgs_0_Args::m__return_value_);
     };
 
     template <>
-    struct StructMetadata<CodeGenTest::FlatbufferTypes::FuncWithAllArgs_0_argsT>
+    struct StructMetadata<CodeGenTest::FlatbufferTypes::FuncWithAllArgs_0_ArgsT>
     {
-        static constexpr auto members = std::make_tuple(&CodeGenTest::FlatbufferTypes::FuncWithAllArgs_0_argsT::m_arg1,&CodeGenTest::FlatbufferTypes::FuncWithAllArgs_0_argsT::m_arg2,&CodeGenTest::FlatbufferTypes::FuncWithAllArgs_0_argsT::m_arg3,&CodeGenTest::FlatbufferTypes::FuncWithAllArgs_0_argsT::m_arg4,&CodeGenTest::FlatbufferTypes::FuncWithAllArgs_0_argsT::m_arg5,&CodeGenTest::FlatbufferTypes::FuncWithAllArgs_0_argsT::m_arg6,&CodeGenTest::FlatbufferTypes::FuncWithAllArgs_0_argsT::m_arg7,&CodeGenTest::FlatbufferTypes::FuncWithAllArgs_0_argsT::m_arg8,&CodeGenTest::FlatbufferTypes::FuncWithAllArgs_0_argsT::m_arg9,&CodeGenTest::FlatbufferTypes::FuncWithAllArgs_0_argsT::m__return_value_);
+        static constexpr auto members = std::make_tuple(&CodeGenTest::FlatbufferTypes::FuncWithAllArgs_0_ArgsT::m_arg1,&CodeGenTest::FlatbufferTypes::FuncWithAllArgs_0_ArgsT::m_arg2,&CodeGenTest::FlatbufferTypes::FuncWithAllArgs_0_ArgsT::m_arg3,&CodeGenTest::FlatbufferTypes::FuncWithAllArgs_0_ArgsT::m_arg4,&CodeGenTest::FlatbufferTypes::FuncWithAllArgs_0_ArgsT::m_arg5,&CodeGenTest::FlatbufferTypes::FuncWithAllArgs_0_ArgsT::m_arg6,&CodeGenTest::FlatbufferTypes::FuncWithAllArgs_0_ArgsT::m_arg7,&CodeGenTest::FlatbufferTypes::FuncWithAllArgs_0_ArgsT::m_arg8,&CodeGenTest::FlatbufferTypes::FuncWithAllArgs_0_ArgsT::m_arg9,&CodeGenTest::FlatbufferTypes::FuncWithAllArgs_0_ArgsT::m__return_value_);
     };
 
     template <>
-    struct StructMetadata<CodeGenTest::Abi::Types::FuncWithAllArgs_1_args>
+    struct StructMetadata<CodeGenTest::Abi::Types::FuncWithAllArgs_1_Args>
     {
-        static constexpr auto members = std::make_tuple(&CodeGenTest::Abi::Types::FuncWithAllArgs_1_args::m_arg1,&CodeGenTest::Abi::Types::FuncWithAllArgs_1_args::m_arg2,&CodeGenTest::Abi::Types::FuncWithAllArgs_1_args::m_arg3,&CodeGenTest::Abi::Types::FuncWithAllArgs_1_args::m_arg4,&CodeGenTest::Abi::Types::FuncWithAllArgs_1_args::m_arg5,&CodeGenTest::Abi::Types::FuncWithAllArgs_1_args::m_arg6,&CodeGenTest::Abi::Types::FuncWithAllArgs_1_args::m_arg7,&CodeGenTest::Abi::Types::FuncWithAllArgs_1_args::m_arg8,&CodeGenTest::Abi::Types::FuncWithAllArgs_1_args::m_arg9,&CodeGenTest::Abi::Types::FuncWithAllArgs_1_args::m__return_value_);
+        static constexpr auto members = std::make_tuple(&CodeGenTest::Abi::Types::FuncWithAllArgs_1_Args::m_arg1,&CodeGenTest::Abi::Types::FuncWithAllArgs_1_Args::m_arg2,&CodeGenTest::Abi::Types::FuncWithAllArgs_1_Args::m_arg3,&CodeGenTest::Abi::Types::FuncWithAllArgs_1_Args::m_arg4,&CodeGenTest::Abi::Types::FuncWithAllArgs_1_Args::m_arg5,&CodeGenTest::Abi::Types::FuncWithAllArgs_1_Args::m_arg6,&CodeGenTest::Abi::Types::FuncWithAllArgs_1_Args::m_arg7,&CodeGenTest::Abi::Types::FuncWithAllArgs_1_Args::m_arg8,&CodeGenTest::Abi::Types::FuncWithAllArgs_1_Args::m_arg9,&CodeGenTest::Abi::Types::FuncWithAllArgs_1_Args::m__return_value_);
     };
 
     template <>
-    struct StructMetadata<CodeGenTest::FlatbufferTypes::FuncWithAllArgs_1_argsT>
+    struct StructMetadata<CodeGenTest::FlatbufferTypes::FuncWithAllArgs_1_ArgsT>
     {
-        static constexpr auto members = std::make_tuple(&CodeGenTest::FlatbufferTypes::FuncWithAllArgs_1_argsT::m_arg1,&CodeGenTest::FlatbufferTypes::FuncWithAllArgs_1_argsT::m_arg2,&CodeGenTest::FlatbufferTypes::FuncWithAllArgs_1_argsT::m_arg3,&CodeGenTest::FlatbufferTypes::FuncWithAllArgs_1_argsT::m_arg4,&CodeGenTest::FlatbufferTypes::FuncWithAllArgs_1_argsT::m_arg5,&CodeGenTest::FlatbufferTypes::FuncWithAllArgs_1_argsT::m_arg6,&CodeGenTest::FlatbufferTypes::FuncWithAllArgs_1_argsT::m_arg7,&CodeGenTest::FlatbufferTypes::FuncWithAllArgs_1_argsT::m_arg8,&CodeGenTest::FlatbufferTypes::FuncWithAllArgs_1_argsT::m_arg9,&CodeGenTest::FlatbufferTypes::FuncWithAllArgs_1_argsT::m__return_value_);
+        static constexpr auto members = std::make_tuple(&CodeGenTest::FlatbufferTypes::FuncWithAllArgs_1_ArgsT::m_arg1,&CodeGenTest::FlatbufferTypes::FuncWithAllArgs_1_ArgsT::m_arg2,&CodeGenTest::FlatbufferTypes::FuncWithAllArgs_1_ArgsT::m_arg3,&CodeGenTest::FlatbufferTypes::FuncWithAllArgs_1_ArgsT::m_arg4,&CodeGenTest::FlatbufferTypes::FuncWithAllArgs_1_ArgsT::m_arg5,&CodeGenTest::FlatbufferTypes::FuncWithAllArgs_1_ArgsT::m_arg6,&CodeGenTest::FlatbufferTypes::FuncWithAllArgs_1_ArgsT::m_arg7,&CodeGenTest::FlatbufferTypes::FuncWithAllArgs_1_ArgsT::m_arg8,&CodeGenTest::FlatbufferTypes::FuncWithAllArgs_1_ArgsT::m_arg9,&CodeGenTest::FlatbufferTypes::FuncWithAllArgs_1_ArgsT::m__return_value_);
     };
 
     template <>

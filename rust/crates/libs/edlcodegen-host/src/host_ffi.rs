@@ -3,7 +3,7 @@
 
 use core::ffi::c_void;
 use edlcodegen_core::{
-    edl_core_ffi::AbiFuncPtr,
+    edl_core_types::AbiFuncPtr,
     edl_core_types::{AbiError, EnclaveHandle},
 };
 

@@ -9,9 +9,12 @@ use crate::enclave_ffi::{
 use crate::memory_helpers::vtl0_function_map;
 use crate::vtl0_pointers::Vtl0MemoryPtr;
 use alloc::string::String;
-use core::{ffi::c_void, ptr};
+use core::ffi::c_void;
 use edlcodegen_core::{
-    edl_core_ffi, edl_core_types::AbiError, edl_core_types::EnclaveFunctionContext,
+    edl_core_ffi::{CallEnclaveInput, call_enclave},
+    edl_core_types,
+    edl_core_types::AbiError,
+    edl_core_types::EnclaveFunctionContext,
     flatbuffer_support,
 };
 
@@ -20,13 +23,13 @@ pub fn call_vtl1_export_from_vtl1<F, DevTypeT, FlatbufferT>(
     context: *mut c_void,
 ) -> Result<(), AbiError>
 where
-    F: FnMut(&mut DevTypeT),
+    F: FnMut(&mut DevTypeT) -> Result<(), AbiError>,
     DevTypeT: Clone + From<FlatbufferT> + Into<FlatbufferT>,
     FlatbufferT: for<'a> flatbuffer_support::FlatbufferPack<'a>,
 {
     // Validate pointer.
     if context.is_null() {
-        return Err(AbiError::Hresult(edl_core_ffi::E_INVALIDARG));
+        return Err(AbiError::Hresult(edl_core_types::E_INVALIDARG));
     }
 
     // Immediately copy it into enclave-local memory.
@@ -38,7 +41,7 @@ where
     let in_buf = copied_context.forwarded_parameters.buffer as *const u8;
     let in_size = copied_context.forwarded_parameters.buffer_size;
     if in_size > 0 && in_buf.is_null() || in_buf.is_null() {
-        return Err(AbiError::Hresult(edl_core_ffi::E_INVALIDARG));
+        return Err(AbiError::Hresult(edl_core_types::E_INVALIDARG));
     }
 
     // Copy VTL0 buffer into enclave heap.
@@ -47,11 +50,11 @@ where
 
     // Unpack flatbuffer byte array into its native struct type and convert it to a developer type.
     let fb_input: FlatbufferT = FlatbufferT::unpack(&local_in)
-        .map_err(|_| AbiError::Hresult(edl_core_ffi::E_INVALIDARG))?;
+        .map_err(|_| AbiError::Hresult(edl_core_types::E_INVALIDARG))?;
     let mut dev_input: DevTypeT = fb_input.into();
 
     // Call developer implementation.
-    dev_impl_func(&mut dev_input);
+    dev_impl_func(&mut dev_input)?;
 
     // Convert updated developer type back into its flatbuffer struct and pack it into an array of bytes.
     let fb_output: FlatbufferT = dev_input.into();
@@ -112,7 +115,7 @@ where
     let table_read_access = vtl0_function_map().read();
     let vtl0_function = table_read_access
         .try_get_function(func_name)
-        .ok_or(AbiError::Hresult(edl_core_ffi::E_INVALIDARG))?;
+        .ok_or(AbiError::Hresult(edl_core_types::E_INVALIDARG))?;
 
     // Copy flatbuffer input into VTL0 buffer.
     let vtl0_input_params_ptr =
@@ -139,16 +142,12 @@ where
         &vtl1_outgoing_context_obj,
     )?;
 
+    let call_enclave_input = CallEnclaveInput::new(
+        vtl0_function,
+        vtl0_input_context_ptr.as_ptr() as *const c_void,
+    );
     // Call into VTL0 function.
-    let mut call_result: *mut c_void = ptr::null_mut();
-
-    unsafe {
-        edl_core_ffi::call_enclave(
-            vtl0_function,
-            vtl0_input_context_ptr.as_ptr() as *const c_void,
-            &mut call_result as *mut *mut c_void,
-        )?;
-    }
+    call_enclave::<()>(call_enclave_input)?;
 
     // Copy result context back into enclave.
     let mut vtl1_incoming_context_obj = EnclaveFunctionContext::default();
@@ -161,19 +160,19 @@ where
     let ret_buf = vtl1_incoming_context_obj.returned_parameters.buffer as *const u8;
     let ret_size = vtl1_incoming_context_obj.returned_parameters.buffer_size;
     if ret_size > 0 && ret_buf.is_null() || ret_buf.is_null() {
-        return Err(AbiError::Hresult(edl_core_ffi::E_INVALIDARG));
+        return Err(AbiError::Hresult(edl_core_types::E_INVALIDARG));
     }
 
     // Make sure we free the returned buffer before we exit
     let _return_buffer_ptr =
-        unsafe { Vtl0MemoryPtr::from_raw(vtl1_incoming_context_obj.returned_parameters.buffer) };
+        Vtl0MemoryPtr::from_raw(vtl1_incoming_context_obj.returned_parameters.buffer);
 
     let mut local_buf = alloc::vec![0u8; ret_size];
     enclave_copy_buffer_in(local_buf.as_mut_ptr(), ret_buf, ret_size)?;
 
     // Unpack the flatbuffer and return updated developer type back to the caller.
     let fb_result: FlatbufferT = FlatbufferT::unpack(&local_buf)
-        .map_err(|_| AbiError::Hresult(edl_core_ffi::E_INVALIDARG))?;
+        .map_err(|_| AbiError::Hresult(edl_core_types::E_INVALIDARG))?;
 
     let dev_result: DevTypeT = fb_result.into();
 

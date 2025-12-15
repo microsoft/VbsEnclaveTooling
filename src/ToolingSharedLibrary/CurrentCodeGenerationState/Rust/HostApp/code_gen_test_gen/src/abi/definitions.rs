@@ -7,17 +7,18 @@ macro_rules! define_trait_callback_functions {
         
         extern "system" fn FuncWithAllArgs_1_Generated_Stub(fn_context: *mut core::ffi::c_void) -> *mut core::ffi::c_void
         {
-            use $crate::{abi_func_to_address, return_hr_as_pvoid, call_vtl0_callback_from_vtl0};
-            use $crate::abi::abi_types::FuncWithAllArgs_1_args as AbiTypeT;
-            use $crate::abi::fb_support::fb_types::code_gen_test::flatbuffer_types::FuncWithAllArgs_1_argsT as FlatBufferT;
-            let abi_func = |abi_type: &mut AbiTypeT| {
-                abi_type.m__return_value_ = Self::FuncWithAllArgs(abi_type.m_arg1, &abi_type.m_arg2, &mut abi_type.m_arg3, &mut abi_type.m_arg4, &mut abi_type.m_arg5, &mut abi_type.m_arg6, &mut abi_type.m_arg7, &mut abi_type.m_arg8, &mut abi_type.m_arg9);
+            use $crate::{AbiError, abi_func_to_address, return_hr_as_pvoid, call_vtl0_callback_from_vtl0};
+            use $crate::abi::abi_types::FuncWithAllArgs_1_Args as AbiTypeT;
+            use $crate::abi::fb_support::fb_types::code_gen_test::flatbuffer_types::FuncWithAllArgs_1_ArgsT as FlatBufferT;
+            let abi_func = |abi_type: &mut AbiTypeT| -> Result<(), AbiError> {
+                abi_type.m__return_value_ = Self::FuncWithAllArgs(abi_type.m_arg1, &abi_type.m_arg2, &mut abi_type.m_arg3, &mut abi_type.m_arg4, &mut abi_type.m_arg5, &mut abi_type.m_arg6, &mut abi_type.m_arg7, &mut abi_type.m_arg8, &mut abi_type.m_arg9)?;
+                Ok(())
             };
             return_hr_as_pvoid!(call_vtl0_callback_from_vtl0::<_, AbiTypeT, FlatBufferT>(abi_func, fn_context))
         }
 
         fn callback_names() -> [&'static str; 3] {
-            ["VbsEnclaveABI::HostApp::AllocateVtl0MemoryCallback","VbsEnclaveABI::HostApp::DeallocateVtl0MemoryCallback","Untrusted::FuncWithAllArgs_1_Generated_Stub",]
+            ["VbsEnclaveABI::HostApp::AllocateVtl0MemoryCallback","VbsEnclaveABI::HostApp::DeallocateVtl0MemoryCallback","FuncWithAllArgs_1_Generated_Stub",]
         }
 
         fn callback_addresses() -> [u64; 3] {
