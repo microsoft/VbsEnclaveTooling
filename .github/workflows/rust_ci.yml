@@ -7,7 +7,6 @@ on:
       - 'rust/**'
       - '.github/workflows/rust_ci.yml'
   pull_request:
-    branches: [main]
     paths:
       - 'rust/**'
       - '.github/workflows/rust_ci.yml'

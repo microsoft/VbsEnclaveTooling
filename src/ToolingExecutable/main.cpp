@@ -57,6 +57,15 @@ int main(int argc, char* argv[])
             RustCodeGenerator(metadata).Generate();
         }
         
+        auto output_path = argument_parser.OutDirectory().empty() ?
+            std::filesystem::current_path() :
+            argument_parser.OutDirectory();
+
+        auto success_message = std::format(
+            "Code generated to output folder: {}",
+            output_path.generic_string());
+
+        PrintStatus(Status::Info, success_message);
     }
     catch (const std::exception& exception)
     {
