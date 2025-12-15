@@ -8,30 +8,16 @@ variables:
 - name: CodeGenMajorVersion
   value: "0"
 - name: CodeGenMinorVersion
-  value: "1"
-- name: CodeGenPatchVersion
   value: "2"
-
 
 # SDK versioning info
 - name: SdkMajorVersion
   value: "0"
 - name: SdkMinorVersion
-  value: "1"
-- name: SdkPatchVersion
   value: "2"
 
+- name: CodeGenBuildVersion
+  value: $(CodeGenMajorVersion).$(CodeGenMinorVersion).$(VersionDate).$(VersionCounter)
 
-# Conditionally set values if branch name starts with 'prerelease'
-- ${{ if startsWith(variables['Build.SourceBranch'], 'refs/heads/prerelease/') }}:
-    - name: CodeGenBuildVersion
-      value: $(CodeGenMajorVersion).$(CodeGenMinorVersion).$(CodeGenPatchVersion)-prerelease.$(VersionDate).$(VersionCounter)
-    - name: SdkBuildVersion
-      value: $(SdkMajorVersion).$(SdkMinorVersion).$(SdkPatchVersion)-prerelease.$(VersionDate).$(VersionCounter)
-
-# Don't add prerelease if branch name doesn't start with 'prerelease'
-- ${{ if not(startsWith(variables['Build.SourceBranch'], 'refs/heads/prerelease/')) }}:
-    - name: CodeGenBuildVersion
-      value: $(CodeGenMajorVersion).$(CodeGenMinorVersion).$(CodeGenPatchVersion)
-    - name: SdkBuildVersion
-      value: $(SdkMajorVersion).$(SdkMinorVersion).$(SdkPatchVersion)
+- name: SdkBuildVersion
+  value: $(SdkMajorVersion).$(SdkMinorVersion).$(VersionDate).$(VersionCounter)

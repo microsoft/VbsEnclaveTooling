@@ -20,9 +20,9 @@ resources:
 
 variables:
   ${{ if eq(parameters.ReleaseTarget, 'CodeGen') }}:
-    ArtifactName: 'signed_codegen_nuget_package'
+    ArtifactName: 'codegen_content'
   ${{ else }}:
-    ArtifactName: 'signed_sdk_nuget_package'
+    ArtifactName: 'sdk_content'
 
 extends:
   template: v2/OneBranch.Official.CrossPlat.yml@templates

@@ -91,8 +91,7 @@ namespace CodeGeneration::Cpp
             const FunctionParametersInfo& param_info);
 
         std::string BuildFunctionParameters(
-            const Function& function,
-            const FunctionParametersInfo& param_info);
+            const Function& function);
 
         // Intended to be used by in a CallEnclave Win32 function by the
         // abi layer.
@@ -100,8 +99,7 @@ namespace CodeGeneration::Cpp
             std::string_view developer_namespace_name,
             const Function& function,
             std::string_view abi_function_to_call,
-            bool is_vtl0_callback,
-            const FunctionParametersInfo& param_info);
+            bool is_vtl0_callback);
 
         std::string BuildDeveloperTypesHeader(
             std::string_view developer_namespace_name,
@@ -124,7 +122,6 @@ namespace CodeGeneration::Cpp
 
         EnclaveToHostContent BuildEnclaveToHostFunctions(
             std::string_view generated_namespace,
-            std::string_view generated_class_name,
             const OrderedMap<std::string, Function>& untrusted_functions);
 
         std::string BuildVtl1ExportedFunctionsSourcefile(

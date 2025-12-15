@@ -30,7 +30,7 @@
     <ConfigurationType>StaticLibrary</ConfigurationType>
     <TargetPlatformVersion>10.0.26499.0</TargetPlatformVersion>
     <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
-    <WindowsTargetPlatformMinVersion>10.0.0.0</WindowsTargetPlatformMinVersion>
+    <WindowsTargetPlatformMinVersion>10.1.2-prerelease.250820.1.0</WindowsTargetPlatformMinVersion>
   </PropertyGroup>
   <PropertyGroup>
     <VbsEnclaveVirtualTrustLayer>HostApp</VbsEnclaveVirtualTrustLayer>

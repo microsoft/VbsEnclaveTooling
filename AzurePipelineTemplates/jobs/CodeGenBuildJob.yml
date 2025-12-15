@@ -5,6 +5,9 @@ parameters:
   - name: OfficialBuild
     type: boolean
     default: false
+  - name: ArtifactName
+    type: string
+
 jobs:
 - job: Build_and_package_CodeGen
   displayName: 'Build CodeGen solution and nuget package'
@@ -18,8 +21,8 @@ jobs:
     VCPKG_ROOT: '$(Pipeline.Workspace)\s\vcpkg'
     VCPKG_DEFAULT_TRIPLET: 'x64-windows'
     NewCodeGenVersion: ${{ parameters.CodeGenBuildVersion }}
-    ob_outputDirectory: '$(Build.SourcesDirectory)\signed_nuget'   
-    ob_artifactBaseName: signed_codegen_nuget_package 
+    ob_outputDirectory: '$(Build.SourcesDirectory)\codegen'
+    ob_artifactBaseName: $(ArtifactName) 
     BaseBuildDirectory: $(Build.SourcesDirectory)\_build
     x64ReleaseBuildLocation: $(BaseBuildDirectory)\x64\Release
     x64DebugBuildLocation: $(BaseBuildDirectory)\x64\Debug
@@ -36,6 +39,17 @@ jobs:
     VeilCppSupportLibARM64Debug: vbsenclave_codegen_cpp_support_ARM64_Debug_lib=$(Arm64DebugBuildLocation)\veil_enclave_cpp_support_ARM64_Debug_lib.lib
     VeilCppSupportPdbARM64Debug: vbsenclave_codegen_cpp_support_ARM64_Debug_pdb=$(Arm64DebugBuildLocation)\veil_enclave_cpp_support_ARM64_Debug_lib.pdb
     
+    # vpack details
+    ${{ if eq(parameters.OfficialBuild, 'false') }}:
+      ob_sdl_codeSignValidation_excludes: '-|**\*.exe;-|**\*.dll' 
+
+    ob_sdl_prefast_enabled: true
+    ob_sdl_checkCompliantCompilerWarnings: true
+    ob_symbolsPublishing_enabled: ${{ parameters.OfficialBuild }}
+    ob_symbolsPublishing_symbolsFolder: '$(ob_outputDirectory)'
+    ob_symbolsPublishing_searchPattern: '**\*.pdb'
+    ob_symbolsPublishing_indexSources: true
+
   steps:
     - checkout: Vcpkg
       path: 's\vcpkg'
@@ -122,7 +136,7 @@ jobs:
       inputs:
         versionSpec: 6.0.2
     
-    # Pack CodeGenerator nuget so SDK can access it during its build.
+    # Pack CodeGenerator nuget
     - task: NuGetCommand@2
       displayName: 'Build CodeGenerator NuGet package'
       inputs:
@@ -139,10 +153,61 @@ jobs:
         files_to_sign: 'Microsoft.Windows.VbsEnclave.*.nupkg'
         search_root: $(BaseBuildDirectory)
 
-    # Copy signed codegen nupkg file to pipeline
+    # Copy nuget package to pipeline
     - task: CopyFiles@2
-      displayName: Publish signed code gen nupkg file
+      displayName: Copy nuget package
       inputs:
         SourceFolder: $(BaseBuildDirectory)
         Contents: $(BaseBuildDirectory)\Microsoft.Windows.VbsEnclave.CodeGenerator.$(NewCodeGenVersion).nupkg
         TargetFolder: $(ob_outputDirectory)
+
+      # Copy veil_enclave_cpp_support_lib artifacts
+    - task: CopyFiles@2
+      displayName: Copy lib artifacts
+      inputs:
+        SourceFolder: $(BaseBuildDirectory)
+        Contents: |
+          $(BaseBuildDirectory)\**\veil_enclave_cpp_support_*_lib.lib
+          $(BaseBuildDirectory)\**\veil_enclave_cpp_support_*_lib.pdb
+        TargetFolder: $(ob_outputDirectory)/lib
+        flattenFolders: true
+
+    # Copy edlcodegen
+    - task: CopyFiles@2
+      displayName: 'Copy edlcodegen'
+      inputs:
+        SourceFolder: '$(x64ReleaseBuildLocation)'
+        Contents: edlcodegen.exe
+        TargetFolder: '$(ob_outputDirectory)/bin'
+
+    # Copy flatc
+    - task: CopyFiles@2
+      displayName: 'Copy flac'
+      inputs:
+        SourceFolder: '$(VcpkgToolsDirectory)/flatbuffers'
+        Contents: flatc.exe
+        TargetFolder: '$(ob_outputDirectory)/bin'
+
+    # Copy flatbuffers/
+    - task: CopyFiles@2
+      displayName: 'Copy flatbuffers folder'
+      inputs:
+        SourceFolder: '$(VcpkgSourcesDirectory)/include'
+        Contents: 'flatbuffers/**'
+        TargetFolder: '$(ob_outputDirectory)/src'
+
+    # Copy VbsEnclaveABI/
+    - task: CopyFiles@2
+      displayName: 'Copy VbsEnclaveABI folder'
+      inputs:
+        SourceFolder: '$(Build.SourcesDirectory)/src/ToolingSharedLibrary/Includes'
+        Contents: 'VbsEnclaveABI/**'
+        TargetFolder: '$(ob_outputDirectory)/src'
+
+    # Copy wil for enclaves headers
+    - task: CopyFiles@2
+      displayName: 'Copy wil folder'
+      inputs:
+        SourceFolder: '$(Build.SourcesDirectory)/Common/veil_enclave_wil_inc'
+        Contents: 'wil/**'
+        TargetFolder: '$(ob_outputDirectory)/src'

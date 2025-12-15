@@ -470,7 +470,7 @@ namespace EdlProcessor
         }
 
         std::string m_name;
-        EdlTypeKind m_type_kind;
+        EdlTypeKind m_type_kind = EdlTypeKind::Unknown;
         std::vector<Declaration> m_fields;
         OrderedMap<std::string, EnumType> m_items;
         bool m_contains_inner_pointer {};

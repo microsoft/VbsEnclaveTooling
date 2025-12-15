@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Copyright (c) Microsoft Corporation. All rights reserved. Licensed under the MIT License. See LICENSE in the project root for license information. -->
+<Project ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<!---
+    This props file is based on to WinAppSDK's HybridCRT .props file to fit our needs.
+    The HybridUcrt mechanism is a workaround to allow static linking against the STL and runtime while dynamically linking against the Universal CRT DLL.
+    In our case the developer will be linking then enclave universal CRT dynamically and not the system version..
+    See: https://github.com/microsoft/WindowsAppSDK/blob/main/docs/Coding-Guidelines/HybridCRT.md
+-->
+   <PropertyGroup>
+    <!-- 
+        Redefine_CRTIMP2_IMPORT, _CRTIMP2_PURE_IMPORT and _CRTDATA2_IMPORT to empty to prevent decorating externals with __declspec(dllimport).
+        See: https://github.com/microsoft/WindowsAppSDK/blob/574b6a9c6c4cf54d8362edfd133d0ec64a3d875c/docs/Coding-Guidelines/HybridCRT.md#compilation
+        Although their scenario is for C++/CX we have observed similar issues when consuming certain STL components in debug builds.
+        See: Common/veil_enclave_cpp_support_lib/shims.cpp. This is needed so this static lib can be consumed by OS projects using the UCRT.
+    -->
+    <EnclavePreprocessorDefinitions>
+        KEY_ENCLAVE_EXPORTS;
+        _ACRTIMP=;
+        _CRTIMP2_IMPORT=;
+        _CRTIMP2_PURE_IMPORT=;
+        _CRTDATA2_IMPORT=;
+        _ALLOW_RUNTIME_LIBRARY_MISMATCH;
+    </EnclavePreprocessorDefinitions>
+
+    <!-- 
+      The developer should dynamically link enclave ucrt based on the development guide
+      See: https://learn.microsoft.com/en-us/windows/win32/trusted-execution/vbs-enclaves-dev-guide#compiling-the-test-enclave-dll
+     -->
+    <EnclaveAdditionalOptions> /NODEFAULTLIB </EnclaveAdditionalOptions>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)'=='Debug'">
+    <ClCompile>
+      <!-- We use MultiThreadedDebug, rather than MultiThreadedDebugDLL -->
+      <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
+      <PreprocessorDefinitions>$(EnclavePreprocessorDefinitions); %(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <Link>
+      <AdditionalOptions>%(AdditionalOptions) $(EnclaveAdditionalOptions)</AdditionalOptions>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)'=='Release'">
+    <ClCompile>
+      <!-- We use MultiThreaded, rather than MultiThreadedDLL. -->
+      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
+        <PreprocessorDefinitions>$(EnclavePreprocessorDefinitions); %(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <Link>
+        <AdditionalOptions>%(AdditionalOptions) $(EnclaveAdditionalOptions)</AdditionalOptions>
+    </Link>
+  </ItemDefinitionGroup>
+</Project>

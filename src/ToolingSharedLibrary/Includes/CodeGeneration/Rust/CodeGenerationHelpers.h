@@ -50,9 +50,11 @@ namespace CodeGeneration::Rust
     {
         std::string result(str);
         std::transform(
-            result.begin(), result.end(), result.begin(),
-            [] (unsigned char c) { return std::toupper(c); }
-        );
+            result.begin(), result.end(), result.begin(),[] (char c)
+            {
+                return static_cast<char>(std::toupper(c));
+            });
+
         return result;
     }
 
@@ -211,8 +213,7 @@ namespace CodeGeneration::Rust
 
     inline std::string GetClosureFunctionStatement(
         const Function& function,
-        VirtualTrustLayerKind vtl_kind,
-        std::string_view trait_name)
+        VirtualTrustLayerKind vtl_kind)
     {
         std::ostringstream abi_struct_fields {};
         for (auto i = 0U; i < function.m_parameters.size(); i++)

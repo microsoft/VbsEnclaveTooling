@@ -165,7 +165,7 @@
     <None Include="README.md" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\ToolingExecutable\ToolingExecutable.vcxproj">
+      <ProjectReference Include=" $(SolutionDir)src\ToolingExecutable\ToolingExecutable.vcxproj">
       <Project>{8068fe68-f1dc-4a82-b2a8-97ae1a48d571}</Project>
     </ProjectReference>
   </ItemGroup>

@@ -32,6 +32,7 @@
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
   <Import Project="$(ProjectDir)..\..\veil_abi.props" />
+  <Import Project="$(SolutionDir)..\..\Common\veil_enclave_cpp_support_lib\Enclave.Hybrid.Ucrt.props"/>
   <ImportGroup Label="Shared">
     <Import Project="..\veil_any_inc\veil_any_inc.vcxitems" Label="Shared" />
   </ImportGroup>
@@ -63,24 +64,6 @@
     <VbsEnclaveVirtualTrustLayer>Enclave</VbsEnclaveVirtualTrustLayer>
     <VbsEnclaveConsumeCppSupportLib>true</VbsEnclaveConsumeCppSupportLib>
   </PropertyGroup>
-  <!-- Undocked UCRT configuration. -->
-  <PropertyGroup>
-    <UndockedSettingsLoaded>True</UndockedSettingsLoaded>
-    <UseCrtSDKReferenceStaticWarning>False</UseCrtSDKReferenceStaticWarning>
-    <UseEnclave>True</UseEnclave>
-  </PropertyGroup>
-  <ItemDefinitionGroup Condition="'$(Configuration)'=='Debug'">
-    <ClCompile>
-      <PreprocessorDefinitions>_DEBUG;CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
-    </ClCompile>
-  </ItemDefinitionGroup>
-  <ItemDefinitionGroup Condition="'$(Configuration)'=='Release'">
-    <ClCompile>
-      <PreprocessorDefinitions>NDEBUG;CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
-    </ClCompile>
-  </ItemDefinitionGroup>
   <!-- Conditional _VEIL_INTERNAL_DEBUG definition based on EnableVeilInternalDebug property -->
   <ItemDefinitionGroup Condition="'$(EnableVeilInternalDebug)' == 'true'">
     <ClCompile>

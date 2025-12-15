@@ -88,7 +88,7 @@ namespace Helpers
                 {
                     if (contains(key))
                     {
-                        resolver(key, other.m_map.at(key), m_map.at(key));
+                        resolver(key);
                     }
                     else
                     {
