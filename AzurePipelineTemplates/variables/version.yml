@@ -8,13 +8,13 @@ variables:
 - name: CodeGenMajorVersion
   value: "0"
 - name: CodeGenMinorVersion
-  value: "1"
+  value: "2"
 
 # SDK versioning info
 - name: SdkMajorVersion
   value: "0"
 - name: SdkMinorVersion
-  value: "1"
+  value: "2"
 
 - name: CodeGenBuildVersion
   value: $(CodeGenMajorVersion).$(CodeGenMinorVersion).$(VersionDate).$(VersionCounter)
