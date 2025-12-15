@@ -334,7 +334,7 @@ wil::secure_vector<uint8_t> create_user_bound_key(
     auto userkeyBytes = veil::vtl1::crypto::generate_symmetric_key_bytes();
 
     // Delegate to the overload that accepts custom key bytes
-    return create_user_bound_key(
+    auto result = create_user_bound_key(
         keyName,
         cacheConfig,
         message,
@@ -343,6 +343,7 @@ wil::secure_vector<uint8_t> create_user_bound_key(
         runtimePolicy,
         keyCredentialCreationOption,
         userkeyBytes);
+    return result;
 }
 
 // Overload function to support custom key bytes (for asymmetric keys)

@@ -449,5 +449,4 @@ namespace veil::vtl1::crypto
 
         return {unsealedBytes, unsealingFlags};
     }
-
 }
