@@ -19,5 +19,11 @@ variables:
 - name: CodeGenBuildVersion
   value: $(CodeGenMajorVersion).$(CodeGenMinorVersion).$(VersionDate).$(VersionCounter)
 
+- name: CodeGenVPackVersion
+  value: $(CodeGenMajorVersion).$(CodeGenMinorVersion).$(VersionDate)$(VersionCounter)
+
 - name: SdkBuildVersion
   value: $(SdkMajorVersion).$(SdkMinorVersion).$(VersionDate).$(VersionCounter)
+
+- name: SdkVPackVersion
+  value: $(SdkMajorVersion).$(SdkMinorVersion).$(VersionDate)$(VersionCounter)
