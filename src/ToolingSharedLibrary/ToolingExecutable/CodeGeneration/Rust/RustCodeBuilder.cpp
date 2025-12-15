@@ -200,11 +200,15 @@ namespace CodeGeneration::Rust
         std::ostringstream trait_functions {};
         for (auto& func : functions.values())
         {
+            auto returned_result = std::format("Result<{}, edlcodegen_{}::AbiError>",
+                GetFullDeclarationType(func.m_return_info),
+                vtl_kind == VirtualTrustLayerKind::HostApp ? "host" : "enclave");
+
             trait_functions << std::format(
                 c_trait_function,
                 func.m_name,
                 GenerateFunctionParametersList(func.m_parameters),
-                GetFullDeclarationType(func.m_return_info));
+                returned_result);
 
             trait_functions << "\n";
         }

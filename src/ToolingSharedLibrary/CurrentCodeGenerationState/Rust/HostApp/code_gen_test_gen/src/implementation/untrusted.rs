@@ -7,7 +7,7 @@
 use crate::implementation::types::*;
 
 pub trait Untrusted {
-    fn FuncWithAllArgs(arg1: bool, arg2: &Option<u32>, arg3: &mut Option<i32>, arg4: &mut Option<u64>, arg5: &mut TestStruct1, arg6: &mut Option<TestStruct2>, arg7: &mut Vec<TestStruct2>, arg8: &mut Vec<i16>, arg9: &mut [edl::WString;2]) -> i32;
+    fn FuncWithAllArgs(arg1: bool, arg2: &Option<u32>, arg3: &mut Option<i32>, arg4: &mut Option<u64>, arg5: &mut TestStruct1, arg6: &mut Option<TestStruct2>, arg7: &mut Vec<TestStruct2>, arg8: &mut Vec<i16>, arg9: &mut [edl::WString;2]) -> Result<i32, edlcodegen_host::AbiError>;
 
     crate::define_trait_callback_functions!();
 }
