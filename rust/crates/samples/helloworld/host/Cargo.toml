@@ -1,0 +1,10 @@
+[package]
+name = "host"
+version = "0.1.0"
+edition =  { workspace = true }
+
+[dependencies]
+windows = { workspace = true, features = ["Win32_System_Threading"] }
+
+# Note: To generate crate run rust/crates/samples/helloworld/generate_edl_crates.ps1 at least once
+test_host_gen = {path = "generated/test_gen" }

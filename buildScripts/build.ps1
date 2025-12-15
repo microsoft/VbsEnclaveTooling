@@ -8,7 +8,7 @@ Param(
     [System.String]
     $Configurations = "all",
 
-    [ValidateSet('all', 'CodeGenOnly')]
+    [ValidateSet('all', 'CodeGenOnly', 'None')]
     [System.String]
     $NugetPackagesToOutput = "all",
     
@@ -129,7 +129,10 @@ Try
     # Pack nuget
     $packageNugetScriptPath  = "$BuildRootDirectory\PackageNuget.ps1"
 
-    & $packageNugetScriptPath -NugetSpecFilePath $nuspecFile -NugetPackProperties $nugetPackProperties -OutputDirectory "$BaseRepositoryDirectory\_build"
+    if ($NugetPackagesToOutput -ne "None")
+    {
+        & $packageNugetScriptPath -NugetSpecFilePath $nuspecFile -NugetPackProperties $nugetPackProperties -OutputDirectory "$BaseRepositoryDirectory\_build"
+    }
 } 
 Catch
 {
