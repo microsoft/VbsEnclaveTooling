@@ -27,7 +27,7 @@ variables:
   - name: VpackDescription
     value: 'VbsEnclave Code Generator'
   - name: VPackVersion
-    value: '$(CodeGenBuildVersion)'
+    value: '$(CodeGenVPackVersion)'
   - name : ArtifactName
     value: 'codegen_content'
 
@@ -39,7 +39,7 @@ variables:
   - name: VpackDescription
     value: 'VbsEnclave SDK'
   - name: VPackVersion
-    value: '$(SdkBuildVersion)'
+    value: '$(SdkVPackVersion)'
   - name: ArtifactName
     value: 'sdk_content'
 
