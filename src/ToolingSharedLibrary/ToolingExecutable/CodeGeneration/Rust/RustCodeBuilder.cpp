@@ -83,8 +83,7 @@ namespace CodeGeneration::Rust
 
     Definition CodeBuilder::BuildStartOfDefinition(
         std::string_view type_name,
-        std::string_view identifier_name,
-        std::size_t num_of_tabs)
+        std::string_view identifier_name)
     {
         Definition definition {};
         definition.m_header << std::format("pub {} {} {}\n", type_name, identifier_name, LEFT_CURLY_BRACKET);
@@ -99,8 +98,7 @@ namespace CodeGeneration::Rust
 
         auto [enum_header, _, enum_footer] = BuildStartOfDefinition(
             "enum",
-            developer_types.m_name,
-            c_type_definition_tab_count
+            developer_types.m_name
         );
 
         // Add top level enum attributes
@@ -129,8 +127,7 @@ namespace CodeGeneration::Rust
         std::ostringstream full_struct {};
         auto [struct_header, _, struct_footer] = BuildStartOfDefinition(
             EDL_STRUCT_KEYWORD,
-            struct_name,
-            c_type_definition_tab_count);
+            struct_name);
 
         // Add top level struct attributes
         full_struct << std::format(c_struct_attributes, struct_name);
@@ -200,11 +197,15 @@ namespace CodeGeneration::Rust
         std::ostringstream trait_functions {};
         for (auto& func : functions.values())
         {
+            auto returned_result = std::format("Result<{}, edlcodegen_{}::AbiError>",
+                GetFullDeclarationType(func.m_return_info),
+                vtl_kind == VirtualTrustLayerKind::HostApp ? "host" : "enclave");
+
             trait_functions << std::format(
                 c_trait_function,
                 func.m_name,
                 GenerateFunctionParametersList(func.m_parameters),
-                GetFullDeclarationType(func.m_return_info));
+                returned_result);
 
             trait_functions << "\n";
         }
@@ -294,7 +295,6 @@ namespace CodeGeneration::Rust
 
     std::string CodeBuilder::BuildAbiDefinitionModule(
         VirtualTrustLayerKind vtl_kind,
-        std::string_view trait_name,
         std::string_view generated_namespace_name,
         const OrderedMap<std::string, Function>& functions)
     {
@@ -302,7 +302,7 @@ namespace CodeGeneration::Rust
         for (auto& func : functions.values())
         {
             auto abi_func_struct_name = std::format(c_function_args_struct, func.abi_m_name);
-            auto closure_statement = GetClosureFunctionStatement(func, vtl_kind, trait_name);
+            auto closure_statement = GetClosureFunctionStatement(func, vtl_kind);
             auto abi_function_name = std::format(c_generated_stub_name_no_quotes, func.abi_m_name);
 
             if (vtl_kind == VirtualTrustLayerKind::HostApp)

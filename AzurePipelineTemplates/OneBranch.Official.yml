@@ -19,6 +19,30 @@ variables:
   parameters:
     debug: ${{ parameters.debug }}
 
+- ${{ if eq(parameters.BuildTarget, 'CodeGen') }}:
+  - name: StageName
+    value: 'Build_codegen'
+  - name: VpackName
+    value: 'VbsEnclaveTooling.EdlCodeGen'
+  - name: VpackDescription
+    value: 'VbsEnclave Code Generator'
+  - name: VPackVersion
+    value: '$(CodeGenVPackVersion)'
+  - name : ArtifactName
+    value: 'codegen_content'
+
+- ${{ else }}:
+  - name: StageName
+    value: 'Build_veil_sdk'
+  - name: VpackName
+    value: 'VbsEnclaveTooling.SDK'
+  - name: VpackDescription
+    value: 'VbsEnclave SDK'
+  - name: VPackVersion
+    value: '$(SdkVPackVersion)'
+  - name: ArtifactName
+    value: 'sdk_content'
+
 trigger: none
 
 pool:
@@ -43,7 +67,6 @@ extends:
   parameters:
     platform:     
       name: 'windows_undocked'
-      product: 'build_tools'
     
     featureFlags:
       WindowsHostVersion:
@@ -64,20 +87,48 @@ extends:
         tsaEnabled: true
       
     stages:
-      - stage: Build_codegen
-        displayName: 'Build CodeGenerator'
-        condition: eq('${{ parameters.BuildTarget }}', 'CodeGen')
-        jobs:
-        - template: AzurePipelineTemplates/jobs/CodeGenBuildJob.yml@self
-          parameters:
-            CodeGenBuildVersion: $(CodeGenBuildVersion)
-            OfficialBuild: ${{ parameters.OfficialBuild }}
 
-      - stage: Build_veil_sdk
-        displayName: 'Build SDK'
-        condition: eq('${{ parameters.BuildTarget }}', 'SDK')
+      - ${{ if eq(parameters.BuildTarget, 'CodeGen') }}:
+        - stage: Build
+          displayName: 'Build CodeGenerator'
+          jobs:
+          - template: AzurePipelineTemplates/jobs/CodeGenBuildJob.yml@self
+            parameters:
+              CodeGenBuildVersion: $(CodeGenBuildVersion)
+              OfficialBuild: ${{ parameters.OfficialBuild }}
+              ArtifactName: $(ArtifactName)
+
+      - ${{ if eq(parameters.BuildTarget, 'SDK') }}:
+        - stage: Build
+          displayName: 'Build SDK'
+          jobs:
+          - template: AzurePipelineTemplates/jobs/SdkBuildJob.yml@self
+            parameters:
+              SdkBuildVersion: $(SdkBuildVersion)
+              OfficialBuild: ${{ parameters.OfficialBuild }}
+              ArtifactName: $(ArtifactName)
+
+      - stage: vpack
+        dependsOn: Build
+        displayName: 'Create vpack package'
         jobs:
-        - template: AzurePipelineTemplates/jobs/SdkBuildJob.yml@self
-          parameters:
-            SdkBuildVersion: $(SdkBuildVersion)
-            OfficialBuild: ${{ parameters.OfficialBuild }}
+        - job: Packaging
+          pool:
+            type: windows
+          variables:
+            ob_outputDirectory: '$(Build.SourcesDirectory)\out'
+            ob_createvpack_enabled: true
+            ob_createvpack_packagename: $(VpackName)
+            ob_createvpack_owneralias: VbsEnclaveTooling
+            ob_createvpack_description: $(VpackDescription)
+            ob_createvpack_provData: true
+            ob_createvpack_versionAs: string
+            ob_createvpack_version: $(VPackVersion)
+
+          steps:
+            - task: DownloadPipelineArtifact@2
+              displayName: 'Download artifacts'
+              inputs:
+                artifactName: $(ArtifactName)
+                targetPath: $(ob_outputDirectory)
+

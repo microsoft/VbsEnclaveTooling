@@ -8,6 +8,9 @@ publish = false
 doc = false
 doctest = false
 
+[build-dependencies]
+edlcodegen-tools = { git = "https://github.com/microsoft/VbsEnclaveTooling" }
+
 [dependencies]
-edlcodegen-enclave = { git = "https://github.com/microsoft/VbsEnclaveTooling", subdir = "rust" }
-flatbuffers = "25.9.23"
+edlcodegen-enclave = { git = "https://github.com/microsoft/VbsEnclaveTooling" }
+flatbuffers = { version = "25.9.23", default-features = false }

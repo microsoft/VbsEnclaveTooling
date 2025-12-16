@@ -51,9 +51,6 @@
     <ClInclude Include="..\..\..\..\Common\veil_enclave_wil_inc\wil\enclave\wil_for_enclaves.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="debug.vtl1.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp">

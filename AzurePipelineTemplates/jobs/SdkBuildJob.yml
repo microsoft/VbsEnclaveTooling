@@ -5,6 +5,8 @@ parameters:
   - name: OfficialBuild
     type: boolean
     default: false
+  - name: ArtifactName
+    type: string
 
 jobs:
 - job: Build_and_package_sdk
@@ -13,12 +15,13 @@ jobs:
     type: windows
   variables:
     SdkSolution: $(Build.SourcesDirectory)\src\VbsEnclaveSDK\vbs_enclave_implementation_library.sln
+    SdkSourceDirectory: $(Build.SourcesDirectory)\src\VbsEnclaveSDK\src
     VeilHostVcxProj: $(Build.SourcesDirectory)\src\VbsEnclaveSDK\src\veil_host_lib\veil_host_lib.vcxproj
     VeilHostPackageConfig: $(Build.SourcesDirectory)\src\VbsEnclaveSDK\src\veil_host_lib\packages.config
     VeilEnclaveVcxProj: $(Build.SourcesDirectory)\src\VbsEnclaveSDK\src\veil_enclave_lib\veil_enclave_lib.vcxproj
     VeilEnclavePackageConfig: $(Build.SourcesDirectory)\src\VbsEnclaveSDK\src\veil_enclave_lib\packages.config
-    ob_outputDirectory: '$(Build.SourcesDirectory)\signed_nuget'   
-    ob_artifactBaseName: signed_sdk_nuget_package
+    ob_outputDirectory: $(Build.SourcesDirectory)\sdk
+    ob_artifactBaseName: $(ArtifactName) 
     SdkNugetPackageVersion: ${{ parameters.SdkBuildVersion }}
     BaseBuildDirectory: $(Build.SourcesDirectory)\_build
     SdkBuildDirectory: $(Build.SourcesDirectory)\src\VbsEnclaveSDK\_build
@@ -56,6 +59,17 @@ jobs:
     VeilCppSupportPdbX64Debug: vbsenclave_sdk_cpp_support_x64_Debug_pdb=$(x64DebugBuildLocation)\veil_enclave_cpp_support_x64_Debug_lib.pdb
     VeilCppSupportPdbARM64Release: vbsenclave_sdk_cpp_support_ARM64_Release_pdb=$(Arm64ReleaseBuildLocation)\veil_enclave_cpp_support_ARM64_Release_lib.pdb
     VeilCppSupportPdbARM64Debug: vbsenclave_sdk_cpp_support_ARM64_Debug_pdb=$(Arm64DebugBuildLocation)\veil_enclave_cpp_support_ARM64_Debug_lib.pdb
+
+    # vpack details
+    ${{ if eq(parameters.OfficialBuild, 'false') }}:
+      ob_sdl_codeSignValidation_excludes: '-|**\*.exe;-|**\*.dll' 
+
+    ob_sdl_prefast_enabled: true
+    ob_sdl_checkCompliantCompilerWarnings: true
+    ob_symbolsPublishing_enabled: ${{ parameters.OfficialBuild }}
+    ob_symbolsPublishing_symbolsFolder: '$(ob_outputDirectory)'
+    ob_symbolsPublishing_searchPattern: '**\*.pdb'
+    ob_symbolsPublishing_indexSources: true
     
   steps:
     - task: NuGetCommand@2
@@ -117,10 +131,64 @@ jobs:
         files_to_sign: 'Microsoft.Windows.VbsEnclave.*.nupkg'
         search_root: $(BaseBuildDirectory)
 
-    # Copy signed sdk nupkg file to pipeline
+    # Copy artifacts to pipeline
     - task: CopyFiles@2
-      displayName: publish signed SDK nupkg file
+      displayName: Copy build artifacts
       inputs:
-        SourceFolder: $(BaseBuildDirectory)
-        Contents: $(BaseBuildDirectory)\Microsoft.Windows.VbsEnclave.SDK.$(SdkNugetPackageVersion).nupkg
-        TargetFolder: $(ob_outputDirectory)
+        SourceFolder: $(SdkBuildDirectory)
+        Contents: |
+          Microsoft.Windows.VbsEnclave.SDK.$(SdkNugetPackageVersion).nupkg
+          **\veil_enclave_cpp_support_*_lib.lib
+          **\veil_enclave_cpp_support_*_lib.pdb
+          **\veil_enclave_*_lib.lib
+          **\veil_enclave_*_lib.pdb
+          **\veil_host_*_lib.lib
+          **\veil_host_*_lib.pdb
+        TargetFolder: $(ob_outputDirectory)/lib
+        flattenFolders: true
+
+    # Copy veil_enclave_lib header files
+    - task: CopyFiles@2
+      displayName: 'Copy veil_enclave_lib header files'
+      inputs:
+        SourceFolder: '$(SdkSourceDirectory)/veil_enclave_lib'
+        TargetFolder: '$(ob_outputDirectory)/src/veil/enclave'
+        Contents: |
+          **/*.h
+          !Generated Files/**
+    
+    # Copy ABI linker pragmas file
+    - task: CopyFiles@2
+      displayName: 'Copy VbsEnclave SDK linker pragmas file'
+      inputs:
+        SourceFolder: '$(SdkSourceDirectory)/veil_enclave_lib/Generated Files/VbsEnclave/Enclave/Abi'
+        TargetFolder: '$(ob_outputDirectory)/exports'
+        Contents: |
+          LinkerPragmas.veil_abi.cpp
+
+    # Copy veil_enclave_cpp_support_lib header files
+    - task: CopyFiles@2
+      displayName: 'Copy veil_host_lib header files'
+      inputs:
+        SourceFolder: '$(SdkSourceDirectory)/veil_host_lib'
+        TargetFolder: '$(ob_outputDirectory)/src/veil/host'
+        Contents: |
+          **/*.h
+          !Generated Files/**
+
+    # Copy veil_any_inc header files
+    - task: CopyFiles@2
+      displayName: 'Copy veil_any_inc header files'
+      inputs:
+        SourceFolder: '$(SdkSourceDirectory)/veil_any_inc'
+        TargetFolder: '$(ob_outputDirectory)/src/veil/veil_any_inc'
+        Contents: |
+          **/*.h
+
+    # Copy wil for enclaves headers
+    - task: CopyFiles@2
+      displayName: 'Copy wil folder'
+      inputs:
+        SourceFolder: '$(Build.SourcesDirectory)/Common/veil_enclave_wil_inc'
+        Contents: 'wil/**'
+        TargetFolder: '$(ob_outputDirectory)/src'

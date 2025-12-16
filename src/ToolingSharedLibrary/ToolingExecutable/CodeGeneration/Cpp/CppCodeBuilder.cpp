@@ -276,8 +276,7 @@ namespace CodeGeneration::Cpp
     }
 
     std::string CppCodeBuilder::BuildFunctionParameters(
-       const Function& function,
-       const FunctionParametersInfo& param_info)
+       const Function& function)
     {
         std::ostringstream function_parameters;
         function_parameters << "(";
@@ -307,8 +306,7 @@ namespace CodeGeneration::Cpp
         std::string_view developer_namespace_name,
         const Function& function,
         std::string_view abi_function_to_call,
-        bool is_vtl0_callback,
-        const FunctionParametersInfo& param_info)
+        bool is_vtl0_callback)
     {
         std::string function_params_struct_type = std::format(c_function_args_struct, function.abi_m_name);
 
@@ -385,7 +383,7 @@ namespace CodeGeneration::Cpp
             inline_part,
             param_info.m_function_return_value,
             function.m_name,
-            BuildFunctionParameters(function, param_info));
+            BuildFunctionParameters(function));
 
         std::string function_params_struct_type = std::format(c_function_args_struct, function.abi_m_name);
         std::ostringstream function_body {};
@@ -490,8 +488,7 @@ namespace CodeGeneration::Cpp
                 generated_namespace,
                 function,
                 vtl1_call_to_vtl1_export,
-                false,
-                param_info);
+                false);
 
             // VTL1 enclave function that the developer will implement. It is called by the vtl1
             // abi function impl for this particular function.
@@ -499,7 +496,7 @@ namespace CodeGeneration::Cpp
                 c_function_declaration,
                 param_info.m_function_return_value,
                 function.m_name,
-                BuildFunctionParameters(function, param_info));
+                BuildFunctionParameters(function));
         }
 
         HostToEnclaveContent content {};
@@ -520,10 +517,8 @@ namespace CodeGeneration::Cpp
 
     CppCodeBuilder::EnclaveToHostContent CppCodeBuilder::BuildEnclaveToHostFunctions(
         std::string_view generated_namespace,
-        std::string_view generated_class_name,
         const OrderedMap<std::string, Function>& untrusted_functions)
     {
-        size_t number_of_functions = untrusted_functions.size();
         size_t number_of_functions_plus_allocators = untrusted_functions.size() + c_number_of_abi_callbacks;
         std::ostringstream vtl0_abi_boundary_functions {};
         std::ostringstream vtl0_developer_declaration_functions {};
@@ -567,8 +562,7 @@ namespace CodeGeneration::Cpp
                 generated_namespace,
                 function,
                 vtl0_call_to_vtl0_callback,
-                true,
-                param_info);
+                true);
 
             // This is the developers vtl0 impl function. The developer will implement this static class
             // method.
@@ -576,7 +570,7 @@ namespace CodeGeneration::Cpp
                 c_function_declaration,
                 param_info.m_function_return_value,
                 function.m_name,
-                BuildFunctionParameters(function, param_info));
+                BuildFunctionParameters(function));
 
             // capture the addresses for each developer callback so we can pass them to vtl1 later.
             vtl0_class_method_addresses << std::format(

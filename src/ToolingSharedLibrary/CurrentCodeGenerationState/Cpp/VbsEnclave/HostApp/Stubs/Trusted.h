@@ -17,14 +17,14 @@ namespace CodeGenTest::Trusted::Stubs
         
         HRESULT FuncWithAllArgs(_In_  bool arg1, _In_ const std::optional<std::uint32_t>& arg2, _Inout_  std::optional<std::int32_t>& arg3, _Out_  std::optional<std::uint64_t>& arg4, _Inout_  TestStruct1& arg5, _Out_  std::optional<TestStruct2>& arg6, _Inout_  std::vector<TestStruct2>& arg7, _Out_  std::vector<std::int16_t>& arg8, _Out_  std::array<std::wstring, 2>& arg9)
         {
-            FlatbufferTypes::FuncWithAllArgs_0_argsT in_flatbufferT {};
+            FlatbufferTypes::FuncWithAllArgs_0_ArgsT in_flatbufferT {};
             in_flatbufferT.m_arg1 = VbsEnclaveABI::Shared::Converters::ConvertType<decltype(in_flatbufferT.m_arg1)>(arg1);
             in_flatbufferT.m_arg2 = VbsEnclaveABI::Shared::Converters::ConvertType<decltype(in_flatbufferT.m_arg2)>(arg2);
             in_flatbufferT.m_arg3 = VbsEnclaveABI::Shared::Converters::ConvertType<decltype(in_flatbufferT.m_arg3)>(arg3);
             in_flatbufferT.m_arg5 = VbsEnclaveABI::Shared::Converters::ConvertType<decltype(in_flatbufferT.m_arg5)>(arg5);
             in_flatbufferT.m_arg7 = VbsEnclaveABI::Shared::Converters::ConvertType<decltype(in_flatbufferT.m_arg7)>(arg7);
             in_flatbufferT.m_arg9 = VbsEnclaveABI::Shared::Converters::ConvertType<decltype(in_flatbufferT.m_arg9)>(arg9);
-            auto return_params = VbsEnclaveABI::HostApp::CallVtl1ExportFromVtl0<CodeGenTest::Abi::Types::FuncWithAllArgs_0_args>(in_flatbufferT, m_enclave, "FuncWithAllArgs_0_Generated_Stub");
+            auto return_params = VbsEnclaveABI::HostApp::CallVtl1ExportFromVtl0<CodeGenTest::Abi::Types::FuncWithAllArgs_0_Args>(in_flatbufferT, m_enclave, "FuncWithAllArgs_0_Generated_Stub");
             VbsEnclaveABI::Shared::Converters::UpdateParameterValue(return_params.m_arg3, arg3);
             VbsEnclaveABI::Shared::Converters::UpdateParameterValue(return_params.m_arg4, arg4);
             VbsEnclaveABI::Shared::Converters::UpdateParameterValue(return_params.m_arg5, arg5);

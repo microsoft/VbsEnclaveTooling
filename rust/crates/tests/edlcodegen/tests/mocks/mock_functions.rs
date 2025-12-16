@@ -1,5 +1,5 @@
 use core::ffi::c_void;
-use edlcodegen_core::edl_core_ffi::AbiFuncPtr;
+use edlcodegen_core::edl_core_types::AbiFuncPtr;
 use edlcodegen_enclave::win_enclave_bindings::ENCLAVE_INFORMATION;
 use std::ptr;
 use std::sync::atomic::{AtomicI32, Ordering};

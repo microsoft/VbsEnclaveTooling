@@ -25,8 +25,8 @@ namespace CodeGenTest
         static inline void* FuncWithAllArgs_0_Generated_Stub(void* function_context)
         try
         {
-            using AbiTypeT = CodeGenTest::Abi::Types::FuncWithAllArgs_0_args;
-            using FlatBufferT = FlatbufferTypes::FuncWithAllArgs_0_argsT;
+            using AbiTypeT = CodeGenTest::Abi::Types::FuncWithAllArgs_0_Args;
+            using FlatBufferT = FlatbufferTypes::FuncWithAllArgs_0_ArgsT;
             Abi::Runtime::EnforceMemoryRestriction();
             HRESULT hr = VbsEnclaveABI::Enclave::CallVtl1ExportFromVtl1<AbiTypeT, FlatBufferT>(Trusted::Implementation::FuncWithAllArgs, function_context);
             LOG_IF_FAILED(hr);

@@ -19,7 +19,7 @@ namespace veil::vtl1::vtl0_functions
 {
     namespace details
     {
-        // printf_callout
+        // Printf callout (unified for both internal and external use)
         template <typename string_type>
         struct printf_callout;
 
@@ -80,7 +80,23 @@ namespace veil::vtl1::vtl0_functions
             }
         };
 
-        // debug print string
+        // Internal debug print implementation (for VEIL internal use)
+        template <typename string_type, typename... Ts>
+        inline void internal_debug_print_impl(const typename string_type::value_type* formatString, Ts&&... args)
+        {
+            #ifdef _VEIL_INTERNAL_DEBUG
+                if (veil::vtl1::is_enclave_full_debug_enabled())
+                {
+                    auto str = details::format_string<string_type>::call(formatString, std::forward<Ts>(args)...);
+                    details::printf_callout<string_type>::call(str);
+                }
+            #else
+                (void)formatString;
+                ((void)args, ...);
+            #endif
+        }
+
+        // External debug print implementation (for external callers)
         template <typename string_type, typename... Ts>
         inline void debug_print_impl(const typename string_type::value_type* formatString, Ts&&... args)
         {
@@ -91,12 +107,84 @@ namespace veil::vtl1::vtl0_functions
             }
             else
             {
-                UNREFERENCED_PARAMETER(formatString);
-                UNREFERENCED_PARAMETER_PACK(Ts, args);
+                (void)formatString;
+                ((void)args, ...);
             }
         }
     }
 
+    namespace internal
+    {
+    // Internal debug functions (for VEIL internal use)
+    // Simple string overloads
+        inline void debug_print(PCSTR str)
+        {
+            #ifdef _VEIL_INTERNAL_DEBUG
+            if (veil::vtl1::is_enclave_full_debug_enabled())
+            {
+                details::printf_callout<std::string>::call(std::string(str));
+            }
+            #else
+            (void)str;
+            #endif
+        }
+
+        inline void debug_print(PCWSTR str)
+        {
+            #ifdef _VEIL_INTERNAL_DEBUG
+            if (veil::vtl1::is_enclave_full_debug_enabled())
+            {
+                details::printf_callout<std::wstring>::call(std::wstring(str));
+            }
+            #else
+            (void)str;
+            #endif
+        }
+
+        // std::string overloads for convenience
+        inline void debug_print(const std::string& str)
+        {
+            debug_print(str.c_str());
+        }
+
+        inline void debug_print(const std::wstring& str)
+        {
+            debug_print(str.c_str());
+        }
+
+        // Formatted string overloads
+        template <typename... Ts>
+        inline void debug_print(PCSTR formatString, Ts&&... args)
+        {
+            details::debug_print_impl<std::string>(formatString, std::forward<Ts>(args)...);
+        }
+
+        template <typename... Ts>
+        inline void debug_print(PCWSTR formatString, Ts&&... args)
+        {
+            details::debug_print_impl<std::wstring>(formatString, std::forward<Ts>(args)...);
+        }
+    }
+
+    // External debug functions (for external callers)
+    // Simple string overloads
+    inline void debug_print(PCSTR str)
+    {
+        if (veil::vtl1::is_enclave_full_debug_enabled())
+        {
+            details::printf_callout<std::string>::call(std::string(str));
+        }
+    }
+
+    inline void debug_print(PCWSTR str)
+    {
+        if (veil::vtl1::is_enclave_full_debug_enabled())
+        {
+            details::printf_callout<std::wstring>::call(std::wstring(str));
+        }
+    }
+
+    // Formatted string overloads
     template <typename... Ts>
     inline void debug_print(PCSTR formatString, Ts&&... args)
     {

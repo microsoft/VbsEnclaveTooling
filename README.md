@@ -17,8 +17,8 @@ features that interact with a VBS enclave easier. To learn more about VBS enclav
 |---------------------|-----------------------|
 | Windows 11 24H2     | `26100.3916 or later` |
 
-Developers will need to make sure they have `Windows SDK version 26100.3916` or later installed on their system or
-integrated into their Visual Studio projects.
+Developers will need to make sure they have `Windows SDK version 26100.7175` or later installed on their system or
+integrated into their Visual Studio projects for user binding API support.
 
 The Windows SDK can be installed in one of the following ways:
 1. via installing the `Windows 11 SDK (10.0.26100.0)` individual component in the `Visual Studio v17.14` installer
@@ -26,15 +26,8 @@ The Windows SDK can be installed in one of the following ways:
 1. via adding the [Microsoft.Windows.SDK.CPP](https://www.nuget.org/packages/Microsoft.Windows.SDK.CPP/) 
 packages to your Visual Studio project via Nuget.
 
-Building locally
-------------
-
-### Prerequistes
-
-##### Build system
-| IDE                   | Build engine | Compiler |
-|-----------------------|--------------|----------|
-| Visual Studio 2022 17 |   MSBuild    |   MSVC   |
+> [!Important]
+> The VBS Enclave SDK automatically includes Microsoft.Windows.SDK.CPP version 10.0.26100.7175 as a dependency, providing access to the latest user binding APIs without additional configuration.
 
 ##### Repository
 

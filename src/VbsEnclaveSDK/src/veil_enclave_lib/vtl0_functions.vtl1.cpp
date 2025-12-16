@@ -19,5 +19,4 @@ namespace veil::vtl1::implementation::vtl0_functions::callouts
         RETURN_IF_FAILED(veil_abi::Untrusted::Stubs::wprintf(str));
         return S_OK;
     }
-
 }

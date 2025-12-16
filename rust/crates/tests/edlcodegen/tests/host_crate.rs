@@ -10,9 +10,9 @@ use common::test_types::{
 };
 
 use core::ffi::c_void;
-use edlcodegen_core::{edl_core_ffi::S_OK, helpers::hresult_to_pvoid};
+use edlcodegen_core::{edl_core_types::S_OK, helpers::hresult_to_pvoid};
 use edlcodegen_enclave::enclave_helpers::call_vtl1_export_from_vtl1;
-use edlcodegen_host::host_helpers::*;
+use edlcodegen_host::{AbiError, host_helpers::*};
 
 #[allow(unused_imports)]
 use mocks::mock_functions::*;
@@ -31,9 +31,10 @@ pub fn dev_enclave_func_impl(dev_type: &mut AllTypes) -> String {
 #[unsafe(no_mangle)]
 pub unsafe extern "system" fn test_export_func_helper(context: *mut c_void) -> *mut c_void {
     // Use closure to call the developers impl function in the enclave.
-    let dev_func = |dev_type: &mut TestFuncArgs| {
+    let dev_func = |dev_type: &mut TestFuncArgs| -> Result<(), AbiError> {
         // simple mutation to verify roundtrip logic
         dev_type.return_val = dev_enclave_func_impl(&mut dev_type.all_types);
+        Ok(())
     };
 
     let result = call_vtl1_export_from_vtl1::<_, TestFuncArgs, TestFuncArgsT>(dev_func, context);
@@ -129,9 +130,10 @@ mod edl_host {
         context.forwarded_parameters.buffer_size = fb_data.len();
 
         // Test function to be called by call_vtl1_export_from_vtl1.
-        let dev_func = |dev_type: &mut AllTypes| {
+        let dev_func = |dev_type: &mut AllTypes| -> Result<(), AbiError> {
             // simple mutation to verify roundtrip logic
             dev_type.str_field = "Updated via call_vtl0_callback_from_vtl0_succeeds".to_string();
+            Ok(())
         };
 
         // Act

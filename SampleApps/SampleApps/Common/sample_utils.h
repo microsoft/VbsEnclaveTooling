@@ -5,8 +5,9 @@
 
 #include <vector>
 #include <filesystem>
+#include <fstream>
 
-inline void SaveBinaryData(const std::filesystem::path& filename, std::span<uint8_t> data)
+inline void SaveBinaryData(const std::filesystem::path& filename, const std::vector<uint8_t>& data)
 {
     std::ofstream file(filename, std::ios::binary);
     if (!file)

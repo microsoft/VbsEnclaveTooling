@@ -19,9 +19,9 @@ pub mod fb_types{
     use edlcodegen_enclave::impl_flatbuffer_pack;
     use code_gen_test::flatbuffer_types::*;
 
-    include!("flatbuffer_gen/mod.rs");
+    include!(concat!(env!("OUT_DIR"), "/flatbuffer_gen/mod.rs"));
 
-    impl_flatbuffer_pack!(FuncWithAllArgs_0_argsT, FuncWithAllArgs_0_args<'a>);
-    impl_flatbuffer_pack!(FuncWithAllArgs_1_argsT, FuncWithAllArgs_1_args<'a>);
+    impl_flatbuffer_pack!(FuncWithAllArgs_0_ArgsT, FuncWithAllArgs_0_Args<'a>);
+    impl_flatbuffer_pack!(FuncWithAllArgs_1_ArgsT, FuncWithAllArgs_1_Args<'a>);
     impl_flatbuffer_pack!(AbiRegisterVtl0Callbacks_argsT, AbiRegisterVtl0Callbacks_args<'a>);
 }

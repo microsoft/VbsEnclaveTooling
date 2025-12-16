@@ -12,13 +12,13 @@ namespace CodeGeneration::Rust
     // Temporary crate dependency string for edlcodegen-enclave until we publish to crates.io.
     // When testing not yet merged changes to edlcodegen-enclave, add the following: rev = "<commit hash from Github branch>"
     // after the subdir specification below.
-    inline constexpr std::string_view c_enclave_crate_dep = R"(edlcodegen-enclave = { git = "https://github.com/microsoft/VbsEnclaveTooling", subdir = "rust" })";
+    inline constexpr std::string_view c_enclave_crate_dep = R"(edlcodegen-enclave = { git = "https://github.com/microsoft/VbsEnclaveTooling" })";
 
     // Temporary crate dependency string for edlcodegen-host until we publish to crates.io.
     // When testing not yet merged changes to edlcodegen-host, add the following: rev = "<commit hash from Github branch>"
     // after the subdir specification below.
     inline constexpr std::string_view c_host_crate_dep =
-R"(edlcodegen-host = { git = "https://github.com/microsoft/VbsEnclaveTooling", subdir = "rust" }
+R"(edlcodegen-host = { git = "https://github.com/microsoft/VbsEnclaveTooling" }
 windows-strings = "0.5")";
 
     inline constexpr std::string_view c_cargo_toml_content =
@@ -32,9 +32,45 @@ publish = false
 doc = false
 doctest = false
 
+[build-dependencies]
+edlcodegen-tools = {{ git = "https://github.com/microsoft/VbsEnclaveTooling" }}
+
 [dependencies]
 {}
-flatbuffers = "25.9.23"
+flatbuffers = {{ version = "25.9.23", default-features = false }}
+)";
+
+    inline constexpr std::string_view c_build_rs_file_content =
+R"({}
+use edlcodegen_tools::flatc_path;
+use std::{{env, path::PathBuf, process::Command}};
+
+fn main() {{
+    let manifest_dir = PathBuf::from(env::var("CARGO_MANIFEST_DIR").unwrap());
+    let schema_path = manifest_dir.join("src\\abi\\flatbuffer_gen\\FlatbufferTypes.fbs");
+    let out_dir = std::env::var("OUT_DIR").unwrap();
+    let gen_out_path = format!("{{out_dir}}/flatbuffer_gen");
+
+    let status = Command::new(flatc_path())
+        .current_dir(&manifest_dir)
+        .args([
+            "--rust",
+            "--gen-object-api",
+            "--force-empty",
+            "--no-prefix",
+            "--rust-module-root-file",
+            "--gen-all",
+            "--filename-suffix",
+            "", // So --filename-suffix takes empty string as suffix
+            "-o",
+            &gen_out_path,
+            schema_path.to_str().unwrap(),
+        ])
+        .status()
+        .expect("failed to run flatc");
+
+    assert!(status.success(), "flatc failed with status {{}}", status);
+}}
 )";
 
     inline constexpr std::string_view c_abi_types_file_name = "abi_types.rs";
@@ -118,7 +154,7 @@ pub mod fb_types{{
     use {}::impl_flatbuffer_pack;
     use {}::flatbuffer_types::*;
 
-    include!("flatbuffer_gen/mod.rs");
+    include!(concat!(env!("OUT_DIR"), "/flatbuffer_gen/mod.rs"));
 {}
     impl_flatbuffer_pack!(AbiRegisterVtl0Callbacks_argsT, AbiRegisterVtl0Callbacks_args<'a>);
 }}
@@ -295,16 +331,16 @@ R"(
 )";
 
     inline constexpr std::string_view c_enclave_closure_content_with_result =
-R"(abi_type.m__return_value_ = <$T>::{}({});)";
+R"(abi_type.m__return_value_ = <$T>::{}({})?;)";
 
     inline constexpr std::string_view c_enclave_closure_content_no_result =
-R"(<$T>::{}({});)";
+R"(<$T>::{}({})?;)";
 
 inline constexpr std::string_view c_host_closure_content_with_result =
- R"(abi_type.m__return_value_ = Self::{}({});)";
+ R"(abi_type.m__return_value_ = Self::{}({})?;)";
 
 inline constexpr std::string_view c_host_closure_content_no_result =
- R"(Self::{}({});)";
+ R"(Self::{}({})?;)";
 
     inline constexpr std::string_view c_enclave_abi_definition_function =
 R"(
@@ -313,8 +349,9 @@ R"(
         {{
             use abi_types::{} as AbiTypeT;
             use flatbuffer_types::{}T as FlatBufferT;
-            let abi_func = |abi_type: &mut AbiTypeT| {{
+            let abi_func = |abi_type: &mut AbiTypeT| -> Result<(), AbiError> {{
                 {}
+                Ok(())
             }};
             $crate::enable_enclave_restrict_containing_process_access_once();
             return_hr_as_pvoid!(call_vtl1_export_from_vtl1::<_, AbiTypeT, FlatBufferT>(abi_func, fn_context))
@@ -328,20 +365,17 @@ macro_rules! export_enclave_functions {{
         use $crate::abi::abi_types;
         use $crate::abi::fb_support::fb_types::{}::flatbuffer_types;
         use $crate::implementation::trusted::Trusted;
-        use $crate::{{return_hr_as_pvoid, call_vtl1_export_from_vtl1, register_vtl0_callouts}};
+        use $crate::{{AbiError, return_hr_as_pvoid, call_vtl1_export_from_vtl1, register_vtl0_callouts}};
         {}
         #[unsafe(no_mangle)]
         pub extern "system" fn {}(fn_context: *mut core::ffi::c_void) -> *mut core::ffi::c_void
         {{
             use abi_types::AbiRegisterVtl0Callbacks_args as AbiTypeT;
             use flatbuffer_types::AbiRegisterVtl0Callbacks_argsT as FlatBufferT;
-            let abi_func = |abi_type: &mut AbiTypeT| {{
-                let res = register_vtl0_callouts(&abi_type.m_callback_addresses, &abi_type.m_callback_names);
-                if let Some(err) = res.err() {{
-                    abi_type.m__return_value_ = err.to_hresult().0;
-                }} else {{
-                    abi_type.m__return_value_ = 0;
-                }}
+            let abi_func = |abi_type: &mut AbiTypeT| -> Result<(), AbiError> {{
+                register_vtl0_callouts(&abi_type.m_callback_addresses, &abi_type.m_callback_names)?;
+                abi_type.m__return_value_ = 0;
+                Ok(())
             }};
             $crate::enable_enclave_restrict_containing_process_access_once();
             return_hr_as_pvoid!(call_vtl1_export_from_vtl1::<_, AbiTypeT, FlatBufferT>(abi_func, fn_context))
@@ -365,11 +399,12 @@ R"({}
 R"(
         extern "system" fn {}(fn_context: *mut core::ffi::c_void) -> *mut core::ffi::c_void
         {{
-            use $crate::{{abi_func_to_address, return_hr_as_pvoid, call_vtl0_callback_from_vtl0}};
+            use $crate::{{AbiError, abi_func_to_address, return_hr_as_pvoid, call_vtl0_callback_from_vtl0}};
             use $crate::abi::abi_types::{} as AbiTypeT;
             use $crate::abi::fb_support::fb_types::{}::flatbuffer_types::{}T as FlatBufferT;
-            let abi_func = |abi_type: &mut AbiTypeT| {{
+            let abi_func = |abi_type: &mut AbiTypeT| -> Result<(), AbiError> {{
                 {}
+                Ok(())
             }};
             return_hr_as_pvoid!(call_vtl0_callback_from_vtl0::<_, AbiTypeT, FlatBufferT>(abi_func, fn_context))
         }}

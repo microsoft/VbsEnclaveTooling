@@ -53,10 +53,15 @@ namespace CodeGeneration::Rust
         GenerateStubModules(stubs_location);
 
         auto abi_location = src_location / "abi";
-        GenerateAbiModules(src_location, abi_location);
+        GenerateAbiModules(abi_location);
 
         // Save the lib.rs file
         SaveFileToOutputFolder("lib.rs", src_location, lib_rs_content);
+
+        // Save the build.rs file
+        std::string build_rs_content = std::format(c_build_rs_file_content, c_autogen_header_string);
+
+        SaveFileToOutputFolder("build.rs", crate_location, build_rs_content);
     }
 
     void RustCodeGenerator::GenerateImplementationModules(
@@ -129,7 +134,6 @@ namespace CodeGeneration::Rust
     }
 
     void RustCodeGenerator::GenerateAbiModules(
-        const std::filesystem::path& src_location,
         const std::filesystem::path& abi_location)
     {
         auto abi_developer_types = CreateDeveloperTypesForABIFunctions(
@@ -166,9 +170,6 @@ namespace CodeGeneration::Rust
         SaveFileToOutputFolder(c_flatbuffer_fbs_filename, flatbuffer_location, flatbuffer_schema);
         SaveFileToOutputFolder(c_abi_flatbuffers_file_name, flatbuffer_location, c_abi_flatbuffers_content);
 
-        // Generate flatbuffer module using compiler
-        CompileFlatbufferFile(m_flatbuffer_compiler_path, c_rust_gen_args, flatbuffer_location);
-
         // Generate wrapper module for flatbuffer generated module.
         auto pack_module = GenerateFlatbuffersWrapperModuleFile(
             m_generated_namespace_name,
@@ -186,7 +187,6 @@ namespace CodeGeneration::Rust
         {
             module_content = BuildAbiDefinitionModule(
                 m_virtual_trust_layer_kind,
-                "Trusted",
                 m_generated_namespace_name,
                 m_edl.m_trusted_functions);
         }
@@ -194,7 +194,6 @@ namespace CodeGeneration::Rust
         {
             module_content = BuildAbiDefinitionModule(
             m_virtual_trust_layer_kind,
-            "Untrusted",
             m_generated_namespace_name,
             m_edl.m_untrusted_functions);
         }

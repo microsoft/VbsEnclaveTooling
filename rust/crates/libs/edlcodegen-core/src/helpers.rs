@@ -2,10 +2,8 @@
 // Licensed under the MIT License.
 
 use crate::{
-    edl_core_ffi::{
-        E_FAIL, E_INVALIDARG, GetProcessHeap, HEAP_ZERO_MEMORY, HeapAlloc, HeapFree, S_OK,
-    },
-    edl_core_types::AbiError,
+    edl_core_ffi::{GetProcessHeap, HeapAlloc, HeapFree},
+    edl_core_types::{AbiError, BOOL, E_FAIL, E_INVALIDARG, HEAP_ZERO_MEMORY, HRESULT, S_OK},
 };
 use core::ffi::c_void;
 
@@ -33,18 +31,18 @@ pub fn allocate_memory(size: usize) -> *mut c_void {
     unsafe { HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY, size) }
 }
 
-pub fn deallocate_memory(mem: *mut c_void) -> windows_result::HRESULT {
+pub fn deallocate_memory(mem: *mut c_void) -> HRESULT {
     if mem.is_null() {
-        return windows_result::HRESULT(S_OK);
+        return HRESULT(S_OK);
     }
 
-    let res = unsafe { windows_result::BOOL(HeapFree(GetProcessHeap(), 0, mem as *const c_void)) };
+    let res = unsafe { BOOL(HeapFree(GetProcessHeap(), 0, mem as *const c_void)) };
 
     if !res.as_bool() {
-        return windows_result::HRESULT(E_FAIL);
+        return HRESULT(E_FAIL);
     }
 
-    windows_result::HRESULT(S_OK)
+    HRESULT(S_OK)
 }
 
 /// A allocation function that can be called via `CallEnclave`.
@@ -81,6 +79,6 @@ macro_rules! return_hr_as_pvoid {
             return $crate::helpers::hresult_to_pvoid(err.to_hresult().0);
         }
 
-        return $crate::edl_core_ffi::S_OK as *mut core::ffi::c_void;
+        return $crate::edl_core_types::S_OK as *mut core::ffi::c_void;
     }};
 }

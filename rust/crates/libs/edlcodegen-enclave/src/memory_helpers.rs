@@ -5,16 +5,20 @@ extern crate alloc;
 use crate::enclave_ffi::enclave_get_enclave_information;
 use crate::vtl0_pointers::Vtl0MemoryPtr;
 use alloc::{collections::BTreeMap, string::String};
-use core::{ffi::c_void, ptr};
-use edlcodegen_core::{edl_core_ffi, edl_core_types::AbiError, helpers::pvoid_to_hresult};
+use core::ffi::c_void;
+use edlcodegen_core::{
+    edl_core_ffi::{CallEnclaveInput, call_enclave},
+    edl_core_types,
+    edl_core_types::AbiError,
+};
 use spin::{Once, RwLock};
 
 /// Global registry of VTL0 host callout functions (allocation/deallocation etc.)
 #[derive(Default)]
 pub struct Vtl0FunctionMap {
     table: BTreeMap<String, u64>,
-    alloc_func: Option<edl_core_ffi::EnclaveRoutine>,
-    dealloc_func: Option<edl_core_ffi::EnclaveRoutine>,
+    alloc_func: Option<edl_core_types::EnclaveRoutine>,
+    dealloc_func: Option<edl_core_types::EnclaveRoutine>,
     enclave_memory_begin: usize,
     enclave_memory_end: usize,
 }
@@ -36,7 +40,7 @@ impl Vtl0FunctionMap {
     /// Adds host callouts and updates allocation/deallocation pointers.
     pub fn add_functions(&mut self, addresses: &[u64], names: &[String]) -> Result<(), AbiError> {
         if names.len() != addresses.len() || names.len() < 2 {
-            return Err(AbiError::Hresult(edl_core_ffi::E_INVALIDARG));
+            return Err(AbiError::Hresult(edl_core_types::E_INVALIDARG));
         }
 
         if self.enclave_memory_begin == 0_usize || self.enclave_memory_end == 0_usize {
@@ -55,18 +59,18 @@ impl Vtl0FunctionMap {
             self.alloc_func = self
                 .table
                 .get(ALLOC_FUNC_NAME)
-                .map(|a| *a as edl_core_ffi::EnclaveRoutine);
+                .map(|a| *a as edl_core_types::EnclaveRoutine);
         }
 
         if self.dealloc_func.is_none() {
             self.dealloc_func = self
                 .table
                 .get(DEALLOC_FUNC_NAME)
-                .map(|a| *a as edl_core_ffi::EnclaveRoutine);
+                .map(|a| *a as edl_core_types::EnclaveRoutine);
         }
 
         if self.alloc_func.is_none() || self.dealloc_func.is_none() {
-            return Err(AbiError::Hresult(edl_core_ffi::E_INVALIDARG));
+            return Err(AbiError::Hresult(edl_core_types::E_INVALIDARG));
         }
 
         Ok(())
@@ -87,7 +91,7 @@ impl Vtl0FunctionMap {
             .unwrap_or_else(|| {
                 panic!(
                     "Could not get end of enclave address range: Hresult: {:X}",
-                    edl_core_ffi::E_FAIL
+                    edl_core_types::E_FAIL
                 );
             });
     }
@@ -108,85 +112,51 @@ impl Vtl0FunctionMap {
     /// Verifies that a buffer lies entirely outside enclave memory (VTL0).
     fn check_for_vtl0_buffer(&self, buffer_start: usize, length: usize) -> Result<(), AbiError> {
         if length == 0 {
-            return Err(AbiError::Hresult(edl_core_ffi::E_INVALIDARG));
+            return Err(AbiError::Hresult(edl_core_types::E_INVALIDARG));
         }
 
         let buffer_end = buffer_start
             .checked_add(length)
-            .ok_or(AbiError::Hresult(edl_core_ffi::E_INVALIDARG))?;
+            .ok_or(AbiError::Hresult(edl_core_types::E_INVALIDARG))?;
 
         if buffer_start >= self.enclave_memory_end || buffer_end <= self.enclave_memory_begin {
             return Ok(());
         }
 
-        Err(AbiError::Hresult(edl_core_ffi::E_FAIL))
+        Err(AbiError::Hresult(edl_core_types::E_FAIL))
     }
 
     /// Calls into the host’s allocation routine through CallEnclave.
     pub fn allocate_vtl0_memory<T>(&self, size: usize) -> Result<Vtl0MemoryPtr<T>, AbiError> {
         let func = self
             .alloc_func
-            .ok_or(AbiError::Hresult(edl_core_ffi::E_INVALIDARG))?;
-        let mut memory_output: *mut c_void = ptr::null_mut();
-
-        unsafe {
-            edl_core_ffi::call_enclave(
-                func,
-                size as *const c_void,
-                &mut memory_output as *mut *mut c_void,
-            )?;
-        }
+            .ok_or(AbiError::Hresult(edl_core_types::E_INVALIDARG))?;
+        let call_enclave_input = CallEnclaveInput::new(func, size as *const c_void);
+        let memory_output: *mut c_void = call_enclave(call_enclave_input)?;
 
         if memory_output.is_null() {
             // memory_output should never be null unless host's memory is exhausted.
             panic!("memory_output from CallEnclaves allocate_vtl0_memory was null");
         }
 
-        // SAFETY:
-        // The host allocated this buffer through a verified enclave ABI callback.
-        // It is valid for the specified size and must later be deallocated through
-        // the corresponding VTL0 free callback.
-        Ok(unsafe { Vtl0MemoryPtr::from_raw(memory_output as *mut T) })
+        Ok(Vtl0MemoryPtr::from_raw(memory_output as *mut T))
     }
 
-    /// Calls into the host’s deallocation routine through CallEnclave.
-    ///
-    /// # Safety
-    /// This function performs a cross-VTL call into the host’s memory space using the
-    /// Win32 `CallEnclave` API. Rust cannot verify pointer validity or the safety of
-    /// this external call. The following invariants must be upheld by the caller:
-    /// - `ptr` must point to a valid VTL0-allocated buffer previously returned from
-    ///   `allocate_vtl0_memory`.
-    /// - The host callback registered in `self.dealloc_func` must be a trusted
-    ///   function pointer matching the expected signature `fn(*mut c_void) -> *mut c_void`.
-    ///
-    /// The unsafe block exists because `CallEnclave` is an external C API that
-    /// cannot be memory- or type-checked by the Rust compiler.
-    pub unsafe fn deallocate_vtl0_memory(&self, ptr: *mut c_void) -> Result<(), AbiError> {
+    pub fn deallocate_vtl0_memory(&self, ptr: *mut c_void) -> Result<(), AbiError> {
         let func = self
             .dealloc_func
-            .ok_or(AbiError::Hresult(edl_core_ffi::E_INVALIDARG))?;
-        let mut returned_hr_ptr: *mut c_void = ptr::null_mut();
-
-        unsafe {
-            edl_core_ffi::call_enclave(func, ptr, &mut returned_hr_ptr as *mut *mut c_void)?;
-        }
-
-        let hr = pvoid_to_hresult(returned_hr_ptr);
-
-        if hr != edl_core_ffi::S_OK {
-            return Err(AbiError::Hresult(hr));
-        }
-
+            .ok_or(AbiError::Hresult(edl_core_types::E_INVALIDARG))?;
+        let call_enclave_input = CallEnclaveInput::new(func, ptr as *const c_void);
+        call_enclave::<()>(call_enclave_input)?;
         Ok(())
     }
 
     /// Looks up a registered host function pointer by name.
-    pub fn try_get_function(&self, name: &str) -> Option<edl_core_ffi::EnclaveRoutine> {
+    pub fn try_get_function(&self, name: &str) -> Option<edl_core_types::EnclaveRoutine> {
         self.table
             .get(name)
             .copied()
-            .map(|a| a as edl_core_ffi::EnclaveRoutine)
+            .map(|a| a as edl_core_types::EnclaveRoutine)
     }
 }
 

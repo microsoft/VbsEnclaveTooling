@@ -152,7 +152,6 @@ namespace CodeGeneration::Cpp
 
     inline std::string GetFullDeclarationType(const Declaration& declaration)
     {
-        EdlTypeKind type_kind = declaration.m_edl_type_info.m_type_kind;
         std::string type_name = EdlTypeToCppType(declaration.m_edl_type_info);
 
         if (declaration.IsEdlType(EdlTypeKind::Vector))
