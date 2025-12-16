@@ -8,8 +8,5 @@
 #include <winenclave.h>
 #include <wchar.h>
 
-#if __has_include(<veinterop_kcm.h>)
 #include <veinterop_kcm.h>
-#else
-#include "..\veil_any_inc\veinterop_kcm_temp.h"
-#endif
+
