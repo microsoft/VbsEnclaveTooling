@@ -6,6 +6,7 @@
 #include <array>
 #include <span>
 #include <wil/stl.h>
+#include <wil/result_macros.h>
 #include "utils.vtl1.h"
 
 namespace veil::vtl1::crypto
@@ -16,6 +17,7 @@ namespace veil::vtl1::crypto
     //
     constexpr auto SYMMETRIC_KEY_SIZE_BYTES = 32; // AES-GCM
     constexpr auto DH_KEY_SIZE_BITS = 384;        // ECDH P-384
+    constexpr auto SIGNATURE_KEY_SIZE_BITS = 384; // ECDSA P-384
     constexpr auto NONCE_SIZE = 12;
     constexpr auto TAG_SIZE = 16;
 
@@ -164,6 +166,110 @@ namespace veil::vtl1::crypto
         THROW_IF_NTSTATUS_FAILED(BCryptGenerateKeyPair(algorithm, &ecdhKeyPair, veil::vtl1::crypto::DH_KEY_SIZE_BITS, 0));
         THROW_IF_NTSTATUS_FAILED(BCryptFinalizeKeyPair(ecdhKeyPair.get(), 0));
         return ecdhKeyPair;
+    }
+
+    //
+    // Asymmetric key operations for digital signatures
+    //
+    inline wil::unique_bcrypt_key generate_ecdsa_key_pair(BCRYPT_ALG_HANDLE algorithm, ULONG keySize)
+    {
+        wil::unique_bcrypt_key ecdsaKeyPair;
+        THROW_IF_NTSTATUS_FAILED(BCryptGenerateKeyPair(algorithm, &ecdsaKeyPair, keySize, 0));
+        THROW_IF_NTSTATUS_FAILED(BCryptFinalizeKeyPair(ecdsaKeyPair.get(), 0));
+        return ecdsaKeyPair;
+    }
+
+    inline std::vector<uint8_t> bcrypt_export_private_key(BCRYPT_KEY_HANDLE key, LPCWSTR blobType)
+    {
+        ULONG keySize = 0;
+        THROW_IF_NTSTATUS_FAILED(BCryptExportKey(key, nullptr, blobType, nullptr, 0, &keySize, 0));
+
+        std::vector<uint8_t> keyBytes(keySize);
+        THROW_IF_NTSTATUS_FAILED(BCryptExportKey(key, nullptr, blobType, keyBytes.data(), keySize, &keySize, 0));
+        return keyBytes;
+    }
+
+    inline wil::unique_bcrypt_key bcrypt_import_private_key(BCRYPT_ALG_HANDLE algorithm, LPCWSTR blobType, std::span<uint8_t const> keyBytes)
+    {
+        wil::unique_bcrypt_key key;
+        THROW_IF_NTSTATUS_FAILED(::BCryptImportKeyPair(
+            algorithm,
+            nullptr,
+            blobType,
+            &key,
+            const_cast<PUCHAR>(keyBytes.data()),
+            veil::vtl1::narrow_cast<ULONG>(keyBytes.size()),
+            0));
+        return key;
+    }
+
+    inline wil::unique_bcrypt_key bcrypt_import_public_key_for_signature(BCRYPT_ALG_HANDLE algorithm, LPCWSTR blobType, std::span<uint8_t const> keyBytes)
+    {
+        wil::unique_bcrypt_key key;
+        THROW_IF_NTSTATUS_FAILED(::BCryptImportKeyPair(
+            algorithm,
+            nullptr,
+            blobType,
+            &key,
+            const_cast<PUCHAR>(keyBytes.data()),
+            veil::vtl1::narrow_cast<ULONG>(keyBytes.size()),
+            0));
+        return key;
+    }
+
+    inline std::vector<uint8_t> ecdsa_sign(BCRYPT_KEY_HANDLE privateKey, BCRYPT_ALG_HANDLE hashAlgorithm, std::span<uint8_t const> data)
+    {
+        // Hash the data first
+        wil::unique_bcrypt_hash hash;
+        THROW_IF_NTSTATUS_FAILED(BCryptCreateHash(hashAlgorithm, &hash, nullptr, 0, nullptr, 0, 0));
+        THROW_IF_NTSTATUS_FAILED(BCryptHashData(hash.get(), const_cast<PUCHAR>(data.data()), veil::vtl1::narrow_cast<ULONG>(data.size()), 0));
+
+        // Get hash size
+        ULONG hashSize = 0;
+        ULONG resultSize = 0;
+        THROW_IF_NTSTATUS_FAILED(BCryptGetProperty(hashAlgorithm, BCRYPT_HASH_LENGTH, reinterpret_cast<PUCHAR>(&hashSize), sizeof(hashSize), &resultSize, 0));
+
+        // Finish the hash
+        std::vector<uint8_t> hashValue(hashSize);
+        THROW_IF_NTSTATUS_FAILED(BCryptFinishHash(hash.get(), hashValue.data(), hashSize, 0));
+
+        // Sign the hash
+        ULONG signatureSize = 0;
+        THROW_IF_NTSTATUS_FAILED(BCryptSignHash(privateKey, nullptr, hashValue.data(), hashSize, nullptr, 0, &signatureSize, 0));
+
+        std::vector<uint8_t> signature(signatureSize);
+        THROW_IF_NTSTATUS_FAILED(BCryptSignHash(privateKey, nullptr, hashValue.data(), hashSize, signature.data(), signatureSize, &signatureSize, 0));
+
+        return signature;
+    }
+
+    inline bool ecdsa_verify(BCRYPT_KEY_HANDLE publicKey, std::span<uint8_t const> data, std::span<uint8_t const> signature)
+    {
+        // Hash the data first using SHA-384
+        wil::unique_bcrypt_hash hash;
+        THROW_IF_NTSTATUS_FAILED(BCryptCreateHash(BCRYPT_SHA384_ALG_HANDLE, &hash, nullptr, 0, nullptr, 0, 0));
+        THROW_IF_NTSTATUS_FAILED(BCryptHashData(hash.get(), const_cast<PUCHAR>(data.data()), veil::vtl1::narrow_cast<ULONG>(data.size()), 0));
+
+        // Get hash size
+        ULONG hashSize = 0;
+        ULONG resultSize = 0;
+        THROW_IF_NTSTATUS_FAILED(BCryptGetProperty(BCRYPT_SHA384_ALG_HANDLE, BCRYPT_HASH_LENGTH, reinterpret_cast<PUCHAR>(&hashSize), sizeof(hashSize), &resultSize, 0));
+
+        // Finish the hash
+        std::vector<uint8_t> hashValue(hashSize);
+        THROW_IF_NTSTATUS_FAILED(BCryptFinishHash(hash.get(), hashValue.data(), hashSize, 0));
+
+        // Verify the signature
+        NTSTATUS status = BCryptVerifySignature(
+            publicKey,
+            nullptr,
+            hashValue.data(),
+            hashSize,
+            const_cast<PUCHAR>(signature.data()),
+            veil::vtl1::narrow_cast<ULONG>(signature.size()),
+            0);
+
+        return status >= 0;
     }
 
     inline wil::unique_bcrypt_key bcrypt_derive_symmetric_key(BCRYPT_KEY_HANDLE privateKey, BCRYPT_KEY_HANDLE publicKey)
