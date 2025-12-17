@@ -4,14 +4,26 @@ parameters: # parameters are shown up in ADO UI in a build queue time
   type: boolean
   default: false
 - name: OfficialBuild
+  displayName: 'Is Official Build'
   type: boolean
   default: true
 - name: BuildTarget
+  displayName: 'Build Target'
   type: string
-  default: 'CodeGen'
+  default: 'EdlCodeGen'
   values:
-  - CodeGen
+  - EdlCodeGen
   - SDK
+
+- name: CreateNugetPackages
+  displayName: 'Create Nuget Package'
+  type: boolean
+  default: false
+
+- name: CreateVpack
+  displayName: 'Create OS Vpack'
+  type: boolean
+  default: false
 
 variables:
 - template: variables/version.yml@self
@@ -19,7 +31,12 @@ variables:
   parameters:
     debug: ${{ parameters.debug }}
 
-- ${{ if eq(parameters.BuildTarget, 'CodeGen') }}:
+- name: CreateVpack
+  value: ${{ parameters.CreateVpack }}
+- name: BuildConfigs
+  value: x64-Release,x64-Debug,ARM64-Release,ARM64-Debug
+
+- ${{ if eq(parameters.BuildTarget, 'EdlCodeGen') }}:
   - name: StageName
     value: 'Build_codegen'
   - name: VpackName
@@ -88,11 +105,22 @@ extends:
       
     stages:
 
-      - ${{ if eq(parameters.BuildTarget, 'CodeGen') }}:
+      - ${{ if eq(parameters.BuildTarget, 'EdlCodeGen') }}:
         - stage: Build
           displayName: 'Build CodeGenerator'
           jobs:
           - template: AzurePipelineTemplates/jobs/CodeGenBuildJob.yml@self
+            parameters:
+              CodeGenBuildVersion: $(CodeGenBuildVersion)
+              OfficialBuild: ${{ parameters.OfficialBuild }}
+              ArtifactName: $(ArtifactName)
+
+        - stage: Nuget_Packaging
+          dependsOn: Build
+          condition: succeeded()
+          displayName: 'Package CodeGenerator Nuget'
+          jobs:
+          - template: AzurePipelineTemplates/jobs/CodeGenPackNugetJob.yml@self
             parameters:
               CodeGenBuildVersion: $(CodeGenBuildVersion)
               OfficialBuild: ${{ parameters.OfficialBuild }}
@@ -104,13 +132,25 @@ extends:
           jobs:
           - template: AzurePipelineTemplates/jobs/SdkBuildJob.yml@self
             parameters:
+              OfficialBuild: ${{ parameters.OfficialBuild }}
+              ArtifactName: $(ArtifactName)
+              UsNativeCompiler: ${{ parameters.CreateVpack }}
+
+        - stage: Nuget_Packaging
+          dependsOn: Build
+          condition: succeeded()
+          displayName: 'Package SDK Nuget'
+          jobs:
+          - template: AzurePipelineTemplates/jobs/SdkPackNugetJob.yml@self
+            parameters:
               SdkBuildVersion: $(SdkBuildVersion)
               OfficialBuild: ${{ parameters.OfficialBuild }}
               ArtifactName: $(ArtifactName)
 
       - stage: vpack
-        dependsOn: Build
-        displayName: 'Create vpack package'
+        dependsOn: Nuget_Packaging
+        displayName: 'Create OS vpack'
+        condition: and(succeeded(), eq(variables['CreateVpack'], 'true'))
         jobs:
         - job: Packaging
           pool:
@@ -126,9 +166,9 @@ extends:
             ob_createvpack_version: $(VPackVersion)
 
           steps:
-            - task: DownloadPipelineArtifact@2
-              displayName: 'Download artifacts'
-              inputs:
-                artifactName: $(ArtifactName)
-                targetPath: $(ob_outputDirectory)
-
+            - ${{ each cfg in split(variables.BuildConfigs, ',')}}:
+              - task: DownloadPipelineArtifact@2
+                displayName: Download artifacts build ${{ cfg }}
+                inputs:
+                  artifact: $(ArtifactName)-build-${{ cfg }}
+                  path: $(ob_outputDirectory)

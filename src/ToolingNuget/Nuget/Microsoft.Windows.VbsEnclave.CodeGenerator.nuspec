@@ -24,7 +24,6 @@
     <file src="..\..\..\LICENSE"/>
     <file src="$vbsenclave_codegen_x64_exe$" target="bin\"/>
     <file src="$vcpkg_sources$\**" target="vcpkg\"/>
-    <file src="$vcpkg_tools$\**" target="vcpkg\tools"/>
     <file src="..\..\ToolingNuget\Nuget\Microsoft.Windows.VbsEnclave.CodeGenerator.props" target="build\native"/>
     <file src="..\..\ToolingNuget\Nuget\Microsoft.Windows.VbsEnclave.CodeGenerator.targets" target="build\native"/>
     <file src="..\..\ToolingNuget\Nuget\Microsoft.Windows.VbsEnclave.shared.targets" target="build\native"/>
@@ -35,10 +34,6 @@
     <file src="$vbsenclave_codegen_cpp_support_ARM64_Release_lib$" target="lib\native\arm64"/>
     <file src="$vbsenclave_codegen_cpp_support_x64_Debug_lib$" target="lib\native\x64"/>
     <file src="$vbsenclave_codegen_cpp_support_ARM64_Debug_lib$" target="lib\native\arm64"/>
-    <file src="$vbsenclave_codegen_cpp_support_x64_Release_pdb$" target="lib\native\x64"/>
-    <file src="$vbsenclave_codegen_cpp_support_ARM64_Release_pdb$" target="lib\native\arm64"/>
-    <file src="$vbsenclave_codegen_cpp_support_x64_Debug_pdb$" target="lib\native\x64"/>
-    <file src="$vbsenclave_codegen_cpp_support_ARM64_Debug_pdb$" target="lib\native\arm64"/>
       
     <file src="..\..\..\Common\veil_enclave_wil_inc\**" target="src\" />
     <file src="..\..\..\README.md"/>

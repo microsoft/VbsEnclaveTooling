@@ -6,7 +6,7 @@
         <VbsEnclaveNamespace>CodeGenTest</VbsEnclaveNamespace>
         <VbsEnclaveRustNamespace>code_gen_test</VbsEnclaveRustNamespace>
         <VbsEnclaveVtl0ClassName>CodeGenTestClass</VbsEnclaveVtl0ClassName>
-        <FlatbuffersCompiler>$(SolutionDir)src\ToolingSharedLibrary\vcpkg_installed\x64-windows-static-cfg\x64-windows\tools\flatbuffers\flatc.exe</FlatbuffersCompiler>
+        <FlatbuffersCompiler>$(SolutionDir)src\ToolingSharedLibrary\vcpkg_installed\x64-windows-static-cfg\x64-windows-static-cfg\tools\flatbuffers\flatc.exe</FlatbuffersCompiler>
     </PropertyGroup>
 
     <!-- 

@@ -109,19 +109,13 @@ Try
             }
 
             $cppSupportLibPath = "$BaseSolutionDirectory\_build\$platform\$configuration\veil_enclave_cpp_support_${platform}_${configuration}_lib.lib"
-            $cppSupportLibPdbPath = "$BaseSolutionDirectory\_build\$platform\$configuration\veil_enclave_cpp_support_${platform}_${configuration}_lib.pdb"
             $nugetPackProperties += "vbsenclave_sdk_cpp_support_${platform}_${configuration}_lib=$cppSupportLibPath;"
-            $nugetPackProperties += "vbsenclave_sdk_cpp_support_${platform}_${configuration}_pdb=$cppSupportLibPdbPath;"
 
             $veilEnclaveLibPath = "$BaseSolutionDirectory\_build\$platform\$configuration\veil_enclave_${platform}_${configuration}_lib.lib"
-            $veilEnclaveLibPdbPath = "$BaseSolutionDirectory\_build\$platform\$configuration\veil_enclave_${platform}_${configuration}_lib.pdb"
             $nugetPackProperties += "vbsenclave_sdk_enclave_${platform}_${configuration}_lib=$veilEnclaveLibPath;"
-            $nugetPackProperties += "vbsenclave_sdk_enclave_${platform}_${configuration}_pdb=$veilEnclaveLibPdbPath;"
 
             $veilHostLibPath = "$BaseSolutionDirectory\_build\$platform\$configuration\veil_host_lib\veil_host_${platform}_${configuration}_lib.lib"
-            $veilHostLibPdbPath = "$BaseSolutionDirectory\_build\$platform\$configuration\veil_host_lib\veil_host_${platform}_${configuration}_lib.pdb"
             $nugetPackProperties += "vbsenclave_sdk_host_${platform}_${configuration}_lib=$veilHostLibPath;"
-            $nugetPackProperties += "vbsenclave_sdk_host_${platform}_${configuration}_pdb=$veilHostLibPdbPath;"
         }
     }
 

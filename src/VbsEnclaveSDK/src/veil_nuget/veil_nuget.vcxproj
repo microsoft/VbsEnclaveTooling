@@ -54,6 +54,14 @@
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <!-- 
+    Enable synchronized LKG and internal MsUCRT consumption. This is only used in internal pipeline builds
+    when the Windows native compiler is used. Do not remove this group.
+  -->
+  <PropertyGroup>
+    <UseInternalMSUniCrtPackage>true</UseInternalMSUniCrtPackage>
+    <UndockedSettingsLoaded>true</UndockedSettingsLoaded>
+  </PropertyGroup>
   <ImportGroup Label="ExtensionSettings">
   </ImportGroup>
   <ImportGroup Label="Shared">
