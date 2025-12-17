@@ -162,6 +162,51 @@ template <typename T>
 concept CanGetSecureId =
     requires { { T::GetSecureId() }; };
 
+// Key management helper functions
+void CreateUBKey(void* enclave, const fs::path& keyFilePath, const EncryptionConfig& config, veil::vtl0::logger::logger& veilLog)
+{
+    try
+    {
+        CreateEncryptionKeyOnFirstRun(enclave, keyFilePath, config);
+        std::wcout << L"User-bound key created and saved to: " << keyFilePath << std::endl;
+        veilLog.AddTimestampedLog(L"[Host] User-bound key created successfully", veil::any::logger::eventLevel::EVENT_LEVEL_INFO);
+    }
+    catch (...)
+    {
+        std::wcout << L"Error: Failed to create user-bound key." << std::endl;
+        throw;
+    }
+}
+
+bool LoadUBKey(const fs::path& keyFilePath, veil::vtl0::logger::logger& veilLog)
+{
+    if (fs::exists(keyFilePath))
+    {
+        std::wcout << L"User-bound key loaded from: " << keyFilePath << std::endl;
+        veilLog.AddTimestampedLog(L"[Host] User-bound key loaded successfully", veil::any::logger::eventLevel::EVENT_LEVEL_INFO);
+        return true;
+    }
+    else
+    {
+        std::wcout << L"Warning: User-bound key file not found at: " << keyFilePath << std::endl;
+        return false;
+    }
+}
+
+void DeleteUBKey(const fs::path& keyFilePath, veil::vtl0::logger::logger& veilLog)
+{
+    if (fs::exists(keyFilePath))
+    {
+        fs::remove(keyFilePath);
+        std::wcout << L"User-bound key deleted from: " << keyFilePath << std::endl;
+        veilLog.AddTimestampedLog(L"[Host] User-bound key deleted successfully", veil::any::logger::eventLevel::EVENT_LEVEL_INFO);
+    }
+    else
+    {
+        std::wcout << L"Warning: User-bound key file not found at: " << keyFilePath << std::endl;
+    }
+}
+
 int main(int argc, char* argv[])
 {
     wil::SetResultLoggingCallback([] (wil::FailureInfo const& failure) noexcept
@@ -261,48 +306,116 @@ int main(int argc, char* argv[])
     constexpr PCWSTR keyMoniker = KEY_NAME.data();
     auto keyFilePath = encryptedKeyDirPath / keyMoniker;
 
+    // Track key loading state
+    bool isKeyLoaded = false;
+
     while (true)
     {
-        std::cout << "\n*** User-Bound String Encryption and Decryption Menu ***\n";
-        std::cout << "1. Encrypt a string (user-bound)\n";
-        std::cout << "2. Decrypt the string (user-bound)\n";
-        std::cout << "3. Exit\n";
+        std::cout << "\n*** User-Bound Key Management and Encryption Menu ***\n";
+        std::cout << "1. Create UB Key\n";
+        std::cout << "2. Load UB Key\n";
+        std::cout << "3. Delete UB Key\n";
+        std::cout << "4. Encrypt Data\n";
+        std::cout << "5. Decrypt Data\n";
+        std::cout << "6. Exit\n";
+        std::cout << "Key Status: " << (isKeyLoaded ? "Loaded" : "Not Loaded") << "\n";
         std::cout << "Enter your choice: ";
         
         if (!(std::cin >> choice))
         {
-            std::cout << "Invalid input. Please enter a valid option (1, 2, or 3).\n";
+            std::cout << "Invalid input. Please enter a valid option (1-6).\n";
             std::cin.clear();
             std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
             continue;
         }
 
-        switch (choice)
+        try
         {
-            case 1:
-                std::cout << "Enter the string to encrypt: ";
-                std::cin.ignore();
-                std::getline(std::wcin, input);
-                CreateEncryptionKeyOnFirstRun(enclave.get(), keyFilePath, config);
-                UserBoundEncryptFlow(enclave.get(), input, keyFilePath, encryptedOutputFilePath, config);
-                std::wcout << L"User-bound encryption in Enclave completed. \nEncrypted bytes are saved to disk in " << encryptedOutputFilePath << std::endl;
-                veilLog.AddTimestampedLog(
-                    L"[Host] User-bound encryption in Enclave completed. \nEncrypted bytes are saved to disk in " + encryptedOutputFilePath.wstring(),
-                    veil::any::logger::eventLevel::EVENT_LEVEL_CRITICAL);
-                break;
+            switch (choice)
+            {
+                case 1: // Create UB Key
+                    CreateUBKey(enclave.get(), keyFilePath, config, veilLog);
+                    isKeyLoaded = true;
+                    break;
 
-            case 2:
-                UserBoundDecryptFlow(enclave.get(), keyFilePath, encryptedOutputFilePath, config);
-                fs::remove(keyFilePath);
-                fs::remove(encryptedOutputFilePath);
-                break;
+                case 2: // Load UB Key
+                    if (!fs::exists(keyFilePath))
+                    {
+                        std::wcout << L"Error: No user-bound key file found. Please create a key first using option 1." << std::endl;
+                        isKeyLoaded = false;
+                    }
+                    else
+                    {
+                        isKeyLoaded = LoadUBKey(keyFilePath, veilLog);
+                    }
+                    break;
 
-            case 3:
-                std::cout << "Exiting program...\n";
-                return 0;
+                case 3: // Delete UB Key
+                    DeleteUBKey(keyFilePath, veilLog);
+                    isKeyLoaded = false;
+                    break;
 
-            default:
-                std::cout << "Invalid choice. Please try again.\n";
+                case 4: // Encrypt Data
+                    if (!isKeyLoaded && !fs::exists(keyFilePath))
+                    {
+                        std::wcout << L"No user-bound key available. Creating a new key first..." << std::endl;
+                        CreateUBKey(enclave.get(), keyFilePath, config, veilLog);
+                        isKeyLoaded = true;
+                    }
+                    else if (!isKeyLoaded)
+                    {
+                        std::wcout << L"Loading existing user-bound key..." << std::endl;
+                        isKeyLoaded = LoadUBKey(keyFilePath, veilLog);
+                    }
+                    
+                    if (isKeyLoaded)
+                    {
+                        std::cout << "Enter the string to encrypt: ";
+                        std::cin.ignore();
+                        std::getline(std::wcin, input);
+                        UserBoundEncryptFlow(enclave.get(), input, keyFilePath, encryptedOutputFilePath, config);
+                        std::wcout << L"User-bound encryption completed. \nEncrypted bytes saved to: " << encryptedOutputFilePath << std::endl;
+                        veilLog.AddTimestampedLog(
+                            L"[Host] User-bound encryption completed. Data saved to: " + encryptedOutputFilePath.wstring(),
+                            veil::any::logger::eventLevel::EVENT_LEVEL_CRITICAL);
+                    }
+                    break;
+
+                case 5: // Decrypt Data
+                    if (!isKeyLoaded && !fs::exists(keyFilePath))
+                    {
+                        std::wcout << L"Error: No user-bound key available for decryption." << std::endl;
+                        break;
+                    }
+                    else if (!isKeyLoaded)
+                    {
+                        std::wcout << L"Loading existing user-bound key..." << std::endl;
+                        isKeyLoaded = LoadUBKey(keyFilePath, veilLog);
+                    }
+                    
+                    if (isKeyLoaded)
+                    {
+                        if (!fs::exists(encryptedOutputFilePath))
+                        {
+                            std::wcout << L"Error: No encrypted data file found at: " << encryptedOutputFilePath << std::endl;
+                            break;
+                        }
+                        UserBoundDecryptFlow(enclave.get(), keyFilePath, encryptedOutputFilePath, config);
+                        std::wcout << L"Note: Key and encrypted data files are preserved for future operations." << std::endl;
+                    }
+                    break;
+
+                case 6: // Exit
+                    std::cout << "Exiting program...\n";
+                    return 0;
+
+                default:
+                    std::cout << "Invalid choice. Please try again.\n";
+            }
+        }
+        catch (...)
+        {
+            std::wcout << L"Error: Operation failed. Please try again." << std::endl;
         }
     }
 }
