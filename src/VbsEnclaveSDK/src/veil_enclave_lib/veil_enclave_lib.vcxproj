@@ -68,14 +68,6 @@
   <ImportGroup Label="CppSdkNugetTarget" Condition="'$(WindowsNativeCompilerEnabled)'!='true'">
     <Import Project="$(SolutionDir)packages\Microsoft.Windows.SDK.CPP.10.0.26100.7175\build\native\Microsoft.Windows.SDK.cpp.targets" Condition="Exists('$(SolutionDir)packages\Microsoft.Windows.SDK.CPP.10.0.26100.7175\build\native\Microsoft.Windows.SDK.cpp.targets')" />
   </ImportGroup>
-  <!-- 
-    Enable synchronized LKG and internal MsUCRT consumption. This is only used in internal pipeline builds
-    when the Windows native compiler is used. Do not remove this group.
-  -->
-  <PropertyGroup>
-    <UseInternalMSUniCrtPackage>true</UseInternalMSUniCrtPackage>
-    <UseEnclave>True</UseEnclave>
-  </PropertyGroup>
   <PropertyGroup>
     <!-- Unclear why this variable doesn't exist in the .nuget pkg for the SDK -->
     <WindowsSdk_EnclaveIncludes_Path>$(WindowsSdkDir)Include\$(WindowsSDKBuildToolsVersion)</WindowsSdk_EnclaveIncludes_Path>
@@ -160,6 +152,12 @@
   <ItemGroup>
     <None Include="packages.config" />
   </ItemGroup>
+  <!-- Enable synchronized LKG and internal MsUCRT consumption  -->
+  <PropertyGroup>
+    <UseInternalMSUniCrtPackage>true</UseInternalMSUniCrtPackage>
+    <UseHalfStaticOSMode>false</UseHalfStaticOSMode>
+    <UseEnclave>True</UseEnclave>
+  </PropertyGroup>
   <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
     <PropertyGroup>
       <ErrorText>This project references NuGet package(s) that are missing on this computer. Use NuGet Package Restore to download them.  For more information, see http://go.microsoft.com/fwlink/?LinkID=322105. The missing file is {0}.</ErrorText>

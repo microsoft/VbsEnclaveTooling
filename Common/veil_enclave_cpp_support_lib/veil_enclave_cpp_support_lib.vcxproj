@@ -32,14 +32,6 @@
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
   <Import Project="$(ProjectDir)Enclave.Hybrid.Ucrt.props"/>
   <ImportGroup Label="ExtensionSettings" />
-  <!-- 
-    Enable synchronized LKG and internal MsUCRT consumption. This is only used in internal pipeline builds
-    when the Windows native compiler is used. Do not remove this group.
-  -->
-  <PropertyGroup>
-    <UseInternalMSUniCrtPackage>true</UseInternalMSUniCrtPackage>
-    <UseEnclave>True</UseEnclave>
-  </PropertyGroup>
   <PropertyGroup>
     <TargetName>veil_enclave_cpp_support_$(Platform)_$(Configuration)_lib</TargetName>
     <LinkIncremental>false</LinkIncremental>
@@ -99,6 +91,12 @@
   <ImportGroup Label="ExtensionTargets">
     <Import Project="$(SolutionDir)packages\Microsoft.Windows.ImplementationLibrary.1.0.240803.1\build\native\Microsoft.Windows.ImplementationLibrary.targets" Condition="Exists('$(SolutionDir)packages\Microsoft.Windows.ImplementationLibrary.1.0.240803.1\build\native\Microsoft.Windows.ImplementationLibrary.targets')" />
   </ImportGroup>
+    <!-- Enable synchronized LKG and internal MsUCRT consumption  -->
+  <PropertyGroup>
+    <UseInternalMSUniCrtPackage>true</UseInternalMSUniCrtPackage>
+    <UseHalfStaticOSMode>false</UseHalfStaticOSMode>
+    <UseEnclave>True</UseEnclave>
+  </PropertyGroup>
   <ItemGroup>
     <None Include="packages.config" />
   </ItemGroup>
