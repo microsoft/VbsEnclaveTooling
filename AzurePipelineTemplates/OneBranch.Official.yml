@@ -138,7 +138,7 @@ extends:
 
         - stage: Nuget_Packaging
           dependsOn: Build
-          condition: succeeded()
+          condition: and(succeeded(), eq(variables['CreateNugetPackages'], 'true'))
           displayName: 'Package SDK Nuget'
           jobs:
           - template: AzurePipelineTemplates/jobs/SdkPackNugetJob.yml@self
@@ -148,7 +148,7 @@ extends:
               ArtifactName: $(ArtifactName)
 
       - stage: vpack
-        dependsOn: Nuget_Packaging
+        dependsOn: Build
         displayName: 'Create OS vpack'
         condition: and(succeeded(), eq(variables['CreateVpack'], 'true'))
         jobs:

@@ -38,7 +38,7 @@
   -->
   <PropertyGroup>
     <UseInternalMSUniCrtPackage>true</UseInternalMSUniCrtPackage>
-    <UndockedSettingsLoaded>true</UndockedSettingsLoaded>
+    <UseEnclave>True</UseEnclave>
   </PropertyGroup>
   <PropertyGroup>
     <TargetName>veil_enclave_cpp_support_$(Platform)_$(Configuration)_lib</TargetName>

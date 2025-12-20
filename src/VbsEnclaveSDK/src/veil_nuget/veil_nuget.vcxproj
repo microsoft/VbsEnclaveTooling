@@ -60,7 +60,6 @@
   -->
   <PropertyGroup>
     <UseInternalMSUniCrtPackage>true</UseInternalMSUniCrtPackage>
-    <UndockedSettingsLoaded>true</UndockedSettingsLoaded>
   </PropertyGroup>
   <ImportGroup Label="ExtensionSettings">
   </ImportGroup>

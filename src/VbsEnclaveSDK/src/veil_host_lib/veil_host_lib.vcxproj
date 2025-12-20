@@ -70,16 +70,8 @@
   <PropertyGroup Label="Configuration">
     <ConfigurationType>StaticLibrary</ConfigurationType>
     <UseDebugLibraries Condition="'$(Configuration)'=='Debug'">true</UseDebugLibraries>
-    <PlatformToolset >v143</PlatformToolset>
+    <PlatformToolset>v143</PlatformToolset>
     <CharacterSet>Unicode</CharacterSet>
-  </PropertyGroup>
-  <!-- 
-    Enable synchronized LKG and internal MsUCRT consumption. This is only used in internal pipeline builds
-    when the Windows native compiler is used. Do not remove this group.
-  -->
-  <PropertyGroup>
-    <UseInternalMSUniCrtPackage>true</UseInternalMSUniCrtPackage>
-    <UndockedSettingsLoaded>true</UndockedSettingsLoaded>
   </PropertyGroup>
   <ImportGroup Label="Shared">
     <Import Project="$(ProjectDir)..\veil_any_inc\veil_any_inc.vcxitems" Label="Shared" />
@@ -124,6 +116,13 @@
       <PreprocessorDefinitions>_VEIL_INTERNAL_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
   </ItemDefinitionGroup>
+    <!-- 
+      Enable synchronized LKG and internal MsUCRT consumption. This is only used in internal pipeline builds
+      when the Windows native compiler is used. Do not remove this group.
+    -->
+  <PropertyGroup>
+      <UseInternalMSUniCrtPackage>true</UseInternalMSUniCrtPackage>
+  </PropertyGroup>
   <ItemDefinitionGroup>
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
