@@ -77,7 +77,7 @@
   </PropertyGroup>
   <PropertyGroup Label="Vcpkg" Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <VcpkgTriplet>x64-windows-static-cfg</VcpkgTriplet>
-    <VcpkgHostTriplet>x64-windows</VcpkgHostTriplet>
+    <VcpkgHostTriplet>x64-windows-static-cfg</VcpkgHostTriplet>
     <VcpkgAdditionalInstallOptions>--overlay-triplets=$(ProjectDir)triplets $(VcpkgAdditionalInstallOptions)</VcpkgAdditionalInstallOptions>
   </PropertyGroup>
   <PropertyGroup Label="Vcpkg">
@@ -85,17 +85,17 @@
   </PropertyGroup>
   <PropertyGroup Label="Vcpkg" Condition="'$(Configuration)|$(Platform)'=='Debug|ARM64'">
     <VcpkgTriplet>x64-windows-static-cfg</VcpkgTriplet>
-    <VcpkgHostTriplet>x64-windows</VcpkgHostTriplet>
+    <VcpkgHostTriplet>x64-windows-static-cfg</VcpkgHostTriplet>
     <VcpkgAdditionalInstallOptions>--overlay-triplets=$(ProjectDir)triplets $(VcpkgAdditionalInstallOptions)</VcpkgAdditionalInstallOptions>
   </PropertyGroup>
   <PropertyGroup Label="Vcpkg" Condition="'$(Configuration)|$(Platform)'=='Release|ARM64'">
     <VcpkgTriplet>x64-windows-static-cfg</VcpkgTriplet>
-    <VcpkgHostTriplet>x64-windows</VcpkgHostTriplet>
+    <VcpkgHostTriplet>x64-windows-static-cfg</VcpkgHostTriplet>
     <VcpkgAdditionalInstallOptions>--overlay-triplets=$(ProjectDir)triplets $(VcpkgAdditionalInstallOptions)</VcpkgAdditionalInstallOptions>
   </PropertyGroup>
   <PropertyGroup Label="Vcpkg" Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <VcpkgTriplet>x64-windows-static-cfg</VcpkgTriplet>
-    <VcpkgHostTriplet>x64-windows</VcpkgHostTriplet>
+    <VcpkgHostTriplet>x64-windows-static-cfg</VcpkgHostTriplet>
     <VcpkgAdditionalInstallOptions>--overlay-triplets=$(ProjectDir)triplets $(VcpkgAdditionalInstallOptions)</VcpkgAdditionalInstallOptions>
   </PropertyGroup>
   <ItemDefinitionGroup>

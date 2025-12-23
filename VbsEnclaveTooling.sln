@@ -52,8 +52,10 @@ EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "jobs", "jobs", "{D2331F9A-86B9-4308-B8B7-994114A65122}"
 	ProjectSection(SolutionItems) = preProject
 		AzurePipelineTemplates\jobs\CodeGenBuildJob.yml = AzurePipelineTemplates\jobs\CodeGenBuildJob.yml
+		AzurePipelineTemplates\jobs\CodeGenPackNugetJob.yml = AzurePipelineTemplates\jobs\CodeGenPackNugetJob.yml
 		AzurePipelineTemplates\jobs\PublishNugetPackages.yml = AzurePipelineTemplates\jobs\PublishNugetPackages.yml
 		AzurePipelineTemplates\jobs\SdkBuildJob.yml = AzurePipelineTemplates\jobs\SdkBuildJob.yml
+		AzurePipelineTemplates\jobs\SdkPackNugetJob.yml = AzurePipelineTemplates\jobs\SdkPackNugetJob.yml
 	EndProjectSection
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "variables", "variables", "{B4BB7018-CEC4-41C6-BBBD-925A69D5032A}"

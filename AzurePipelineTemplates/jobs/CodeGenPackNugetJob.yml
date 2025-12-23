@@ -1,0 +1,91 @@
+﻿# nuget package file for the codegen solution using the x64 and arm64 platforms
+parameters:
+  - name: CodeGenBuildVersion
+    type: string
+  - name: OfficialBuild
+    type: boolean
+    default: false
+  - name: ArtifactName
+    type: string
+
+jobs:
+- job: package_nuget
+  displayName: 'Package codegen nuget'
+  pool:
+    type: windows
+  variables:
+    ob_artifactBaseName: $(ArtifactName)-nuget
+    CodeGenNugetPackageVersion: ${{ parameters.CodeGenBuildVersion }}
+    ob_outputDirectory: $(Build.SourcesDirectory)\out
+    StagingDirectory: $(Build.SourcesDirectory)\staging
+    CodeGenExe: vbsenclave_codegen_x64_exe=$(StagingDirectory)\x64\Release\bin\edlcodegen.exe
+    VcpkgSources: vcpkg_sources=$(StagingDirectory)\x64\Release\vcpkg
+
+  steps:
+    - task: NuGetToolInstaller@1
+      displayName: Use NuGet 6.0.2
+      continueOnError: True
+      inputs:
+        versionSpec: 6.0.2
+    
+    - task: DownloadPipelineArtifact@2
+      displayName: Download x64 Release
+      inputs:
+        artifact: $(ArtifactName)-build-x64-Release
+        path: $(StagingDirectory)/x64/Release
+
+    - task: DownloadPipelineArtifact@2
+      displayName: Download x64 Debug
+      inputs:
+        artifact: $(ArtifactName)-build-x64-Debug
+        path: $(StagingDirectory)/x64/Debug
+
+    - task: DownloadPipelineArtifact@2
+      displayName: Download ARM64 Release
+      inputs:
+        artifact: $(ArtifactName)-build-ARM64-Release
+        path: $(StagingDirectory)/ARM64/Release
+
+    - task: DownloadPipelineArtifact@2
+      displayName: Download ARM64 Debug
+      inputs:
+        artifact: $(ArtifactName)-build-ARM64-Debug
+        path: $(StagingDirectory)/ARM64/Debug
+
+    # Combine nuget props into a single semi-colon delimited string for use in nuget pack command
+    - powershell: |
+        $props = ""
+        foreach ($platform in @('x64','ARM64')) {
+          foreach ($config in @('Release','Debug')) {
+            $propName = "vbsenclave_codegen_cpp_support_${platform}_${config}_lib"
+            $propValue = "$(StagingDirectory)\$platform\$config\lib\veil_enclave_cpp_support_${platform}_${config}_lib.lib"
+
+            $props += "$propName=$propValue;"
+          }
+        }
+        Write-Host "##vso[task.setvariable variable=VeilCppLibProps]$props"
+
+      displayName: 'Combine and set nuget props'
+
+    # Pack SDK nuget package
+    - task: NuGetCommand@2
+      displayName: 'Create CodeGen NuGet package'
+      inputs:
+        command: 'custom'
+        arguments: >
+          pack $(Build.SourcesDirectory)/src/ToolingNuget/Nuget/Microsoft.Windows.VbsEnclave.CodeGenerator.nuspec
+          -NonInteractive
+          -OutputDirectory $(ob_outputDirectory)
+          -Properties "target_version=$(CodeGenNugetPackageVersion);$(VeilCppLibProps);$(CodeGenExe);$(VcpkgSources);"
+          -Version $(CodeGenNugetPackageVersion)
+          -Verbosity detailed
+
+    # Sign sdk nuget package
+    - task: onebranch.pipeline.signing@1
+      displayName: '🔒 Onebranch signing for CodeGen NuGet package'
+      condition: eq(${{ parameters.OfficialBuild }}, 'true')
+      inputs:
+        command: sign
+        cp_code: 'CP-401405' # CP-code
+        files_to_sign: 'Microsoft.Windows.VbsEnclave.*.nupkg'
+        search_root: $(ob_outputDirectory)

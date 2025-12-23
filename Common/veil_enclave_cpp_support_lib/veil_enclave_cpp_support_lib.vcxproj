@@ -33,9 +33,6 @@
   <Import Project="$(ProjectDir)Enclave.Hybrid.Ucrt.props"/>
   <ImportGroup Label="ExtensionSettings" />
   <PropertyGroup>
-    <UES_ComponentName>veil_enclave_cpp_support_lib</UES_ComponentName>
-  </PropertyGroup>
-  <PropertyGroup>
     <TargetName>veil_enclave_cpp_support_$(Platform)_$(Configuration)_lib</TargetName>
     <LinkIncremental>false</LinkIncremental>
   </PropertyGroup>
@@ -66,8 +63,6 @@
       <RuntimeTypeInfo>false</RuntimeTypeInfo>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
-      <AdditionalIncludeDirectories>
-      </AdditionalIncludeDirectories>
       <GuardEHContMetadata>true</GuardEHContMetadata>
       <BrowseInformation Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</BrowseInformation>
     </ClCompile>
@@ -95,8 +90,13 @@
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
     <Import Project="$(SolutionDir)packages\Microsoft.Windows.ImplementationLibrary.1.0.240803.1\build\native\Microsoft.Windows.ImplementationLibrary.targets" Condition="Exists('$(SolutionDir)packages\Microsoft.Windows.ImplementationLibrary.1.0.240803.1\build\native\Microsoft.Windows.ImplementationLibrary.targets')" />
-    <Import Project="..\..\src\VbsEnclaveSDK\packages\Microsoft.Windows.VbsEnclave.CodeGenerator.0.1.2-prerelease.250820.1\build\native\Microsoft.Windows.VbsEnclave.CodeGenerator.targets" Condition="Exists('..\..\src\VbsEnclaveSDK\packages\Microsoft.Windows.VbsEnclave.CodeGenerator.0.1.2-prerelease.250820.1\build\native\Microsoft.Windows.VbsEnclave.CodeGenerator.targets')" />
   </ImportGroup>
+    <!-- Enable synchronized LKG and internal MsUCRT consumption  -->
+  <PropertyGroup>
+    <UseInternalMSUniCrtPackage>true</UseInternalMSUniCrtPackage>
+    <UseHalfStaticOSMode>false</UseHalfStaticOSMode>
+    <UseEnclave>True</UseEnclave>
+  </PropertyGroup>
   <ItemGroup>
     <None Include="packages.config" />
   </ItemGroup>

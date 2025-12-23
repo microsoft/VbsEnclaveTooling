@@ -83,7 +83,6 @@ Try
     $nuspecFile = "$BaseRepositoryDirectory\src\ToolingNuget\nuget\Microsoft.Windows.VbsEnclave.CodeGenerator.nuspec"
     $nugetPackProperties = "target_version=$BuildTargetVersion;"
     $nugetPackProperties += "vcpkg_sources=$BaseRepositoryDirectory\src\ToolingSharedLibrary\vcpkg_installed\x64-windows-static-cfg\x64-windows-static-cfg;";
-    $nugetPackProperties += "vcpkg_tools=$BaseRepositoryDirectory\src\ToolingSharedLibrary\vcpkg_installed\x64-windows-static-cfg\x64-windows\tools;";
          
     $edlcodegen_exe_path = ""
     $cppSupportLibPath = ""
@@ -112,9 +111,7 @@ Try
             }
 
             $cppSupportLibPath = "$BaseRepositoryDirectory\_build\$platform\$configuration\veil_enclave_cpp_support_${platform}_${configuration}_lib.lib"
-            $cppSupportLibPdbPath = "$BaseRepositoryDirectory\_build\$platform\$configuration\veil_enclave_cpp_support_${platform}_${configuration}_lib.pdb"
             $nugetPackProperties += "vbsenclave_codegen_cpp_support_${platform}_${configuration}_lib=$cppSupportLibPath;"
-            $nugetPackProperties += "vbsenclave_codegen_cpp_support_${platform}_${configuration}_pdb=$cppSupportLibPdbPath;"
 
             # only need the exe path once. If the user uses the -all flag for the configuration, we use the release version. Otherwise
             # we use the specified user provided configuration. e.g debug or release.
