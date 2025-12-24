@@ -20,6 +20,7 @@
 #include <veil\host\logger.vtl0.h>
 
 #include "../Common/sample_utils.h"
+#include "../Common/user_binding_utils.h"
 
 #include <VbsEnclave\HostApp\Stubs\Trusted.h>
 
@@ -30,41 +31,7 @@ namespace fs = std::filesystem;
 
 constexpr std::wstring_view KEY_NAME = L"MyEncryptionKey-001";
 
-struct EncryptionConfig
-{
-    std::wstring helloKeyName;
-    std::wstring pinMessage;
-    HWND hCurWnd;
-};
-
-EncryptionConfig InitializeUserBindingConfig(bool& areUserBindingApisAvailable)
-{
-    EncryptionConfig config;
-    config.helloKeyName = KEY_NAME;
-    config.pinMessage = L"Please enter your PIN to access the encryption key.";
-    
-    winrt::init_apartment();
-    
-    try 
-    {
-        areUserBindingApisAvailable = 
-            winrt::Windows::Foundation::Metadata::ApiInformation::IsTypePresent(L"Windows.Security.Credentials.KeyCredentialManager") &&
-            winrt::Windows::Foundation::Metadata::ApiInformation::IsMethodPresent(L"Windows.Security.Credentials.KeyCredentialManager", L"GetSecureId");
-
-        if (!areUserBindingApisAvailable)
-        {
-            std::wcout << L"Warning: User Binding APIs (KeyCredentialManager.GetSecureId) are not available on this system." << std::endl;
-        }
-    }
-    catch (...)
-    {
-        std::wcout << L"Warning: Exception occurred while checking User Binding API availability." << std::endl;
-        areUserBindingApisAvailable = false;
-    }
-    
-    config.hCurWnd = GetForegroundWindow();
-    return config;
-}
+using EncryptionConfig = UserBindingConfig<struct EncryptionConfigTag>;
 
 EncryptionConfig CreateEncryptionKeyOnFirstRun(void* enclave, const fs::path& keyFilePath, const EncryptionConfig& config)
 {
@@ -158,10 +125,6 @@ void UserBoundDecryptFlow(
     std::wcout << L"Decryption completed in Enclave. Decrypted string: " << decryptedData << std::endl;
 }
 
-template <typename T>
-concept CanGetSecureId =
-    requires { { T::GetSecureId() }; };
-
 // Key management helper functions
 void CreateUBKey(void* enclave, const fs::path& keyFilePath, const EncryptionConfig& config, veil::vtl0::logger::logger& veilLog)
 {
@@ -232,12 +195,13 @@ int main(int argc, char* argv[])
     const fs::path encryptedOutputFilePath = encryptedDataDirPath / "encrypted_userbound";
 
     bool areUserBindingApisAvailable;
-    auto config = InitializeUserBindingConfig(areUserBindingApisAvailable);
+    auto config = InitializeUserBindingConfig<EncryptionConfig>(
+        KEY_NAME,
+        L"Please enter your PIN to access the encryption key.",
+        areUserBindingApisAvailable);
 
-    if (!areUserBindingApisAvailable)
+    if (!EnsureUserBindingApisAvailable(areUserBindingApisAvailable))
     {
-        std::wcout << L"Error: User Binding APIs are not available on this system." << std::endl;
-        std::wcout << L"This feature requires Windows Hello and appropriate hardware support." << std::endl;
         std::cout << "\nPress any key to exit..." << std::endl;
         _getch();
         return 1;
@@ -254,41 +218,10 @@ int main(int argc, char* argv[])
 
     try
     {
-        // Call the GetSecureId API directly on the static class
-        auto secureIdBuffer = [&] () -> IBuffer
-        {
-            if constexpr (CanGetSecureId<KeyCredentialManager>)
-            {
-                return KeyCredentialManager::GetSecureId();
-            }
-
-            throw winrt::hresult_error(E_NOTIMPL, L"GetSecureId not yet available in the Windows SDK.");
-        }();
-
-        if (secureIdBuffer && secureIdBuffer.Length() > 0)
-        {
-            auto reader = winrt::Windows::Storage::Streams::DataReader::FromBuffer(secureIdBuffer);
-            ownerId.resize(secureIdBuffer.Length());
-            reader.ReadBytes(ownerId);
-        }
-        else
-        {
-            std::wcout << L"Warning: GetSecureId returned empty buffer." << std::endl;
-            THROW_HR(E_UNEXPECTED);
-        }
-    }
-    catch (winrt::hresult_error const& ex)
-    {
-        std::wcout << L"Error: Failed to get secure ID using GetSecureId API (HRESULT: 0x"
-            << std::hex << ex.code() << L")." << std::endl;
-        std::wcout << L"Cannot proceed without a valid secure ID for user-bound encryption." << std::endl;
-        std::cout << "\nPress any key to exit..." << std::endl;
-        _getch();
-        return -1;
+        ownerId = GetSecureIdFromWindowsHello();
     }
     catch (...)
     {
-        std::wcout << L"Error: Exception occurred while getting secure ID." << std::endl;
         std::wcout << L"Cannot proceed without a valid secure ID for user-bound encryption." << std::endl;
         std::cout << "\nPress any key to exit..." << std::endl;
         _getch();
