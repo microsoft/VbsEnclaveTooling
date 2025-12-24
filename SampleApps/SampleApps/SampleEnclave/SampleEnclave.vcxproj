@@ -281,6 +281,7 @@
     <ClInclude Include="pch.h" />
     <ClInclude Include="Taskpool\taskpool_examples.h" />
     <ClInclude Include="UserBound\userbound_keys.h" />
+    <ClInclude Include="UserBound\userbound_signature.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Common\globals.cpp" />
@@ -295,6 +296,7 @@
     </ClCompile>
     <ClCompile Include="Taskpool\taskpool_examples.cpp" />
     <ClCompile Include="UserBound\userbound_keys.cpp" />
+    <ClCompile Include="UserBound\userbound_signature.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ItemGroup>
