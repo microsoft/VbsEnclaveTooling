@@ -1,7 +1,7 @@
 // Copyright (c) Microsoft Corporation.
 //
 
-#include "../pch.h"
+#include <pch.h>
 #include "globals.h"
 
 // Store the actual key object, not just the handle

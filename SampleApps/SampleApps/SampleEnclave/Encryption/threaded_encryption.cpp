@@ -1,7 +1,7 @@
 // Copyright (c) Microsoft Corporation.
 //
 
-#include "../pch.h"
+#include <pch.h>
 #include "threaded_encryption.h"
 #include "basic_encryption.h" // For RunEncryptionKeyExample_LoadEncryptionKeyImpl
 #include "..\Common\globals.h"

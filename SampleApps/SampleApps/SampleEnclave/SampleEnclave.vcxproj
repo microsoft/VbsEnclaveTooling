@@ -58,19 +58,6 @@
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
-  <PropertyGroup>
-    <VC_LibraryPath_Enclave Condition="'$(Platform)'=='x64'">$(VC_LibraryPath_VC_x64_Desktop)\enclave</VC_LibraryPath_Enclave>
-    <VC_LibraryPath_Enclave Condition="'$(Platform)'=='ARM64'">$(VC_LibraryPath_VC_arm64_Desktop)\enclave</VC_LibraryPath_Enclave>
-    <WindowsSDK_LibraryPath_Enclave>
-		  "$(WindowsSDK_LibraryPath)\..\ucrt_enclave\$(Platform)"
-	  </WindowsSDK_LibraryPath_Enclave>
-    <VBS_Enclave_Dependencies>
-	    bcrypt.lib;
-	    $(VC_LibraryPath_Enclave)\libcmt.lib;
-	    $(VC_LibraryPath_Enclave)\libvcruntime.lib;
-	    "C:\Program Files (x86)\Windows Kits\10\Lib\10.0.26499.0\ucrt_enclave\x64\ucrt.lib";
-    </VBS_Enclave_Dependencies>
-  </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
   <ImportGroup Label="ExtensionSettings">
   </ImportGroup>
@@ -91,7 +78,7 @@
   </ImportGroup>
   <PropertyGroup>
     <!-- Default value for the certificate name -->
-    <EnclaveCertName>EnclaveTesting</EnclaveCertName>
+    <EnclaveCertName>TheDefaultTestEnclaveCertName</EnclaveCertName>
   </PropertyGroup>
   <Import Project="$(SolutionDir)\config.overrides.props" Condition="Exists('$(SolutionDir)\config.overrides.props')" />
   <PropertyGroup>
@@ -272,6 +259,16 @@
     <ClCompile>
       <DebugInformationFormat Condition="'$(Configuration)|$(Platform)'=='Debug|ARM64'">ProgramDatabase</DebugInformationFormat>
       <BasicRuntimeChecks Condition="'$(Configuration)|$(Platform)'=='Debug|ARM64'">Default</BasicRuntimeChecks>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug|ARM64'">$(ProjectDir)</AdditionalIncludeDirectories>
+    </ClCompile>
+    <ClCompile>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|ARM64'">$(ProjectDir)</AdditionalIncludeDirectories>
+    </ClCompile>
+    <ClCompile>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(ProjectDir)</AdditionalIncludeDirectories>
+    </ClCompile>
+    <ClCompile>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(ProjectDir)</AdditionalIncludeDirectories>
     </ClCompile>
   </ItemDefinitionGroup>
   <ItemGroup>
