@@ -1,7 +1,7 @@
 // Copyright (c) Microsoft Corporation.
 //
 
-#include "../pch.h"
+#include <pch.h>
 #include "basic_encryption.h"
 #include "..\Common\globals.h"
 
