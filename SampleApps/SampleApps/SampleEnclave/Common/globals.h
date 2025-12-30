@@ -27,3 +27,12 @@ extern wil::srwlock g_encryptionKeyLock;
 bool IsUBKLoaded();
 BCRYPT_KEY_HANDLE GetEncryptionKeyHandle();
 void SetEncryptionKey(wil::unique_bcrypt_key&& newKey);
+
+// Global signature key management
+extern wil::unique_bcrypt_key g_signaturePrivateKey;
+extern wil::srwlock g_signatureKeyLock;
+
+// Thread-safe helper functions for signature key management
+bool IsSignatureKeyLoaded();
+BCRYPT_KEY_HANDLE GetSignatureKeyHandle();
+void SetSignatureKey(wil::unique_bcrypt_key&& newKey);
