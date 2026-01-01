@@ -31,3 +31,26 @@ void SetEncryptionKey(wil::unique_bcrypt_key&& newKey)
     auto lock = g_encryptionKeyLock.lock_exclusive();
     g_encryptionKey = std::move(newKey);
 }
+
+// Global signature key management (separate from encryption key)
+wil::unique_bcrypt_key g_signaturePrivateKey;
+wil::srwlock g_signatureKeyLock;
+
+// Thread-safe helper functions for signature key management
+bool IsSignatureKeyLoaded()
+{
+    auto lock = g_signatureKeyLock.lock_shared();
+    return g_signaturePrivateKey.is_valid();
+}
+
+BCRYPT_KEY_HANDLE GetSignatureKeyHandle()
+{
+    auto lock = g_signatureKeyLock.lock_shared();
+    return g_signaturePrivateKey.get();
+}
+
+void SetSignatureKey(wil::unique_bcrypt_key&& newKey)
+{
+    auto lock = g_signatureKeyLock.lock_exclusive();
+    g_signaturePrivateKey = std::move(newKey);
+}
