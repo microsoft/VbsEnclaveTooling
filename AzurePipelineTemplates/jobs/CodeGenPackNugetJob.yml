@@ -67,6 +67,16 @@ jobs:
 
       displayName: 'Combine and set nuget props'
 
+    # Run VersionHelper script so version.h file in nuget package is up to date.
+    - task: PowerShell@2
+      displayName: Run VersionHelper script
+      inputs:
+        targetType: filePath
+        filePath: '$(Build.SourcesDirectory)\src\ToolingSharedLibrary\VersionHelper\Version.ps1'
+        arguments: >
+          -VersionString $(CodeGenBuildVersion)
+          -OutputFile $(Build.SourcesDirectory)\src\ToolingSharedLibrary\Includes\VbsEnclaveABI\Shared\Version.h
+
     # Pack SDK nuget package
     - task: NuGetCommand@2
       displayName: 'Create CodeGen NuGet package'
