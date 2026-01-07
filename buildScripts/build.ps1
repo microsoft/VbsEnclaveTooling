@@ -110,7 +110,7 @@ Try
                 exit $LASTEXITCODE
             }
 
-            $cppSupportLibPath = "$BaseRepositoryDirectory\_build\$platform\$configuration\veil_enclave_cpp_support_${platform}_${configuration}_lib.lib"
+            $cppSupportLibPath = "$BaseRepositoryDirectory\_build\$platform\$configuration\veil_enclave_cpp_support.lib"
             $nugetPackProperties += "vbsenclave_codegen_cpp_support_${platform}_${configuration}_lib=$cppSupportLibPath;"
 
             # only need the exe path once. If the user uses the -all flag for the configuration, we use the release version. Otherwise

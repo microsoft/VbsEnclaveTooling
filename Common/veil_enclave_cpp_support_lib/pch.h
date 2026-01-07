@@ -1,17 +1,6 @@
-// © Microsoft Corporation. All rights reserved.
+// Copyright (c) Microsoft Corporation.
+// Licensed under the MIT License.
 
 #pragma once
 
 #include "../veil_enclave_wil_inc/wil/enclave/wil_for_enclaves.h"
-//#include <winenclave.h>
-
-#include <atomic>
-#include <safeint.h>
-#include <unordered_map>
-#include <string>
-#include <vector>
-#include <map>
-#include <vector>
-#include <array>
-
-#include <bcrypt.h>

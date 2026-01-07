@@ -7,11 +7,6 @@
 
 #include <VbsEnclave\HostApp\Implementation\Untrusted.h>
 
-namespace veil::vtl0::logger
-{
-    std::mutex logMutex;
-}
-
 HRESULT veil_abi::Untrusted::Implementation::add_log(_In_ const std::wstring& log, _In_ const std::wstring& log_file_path)
 {
     veil::vtl0::logger::logger::AddTimestampedLog(log, log_file_path);

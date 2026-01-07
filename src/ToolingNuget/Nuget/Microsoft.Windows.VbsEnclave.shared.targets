@@ -1,7 +1,7 @@
 <Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
     <PropertyGroup>
         <VbsEnclavePackageDir>$([System.IO.Path]::GetFullPath($(MSBuildThisFileDirectory)))..\..\</VbsEnclavePackageDir>
-        <VbsEnclaveAbiCppSupportLib>$(VbsEnclavePackageDir)lib\native\$(Platform)\veil_enclave_cpp_support_$(Platform)_$(Configuration)_lib.lib</VbsEnclaveAbiCppSupportLib>
+        <VbsEnclaveAbiCppSupportLib>$(VbsEnclavePackageDir)lib\native\$(Platform)\$(Configuration)\veil_enclave_cpp_support.lib</VbsEnclaveAbiCppSupportLib>
         <VbsEnclaveGeneratedFilesDir Condition="$(VbsEnclaveGeneratedFilesDir) == ''">$(ProjectDir)Generated Files</VbsEnclaveGeneratedFilesDir>
     </PropertyGroup>
 

@@ -79,14 +79,13 @@ jobs:
         platform:  $(Platform)
         configuration: $(Configuration)
 
-    # Copy veil_enclave_cpp_support_lib artifacts
+    # Copy veil_enclave_cpp_support.lib artifacts
     - task: CopyFiles@2
       displayName: Copy lib artifacts
       inputs:
         SourceFolder: $(BaseBuildDirectory)
         Contents: |
-          **\veil_enclave_cpp_support_*_lib.lib
-          **\veil_enclave_cpp_support_*_lib.pdb
+          **\veil_enclave_cpp_support.*
         TargetFolder: $(ob_outputDirectory)/lib
         flattenFolders: true
 

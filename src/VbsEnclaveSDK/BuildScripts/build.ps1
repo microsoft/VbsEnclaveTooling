@@ -84,7 +84,7 @@ Try
     # Create nuget pack properties that will always exist
     $nuspecFile = "$BaseSolutionDirectory\src\veil_nuget\Nuget\Microsoft.Windows.VbsEnclave.SDK.nuspec"
     $nugetPackProperties = "target_version=$BuildTargetVersion;"
-
+     
     # Build
     foreach ($platform in $BuildPlatform)
     {
@@ -108,14 +108,18 @@ Try
                 exit $LASTEXITCODE
             }
 
-            $cppSupportLibPath = "$BaseSolutionDirectory\_build\$platform\$configuration\veil_enclave_cpp_support_${platform}_${configuration}_lib.lib"
+            $cppSupportLibPath = "$BaseSolutionDirectory\_build\$platform\$configuration\veil_enclave_cpp_support.lib"
             $nugetPackProperties += "vbsenclave_sdk_cpp_support_${platform}_${configuration}_lib=$cppSupportLibPath;"
 
-            $veilEnclaveLibPath = "$BaseSolutionDirectory\_build\$platform\$configuration\veil_enclave_${platform}_${configuration}_lib.lib"
+            $veilEnclaveLibPath = "$BaseSolutionDirectory\_build\$platform\$configuration\veil_enclave.lib"
             $nugetPackProperties += "vbsenclave_sdk_enclave_${platform}_${configuration}_lib=$veilEnclaveLibPath;"
 
-            $veilHostLibPath = "$BaseSolutionDirectory\_build\$platform\$configuration\veil_host_lib\veil_host_${platform}_${configuration}_lib.lib"
-            $nugetPackProperties += "vbsenclave_sdk_host_${platform}_${configuration}_lib=$veilHostLibPath;"
+            if ($configuration -eq "Release")
+            {
+                $veilHostLibPath = "$BaseSolutionDirectory\_build\$platform\$configuration\veil_host"
+                $nugetPackProperties += "vbsenclave_sdk_host_${platform}_${configuration}_lib=$veilHostLibPath.lib;"
+                $nugetPackProperties += "vbsenclave_sdk_host_${platform}_${configuration}_dll=$veilHostLibPath.dll;"
+            }
         }
     }
 
