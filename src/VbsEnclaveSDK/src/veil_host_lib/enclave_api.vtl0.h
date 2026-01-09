@@ -4,14 +4,8 @@
 #pragma once
 
 #include "pch.h"
-
 #include <span>
-#include <vector>
-
 #include <wil/resource.h>
-#include <wil/token_helpers.h>
-
-#include "utils.vtl0.h"
 
 namespace veil::vtl0
 {
@@ -96,7 +90,26 @@ namespace veil::vtl0
     }
 }
 
+// Expose C API's so host applications are not forced
+// to statically link against the C++ runtime. This is especially important
+// for OS components. The undocked windows compiler compiles code using /MT
+// only. We provide the host portion of the sdk as an import only static lib
+// and produce a consumable DLL to allow any application to use the SDK.
+extern "C" {
+
+#if defined(VEIL_ABI_BUILDING_DLL)
+    #define VEIL_ABI_API __declspec(dllexport)
+#else
+    #define VEIL_ABI_API __declspec(dllimport)
+#endif
+
+    VEIL_ABI_API HRESULT register_veil_callbacks(void* enclave);
+}
+
 namespace veil::vtl0::enclave_api
 {
-    void register_callbacks(void* enclave);
+    inline void register_callbacks(void* enclave)
+    {
+        THROW_IF_FAILED(::register_veil_callbacks(enclave));
+    }
 }

@@ -1,16 +1,16 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-    <!-- 
+  <!-- 
       Only use the Windows SDK props from nuget if the Windows native compiler is not enabled.
       Note: WindowsNativeCompilerEnabled is passed to the solution via an Azure pipeline job.
     -->
-    <ImportGroup Label="CppSdkNugetProps" Condition="'$(WindowsNativeCompilerEnabled)'!='true'">
-        <Import Project="$(SolutionDir)packages\Microsoft.Windows.SDK.CPP.10.0.26100.7175\build\native\Microsoft.Windows.SDK.cpp.props" Condition="Exists('$(SolutionDir)packages\Microsoft.Windows.SDK.CPP.10.0.26100.7175\build\native\Microsoft.Windows.SDK.cpp.props')" />
-        <Import Project="$(SolutionDir)packages\Microsoft.Windows.SDK.CPP.arm64.10.0.26100.7175\build\native\Microsoft.Windows.SDK.cpp.arm64.props" Condition="Exists('$(SolutionDir)packages\Microsoft.Windows.SDK.CPP.arm64.10.0.26100.7175\build\native\Microsoft.Windows.SDK.cpp.arm64.props')" />
-        <Import Project="$(SolutionDir)packages\Microsoft.Windows.SDK.CPP.x64.10.0.26100.7175\build\native\Microsoft.Windows.SDK.cpp.x64.props" Condition="Exists('$(SolutionDir)packages\Microsoft.Windows.SDK.CPP.x64.10.0.26100.7175\build\native\Microsoft.Windows.SDK.cpp.x64.props')" />
-    </ImportGroup>
-    <Import Project="$(SolutionDir)packages\Microsoft.Windows.VbsEnclave.CodeGenerator.0.2.260106.1\build\native\Microsoft.Windows.VbsEnclave.CodeGenerator.props" Condition="Exists('$(SolutionDir)packages\Microsoft.Windows.VbsEnclave.CodeGenerator.0.2.260106.1\build\native\Microsoft.Windows.VbsEnclave.CodeGenerator.props')" />
-    <ItemGroup Label="ProjectConfigurations">
+  <ImportGroup Label="CppSdkNugetProps" Condition="'$(WindowsNativeCompilerEnabled)'!='true'">
+    <Import Project="$(SolutionDir)packages\Microsoft.Windows.SDK.CPP.10.0.26100.7175\build\native\Microsoft.Windows.SDK.cpp.props" Condition="Exists('$(SolutionDir)packages\Microsoft.Windows.SDK.CPP.10.0.26100.7175\build\native\Microsoft.Windows.SDK.cpp.props')" />
+    <Import Project="$(SolutionDir)packages\Microsoft.Windows.SDK.CPP.arm64.10.0.26100.7175\build\native\Microsoft.Windows.SDK.cpp.arm64.props" Condition="Exists('$(SolutionDir)packages\Microsoft.Windows.SDK.CPP.arm64.10.0.26100.7175\build\native\Microsoft.Windows.SDK.cpp.arm64.props')" />
+    <Import Project="$(SolutionDir)packages\Microsoft.Windows.SDK.CPP.x64.10.0.26100.7175\build\native\Microsoft.Windows.SDK.cpp.x64.props" Condition="Exists('$(SolutionDir)packages\Microsoft.Windows.SDK.CPP.x64.10.0.26100.7175\build\native\Microsoft.Windows.SDK.cpp.x64.props')" />
+  </ImportGroup>
+  <Import Project="$(SolutionDir)packages\Microsoft.Windows.VbsEnclave.CodeGenerator.0.2.260106.1\build\native\Microsoft.Windows.VbsEnclave.CodeGenerator.props" Condition="Exists('$(SolutionDir)packages\Microsoft.Windows.VbsEnclave.CodeGenerator.0.2.260106.1\build\native\Microsoft.Windows.VbsEnclave.CodeGenerator.props')" />
+  <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Debug|ARM64">
       <Configuration>Debug</Configuration>
       <Platform>ARM64</Platform>
@@ -47,8 +47,9 @@
   </ImportGroup>
   <ImportGroup Label="ExtensionSettings" />
   <PropertyGroup>
-    <TargetName>veil_enclave_$(Platform)_$(Configuration)_lib</TargetName>
+    <TargetName>veil_enclave</TargetName>
     <LinkIncremental>false</LinkIncremental>
+    <IntDir>$(Platform)\$(Configuration)\</IntDir>
   </PropertyGroup>
   <PropertyGroup>
     <IncludePath>$(VC_IncludePath);$(WindowsSDK_IncludePath)</IncludePath>
@@ -61,6 +62,17 @@
     <Import Project="$(SolutionDir)packages\Microsoft.Windows.ImplementationLibrary.1.0.240803.1\build\native\Microsoft.Windows.ImplementationLibrary.targets" Condition="Exists('$(SolutionDir)packages\Microsoft.Windows.ImplementationLibrary.1.0.240803.1\build\native\Microsoft.Windows.ImplementationLibrary.targets')" />
     <Import Project="$(SolutionDir)packages\Microsoft.Windows.VbsEnclave.CodeGenerator.0.2.260106.1\build\native\Microsoft.Windows.VbsEnclave.CodeGenerator.targets" Condition="Exists('$(SolutionDir)packages\Microsoft.Windows.VbsEnclave.CodeGenerator.0.2.260106.1\build\native\Microsoft.Windows.VbsEnclave.CodeGenerator.targets')" />
   </ImportGroup>
+  <!--  
+    Override the AddGeneratedFilesToBuild target from the codegenerator in favor of adding the
+	generated cpp files to the build directly using the vcxproj file. There seems to be
+	an issue with the target when using the Windows native compiler.
+  -->
+  <Target Name="AddGeneratedFilesToBuild" Condition="'$(WindowsNativeCompilerEnabled)' == 'true'"></Target>
+  <ItemGroup Condition="'$(WindowsNativeCompilerEnabled)' == 'true'">
+    <ClCompile Include="Generated Files\VbsEnclave\Enclave\Abi\Exports.veil_abi.cpp" />
+    <ClCompile Include="Generated Files\VbsEnclave\Enclave\Abi\LinkerPragmas.veil_abi.cpp" />
+  </ItemGroup>
+
   <!-- 
     Only use the Windows SDK target from nuget if the Windows native compiler is not enabled.
     Note: WindowsNativeCompilerEnabled is passed to the solution via an Azure pipeline job.
@@ -71,10 +83,6 @@
   <PropertyGroup>
     <!-- Unclear why this variable doesn't exist in the .nuget pkg for the SDK -->
     <WindowsSdk_EnclaveIncludes_Path>$(WindowsSdkDir)Include\$(WindowsSDKBuildToolsVersion)</WindowsSdk_EnclaveIncludes_Path>
-  </PropertyGroup>
-  <PropertyGroup>
-    <VEIIDExeFullPath>$(WindowsSDKBuildToolsBinVersionedArchFolder)\veiid.exe</VEIIDExeFullPath>
-    <VEIID_Command>$(VEIIDExeFullPath) "$(OutDir)$(TargetName)$(TargetExt)"</VEIID_Command>
   </PropertyGroup>
   <PropertyGroup>
     <VbsEnclaveVirtualTrustLayer>Enclave</VbsEnclaveVirtualTrustLayer>
@@ -101,29 +109,13 @@
       <AdditionalIncludeDirectories>$(SdkNugetHeaderIncludes);$(WindowsSdk_EnclaveIncludes_Path)\um;$(WindowsSdk_EnclaveIncludes_Path)\shared;$(WindowsSdk_EnclaveIncludes_Path)\ucrt;$(SolutionDir)..\..\Common\veil_enclave_wil_inc;$(MSBUILDThisFileDirectory)..\veil_enclave_inc;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp20</LanguageStandard>
       <GuardEHContMetadata>true</GuardEHContMetadata>
-        <!-- 
-          Add /FS to enable file-based locking on .pdb files. Without this, parallel cl.exe processes
-       (as used by vcpkg builds) can collide when writing debug info, causing error 
-          C1041 ("cannot open program database").
-     -->
-      <AdditionalOptions>/FS %(AdditionalOptions)</AdditionalOptions>
+      <TreatWChar_tAsBuiltInType Condition="'$(WindowsNativeCompilerEnabled)'=='true'">false</TreatWChar_tAsBuiltInType>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
-      <AdditionalDependencies>$(VBS_Enclave_Dependencies)</AdditionalDependencies>
-      <AdditionalOptions>/INTEGRITYCHECK /ENCLAVE /GUARD:MIXED</AdditionalOptions>
-      <ModuleDefinitionFile>veil_enclave_lib.def</ModuleDefinitionFile>
       <CETCompat Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</CETCompat>
       <IgnoreAllDefaultLibraries>true</IgnoreAllDefaultLibraries>
     </Link>
-    <PostBuildEvent>
-      <Message>Apply VEIID Protection</Message>
-      <!--
-        Skip veiid.exe for static library
-      <Command>$(VEIID_Command)</Command>
-      -->
-    </PostBuildEvent>
-    <Lib />
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\..\Common\veil_enclave_wil_inc\wil\enclave\pop_enable_wil_logging.h" />

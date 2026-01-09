@@ -79,15 +79,15 @@ jobs:
         platform:  $(Platform)
         configuration: $(Configuration)
 
-    # Copy veil_enclave_cpp_support_lib artifacts
+    # Copy veil_enclave_cpp_support.lib artifacts
     - task: CopyFiles@2
       displayName: Copy lib artifacts
       inputs:
         SourceFolder: $(BaseBuildDirectory)
         Contents: |
-          **\veil_enclave_cpp_support_*_lib.lib
-          **\veil_enclave_cpp_support_*_lib.pdb
-        TargetFolder: $(ob_outputDirectory)/lib
+          **\veil_*.pdb
+          **\veil_*.lib
+        TargetFolder: $(ob_outputDirectory)/$(Platform)/$(Configuration)
         flattenFolders: true
 
     # We only need one copy of the EdlCodeGen and flatc executables, and source files, so we will

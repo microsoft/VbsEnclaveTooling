@@ -15,15 +15,13 @@ parameters: # parameters are shown up in ADO UI in a build queue time
   - EdlCodeGen
   - SDK
 
-- name: CreateNugetPackages
-  displayName: 'Create Nuget Package'
-  type: boolean
-  default: false
-
-- name: CreateVpack
-  displayName: 'Create OS Vpack'
-  type: boolean
-  default: false
+- name: PackagingType
+  displayName: 'Packaging Type'
+  type: string
+  default: 'Nuget'
+  values:
+  - Nuget
+  - VPack
 
 variables:
 - template: variables/version.yml@self
@@ -32,7 +30,9 @@ variables:
     debug: ${{ parameters.debug }}
 
 - name: CreateVpack
-  value: ${{ parameters.CreateVpack }}
+  value: ${{ eq(parameters.PackagingType, 'VPack') }}
+- name: CreateNuget
+  value: ${{ eq(parameters.PackagingType, 'Nuget') }}
 - name: BuildConfigs
   value: x64-Release,x64-Debug,ARM64-Release,ARM64-Debug
 
@@ -117,7 +117,7 @@ extends:
 
         - stage: Nuget_Packaging
           dependsOn: Build
-          condition: succeeded()
+          condition: and(succeeded(), eq(variables['CreateNuget'], 'true'))
           displayName: 'Package CodeGenerator Nuget'
           jobs:
           - template: AzurePipelineTemplates/jobs/CodeGenPackNugetJob.yml@self
@@ -134,11 +134,11 @@ extends:
             parameters:
               OfficialBuild: ${{ parameters.OfficialBuild }}
               ArtifactName: $(ArtifactName)
-              UsNativeCompiler: ${{ parameters.CreateVpack }}
+              UsNativeCompiler: ${{ eq(parameters.PackagingType, 'VPack') }}
 
         - stage: Nuget_Packaging
           dependsOn: Build
-          condition: and(succeeded(), eq(variables['CreateNugetPackages'], 'true'))
+          condition: and(succeeded(), eq(variables['CreateNuget'], 'true'))
           displayName: 'Package SDK Nuget'
           jobs:
           - template: AzurePipelineTemplates/jobs/SdkPackNugetJob.yml@self
@@ -164,6 +164,7 @@ extends:
             ob_createvpack_provData: true
             ob_createvpack_versionAs: string
             ob_createvpack_version: $(VPackVersion)
+            ob_createvpack_metadata: $(Build.SourceBranchName).$(Build.BuildNumber).$(Build.SourceVersion)
 
           steps:
             - ${{ each cfg in split(variables.BuildConfigs, ',')}}:

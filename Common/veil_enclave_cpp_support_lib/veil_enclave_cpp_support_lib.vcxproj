@@ -33,8 +33,9 @@
   <Import Project="$(ProjectDir)Enclave.Hybrid.Ucrt.props"/>
   <ImportGroup Label="ExtensionSettings" />
   <PropertyGroup>
-    <TargetName>veil_enclave_cpp_support_$(Platform)_$(Configuration)_lib</TargetName>
+    <TargetName>veil_enclave_cpp_support</TargetName>
     <LinkIncremental>false</LinkIncremental>
+    <IntDir>$(Platform)\$(Configuration)\</IntDir>
   </PropertyGroup>
   <PropertyGroup>
     <IncludePath>$(VC_IncludePath);$(WindowsSDK_IncludePath)</IncludePath>
@@ -61,18 +62,15 @@
       <BasicRuntimeChecks>Default</BasicRuntimeChecks>
       <LanguageStandard_C>stdc17</LanguageStandard_C>
       <RuntimeTypeInfo>false</RuntimeTypeInfo>
-      <PrecompiledHeader>Use</PrecompiledHeader>
-      <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
       <GuardEHContMetadata>true</GuardEHContMetadata>
       <BrowseInformation Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</BrowseInformation>
+      <TreatWChar_tAsBuiltInType Condition="'$(WindowsNativeCompilerEnabled)'=='true'">false</TreatWChar_tAsBuiltInType>
+      <LanguageStandard>stdcpp20</LanguageStandard>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
     </Link>
   </ItemDefinitionGroup>
-  <ItemGroup>
-    <UES_ComponentOutputs Include="$(OutDir)\$(TargetName).lib" />
-  </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />
     <ClInclude Include="trnsctrl_compat.h" />
@@ -80,9 +78,6 @@
   <ItemGroup>
     <ClCompile Include="atomic_wait_compat.cpp" />
     <ClCompile Include="excptptr_compat.cpp" />
-    <ClCompile Include="pch.cpp">
-      <PrecompiledHeader>Create</PrecompiledHeader>
-    </ClCompile>
     <ClCompile Include="shims.cpp" />
     <ClCompile Include="syserror_compat.cpp" />
     <ClCompile Include="xtime_compat.cpp" />
@@ -91,7 +86,7 @@
   <ImportGroup Label="ExtensionTargets">
     <Import Project="$(SolutionDir)packages\Microsoft.Windows.ImplementationLibrary.1.0.240803.1\build\native\Microsoft.Windows.ImplementationLibrary.targets" Condition="Exists('$(SolutionDir)packages\Microsoft.Windows.ImplementationLibrary.1.0.240803.1\build\native\Microsoft.Windows.ImplementationLibrary.targets')" />
   </ImportGroup>
-    <!-- Enable synchronized LKG and internal MsUCRT consumption  -->
+  <!-- Enable synchronized LKG and internal MsUCRT consumption  -->
   <PropertyGroup>
     <UseInternalMSUniCrtPackage>true</UseInternalMSUniCrtPackage>
     <UseHalfStaticOSMode>false</UseHalfStaticOSMode>

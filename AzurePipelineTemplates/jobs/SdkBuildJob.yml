@@ -71,18 +71,25 @@ jobs:
         platform:  $(Platform)
         configuration: $(Configuration)
   
+    # Sign binaries in build folder
+    - task: onebranch.pipeline.signing@1
+      displayName: '🔒 Onebranch Signing for host dlls'
+      condition: eq(${{ parameters.OfficialBuild }}, 'true')
+      inputs:
+        command: sign
+        signing_profile: external_distribution
+        files_to_sign: '**/*.dll;**/*.exe'
+        search_root: $(SdkBuildDirectory)
+
     - task: CopyFiles@2
       displayName: Copy artifacts
       inputs:
         SourceFolder: $(SdkBuildDirectory)
         Contents: |
-          **\veil_enclave_cpp_support_*_lib.lib
-          **\veil_enclave_cpp_support_*_lib.pdb
-          **\veil_enclave_*_lib.lib
-          **\veil_enclave_*_lib.pdb
-          **\veil_host_*_lib.lib
-          **\veil_host_*_lib.pdb
-        TargetFolder: $(ob_outputDirectory)/lib
+          **\veil_*.pdb
+          **\veil_*.lib
+          **\veil_*.dll
+        TargetFolder: $(ob_outputDirectory)/$(Platform)/$(Configuration)
         flattenFolders: true
 
     # We only need one copy of the source files, so we will
@@ -98,6 +105,19 @@ jobs:
         Contents: |
           **/*.h
           !Generated Files/**
+
+    # Native compiler builds require /export (not /include) directives to correctly
+    # export enclave SDK functions from DLLs built with razzle sources files.
+    - task: PowerShell@2
+      displayName: 'Replace include linker statements with export statements'
+      condition: eq(variables['ob_NativeCompiler_enabled'], 'true')
+      inputs:
+        targetType: 'inline'
+        script: |
+          $file = "$(SdkSourceDirectory)/veil_enclave_lib/Generated Files/VbsEnclave/Enclave/Abi/LinkerPragmas.veil_abi.cpp"
+          $content = Get-Content -Path $file -Raw
+          $updated = $content -replace '"/include:', '"/export:'
+          Set-Content -Path $file -Value $updated -Encoding UTF8
 
     # Copy ABI linker pragmas file only once.
     - task: CopyFiles@2
