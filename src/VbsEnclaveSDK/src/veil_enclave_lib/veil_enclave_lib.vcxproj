@@ -68,7 +68,7 @@
 	an issue with the target when using the Windows native compiler.
   -->
   <Target Name="AddGeneratedFilesToBuild" Condition="'$(WindowsNativeCompilerEnabled)' == 'true'"></Target>
-  <ItemGroup Condition="'$(WindowsNativeCompilerEnabled)' == 'true'">
+  <ItemGroup>
     <ClCompile Include="Generated Files\VbsEnclave\Enclave\Abi\Exports.veil_abi.cpp" />
     <ClCompile Include="Generated Files\VbsEnclave\Enclave\Abi\LinkerPragmas.veil_abi.cpp" />
   </ItemGroup>
