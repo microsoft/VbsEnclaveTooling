@@ -18,8 +18,8 @@ jobs:
     CodeGenNugetPackageVersion: ${{ parameters.CodeGenBuildVersion }}
     ob_outputDirectory: $(Build.SourcesDirectory)\out
     StagingDirectory: $(Build.SourcesDirectory)\staging
-    CodeGenExe: vbsenclave_codegen_x64_exe=$(StagingDirectory)\x64\Release\bin\edlcodegen.exe
-    VcpkgSources: vcpkg_sources=$(StagingDirectory)\x64\Release\vcpkg
+    CodeGenExe: vbsenclave_codegen_x64_exe=$(StagingDirectory)\bin\edlcodegen.exe
+    VcpkgSources: vcpkg_sources=$(StagingDirectory)\vcpkg
 
   steps:
     - task: NuGetToolInstaller@1
@@ -32,25 +32,25 @@ jobs:
       displayName: Download x64 Release
       inputs:
         artifact: $(ArtifactName)-build-x64-Release
-        path: $(StagingDirectory)/x64/Release
+        path: $(StagingDirectory)
 
     - task: DownloadPipelineArtifact@2
       displayName: Download x64 Debug
       inputs:
         artifact: $(ArtifactName)-build-x64-Debug
-        path: $(StagingDirectory)/x64/Debug
+        path: $(StagingDirectory)
 
     - task: DownloadPipelineArtifact@2
       displayName: Download ARM64 Release
       inputs:
         artifact: $(ArtifactName)-build-ARM64-Release
-        path: $(StagingDirectory)/ARM64/Release
+        path: $(StagingDirectory)
 
     - task: DownloadPipelineArtifact@2
       displayName: Download ARM64 Debug
       inputs:
         artifact: $(ArtifactName)-build-ARM64-Debug
-        path: $(StagingDirectory)/ARM64/Debug
+        path: $(StagingDirectory)
 
     # Combine nuget props into a single semi-colon delimited string for use in nuget pack command
     - powershell: |
@@ -58,7 +58,7 @@ jobs:
         foreach ($platform in @('x64','ARM64')) {
           foreach ($config in @('Release','Debug')) {
             $propName = "vbsenclave_codegen_cpp_support_${platform}_${config}_lib"
-            $propValue = "$(StagingDirectory)\$platform\$config\lib\veil_enclave_cpp_support_${platform}_${config}_lib.lib"
+            $propValue = "$(StagingDirectory)\$platform\$config\veil_enclave_cpp_support.lib"
 
             $props += "$propName=$propValue;"
           }

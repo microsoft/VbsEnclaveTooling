@@ -16,8 +16,6 @@ namespace veil::vtl0
 {
     namespace logger
     {
-        extern std::mutex logMutex;
-
         class logger
         {
             private:
@@ -67,6 +65,7 @@ namespace veil::vtl0
 
             static void SaveLog(const std::wstring& log, const std::wstring& logPath)
             {
+                static std::mutex logMutex;
                 std::filesystem::path filePath(logPath);
                 std::filesystem::path dirPath = filePath.parent_path();
 
