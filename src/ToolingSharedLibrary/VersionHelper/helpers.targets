@@ -2,8 +2,8 @@
 
     <Target Name="UpdateVersionHeader" BeforeTargets="Build">
         <PropertyGroup>
-            <EffectiveCodeGenVersion Condition="'$(VbsEnclaveCodegenVersion)' == ''">0.0.0-Dev</EffectiveCodeGenVersion>
-            <EffectiveCodeGenVersion Condition="'$(VbsEnclaveCodegenVersion)' != ''">$(VbsEnclaveCodegenVersion)</EffectiveCodeGenVersion>
+            <!-- Codegen ABI version; increment only for breaking changes. -->
+            <CodeGenABIVersion>1</CodeGenABIVersion>
             <VersionHeaderOutputFile>$(ProjectDir)includes\VbsEnclaveABI\Shared\Version.h</VersionHeaderOutputFile>
         </PropertyGroup>
 
@@ -15,7 +15,7 @@
         />
 
         <!-- Generate the Version.h file with the correct version -->
-        <Exec Command="powershell -ExecutionPolicy Bypass -File &quot;$(ProjectDir)VersionHelper\Version.ps1&quot; -Version &quot;$(EffectiveCodeGenVersion)&quot; -OutputFile &quot;$(VersionHeaderOutputFile)&quot;" />
+        <Exec Command="powershell -ExecutionPolicy Bypass -File &quot;$(ProjectDir)VersionHelper\Version.ps1&quot; -Version &quot;$(CodeGenABIVersion)&quot; -OutputFile &quot;$(VersionHeaderOutputFile)&quot;" />
     </Target>
 
 </Project>
