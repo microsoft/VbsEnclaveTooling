@@ -4,8 +4,9 @@
 
 #include <VbsEnclaveABI\Shared\Version.h>
 
-// Version to ensure all translation units are consuming a consistent version of the codegen
-#pragma detect_mismatch("__VBS_ENCLAVE_CODEGEN_VERSION__", __VBS_ENCLAVE_CODEGEN_VERSION__)
+// ABI Version to ensure all translation units are consuming a consistent ABI contract for the
+// codegenerator output.
+#pragma detect_mismatch("VBS_ENCLAVE_CODEGEN_ABI_VERSION", VBS_ENCLAVE_CODEGEN_ABI_VERSION)
 
 #include <array>
 #include <atomic>

@@ -1,4 +1,6 @@
 # Generates version.h file for edlcodgen.exe static files.
+# This script is invoked by the build system and should not be run manually.
+# To update the ABI version, update the CodeGenABIVersion property in helpers.targets
 param (
     [string]$VersionString,
     [string]$OutputFile
@@ -25,7 +27,8 @@ $template = @"
 // Auto-generated version file for edlcodgen.exe. Do not edit manually.
 #pragma once
 
-#define __VBS_ENCLAVE_CODEGEN_VERSION__ "{0}"
+// Codegen ABI version; increment only for breaking changes.
+#define VBS_ENCLAVE_CODEGEN_ABI_VERSION "{0}"
 "@
 
 $fileHeader = $template -f $VersionString

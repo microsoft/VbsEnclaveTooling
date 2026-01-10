@@ -4,4 +4,5 @@
 // Auto-generated version file for edlcodgen.exe. Do not edit manually.
 #pragma once
 
-#define __VBS_ENCLAVE_CODEGEN_VERSION__ "0.0.0-Dev"
+// Codegen ABI version; increment only for breaking changes.
+#define VBS_ENCLAVE_CODEGEN_ABI_VERSION "1"
