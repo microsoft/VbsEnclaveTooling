@@ -1,14 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  <!-- 
-    Only use the Windows SDK props from nuget if the Windows native compiler is not enabled
-    Note: WindowsNativeCompilerEnabled is passed to the solution via an Azure pipeline job.
-  -->
-  <ImportGroup Label="CppSdkNugetProps" Condition="'$(WindowsNativeCompilerEnabled)'!='true'">
-    <Import Project="$(SolutionDir)packages\Microsoft.Windows.SDK.CPP.10.0.26100.7175\build\native\Microsoft.Windows.SDK.cpp.props" Condition="Exists('$(SolutionDir)packages\Microsoft.Windows.SDK.CPP.10.0.26100.7175\build\native\Microsoft.Windows.SDK.cpp.props')" />
-    <Import Project="$(SolutionDir)packages\Microsoft.Windows.SDK.CPP.arm64.10.0.26100.7175\build\native\Microsoft.Windows.SDK.cpp.arm64.props" Condition="Exists('$(SolutionDir)packages\Microsoft.Windows.SDK.CPP.arm64.10.0.26100.7175\build\native\Microsoft.Windows.SDK.cpp.arm64.props')" />
-    <Import Project="$(SolutionDir)packages\Microsoft.Windows.SDK.CPP.x64.10.0.26100.7175\build\native\Microsoft.Windows.SDK.cpp.x64.props" Condition="Exists('$(SolutionDir)packages\Microsoft.Windows.SDK.CPP.x64.10.0.26100.7175\build\native\Microsoft.Windows.SDK.cpp.x64.props')" />
-  </ImportGroup>
+  <Import Project="$(SolutionDir)packages\Microsoft.Windows.SDK.CPP.10.0.26100.7175\build\native\Microsoft.Windows.SDK.cpp.props" Condition="Exists('$(SolutionDir)packages\Microsoft.Windows.SDK.CPP.10.0.26100.7175\build\native\Microsoft.Windows.SDK.cpp.props')" />
+  <Import Project="$(SolutionDir)packages\Microsoft.Windows.SDK.CPP.arm64.10.0.26100.7175\build\native\Microsoft.Windows.SDK.cpp.arm64.props" Condition="Exists('$(SolutionDir)packages\Microsoft.Windows.SDK.CPP.arm64.10.0.26100.7175\build\native\Microsoft.Windows.SDK.cpp.arm64.props')" />
+  <Import Project="$(SolutionDir)packages\Microsoft.Windows.SDK.CPP.x64.10.0.26100.7175\build\native\Microsoft.Windows.SDK.cpp.x64.props" Condition="Exists('$(SolutionDir)packages\Microsoft.Windows.SDK.CPP.x64.10.0.26100.7175\build\native\Microsoft.Windows.SDK.cpp.x64.props')" />
   <Import Project="$(SolutionDir)packages\Microsoft.Windows.VbsEnclave.CodeGenerator.0.2.260106.1\build\native\Microsoft.Windows.VbsEnclave.CodeGenerator.props" Condition="Exists('$(SolutionDir)packages\Microsoft.Windows.VbsEnclave.CodeGenerator.0.2.260106.1\build\native\Microsoft.Windows.VbsEnclave.CodeGenerator.props')" />
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Debug|ARM64">
@@ -100,12 +94,12 @@
       <PreprocessorDefinitions>_VEIL_INTERNAL_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
   </ItemDefinitionGroup>
-    <!-- 
+  <!-- 
       Enable synchronized LKG and internal MsUCRT consumption. This is only used in internal pipeline builds
       when the Windows native compiler is used. Do not remove this group.
     -->
   <PropertyGroup>
-      <UseInternalMSUniCrtPackage>true</UseInternalMSUniCrtPackage>
+    <UseInternalMSUniCrtPackage>true</UseInternalMSUniCrtPackage>
   </PropertyGroup>
   <ItemDefinitionGroup>
     <ClCompile>
@@ -113,7 +107,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(SdkNugetHeaderIncludes);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
       <GuardEHContMetadata>true</GuardEHContMetadata>
     </ClCompile>

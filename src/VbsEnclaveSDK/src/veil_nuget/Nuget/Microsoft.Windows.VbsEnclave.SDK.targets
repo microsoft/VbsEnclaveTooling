@@ -9,6 +9,7 @@
         <VbsEnclaveSDKSrc>$(VbsEnclaveSdkPackageDir)src</VbsEnclaveSDKSrc>
         <VbsEnclaveNugetPackEnclaveLibPath>$(VbsEnclaveSdkPackageDir)lib\native\$(Platform)\$(Configuration)\veil_enclave.lib</VbsEnclaveNugetPackEnclaveLibPath>
         <VbsEnclaveNugetPackHostLibPath>$(VbsEnclaveSdkPackageDir)lib\native\$(Platform)\release\veil_host.lib</VbsEnclaveNugetPackHostLibPath>
+        <VbsEnclaveNugetPackHostDllPath>$(VbsEnclaveSdkPackageDir)lib\native\$(Platform)\release\veil_host.dll</VbsEnclaveNugetPackHostDllPath>
         <NugetSdkRoot Condition="$(Platform) == x64">$(winsdk_cpp_x64_root)</NugetSdkRoot>
 	    <NugetSdkRoot Condition="$(Platform) == ARM64">$(winsdk_cpp_arm64_root)</NugetSdkRoot>
 	    <VeInteropLib Condition="Exists('$(NugetSdkRoot)')">$(NugetSdkRoot)\um\$(Platform)\veinterop.lib</VeInteropLib>
@@ -46,5 +47,11 @@
             SkipUnchangedFiles="true"
             SourceFiles="@(VeilFilesToCopy)"
             DestinationFolder="$(VbsEnclaveGeneratedFilesDir)\VbsEnclave\Enclave\Abi" />
+
+        <!-- Copy veil_host.dll to output folder so developers don't have to manually copy it. -->
+        <Copy
+            SkipUnchangedFiles="true"
+            SourceFiles="$(VbsEnclaveNugetPackHostDllPath)"
+            DestinationFolder="$(OutDir)" />
     </Target>
 </Project>

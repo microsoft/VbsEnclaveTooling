@@ -3,7 +3,7 @@
 
 #pragma once
 
-#include "../../../../Common/veil_enclave_wil_inc/wil/enclave/wil_for_enclaves.h"
+#include <wil/enclave/wil_for_enclaves.h>
 
 #include <winenclave.h>
 #include <wchar.h>
