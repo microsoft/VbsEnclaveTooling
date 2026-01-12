@@ -29,7 +29,7 @@
     <file src="..\..\..\..\..\src\ToolingNuget\Nuget\Microsoft.Windows.VbsEnclave.shared.targets" target="build\native"/>
     <file src="..\..\veil_enclave_lib\**\*.h" exclude="..\..\veil_enclave_lib\Generated Files\**\*" target="src\veil\enclave" />
     <file src="..\..\veil_enclave_lib\Generated Files\VbsEnclave\Enclave\Abi\LinkerPragmas.veil_abi.cpp" target="src\exports" />
-    <file src="..\..\veil_host_lib\**\*.h" exclude="..\..\veil_enclave_lib\Generated Files\**\*" target="src\veil\host" />
+    <file src="..\..\veil_host_lib\**\*.h" exclude="..\..\veil_host_lib\Generated Files\**\*" target="src\veil\host" />
     <file src="..\..\veil_any_inc\**" target="src\veil\veil_any_inc" />
     <file src="..\..\..\..\..\Common\veil_enclave_wil_inc\**" target="src\" />
 

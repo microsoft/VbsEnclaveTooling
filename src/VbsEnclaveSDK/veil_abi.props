@@ -4,39 +4,5 @@
         <VbsEnclaveEdlPath>$(ProjectDir)..\..\veil_abi.edl</VbsEnclaveEdlPath>
         <VbsEnclaveVtl0ClassName>export_interface</VbsEnclaveVtl0ClassName>
         <VbsEnclaveNamespace>veil_abi</VbsEnclaveNamespace>
-
-        <!-- 
-            Shared path for the Microsoft.Windows.SDK.CPP NuGet package.
-            This is temporary until the installed SDK version in the private Azure pipelines
-            use version 10.0.26100.7175 or higher. Using the .props/.targets files from the NuGet package
-            directly is not possible due to conflicts with the Windows internal compiler .props/.targets files.
-            For building the host and enclave veil projects in the pipeline we only need to reference the headers from the SDK package.
-            Update these paths when if you install a new nuget package version.
-        -->
-        <SdkNugetHeaderPath>$(SolutionDir)packages\Microsoft.Windows.SDK.CPP.10.0.26100.7175\c\Include\10.0.26100.0</SdkNugetHeaderPath>
-        <SdkNugetHeaderIncludes>
-            $(SdkNugetHeaderPath)\cppwinrt;
-            $(SdkNugetHeaderPath)\shared;
-            $(SdkNugetHeaderPath)\ucrt;
-            $(SdkNugetHeaderPath)\um;
-            $(SdkNugetHeaderPath)\winrt;
-        </SdkNugetHeaderIncludes>
     </PropertyGroup>
-
-
-    <!-- Fail to build if the SDK NuGet headers are missing -->
-    <Target Name="ValidateSdkNugetHeaderPath"
-            BeforeTargets="PrepareForBuild">
-        <Error
-          Condition="!Exists('$(SdkNugetHeaderPath)')"
-          Text="
-            Microsoft.Windows.SDK.CPP NuGet headers not found at: $(SdkNugetHeaderPath)
-
-            This path is hard-coded and must be updated when the SDK NuGet version changes.
-            Either:
-                • Install the matching Microsoft.Windows.SDK.CPP NuGet package, or
-                • Update SdkNugetHeaderPath in the imported .props file, or
-                • Remove the override and rely on the installed Windows SDK.
-            " />
-    </Target>
 </Project>

@@ -1,14 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  <!-- 
-      Only use the Windows SDK props from nuget if the Windows native compiler is not enabled.
-      Note: WindowsNativeCompilerEnabled is passed to the solution via an Azure pipeline job.
-    -->
-  <ImportGroup Label="CppSdkNugetProps" Condition="'$(WindowsNativeCompilerEnabled)'!='true'">
-    <Import Project="$(SolutionDir)packages\Microsoft.Windows.SDK.CPP.10.0.26100.7175\build\native\Microsoft.Windows.SDK.cpp.props" Condition="Exists('$(SolutionDir)packages\Microsoft.Windows.SDK.CPP.10.0.26100.7175\build\native\Microsoft.Windows.SDK.cpp.props')" />
-    <Import Project="$(SolutionDir)packages\Microsoft.Windows.SDK.CPP.arm64.10.0.26100.7175\build\native\Microsoft.Windows.SDK.cpp.arm64.props" Condition="Exists('$(SolutionDir)packages\Microsoft.Windows.SDK.CPP.arm64.10.0.26100.7175\build\native\Microsoft.Windows.SDK.cpp.arm64.props')" />
-    <Import Project="$(SolutionDir)packages\Microsoft.Windows.SDK.CPP.x64.10.0.26100.7175\build\native\Microsoft.Windows.SDK.cpp.x64.props" Condition="Exists('$(SolutionDir)packages\Microsoft.Windows.SDK.CPP.x64.10.0.26100.7175\build\native\Microsoft.Windows.SDK.cpp.x64.props')" />
-  </ImportGroup>
+  <Import Project="$(SolutionDir)packages\Microsoft.Windows.SDK.CPP.10.0.26100.7463\build\native\Microsoft.Windows.SDK.cpp.props" Condition="Exists('$(SolutionDir)packages\Microsoft.Windows.SDK.CPP.10.0.26100.7463\build\native\Microsoft.Windows.SDK.cpp.props')" />
+  <Import Project="$(SolutionDir)packages\Microsoft.Windows.SDK.CPP.arm64.10.0.26100.7463\build\native\Microsoft.Windows.SDK.cpp.arm64.props" Condition="Exists('$(SolutionDir)packages\Microsoft.Windows.SDK.CPP.arm64.10.0.26100.7463\build\native\Microsoft.Windows.SDK.cpp.arm64.props')" />
+  <Import Project="$(SolutionDir)packages\Microsoft.Windows.SDK.CPP.x64.10.0.26100.7463\build\native\Microsoft.Windows.SDK.cpp.x64.props" Condition="Exists('$(SolutionDir)packages\Microsoft.Windows.SDK.CPP.x64.10.0.26100.7463\build\native\Microsoft.Windows.SDK.cpp.x64.props')" />
   <Import Project="$(SolutionDir)packages\Microsoft.Windows.VbsEnclave.CodeGenerator.0.2.260106.1\build\native\Microsoft.Windows.VbsEnclave.CodeGenerator.props" Condition="Exists('$(SolutionDir)packages\Microsoft.Windows.VbsEnclave.CodeGenerator.0.2.260106.1\build\native\Microsoft.Windows.VbsEnclave.CodeGenerator.props')" />
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Debug|ARM64">
@@ -41,7 +35,7 @@
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
   <Import Project="$(ProjectDir)..\..\veil_abi.props" />
-  <Import Project="$(SolutionDir)..\..\Common\veil_enclave_cpp_support_lib\Enclave.Hybrid.Ucrt.props"/>
+  <Import Project="$(SolutionDir)..\..\Common\veil_enclave_cpp_support_lib\Enclave.Hybrid.Ucrt.props" />
   <ImportGroup Label="Shared">
     <Import Project="..\veil_any_inc\veil_any_inc.vcxitems" Label="Shared" />
   </ImportGroup>
@@ -67,19 +61,17 @@
 	generated cpp files to the build directly using the vcxproj file. There seems to be
 	an issue with the target when using the Windows native compiler.
   -->
-  <Target Name="AddGeneratedFilesToBuild" Condition="'$(WindowsNativeCompilerEnabled)' == 'true'"></Target>
+  <Target Name="AddGeneratedFilesToBuild" Condition="'$(WindowsNativeCompilerEnabled)' == 'true'">
+  </Target>
   <ItemGroup>
     <ClCompile Include="Generated Files\VbsEnclave\Enclave\Abi\Exports.veil_abi.cpp" />
     <ClCompile Include="Generated Files\VbsEnclave\Enclave\Abi\LinkerPragmas.veil_abi.cpp" />
   </ItemGroup>
-
   <!-- 
     Only use the Windows SDK target from nuget if the Windows native compiler is not enabled.
     Note: WindowsNativeCompilerEnabled is passed to the solution via an Azure pipeline job.
   -->
-  <ImportGroup Label="CppSdkNugetTarget" Condition="'$(WindowsNativeCompilerEnabled)'!='true'">
-    <Import Project="$(SolutionDir)packages\Microsoft.Windows.SDK.CPP.10.0.26100.7175\build\native\Microsoft.Windows.SDK.cpp.targets" Condition="Exists('$(SolutionDir)packages\Microsoft.Windows.SDK.CPP.10.0.26100.7175\build\native\Microsoft.Windows.SDK.cpp.targets')" />
-  </ImportGroup>
+  <Import Project="$(SolutionDir)packages\Microsoft.Windows.SDK.CPP.10.0.26100.7463\build\native\Microsoft.Windows.SDK.cpp.targets" Condition="Exists('$(SolutionDir)packages\Microsoft.Windows.SDK.CPP.10.0.26100.7463\build\native\Microsoft.Windows.SDK.cpp.targets')" />
   <PropertyGroup>
     <!-- Unclear why this variable doesn't exist in the .nuget pkg for the SDK -->
     <WindowsSdk_EnclaveIncludes_Path>$(WindowsSdkDir)Include\$(WindowsSDKBuildToolsVersion)</WindowsSdk_EnclaveIncludes_Path>
@@ -106,7 +98,7 @@
       <RuntimeTypeInfo>false</RuntimeTypeInfo>
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
-      <AdditionalIncludeDirectories>$(SdkNugetHeaderIncludes);$(WindowsSdk_EnclaveIncludes_Path)\um;$(WindowsSdk_EnclaveIncludes_Path)\shared;$(WindowsSdk_EnclaveIncludes_Path)\ucrt;$(SolutionDir)..\..\Common\veil_enclave_wil_inc;$(MSBUILDThisFileDirectory)..\veil_enclave_inc;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(WindowsSdk_EnclaveIncludes_Path)\um;$(WindowsSdk_EnclaveIncludes_Path)\shared;$(WindowsSdk_EnclaveIncludes_Path)\ucrt;$(SolutionDir)..\..\Common\veil_enclave_wil_inc;$(MSBUILDThisFileDirectory)..\veil_enclave_inc;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp20</LanguageStandard>
       <GuardEHContMetadata>true</GuardEHContMetadata>
       <TreatWChar_tAsBuiltInType Condition="'$(WindowsNativeCompilerEnabled)'=='true'">false</TreatWChar_tAsBuiltInType>
