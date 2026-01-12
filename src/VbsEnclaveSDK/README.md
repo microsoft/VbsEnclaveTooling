@@ -48,8 +48,8 @@ Supported features
 ------------
 1. "Taskpool" support for the enclave by the HostApp. The enclave can now queue work onto vtl0 threads easily using veil::future/veil::promise behavior.
 1. Bcrypt wrapper methods to make encryption/decryption code easier to write.
-1. User binding of VBS enclaves is supported and requires Microsoft.Windows.SDK.CPP version 10.0.26100.7175 or later.
+1. User binding of VBS enclaves is supported and requires Microsoft.Windows.SDK.CPP version 10.0.26100.7463 or later.
 
 SDK Dependencies
 ------------
-The SDK now includes Microsoft.Windows.SDK.CPP version 10.0.26100.7175 as a dependency to provide access to the latest user binding APIs. This ensures that all user binding functionality is available out-of-the-box when consuming the VBS Enclave SDK.
+The SDK now includes Microsoft.Windows.SDK.CPP version 10.0.26100.7463 as a dependency to provide access to the latest user binding APIs. This ensures that all user binding functionality is available out-of-the-box when consuming the VBS Enclave SDK.
