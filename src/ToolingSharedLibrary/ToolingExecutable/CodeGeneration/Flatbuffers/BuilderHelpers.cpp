@@ -197,20 +197,30 @@ namespace CodeGeneration::Flatbuffers
             else if (declaration.IsEdlType(EdlTypeKind::Optional))
             {
                 auto& inner_type = declaration.m_edl_type_info.inner_type;
-                bool is_inner_a_struct = inner_type->m_type_kind == EdlTypeKind::Struct;
+                bool is_inner_struct_or_string =
+                    inner_type->m_type_kind == EdlTypeKind::Struct ||
+                    inner_type->m_type_kind == EdlTypeKind::String;
 
-                // In the flatbuffer schema, structs are optional by default without the "= null" expression.
+                // In the flatbuffer schema, structs & strings are optional by default without the "= null" expression.
                 // All other types need the "= null" expression to be considered optional.
-                auto optional_val = is_inner_a_struct ? "" : "= null";
+                auto optional_val = is_inner_struct_or_string ? "" : "= null";
                 table_body << std::format(
                     "    {} : {} {};\n",
                     declaration.m_name,
                     GetFlatBufferType(*inner_type),
                     optional_val);
             }
+            else if (declaration.IsEdlType(EdlTypeKind::String))
+            {
+                // For string fields that are non-optional make them required so flatbuffer
+                // doesn't generate them as optional.
+                table_body << std::format(
+                    "    {} : {} (required);\n",
+                    declaration.m_name,
+                    GetFlatBufferType(declaration.m_edl_type_info));
+            }
             else if (declaration.IsEdlType(EdlTypeKind::Struct) ||
-                     declaration.IsEdlType(EdlTypeKind::WString) ||
-                     declaration.IsEdlType(EdlTypeKind::String))
+                     declaration.IsEdlType(EdlTypeKind::WString))
             {
                 // We generate structs as tables using the Flatbuffer object api. Unfortunately for C++ it generates nested
                 // tables as unique_ptr<T> where T is the Flatbuffer representation of the struct. There is currently

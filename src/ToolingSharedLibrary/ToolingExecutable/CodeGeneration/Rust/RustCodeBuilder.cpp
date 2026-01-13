@@ -120,6 +120,14 @@ namespace CodeGeneration::Rust
         return full_enum.str();
     }
 
+    std::string GetBoxedInnerAttributeString()
+    {
+        // The flatbuffer generated type will be Option<Box<T>> where T is the flatbuffer representation.
+        // We need to add this attribute so the edlcodegen-macro crate knows how to convert the 
+        // Option<Box<T>> field to/from Option<U> where U is the developers representation of T.
+        return std::format("\n{}#[boxed_inner_target]\n", c_four_spaces);
+    }
+
     std::string CodeBuilder::BuildStructDefinition(
         std::string_view struct_name,
         const std::vector<Declaration>& fields)
@@ -136,29 +144,31 @@ namespace CodeGeneration::Rust
         for (auto& field : fields)
         {
             bool is_array = !field.m_array_dimensions.empty();
-            bool is_struct_or_wstring =
-                field.IsEdlType(EdlTypeKind::Struct) ||
-                field.IsEdlType(EdlTypeKind::WString);
 
-            if (!is_array && is_struct_or_wstring)
+            std::string field_type = GetFullDeclarationType(field);
+
+            if (!is_array && !field.IsOutParameterOnly() && IsStructOrWStringType(field))
             {
                 // The flatbuffer generated type will be Box<T> where T is the flatbuffer representation.
-                // We need to add this attribute so the edlcodegen-macro crate knows how to convert the field.
+                // We need to add this attribute so the edlcodegen-macro crate knows how to convert the
+                // Box<T> field to/from U where U is the developers representation of T.
                 full_struct << std::format("\n{}#[boxed_target]\n", c_four_spaces);
             }
-
-            if (field.IsEdlType(EdlTypeKind::Optional))
+            else if (!is_array && field.IsOutParameterOnly() && IsStructOrWStringType(field))
+            {
+                full_struct << GetBoxedInnerAttributeString();
+                field_type = std::format("Option<{}>", field_type);
+            }
+            else if (field.IsEdlType(EdlTypeKind::Optional))
             {
                 auto inner_type = field.m_edl_type_info.inner_type;
                 if (inner_type->m_type_kind == EdlTypeKind::Struct)
                 {
-                    // The flatbuffer generated type will be Option<Box<T>> where T is the flatbuffer representation.
-                    // We need to add this attribute so the edlcodegen-macro crate knows how to convert the field.
-                    full_struct << std::format("\n{}#[boxed_inner_target]\n", c_four_spaces);
+                    full_struct << GetBoxedInnerAttributeString();
                 }
             }
 
-            auto struct_field = std::format("pub {}: {}", field.m_name, GetFullDeclarationType(field));
+            auto struct_field = std::format("pub {}: {}", field.m_name, field_type);
             full_struct << std::format("{}{},\n", c_four_spaces, struct_field);
         }
 
@@ -239,10 +249,19 @@ namespace CodeGeneration::Rust
             bool func_returns_void = func.m_return_info.IsEdlType(EdlTypeKind::Void);
             auto abi_func_returned_value_name = func_returns_void ? "_" : "result";
             std::string return_statement_value = "()";
+            bool is_return_struct_or_wstring = IsStructOrWStringType(func.m_return_info);
 
-            if (!func_returns_void)
-            { 
+            if (!func_returns_void && !is_return_struct_or_wstring)
+            {
                 return_statement_value = std::format("result.m_{}", func.m_return_info.m_name);
+            }
+            // Struct and wstring return values are returned as Option<T> in the abi layer.
+            // They should never be None here, unless something went wrong in the abi layer.
+            else if (!func_returns_void && is_return_struct_or_wstring)
+            {
+                return_statement_value = std::format(
+                    "result.m_{}.expect(\"abi layer returned unexpected empty Option<T>\")",
+                    func.m_return_info.m_name);
             }
 
             std::string to_flatbuffer_statements =

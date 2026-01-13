@@ -333,11 +333,17 @@ R"(
     inline constexpr std::string_view c_enclave_closure_content_with_result =
 R"(abi_type.m__return_value_ = <$T>::{}({})?;)";
 
+    inline constexpr std::string_view c_enclave_closure_content_with_some =
+R"(abi_type.m__return_value_ = Some(<$T>::{}({})?);)";
+
     inline constexpr std::string_view c_enclave_closure_content_no_result =
 R"(<$T>::{}({})?;)";
 
 inline constexpr std::string_view c_host_closure_content_with_result =
  R"(abi_type.m__return_value_ = Self::{}({})?;)";
+
+inline constexpr std::string_view c_host_closure_content_with_some =
+ R"(abi_type.m__return_value_ = Some(Self::{}({})?);)";
 
 inline constexpr std::string_view c_host_closure_content_no_result =
  R"(Self::{}({})?;)";
