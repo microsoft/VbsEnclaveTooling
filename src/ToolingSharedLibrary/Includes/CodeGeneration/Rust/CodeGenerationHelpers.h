@@ -211,6 +211,12 @@ namespace CodeGeneration::Rust
         return param_update_statements.str();
     }
 
+    inline bool IsStructOrWStringType(const Declaration& declaration)
+    {
+        return declaration.IsEdlType(EdlTypeKind::Struct) ||
+               declaration.IsEdlType(EdlTypeKind::WString);
+    }
+
     inline std::string GetClosureFunctionStatement(
         const Function& function,
         VirtualTrustLayerKind vtl_kind)
@@ -233,6 +239,10 @@ namespace CodeGeneration::Rust
             return std::format(c_host_closure_content_no_result, function.m_name, abi_struct_fields.str());
 
         }
+        else if (IsStructOrWStringType(function.m_return_info) && vtl_kind == VirtualTrustLayerKind::HostApp)
+        {
+            return std::format(c_host_closure_content_with_some, function.m_name, abi_struct_fields.str());
+        }
         else if (vtl_kind == VirtualTrustLayerKind::HostApp)
         {
             return std::format(c_host_closure_content_with_result, function.m_name, abi_struct_fields.str());
@@ -241,6 +251,10 @@ namespace CodeGeneration::Rust
         if (returns_void)
         {
             return std::format(c_enclave_closure_content_no_result, function.m_name, abi_struct_fields.str());
+        }
+        else if (IsStructOrWStringType(function.m_return_info))
+        {
+            return std::format(c_enclave_closure_content_with_some, function.m_name, abi_struct_fields.str());
         }
 
         return std::format(c_enclave_closure_content_with_result, function.m_name, abi_struct_fields.str());
