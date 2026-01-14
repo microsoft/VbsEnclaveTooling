@@ -26,11 +26,11 @@ jobs:
       
       - name: fmt edlcodegen
         run: cargo fmt --all -- --check
-        working-directory: edlcodegen
+        working-directory: ./rust/edlcodegen
 
       - name: fmt sdk
         run: cargo fmt --all -- --check
-        working-directory: sdk
+        working-directory: ./rust/sdk
 
   # Confirm Rust linter doesn't produce errors.
   clippy:
@@ -41,11 +41,11 @@ jobs:
 
       - name: clippy edlcodegen
         run: cargo clippy --workspace --all-targets -- -D warnings
-        working-directory: edlcodegen
+        working-directory: ./rust/edlcodegen
 
       - name: clippy sdk
         run: cargo clippy --workspace --all-targets -- -D warnings
-        working-directory: sdk
+        working-directory: ./rust/sdk
 
  # Confirm all Rust tests pass without errors on x64 and arm64.
   test:
