@@ -6,7 +6,10 @@
         <VbsEnclaveNamespace>CodeGenTest</VbsEnclaveNamespace>
         <VbsEnclaveRustNamespace>code_gen_test</VbsEnclaveRustNamespace>
         <VbsEnclaveVtl0ClassName>CodeGenTestClass</VbsEnclaveVtl0ClassName>
-        <FlatbuffersCompiler>$(SolutionDir)src\ToolingSharedLibrary\vcpkg_installed\x64-windows-static-cfg\x64-windows-static-cfg\tools\flatbuffers\flatc.exe</FlatbuffersCompiler>
+        <FlatbuffersCompilerPath>$(SolutionDir)src\ToolingSharedLibrary\vcpkg_installed\x64-windows-static-cfg\x64-windows-static-cfg\tools\flatbuffers\flatc.exe</FlatbuffersCompilerPath>
+        <FlatbuffersCompiler Condition="Exists('$(FlatbuffersCompilerPath)')">$(FlatbuffersCompilerPath)</FlatbuffersCompiler>
+        <!-- Add fallback for builds that don't need to build flatc from scratch -->
+        <FlatbuffersCompiler Condition=" '$(FlatbuffersCompiler)' == '' ">$(SolutionDir)rust\edlcodegen\crates\libs\edlcodegen-tools\exes\flatbuffers\flatc.exe</FlatbuffersCompiler>
     </PropertyGroup>
 
     <!-- 

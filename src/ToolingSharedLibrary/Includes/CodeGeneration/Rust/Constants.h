@@ -31,6 +31,7 @@ publish = false
 [lib]
 doc = false
 doctest = false
+test = false
 
 [build-dependencies]
 edlcodegen-tools = {{ git = "https://github.com/microsoft/VbsEnclaveTooling" }}
@@ -194,6 +195,7 @@ pub mod {};
     inline constexpr std::string_view c_enclave_lib_rs =
 R"({}
 #![no_std]
+#![allow(clippy::all)]
 
 extern crate alloc;
 
@@ -210,6 +212,7 @@ pub use edlcodegen_enclave::enclave_helpers::{{
 
     inline constexpr std::string_view c_host_lib_rs =
 R"({}
+#![allow(clippy::all)]
 pub mod abi;
 pub use abi::abi_types::edl::WString;
 pub mod implementation;

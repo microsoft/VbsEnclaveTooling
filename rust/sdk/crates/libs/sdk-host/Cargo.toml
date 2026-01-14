@@ -13,3 +13,4 @@ features = [
 [dependencies]
 spin = { workspace = true }
 windows-link = { workspace = true }
+veil_abi_host_gen = { path = "./generated/veil_abi_gen" }

@@ -2,6 +2,7 @@
 // Changes to this file may be lost if the file is regenerated.
 
 #![no_std]
+#![allow(clippy::all)]
 
 extern crate alloc;
 
