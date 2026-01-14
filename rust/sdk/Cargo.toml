@@ -1,0 +1,17 @@
+[workspace]
+resolver = "3"
+members = [
+    "crates/libs/sdk-enclave",
+    "crates/libs/sdk-host",
+    "crates/tests/sdk",
+]
+
+[workspace.package]
+edition = "2024"
+
+[workspace.dependencies]
+vbsenclave-sdk-host = { version = "0.1.0", path = "crates/libs/sdk-host" }
+vbsenclave-sdk-enclave = { version = "0.1.0", path = "crates/libs/sdk-enclave" }
+spin = "0.10.0"
+windows = "0.62.2"
+windows-link = "0.2.1"

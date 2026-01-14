@@ -1,0 +1,15 @@
+[package]
+name = "vbsenclave-sdk-host"
+version = "0.1.0"
+edition.workspace = true
+
+[dependencies.windows]
+workspace = true
+features = [
+    "Win32_System",
+    "Win32_System_Memory",
+]
+
+[dependencies]
+spin = { workspace = true }
+windows-link = { workspace = true }

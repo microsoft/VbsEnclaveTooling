@@ -1,5 +1,5 @@
 # Helper script that ensures the EDL code generation tool is built and returns its path.
-$repoRoot = (Get-Item $PSScriptRoot).Parent.Parent.Parent.FullName
+$repoRoot = (Get-Item $PSScriptRoot).Parent.Parent.FullName
 $repoBuildScript = Join-Path $repoRoot "buildScripts\build.ps1"
 $edlCodeGenToolsPath = Join-Path $repoRoot "_build\x64\release\edlcodegen.exe"
 
