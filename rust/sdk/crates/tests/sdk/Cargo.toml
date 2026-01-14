@@ -1,0 +1,11 @@
+[package]
+name = "vbsenclave-sdk-tests"
+version = "0.0.0"
+edition.workspace = true
+publish = false
+
+[lib]
+doc = false
+doctest = false
+
+[dependencies]

@@ -15,4 +15,4 @@ edition = "2024"
 windows = "0.62.2"
 
 # TODO: once edlcodegen-tools is published we should be able to use the version in crates.io
-edlcodegen-tools = { path = "../../libs/edlcodegen-tools" }
+edlcodegen-tools = { git = "https://github.com/microsoft/VbsEnclaveTooling" }

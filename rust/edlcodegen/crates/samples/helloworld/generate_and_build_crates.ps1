@@ -13,7 +13,8 @@ param(
 $errorActionPreference = "Stop"
 
 # Locate shared scripts folder
-$scriptsDir = Resolve-Path "$PSScriptRoot\..\..\scripts"
+$repoRustRoot = Resolve-Path "$PSScriptRoot\..\..\..\.."
+$scriptsDir = Join-Path $repoRustRoot "scripts"
 
 # Import helper that sets $edlCodeGenToolsPath
 . "$scriptsDir\get_codegen_executable.ps1"
