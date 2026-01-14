@@ -13,7 +13,7 @@ $errorActionPreference = "Stop"
 
 # Generate edlcodegen crates for the workspace first before attempting
 # to build the sdk workspace.
-. "$PSScriptRoot\generate_workspace_codegen.ps1" 
+. "$PSScriptRoot\generate_codegen_for_workspace.ps1"
 
 # Build the sdk workspace now that codegeneration is completed.
 . "$scriptsDir\invoke_cargo_build.ps1" -Path $PSScriptRoot -Configuration $Configuration

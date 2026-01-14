@@ -1,0 +1,14 @@
+// The list of veinterop functions.
+// Note these functions below are not included in the Win32 metadata at present
+// and must therefore be defined by hand within the windows-enclaves crate for the moment.
+// Once they are we can add the bindgen parameters like we do in bcrypt.txt.
+
+InitializeUserBoundKeySession
+CreateUserBoundKeyRequestForRetrieveAuthorizationContext
+GetUserBoundKeyAuthContext
+ValidateUserBoundKeyAuthContext
+ProtectUserBoundKey
+CloseUserBoundKeyAuthContext
+CloseUserBoundKeySession
+CreateUserBoundKeyRequestForDeriveSharedSecret
+UnprotectUserBoundKey

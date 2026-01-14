@@ -6,6 +6,7 @@ members = [
     "crates/libs/sdk-enclave/generated/veil_abi_gen",
     "crates/libs/sdk-host/generated/veil_abi_gen",
     "crates/tests/sdk",
+    "crates/libs/windows-enclave",
 ]
 
 [workspace.package]
@@ -14,6 +15,9 @@ edition = "2024"
 [workspace.dependencies]
 vbsenclave-sdk-host = { version = "0.1.0", path = "crates/libs/sdk-host" }
 vbsenclave-sdk-enclave = { version = "0.1.0", path = "crates/libs/sdk-enclave" }
+windows-enclave = { version = "0.1.0", path = "crates/libs/windows-enclave" }
 spin = "0.10.0"
 windows = "0.62.2"
 windows-link = "0.2.1"
+windows-bindgen = "0.66.0"
+regex = "1.11"

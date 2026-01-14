@@ -1,0 +1,150 @@
+// The list of filtered functions is taken from here:
+// https://learn.microsoft.com/en-us/windows/win32/trusted-execution/enclaves-available-in-vertdll
+//
+// Note that the commented out functions below are not included in the Win32 metadata at present
+// and must therefore be defined by hand within the windows-enclaves crate for the moment.
+
+// EnclaveCopyIntoEnclave
+// EnclaveCopyOutOfEnclave
+// EnclaveRestrictContainingProcessAccess
+// InterlockedPushListSList
+// LdrDisableThreadCalloutsForDll
+// LdrResolveDelayLoadedAPI
+// RtlGetLastNtStatus
+// RtlRaiseStatus
+// RtlUnhandledExceptionFilter
+
+--out {0}/vertdll.rs
+--flat --sys --no-comment --no-allow --no-deps
+--filter
+
+//
+// APIs
+//
+AcquireSRWLockExclusive
+AcquireSRWLockShared
+CallEnclave
+DeleteCriticalSection
+DeleteSynchronizationBarrier
+DisableThreadLibraryCalls
+EnclaveGetAttestationReport
+EnclaveGetEnclaveInformation
+EnclaveSealData
+EnclaveUnsealData
+EnclaveVerifyAttestationReport
+EnterCriticalSection
+EnterSynchronizationBarrier
+GetCurrentProcess
+GetCurrentThread
+GetCurrentThreadId
+GetLastError
+GetModuleHandleExW
+GetProcAddress
+GetProcessHeap
+GetProcessHeaps
+HeapAlloc
+HeapCompact
+HeapCreate
+HeapDestroy
+HeapFree
+HeapLock
+HeapReAlloc
+HeapSize
+HeapUnlock
+IMAGE_DELAYLOAD_DESCRIPTOR
+IMAGE_THUNK_DATA32
+InitializeConditionVariable
+InitializeCriticalSection
+InitializeCriticalSectionAndSpinCount
+InitializeCriticalSectionEx
+InitializeSListHead
+InitializeSRWLock
+InitializeSynchronizationBarrier
+InterlockedFlushSList
+InterlockedPopEntrySList
+InterlockedPushEntrySList
+InterlockedPushListSListEx
+IsProcessorFeaturePresent
+LeaveCriticalSection
+MultiByteToWideChar
+NtTerminateProcess
+OutputDebugStringW
+PDELAYLOAD_FAILURE_DLL_CALLBACK
+QueryDepthSList
+RaiseException
+ReleaseSRWLockExclusive
+ReleaseSRWLockShared
+RtlCaptureContext
+RtlGetSystemGlobalData
+RtlLookupFunctionEntry
+RtlPcToFileHeader
+RtlTimeFieldsToTime
+RtlUnwind
+RtlUnwindEx
+RtlVirtualUnwind
+SetCriticalSectionSpinCount
+SetLastError
+SetThreadStackGuarantee
+SetUnhandledExceptionFilter
+SleepConditionVariableCS
+SleepConditionVariableSRW
+TerminateProcess
+TlsAlloc
+TlsFree
+TlsGetValue
+TlsSetValue
+TryAcquireSRWLockExclusive
+TryAcquireSRWLockShared
+TryEnterCriticalSection
+VirtualAlloc
+VirtualFree
+VirtualProtect
+VirtualQuery
+WaitOnAddress
+WakeAllConditionVariable
+WakeByAddressAll
+WakeByAddressSingle
+WakeConditionVariable
+WideCharToMultiByte
+
+//
+// Flags and constants
+//
+
+// Enclave constants flags
+ENCLAVE_RUNTIME_POLICY_ALLOW_FULL_DEBUG
+ENCLAVE_RUNTIME_POLICY_ALLOW_DYNAMIC_DEBUG
+ENCLAVE_UNSEAL_FLAG_STALE_KEY
+ENCLAVE_FLAG_FULL_DEBUG_ENABLED
+ENCLAVE_FLAG_DYNAMIC_DEBUG_ENABLED
+ENCLAVE_FLAG_DYNAMIC_DEBUG_ACTIVE
+VBS_ENCLAVE_REPORT_PKG_HEADER_VERSION_CURRENT
+VBS_ENCLAVE_REPORT_SIGNATURE_SCHEME_SHA256_RSA_PSS_SHA256
+VBS_ENCLAVE_REPORT_VERSION_CURRENT
+ENCLAVE_REPORT_DATA_LENGTH
+VBS_ENCLAVE_VARDATA_INVALID
+VBS_ENCLAVE_VARDATA_MODULE
+ENCLAVE_VBS_BASIC_KEY_FLAG_MEASUREMENT
+ENCLAVE_VBS_BASIC_KEY_FLAG_FAMILY_ID
+ENCLAVE_VBS_BASIC_KEY_FLAG_IMAGE_ID
+ENCLAVE_VBS_BASIC_KEY_FLAG_DEBUG_KEY
+
+// Synchronization / wait flags
+INFINITE
+WAIT_FAILED
+WAIT_OBJECT_0
+WAIT_TIMEOUT
+
+// SRW / condition variable flags
+CONDITION_VARIABLE_LOCKMODE_SHARED
+
+// Thread / exception flags
+EXCEPTION_NONCONTINUABLE
+EXCEPTION_UNWINDING
+EXCEPTION_EXIT_UNWIND
+EXCEPTION_STACK_INVALID
+EXCEPTION_NESTED_CALL
+
+// RaiseException flags
+EXCEPTION_CONTINUE_EXECUTION
+EXCEPTION_CONTINUE_SEARCH
