@@ -23,7 +23,14 @@ jobs:
     steps:
       - uses: actions/checkout@v5
       - run: rustup update stable
-      - run: cargo fmt --all -- --check
+      
+      - name: fmt edlcodegen
+        run: cargo fmt --all -- --check
+        working-directory: edlcodegen
+
+      - name: fmt sdk
+        run: cargo fmt --all -- --check
+        working-directory: sdk
 
   # Confirm Rust linter doesn't produce errors.
   clippy:
@@ -31,7 +38,14 @@ jobs:
     steps:
       - uses: actions/checkout@v5
       - run: rustup update stable
-      - run: cargo clippy --workspace --all-targets -- -D warnings
+
+      - name: clippy edlcodegen
+        run: cargo clippy --workspace --all-targets -- -D warnings
+        working-directory: edlcodegen
+
+      - name: clippy sdk
+        run: cargo clippy --workspace --all-targets -- -D warnings
+        working-directory: sdk
 
  # Confirm all Rust tests pass without errors on x64 and arm64.
   test:
@@ -58,6 +72,19 @@ jobs:
         run: rustup target add ${{ matrix.target }}
       - name: Install fmt, clippy
         run: rustup component add clippy rustfmt
-      - name: Clean
+
+      - name: Clean Edlcodegen
+        working-directory: ./rust/edlcodegen
         run: cargo clean
-      - run: cargo test --workspace
+
+      - name: test Edlcodegen
+        working-directory: ./rust/edlcodegen
+        run: cargo test --workspace
+
+      - name: Clean SDK
+        working-directory: ./rust/sdk
+        run: cargo clean
+
+      - name: test SDK
+        working-directory: ./rust/sdk
+        run: cargo test --workspace
