@@ -32,7 +32,7 @@ jobs:
         shell: pwsh
         working-directory: ./rust/sdk
         run: |
-          pwsh ./generate_codegen_crates.ps1
+          pwsh ./generate_codegen_for_workspace.ps1
 
       - name: fmt sdk
         run: cargo fmt --all -- --check
@@ -53,7 +53,7 @@ jobs:
         shell: pwsh
         working-directory: ./rust/sdk
         run: |
-          pwsh ./generate_codegen_crates.ps1
+          pwsh ./generate_codegen_for_workspace.ps1
           
       - name: clippy sdk
         run: cargo clippy --workspace --all-targets -- -D warnings
@@ -89,7 +89,7 @@ jobs:
         shell: pwsh
         working-directory: ./rust/sdk
         run: |
-          pwsh ./generate_codegen_crates.ps1
+          pwsh ./generate_codegen_for_workspace.ps1
 
       - name: test Edlcodegen
         working-directory: ./rust/edlcodegen
