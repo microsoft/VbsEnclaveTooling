@@ -28,6 +28,12 @@ jobs:
         run: cargo fmt --all -- --check
         working-directory: ./rust/edlcodegen
 
+      - name: Generate edlcodegen bindings for the sdk
+        shell: pwsh
+        working-directory: ./rust/sdk
+        run: |
+          pwsh ./generate_codegen_for_workspace.ps1
+
       - name: fmt sdk
         run: cargo fmt --all -- --check
         working-directory: ./rust/sdk
@@ -43,6 +49,12 @@ jobs:
         run: cargo clippy --workspace --all-targets -- -D warnings
         working-directory: ./rust/edlcodegen
 
+      - name: Generate edlcodegen bindings for the sdk
+        shell: pwsh
+        working-directory: ./rust/sdk
+        run: |
+          pwsh ./generate_codegen_for_workspace.ps1
+          
       - name: clippy sdk
         run: cargo clippy --workspace --all-targets -- -D warnings
         working-directory: ./rust/sdk
@@ -73,17 +85,15 @@ jobs:
       - name: Install fmt, clippy
         run: rustup component add clippy rustfmt
 
-      - name: Clean Edlcodegen
-        working-directory: ./rust/edlcodegen
-        run: cargo clean
+      - name: Generate edlcodegen bindings for the sdk
+        shell: pwsh
+        working-directory: ./rust/sdk
+        run: |
+          pwsh ./generate_codegen_for_workspace.ps1
 
       - name: test Edlcodegen
         working-directory: ./rust/edlcodegen
         run: cargo test --workspace
-
-      - name: Clean SDK
-        working-directory: ./rust/sdk
-        run: cargo clean
 
       - name: test SDK
         working-directory: ./rust/sdk

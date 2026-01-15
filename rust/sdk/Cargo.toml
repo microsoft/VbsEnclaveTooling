@@ -3,6 +3,8 @@ resolver = "3"
 members = [
     "crates/libs/sdk-enclave",
     "crates/libs/sdk-host",
+    "crates/libs/sdk-enclave/generated/veil_abi_gen",
+    "crates/libs/sdk-host/generated/veil_abi_gen",
     "crates/tests/sdk",
 ]
 
