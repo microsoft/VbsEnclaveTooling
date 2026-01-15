@@ -21,7 +21,7 @@ $ErrorActionPreference = "Stop"
 # Import helper that sets $edlCodeGenToolsPath
 . "$PSScriptRoot\get_codegen_executable.ps1"
 
-# Run codegen for the sdk enclave crate
+# Run codegen for the enclave crate
 & $edlCodeGenToolsPath `
     --namespace $Namespace `
     --language rust `
@@ -29,7 +29,7 @@ $ErrorActionPreference = "Stop"
     --VirtualTrustLayer enclave `
     --OutputDirectory $EnclaveOutDir
 
-# Run codegen for the sdk host crate
+# Run codegen for the host crate
 & $edlCodeGenToolsPath `
     --namespace $Namespace `
     --language rust `
