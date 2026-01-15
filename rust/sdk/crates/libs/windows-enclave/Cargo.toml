@@ -1,0 +1,11 @@
+[package]
+name = "windows-enclave"
+version = "0.1.0"
+edition.workspace = true
+
+[build-dependencies]
+windows-bindgen = { workspace = true }
+regex = { workspace = true }
+
+[dependencies]
+windows-link = { workspace = true }
