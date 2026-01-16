@@ -1,0 +1,20 @@
+[package]
+name = "userboundkey-kcm"
+version = "0.1.0"
+edition.workspace = true
+
+[build-dependencies]
+windows-bindgen = { workspace = true }
+
+[dependencies.windows]
+workspace = true
+features = [
+    "Security_Credentials",
+    "Security_Cryptography",
+    "Security_Cryptography_Certificates"
+]
+
+[dependencies]
+windows-core = { workspace = true }
+windows-future = { workspace = true }
+
