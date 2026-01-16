@@ -8,9 +8,12 @@ workspace = true
 features = [
     "Win32_System",
     "Win32_System_Memory",
+    "Security_Credentials",
+    "Security_Cryptography",
+    "Security_Cryptography_Certificates"
 ]
 
 [dependencies]
 spin = { workspace = true }
-windows-link = { workspace = true }
+userboundkey-kcm = { workspace = true }
 veil_abi_host_gen = { path = "./generated/veil_abi_gen" }
