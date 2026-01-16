@@ -21,7 +21,6 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         &bindings_out_path,
         "--flat",
         "--implement",
-        "--derive",
         "--filter",
         "Windows.Foundation.TimeSpan",
         "Windows.Security.Credentials.AttestationChallengeHandler",
