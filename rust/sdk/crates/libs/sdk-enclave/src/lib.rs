@@ -5,3 +5,6 @@
 extern crate alloc;
 
 mod enclave_ffi;
+
+#[cfg(feature = "userboundkey")]
+pub mod userboundkey;

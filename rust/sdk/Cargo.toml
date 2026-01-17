@@ -3,8 +3,8 @@ resolver = "3"
 members = [
     "crates/libs/sdk-enclave",
     "crates/libs/sdk-host",
-    "crates/libs/sdk-enclave/generated/veil_abi_gen",
-    "crates/libs/sdk-host/generated/veil_abi_gen",
+    "crates/libs/sdk-enclave/generated/userboundkey_gen",
+    "crates/libs/sdk-host/generated/userboundkey_gen",
     "crates/libs/userboundkey-kcm",
     "crates/tests/sdk",
     "crates/libs/windows-enclave",

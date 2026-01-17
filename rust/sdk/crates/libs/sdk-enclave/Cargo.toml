@@ -3,8 +3,11 @@ name = "vbsenclave-sdk-enclave"
 version = "0.1.0"
 edition =  { workspace = true }
 
+[features]
+default = []
+userboundkey = []
+
 [dependencies]
 spin = { workspace = true }
-veil_abi_enclave_gen = { path = "./generated/veil_abi_gen" }
-windows-enclave = {workspace = true }
-
+userboundkey_enclave_gen = { path = "./generated/userboundkey_gen" }
+windows-enclave = { workspace = true }

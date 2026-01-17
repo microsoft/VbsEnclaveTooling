@@ -3,17 +3,26 @@ name = "vbsenclave-sdk-host"
 version = "0.1.0"
 edition.workspace = true
 
+[features]
+default = []
+userboundkey = []
+
 [dependencies.windows]
 workspace = true
 features = [
     "Win32_System",
     "Win32_System_Memory",
+    "Win32_System_Threading",
+    "Win32_Security",
+    "Win32_Security_Authorization",
     "Security_Credentials",
     "Security_Cryptography",
-    "Security_Cryptography_Certificates"
+    "Storage_Streams"
 ]
 
 [dependencies]
 spin = { workspace = true }
 userboundkey-kcm = { workspace = true }
-veil_abi_host_gen = { path = "./generated/veil_abi_gen" }
+userboundkey_host_gen = { path = "./generated/userboundkey_gen" }
+windows-core = { workspace = true }
+windows-future = { workspace = true }

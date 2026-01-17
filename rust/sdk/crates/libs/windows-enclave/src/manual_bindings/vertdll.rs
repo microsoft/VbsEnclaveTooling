@@ -58,3 +58,13 @@ pub const PAGE_WRITECOPY: u32 = 8u32;
 pub const MEM_IMAGE: PAGE_TYPE = 16777216u32;
 pub const MEM_MAPPED: u32 = 262144u32;
 pub const MEM_PRIVATE: u32 = 131072u32;
+
+// Enclave identity constants (used for manual struct definitions if needed)
+// Note: ENCLAVE_IDENTITY and ENCLAVE_INFORMATION structs are in generated bindings
+pub const IMAGE_ENCLAVE_LONG_ID_LENGTH: usize = 32;
+pub const IMAGE_ENCLAVE_SHORT_ID_LENGTH: usize = 16;
+
+// Enclave type constants (not in generated bindings)
+pub const ENCLAVE_TYPE_SGX: u32 = 0x00000001;
+pub const ENCLAVE_TYPE_SGX2: u32 = 0x00000002;
+pub const ENCLAVE_TYPE_VBS: u32 = 0x00000010;

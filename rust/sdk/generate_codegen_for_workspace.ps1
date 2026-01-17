@@ -18,6 +18,15 @@ $hostSdkCrate    = Join-Path $SdkWorkspacePath "crates/libs/sdk-host"
     -Namespace "veil_abi" `
     -Vtl0ClassName "export_interface"
 
+# Generate userboundkey-specific EDL crates
+$userboundkeyEdlPath = Join-Path $SdkWorkspacePath "crates\libs\userboundkey.edl"
+. "$scriptsDir\generate_codegen_crates.ps1" `
+    -HostAppOutDir "$hostSdkCrate\generated" `
+    -EnclaveOutDir "$enclaveSdkCrate\generated" `
+    -EdlPath $userboundkeyEdlPath `
+    -Namespace "userboundkey" `
+    -Vtl0ClassName "UserBoundKeyVtl0Host"
+
 # Below this comment, Call the generate_codegen_crates.ps1 script
 # on any other crates in the sdk workspace that need codegen bindings.
 # E.g for any sample crates.
