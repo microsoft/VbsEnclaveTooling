@@ -16,7 +16,7 @@ pub mod win_enclave_bindings;
 // on edlcodegen-core directly.
 pub use edlcodegen_core::EdlDerive;
 pub use edlcodegen_core::edl_core_types::AbiError;
-pub use edlcodegen_core::helpers::assign_if_some;
 pub use edlcodegen_core::flatbuffer_support::FlatbufferPack;
+pub use edlcodegen_core::helpers::assign_if_some;
 pub use edlcodegen_core::impl_flatbuffer_pack;
 pub use edlcodegen_core::return_hr_as_pvoid;

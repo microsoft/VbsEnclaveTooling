@@ -84,7 +84,7 @@ macro_rules! return_hr_as_pvoid {
 }
 
 pub fn assign_if_some<T>(dst: Option<&mut T>, src: Option<T>) {
-    if let (Some(dst_obj  ), Some(src_obj)) = (dst, src) {
+    if let (Some(dst_obj), Some(src_obj)) = (dst, src) {
         *dst_obj = src_obj;
     }
 }
