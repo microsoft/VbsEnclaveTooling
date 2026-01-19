@@ -276,9 +276,8 @@ use crate::abi::fb_support::fb_types::{}::flatbuffer_types;
 use crate::implementation::types::*;
 use alloc::string::{{String, ToString}};
 use alloc::vec::Vec;
- use crate::alloc::borrow::ToOwned;
+use crate::alloc::borrow::ToOwned;
 use edlcodegen_enclave::enclave_helpers::call_vtl0_callback_from_vtl1;
-use edlcodegen_enclave::assign_if_some;
 {}
 )";
 
@@ -307,7 +306,6 @@ use crate::abi::fb_support::fb_types::{}::flatbuffer_types;
 use crate::implementation::types::*;
 use crate::implementation::untrusted::Untrusted;
 use edlcodegen_host::host_helpers::call_vtl1_export_from_vtl0;
-use edlcodegen_host::assign_if_some;
 
 use edlcodegen_host::EnclaveHandle;
 use windows_strings::s;

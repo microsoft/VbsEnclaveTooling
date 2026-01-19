@@ -10,9 +10,8 @@ use crate::abi::fb_support::fb_types::code_gen_test::flatbuffer_types;
 use crate::implementation::types::*;
 use alloc::string::{String, ToString};
 use alloc::vec::Vec;
- use crate::alloc::borrow::ToOwned;
+use crate::alloc::borrow::ToOwned;
 use edlcodegen_enclave::enclave_helpers::call_vtl0_callback_from_vtl1;
-use edlcodegen_enclave::assign_if_some;
 
 pub fn FuncWithAllArgs(arg1 : bool, arg2 : Option<&u32>, arg3 : Option<&mut i32>, arg4 : Option<&mut u64>, arg5 : &mut TestStruct1, arg6 : Option<&mut TestStruct2>, arg7 : &mut Vec<TestStruct2>, arg8 : &mut Vec<i16>, arg9 : &mut [widestring::U16String;2]) -> Result<i32, edlcodegen_enclave::AbiError>
 {
@@ -27,10 +26,10 @@ pub fn FuncWithAllArgs(arg1 : bool, arg2 : Option<&u32>, arg3 : Option<&mut i32>
 
     let fb_native : FlatBufferT = abi_type.into();
     let result = call_vtl0_callback_from_vtl1::<AbiTypeT, FlatBufferT>(&fb_native, "FuncWithAllArgs_1_Generated_Stub")?;
-    assign_if_some(arg3, result.m_arg3);
-    assign_if_some(arg4, result.m_arg4);
+    edlcodegen_enclave::assign_if_some(arg3, result.m_arg3);
+    edlcodegen_enclave::assign_if_some(arg4, result.m_arg4);
     *arg5 = result.m_arg5;
-    assign_if_some(arg6, result.m_arg6);
+    edlcodegen_enclave::assign_if_some(arg6, result.m_arg6);
     *arg7 = result.m_arg7;
     *arg8 = result.m_arg8;
     *arg9 = result.m_arg9;

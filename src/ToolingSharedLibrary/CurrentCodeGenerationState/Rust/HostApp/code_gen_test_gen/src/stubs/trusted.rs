@@ -10,7 +10,6 @@ use crate::abi::fb_support::fb_types::code_gen_test::flatbuffer_types;
 use crate::implementation::types::*;
 use crate::implementation::untrusted::Untrusted;
 use edlcodegen_host::host_helpers::call_vtl1_export_from_vtl0;
-use edlcodegen_host::assign_if_some;
 
 use edlcodegen_host::EnclaveHandle;
 use windows_strings::s;
@@ -37,10 +36,10 @@ impl CodeGenTestClass {
 
         let fb_native : FlatBufferT = abi_type.into();
         let result = call_vtl1_export_from_vtl0::<AbiTypeT, FlatBufferT>(&fb_native, self.enclave_handle.0, s!("FuncWithAllArgs_0_Generated_Stub"))?;
-        assign_if_some(arg3, result.m_arg3);
-        assign_if_some(arg4, result.m_arg4);
+        edlcodegen_host::assign_if_some(arg3, result.m_arg3);
+        edlcodegen_host::assign_if_some(arg4, result.m_arg4);
         *arg5 = result.m_arg5;
-        assign_if_some(arg6, result.m_arg6);
+        edlcodegen_host::assign_if_some(arg6, result.m_arg6);
         *arg7 = result.m_arg7;
         *arg8 = result.m_arg8;
         *arg9 = result.m_arg9;

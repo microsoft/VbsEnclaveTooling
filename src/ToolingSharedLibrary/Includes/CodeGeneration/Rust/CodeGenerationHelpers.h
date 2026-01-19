@@ -311,6 +311,7 @@ namespace CodeGeneration::Rust
 
     inline std::string GetMoveFromAbiStructToParamStatements(
         uint32_t indentation,
+        std::string_view parent_crate,
         const std::vector<Declaration>& parameters)
     {
         std::ostringstream param_update_statements {};
@@ -344,8 +345,9 @@ namespace CodeGeneration::Rust
             else if (param.IsInOutOrOutParameter() && param.IsEdlType(EdlTypeKind::Optional))
             {
                 param_update_statements << std::format(
-                    "{}assign_if_some({}, result.m_{});\n",
+                    "{}{}::assign_if_some({}, result.m_{});\n",
                     tabs,
+                    parent_crate,
                     param.m_name,
                     param.m_name);
             }

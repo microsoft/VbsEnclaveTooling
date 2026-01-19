@@ -267,8 +267,12 @@ namespace CodeGeneration::Rust
             std::string to_flatbuffer_statements =
                 GetCloneToAbiStructStatements(indentation, func.m_parameters);
 
+            auto parent_crate = vtl_kind == VirtualTrustLayerKind::HostApp 
+                ? "edlcodegen_host" 
+                : "edlcodegen_enclave";
+
             std::string to_inout_param_statements =
-                GetMoveFromAbiStructToParamStatements(indentation, func.m_parameters);
+                GetMoveFromAbiStructToParamStatements(indentation, parent_crate, func.m_parameters);
 
             auto abi_func_struct_name = std::format(c_function_args_struct, func.abi_m_name);
             auto param_list = GenerateFunctionParametersList(func.m_parameters);
