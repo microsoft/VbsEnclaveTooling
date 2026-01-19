@@ -82,3 +82,9 @@ macro_rules! return_hr_as_pvoid {
         return $crate::edl_core_types::S_OK as *mut core::ffi::c_void;
     }};
 }
+
+pub fn assign_if_some<T>(dst: Option<&mut T>, src: Option<T>) {
+    if let (Some(dst_obj  ), Some(src_obj)) = (dst, src) {
+        *dst_obj = src_obj;
+    }
+}

@@ -77,8 +77,7 @@ namespace CodeGeneration::Rust
             crate_info.m_alloc_imports,
             developer_namespace_name,
             crate_info.m_crate_name,
-            types_module.str(),
-            crate_info.m_vec_import);
+            types_module.str());
     }
 
     Definition CodeBuilder::BuildStartOfDefinition(
@@ -145,7 +144,7 @@ namespace CodeGeneration::Rust
         {
             bool is_array = !field.m_array_dimensions.empty();
 
-            std::string field_type = GetFullDeclarationType(field);
+            std::string field_type = GetBasicRustTypeInfo(field);
 
             if (!is_array && !field.IsOutParameterOnly() && IsStructOrWStringType(field))
             {
@@ -208,7 +207,7 @@ namespace CodeGeneration::Rust
         for (auto& func : functions.values())
         {
             auto returned_result = std::format("Result<{}, edlcodegen_{}::AbiError>",
-                GetFullDeclarationType(func.m_return_info),
+                GetBasicRustTypeInfo(func.m_return_info),
                 vtl_kind == VirtualTrustLayerKind::HostApp ? "host" : "enclave");
 
             trait_functions << std::format(
@@ -260,7 +259,8 @@ namespace CodeGeneration::Rust
             else if (!func_returns_void && is_return_struct_or_wstring)
             {
                 return_statement_value = std::format(
-                    "result.m_{}.expect(\"abi layer returned unexpected empty Option<T>\")",
+                    "result.m_{}.expect(\"Unexpected empty Option ({})\")",
+                    func.m_return_info.m_name,
                     func.m_return_info.m_name);
             }
 
@@ -272,7 +272,7 @@ namespace CodeGeneration::Rust
 
             auto abi_func_struct_name = std::format(c_function_args_struct, func.abi_m_name);
             auto param_list = GenerateFunctionParametersList(func.m_parameters);
-            auto return_type = GetFullDeclarationType(func.m_return_info);
+            auto return_type = GetBasicRustTypeInfo(func.m_return_info);
             auto abi_stub_func_name = std::format(c_generated_stub_name_no_quotes, func.abi_m_name);
 
             mod_content << FormatString(

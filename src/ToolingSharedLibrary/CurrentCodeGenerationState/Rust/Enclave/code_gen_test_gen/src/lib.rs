@@ -7,7 +7,6 @@
 extern crate alloc;
 
 pub mod abi;
-pub use abi::abi_types::edl::WString;
 pub mod implementation;
 pub mod stubs;
 pub use edlcodegen_enclave::enclave_ffi::enable_enclave_restrict_containing_process_access_once;

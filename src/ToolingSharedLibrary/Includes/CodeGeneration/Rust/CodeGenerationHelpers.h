@@ -15,7 +15,10 @@ namespace CodeGeneration::Rust
 {
     using namespace CodeGeneration::Common;
 
-    inline std::string EdlTypeToRustType(const EdlTypeInfo& info)
+    inline bool IsStructOrWStringType(const Declaration& declaration);
+    inline std::string GetParameterSyntax(const Declaration& declaration);
+
+    inline std::string EdlTypeToRustType(const EdlTypeInfo& info, bool is_string_slice = false)
     {
         switch (info.m_type_kind)
         {
@@ -38,9 +41,9 @@ namespace CodeGeneration::Rust
             case EdlTypeKind::UIntPtr:
                 return "u64";
             case EdlTypeKind::String:
-                return "String";
+                return (is_string_slice) ? "str" : "String";
             case EdlTypeKind::WString:
-                return "edl::WString";
+                return (is_string_slice) ? "widestring::U16Str" : "widestring::U16String";
             default:
                 return info.m_name;
         }
@@ -58,31 +61,67 @@ namespace CodeGeneration::Rust
         return result;
     }
 
+    inline std::string GetBasicRustTypeInfo(const Declaration& declaration)
+    {
+        if (declaration.IsEdlType(EdlTypeKind::Optional))
+        {
+            return std::format("Option<{}>", EdlTypeToRustType(*declaration.m_edl_type_info.inner_type));
+        }
+        else if (declaration.IsEdlType(EdlTypeKind::Vector))
+        {
+            return std::format("Vec<{}>", EdlTypeToRustType(*declaration.m_edl_type_info.inner_type));
+        }
+        else if (declaration.IsEdlType(EdlTypeKind::Void))
+        {
+            return "()";
+        } 
+        else if (!declaration.m_array_dimensions.empty())
+        {
+            auto arr_size = declaration.m_array_dimensions.front();
+            auto type_name = EdlTypeToRustType(declaration.m_edl_type_info);
+            return std::format(c_array_initializer, type_name, TransformCaseToUpper(arr_size));
+        }
+
+        return EdlTypeToRustType(declaration.m_edl_type_info);
+    }
+
+    inline std::string GetInnerTypeAndParameterSyntax(
+        const Declaration& declaration,
+        bool should_use_string_slice,
+        std::string& out_inner_type_name)
+    {
+        auto inner_type = declaration.m_edl_type_info.inner_type;
+        out_inner_type_name = EdlTypeToRustType(*inner_type, should_use_string_slice);
+        return GetParameterSyntax(declaration);
+    }
     inline std::string AddVectorEncapulation(const Declaration& vector_declaration)
     {
-        auto inner_type = vector_declaration.m_edl_type_info.inner_type;
-        auto inner_type_name = EdlTypeToRustType(*inner_type);
-        return std::format("Vec<{}>", inner_type_name);
+        std::string inner_type_name;
+        auto param_syntax = GetInnerTypeAndParameterSyntax(vector_declaration, false, inner_type_name);
+
+        if (vector_declaration.IsInParameterOnly())
+        {
+            // For in parameters, we use a slice.
+            return std::format("{} : {}[{}]", vector_declaration.m_name, param_syntax, inner_type_name);
+        }
+
+        return std::format("{} : {}Vec<{}>", vector_declaration.m_name, param_syntax, inner_type_name);
     }
 
     inline std::string AddOptionalEncapulation(const Declaration& optional_declaration)
     {
-        auto inner_type = optional_declaration.m_edl_type_info.inner_type;
-        auto inner_type_name = EdlTypeToRustType(*inner_type);
+        std::string inner_type_name;
+        auto param_syntax = GetInnerTypeAndParameterSyntax(
+            optional_declaration, 
+            optional_declaration.IsInParameterOnly(), 
+            inner_type_name);
 
-        return std::format("Option<{}>", inner_type_name);
+        // For in parameters that are optional, we use Option<T> or Option<&T>/Option<&mut T> if a borrow is needed.
+        return std::format("{} : Option<{}{}>", optional_declaration.m_name, param_syntax, inner_type_name);
     }
 
-    inline std::string GetFullDeclarationType(const Declaration& declaration)
+    inline std::string GetParameterForFunction(const Declaration& declaration)
     {
-        EdlTypeKind type_kind = declaration.m_edl_type_info.m_type_kind;
-        std::string type_name = EdlTypeToRustType(declaration.m_edl_type_info);
-
-        if (type_kind == EdlTypeKind::Void)
-        {
-            return "()";
-        }
-
         if (declaration.IsEdlType(EdlTypeKind::Optional))
         {
             return AddOptionalEncapulation(declaration);
@@ -90,16 +129,21 @@ namespace CodeGeneration::Rust
 
         if (declaration.IsEdlType(EdlTypeKind::Vector))
         {
-            type_name = AddVectorEncapulation(declaration);
+            return AddVectorEncapulation(declaration);
         }
 
+        auto param_syntax = GetParameterSyntax(declaration);
+        
         if (!declaration.m_array_dimensions.empty())
         {
             auto arr_size = declaration.m_array_dimensions.front();
+            std::string type_name = EdlTypeToRustType(declaration.m_edl_type_info, false);
             type_name = std::format(c_array_initializer, type_name, TransformCaseToUpper(arr_size));
+            return std::format("{} : {}{}", declaration.m_name, param_syntax, type_name);
         }
 
-        return type_name;
+        std::string type_name = EdlTypeToRustType(declaration.m_edl_type_info, declaration.IsInParameterOnly());
+        return std::format("{} : {}{}", declaration.m_name, param_syntax, type_name);
     }
 
     inline std::string GetParameterSyntax(const Declaration& declaration)
@@ -118,14 +162,6 @@ namespace CodeGeneration::Rust
 
         // Const borrow for all other parameters.
         return "&";
-    }
-
-    inline std::string GetParameterForFunction(const Declaration& declaration)
-    {
-        std::string full_type = GetFullDeclarationType(declaration);
-        std::string param_declarator = GetParameterSyntax(declaration);
-
-        return std::format("{}: {}{}", declaration.m_name, param_declarator, full_type);
     }
 
     inline std::string GetEnumValueExpression(const EnumType& enum_value)
@@ -177,21 +213,100 @@ namespace CodeGeneration::Rust
         uint32_t indentation,
         const std::vector<Declaration>& parameters)
     {
-        std::ostringstream abi_struct_fill_statments {};
+        std::ostringstream abi_struct_fill_statements {};
         auto tabs = GenerateTabs(indentation);
         for (auto& param : parameters)
         {
-            if (param.IsInParameter())
+            // Out-only parameters are written back separately.
+            if (param.IsOutParameterOnly())
             {
-                abi_struct_fill_statments << std::format(
+                continue;
+            }
+
+             // Arrays are cloned verbatim.
+            if (!param.m_array_dimensions.empty())
+            {
+                abi_struct_fill_statements << std::format(
                     "{}abi_type.m_{} = {}.clone();\n",
                     tabs,
                     param.m_name,
                     param.m_name);
+
+                continue;
             }
+
+             // Vectors require ownership transfer.
+            if (param.IsEdlType(EdlTypeKind::Vector))
+            {
+                abi_struct_fill_statements << std::format(
+                    "{}abi_type.m_{} = {}.to_owned();\n",
+                    tabs,
+                    param.m_name,
+                    param.m_name);
+
+                continue;
+            }
+
+            // Strings require explicit allocation.
+            if (param.IsEdlType(EdlTypeKind::String) ||
+                param.IsEdlType(EdlTypeKind::WString))
+            {
+                auto func = param.IsEdlType(EdlTypeKind::String)
+                    ? ".to_string()"
+                    : ".to_ustring()";
+
+                abi_struct_fill_statements << std::format(
+                    "{}abi_type.m_{} = {}{};\n",
+                    tabs,
+                    param.m_name,
+                    param.m_name,
+                    func);
+
+                continue;
+            }
+
+            // Optional<T> requires cloning or copying the inner value.
+            if (param.IsEdlType(EdlTypeKind::Optional))
+            {
+                if (param.IsInnerEdlType(EdlTypeKind::String) ||
+                    param.IsInnerEdlType(EdlTypeKind::WString))
+                {
+                    const char* func = param.IsInnerEdlType(EdlTypeKind::String)
+                        ? "map(String::from)"
+                        : "map(widestring::U16String::from)";
+
+                    abi_struct_fill_statements << std::format(
+                        "{}abi_type.m_{} = {}.{};\n",
+                        tabs,
+                        param.m_name,
+                        param.m_name,
+                        func);
+                }
+                else
+                {
+                    auto inner = param.m_edl_type_info.inner_type;
+                    bool is_primitive = c_edlTypes_primitive_set.contains(inner->m_type_kind);
+
+                    abi_struct_fill_statements << std::format(
+                        "{}abi_type.m_{} = {}.as_deref().{}();\n",
+                        tabs,
+                        param.m_name,
+                        param.m_name,
+                        is_primitive ? "copied" : "cloned");
+                }
+
+                continue;
+            }
+
+            // Fallback: clone everything else.
+            abi_struct_fill_statements << std::format(
+                "{}abi_type.m_{} = {}.clone();\n",
+                tabs,
+                param.m_name,
+                param.m_name);
         }
 
-        return abi_struct_fill_statments.str();
+        return abi_struct_fill_statements.str();
     }
 
     inline std::string GetMoveFromAbiStructToParamStatements(
@@ -202,8 +317,41 @@ namespace CodeGeneration::Rust
         auto tabs = GenerateTabs(indentation);
         for (auto& param : parameters)
         {
-            if (param.IsInOutOrOutParameter())
+            if (param.IsInParameterOnly())
             {
+                continue;
+            }
+
+            bool is_array = !param.m_array_dimensions.empty();
+
+            // For struct and wstring out-parameters, the ABI uses Option<T> because
+            // FlatBuffers represents non-required table fields that way. Even though the .edl
+            // signature declares an out parameter of type T, we must unwrap the
+            // Option<T> here to satisfy the ABI contract. This value is expected to
+            // always be present; encountering None indicates a bug in the flatbuffer to ABI type
+            // layer.
+            if (!is_array && param.IsOutParameterOnly() && IsStructOrWStringType(param))
+            {
+                param_update_statements << std::format(
+                    "{}*{} = result.m_{}.expect(\"Unexpected empty Option: m_{}\");\n",
+                    tabs,
+                    param.m_name,
+                    param.m_name,
+                    param.m_name);
+            }
+            // For optional out and inout parameters, we need to use the assign_if_some helper
+            // to only update the parameter if the ABI provided a value.
+            else if (param.IsInOutOrOutParameter() && param.IsEdlType(EdlTypeKind::Optional))
+            {
+                param_update_statements << std::format(
+                    "{}assign_if_some({}, result.m_{});\n",
+                    tabs,
+                    param.m_name,
+                    param.m_name);
+            }
+            else
+            {
+                // Fallback: direct move assignment.
                 param_update_statements << std::format("{}*{} = result.m_{};\n", tabs, param.m_name, param.m_name);
             }
         }
@@ -225,7 +373,47 @@ namespace CodeGeneration::Rust
         for (auto i = 0U; i < function.m_parameters.size(); i++)
         {
             Declaration param = function.m_parameters[i];
-            abi_struct_fields << std::format("{}abi_type.m_{}", GetParameterSyntax(param), param.m_name);
+
+            bool is_array = !param.m_array_dimensions.empty();
+
+            // Out-only struct / wstring params are Option<T> in the ABI; unwrap to get &mut T.
+            // None here indicates an ABI-layer bug.
+            if (!is_array && param.IsOutParameterOnly() && IsStructOrWStringType(param))
+            {
+                abi_struct_fields << std::format(
+                    "abi_type.m_{}.as_mut().expect(\"Unexpected empty Option: m_{}\")",
+                    param.m_name,
+                    param.m_name);
+            }
+            // Optional<T>: project to the appropriate borrowed form based on direction and inner type.
+            else if (param.IsEdlType(EdlTypeKind::Optional))
+            {
+                std::string func {};
+
+                if (param.IsInnerEdlType(EdlTypeKind::String) ||
+                    param.IsInnerEdlType(EdlTypeKind::WString))
+                {
+                    // in parameter of optional string/wstring are mapped as Option<&str> / Option<&U16Str>
+                    // and out/inout as Option<&mut String> / Option<&mut U16String>
+                    func = param.IsInParameterOnly() ? "as_deref()" : "as_mut()";
+                }
+                else
+                {
+                    // in parameter of other optional types are mapped as Option<&T> and out/inout as Option<&mut T>
+                    func = param.IsInParameterOnly() ? "as_ref()" : "as_mut()";
+                }
+
+                abi_struct_fields << std::format(
+                    "abi_type.m_{}.{}",
+                    param.m_name,
+                    func);
+            }
+            // All other parameters are passed through directly with appropriate borrowing.
+            else
+            {
+                abi_struct_fields << std::format("{}abi_type.m_{}", GetParameterSyntax(param), param.m_name);
+            }
+
             if (i < function.m_parameters.size() - 1)
             {
                 abi_struct_fields << ", ";

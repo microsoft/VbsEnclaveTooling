@@ -3,7 +3,6 @@
 
 #![allow(clippy::all)]
 pub mod abi;
-pub use abi::abi_types::edl::WString;
 pub mod implementation;
 pub mod stubs;
 pub use stubs::trusted::CodeGenTestClass;

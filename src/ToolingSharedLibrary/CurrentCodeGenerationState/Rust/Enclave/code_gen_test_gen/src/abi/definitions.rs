@@ -15,7 +15,7 @@ macro_rules! export_enclave_functions {
             use abi_types::FuncWithAllArgs_0_Args as AbiTypeT;
             use flatbuffer_types::FuncWithAllArgs_0_ArgsT as FlatBufferT;
             let abi_func = |abi_type: &mut AbiTypeT| -> Result<(), AbiError> {
-                abi_type.m__return_value_ = <$T>::FuncWithAllArgs(abi_type.m_arg1, &abi_type.m_arg2, &mut abi_type.m_arg3, &mut abi_type.m_arg4, &mut abi_type.m_arg5, &mut abi_type.m_arg6, &mut abi_type.m_arg7, &mut abi_type.m_arg8, &mut abi_type.m_arg9)?;
+                abi_type.m__return_value_ = <$T>::FuncWithAllArgs(abi_type.m_arg1, abi_type.m_arg2.as_ref(), abi_type.m_arg3.as_mut(), abi_type.m_arg4.as_mut(), &mut abi_type.m_arg5, abi_type.m_arg6.as_mut(), &mut abi_type.m_arg7, &mut abi_type.m_arg8, &mut abi_type.m_arg9)?;
                 Ok(())
             };
             $crate::enable_enclave_restrict_containing_process_access_once();

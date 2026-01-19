@@ -5,13 +5,12 @@
 use test_enclave_gen::implementation::trusted::Trusted;
 use test_enclave_gen::AbiError;
 use test_enclave_gen::stubs::untrusted::print;
-use alloc::string::ToString;
 
 pub struct EnclaveImpl{}
 
 impl Trusted for EnclaveImpl {
     fn do_secret_math(val1: u32, val2: u32) -> Result<u32, AbiError> {
-        print(&"Performing secret math operation inside VTL1...".to_string())?;
+        print("Performing secret math operation inside VTL1...")?;
         Ok(val1 + val2)
     }
 }

@@ -199,6 +199,7 @@ namespace CodeGeneration::Flatbuffers
                 auto& inner_type = declaration.m_edl_type_info.inner_type;
                 bool is_inner_struct_or_string =
                     inner_type->m_type_kind == EdlTypeKind::Struct ||
+                    inner_type->m_type_kind == EdlTypeKind::WString ||
                     inner_type->m_type_kind == EdlTypeKind::String;
 
                 // In the flatbuffer schema, structs & strings are optional by default without the "= null" expression.

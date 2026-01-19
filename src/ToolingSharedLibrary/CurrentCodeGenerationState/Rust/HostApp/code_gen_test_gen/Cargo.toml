@@ -16,3 +16,4 @@ edlcodegen-tools = { git = "https://github.com/microsoft/VbsEnclaveTooling" }
 edlcodegen-host = { git = "https://github.com/microsoft/VbsEnclaveTooling" }
 windows-strings = "0.5"
 flatbuffers = { version = "25.9.23", default-features = false }
+widestring = { version = "1.2.1", default-features = false, features = ["alloc"] }

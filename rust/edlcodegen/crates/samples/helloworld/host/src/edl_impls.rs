@@ -8,7 +8,7 @@ use test_host_gen::AbiError;
 pub struct HostImpl{}
 
 impl Untrusted for HostImpl {
-    fn print(data: &String) -> Result<(), AbiError> {
+    fn print(data: &str) -> Result<(), AbiError> {
         println!("{}", data);
         Ok(())
     }
