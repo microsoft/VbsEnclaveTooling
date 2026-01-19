@@ -15,7 +15,6 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let args = [
         "--in",
-        "default",
         &windows_winmd,
         "--out",
         &bindings_out_path,
