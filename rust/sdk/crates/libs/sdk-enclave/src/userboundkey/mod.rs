@@ -362,10 +362,10 @@ pub fn create_user_bound_key_with_custom_key(
 /// * `message` - Message to display during Windows Hello prompt
 /// * `window_id` - Window ID for the prompt
 /// * `sealed_bound_key_bytes` - Previously sealed key material
-/// * `needs_reseal` - Output: whether the key needs to be resealed
 ///
 /// # Returns
-/// The decrypted user key bytes
+/// A tuple of (decrypted user key bytes, needs_reseal flag).
+/// If `needs_reseal` is true, the caller should reseal the key with [`reseal_user_bound_key`].
 pub fn load_user_bound_key(
     key_name: &str,
     cache_config: &keyCredentialCacheConfig,
@@ -549,18 +549,20 @@ pub fn load_user_bound_key(
 
 /// Reseal a user-bound key with current enclave identity
 ///
-/// This is used when load_user_bound_key returns StaleKey error,
-/// indicating the sealing key has changed. The caller should have
-/// already unsealed the data (which succeeds even with a stale key)
-/// and passes the unsealed bound key bytes to this function.
+/// This function re-seals data that was previously sealed by an older enclave version.
+/// It is used when the sealing key has rotated (detected by `is_stale_key` flag from unsealing).
+///
+/// Note: The input `bound_key_bytes` should be the unsealed (decrypted) bound key data,
+/// NOT the sealed blob. If you have sealed data, first unseal it with `unseal_data`
+/// from the crypto module, then pass the unsealed result here.
 ///
 /// # Arguments
-/// * `bound_key_bytes` - Previously unsealed bound key bytes (not sealed)
+/// * `bound_key_bytes` - Previously unsealed bound key bytes (NOT sealed data)
 /// * `sealing_policy` - Enclave sealing identity policy for the new seal
 /// * `runtime_policy` - Runtime policy flags
 ///
 /// # Returns
-/// Newly sealed key material
+/// Newly sealed key material that can be stored and used with future loads
 pub fn reseal_user_bound_key(
     bound_key_bytes: &[u8],
     sealing_policy: EnclaveSealingIdentityPolicy,

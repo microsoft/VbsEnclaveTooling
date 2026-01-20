@@ -3,8 +3,7 @@
 
 //! Utility functions for VTL1 enclave operations
 //!
-//! This module provides general-purpose utilities for enclave operations,
-//! similar to utils.vtl1.h in the C++ implementation.
+//! This module provides general-purpose utilities for enclave operations.
 
 use core::sync::atomic::{AtomicPtr, Ordering};
 

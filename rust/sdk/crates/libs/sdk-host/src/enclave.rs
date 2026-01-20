@@ -3,8 +3,7 @@
 
 //! VBS Enclave lifecycle management APIs.
 //!
-//! This module provides Rust equivalents of the C++ `veil::vtl0::enclave` namespace
-//! from `enclave_api.vtl0.h`. It handles creating, loading, initializing, and
+//! This module provides APIs for creating, loading, initializing, and
 //! cleaning up VBS enclaves.
 //!
 //! # Example
@@ -291,7 +290,6 @@ pub fn delete(enclave: *mut c_void) {
 /// A handle to a VBS enclave that manages its lifecycle.
 ///
 /// When dropped, the enclave is automatically terminated and deleted.
-/// This is equivalent to the C++ `unique_enclave` type.
 pub struct EnclaveHandle {
     enclave: *mut c_void,
 }

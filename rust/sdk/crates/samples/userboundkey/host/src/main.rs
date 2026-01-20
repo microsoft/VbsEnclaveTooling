@@ -2,7 +2,8 @@
 // Licensed under the MIT License.
 
 //! User-Bound Key Sample Host Application
-//! Functionally equivalent to C++ SampleApps/HostAppUserBound/main.cpp
+//!
+//! Demonstrates loading a VBS enclave and using user-bound keys with Windows Hello.
 
 #![allow(dead_code)]
 
@@ -72,7 +73,8 @@ fn to_wstring(s: &str) -> WString {
 }
 
 /// Get secure ID from Windows Hello.
-/// Matches C++ GetSecureIdFromWindowsHello() / veil::vtl0::appmodel::owner_id()
+///
+/// Returns the secure ID buffer that identifies this Windows Hello user.
 fn get_secure_id_from_windows_hello() -> Result<Vec<u8>, String> {
     // Get the secure ID buffer from KeyCredentialManager
     let secure_id_buffer = KeyCredentialManager::GetSecureId()
@@ -96,8 +98,8 @@ fn load_enclave(
 ) -> Result<(EnclaveHandle, userboundkey_sampleWrapper), String> {
     println!("Loading enclave from: {}", enclave_path.display());
 
-    // Try to get the secure ID from Windows Hello (matches C++ veil::vtl0::appmodel::owner_id())
-    // If Windows Hello isn't available, we continue without owner ID but key creation will fail
+    // Try to get the secure ID from Windows Hello.
+    // If Windows Hello isn't available, we continue without owner ID but key creation will fail.
     let owner_id = match get_secure_id_from_windows_hello() {
         Ok(id) => {
             println!("Got secure ID from Windows Hello ({} bytes)", id.len());
@@ -110,7 +112,7 @@ fn load_enclave(
         }
     };
 
-    // Create, load, and initialize the enclave (512MB like C++ version)
+    // Create, load, and initialize the enclave (512MB)
     let enclave = EnclaveHandle::create_and_initialize(
         enclave_path,
         megabytes(512),
@@ -139,7 +141,6 @@ fn load_enclave(
 
 fn main() {
     println!("=== User-Bound Key Sample (Rust) ===");
-    println!("Functionally equivalent to C++ HostAppUserBound");
     println!();
 
     // Get enclave DLL path (should be in same directory as host executable)
@@ -173,7 +174,7 @@ fn main() {
         }
     }
 
-    // Window ID - use foreground window like C++ version
+    // Window ID - use foreground window for Windows Hello prompts
     // GetForegroundWindow returns the handle of the window with which the user is currently working
     let window_id: u64 = unsafe { GetForegroundWindow().0 as u64 };
 
