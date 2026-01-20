@@ -11,16 +11,19 @@ mod types;
 mod utils;
 
 pub use crypto::{
-    EnclaveSealingIdentityPolicy, SYMMETRIC_KEY_SIZE_BYTES,
+    EnclaveSealingIdentityPolicy, NONCE_SIZE, SYMMETRIC_KEY_SIZE_BYTES, SymmetricKeyHandle,
+    TAG_SIZE, ZERO_NONCE, decrypt, decrypt_and_untag, decrypt_and_untag_zero_nonce, encrypt,
+    encrypt_and_tag, encrypt_and_tag_zero_nonce,
 };
 pub use types::*;
+
+// Re-export the cache config type for use by samples
+pub use userboundkey_enclave_gen::implementation::types::keyCredentialCacheConfig;
 
 use alloc::vec::Vec;
 
 use userboundkey_enclave_gen::implementation::trusted::Trusted;
-use userboundkey_enclave_gen::implementation::types::{
-    attestationReportAndSessionInfo, keyCredentialCacheConfig,
-};
+use userboundkey_enclave_gen::implementation::types::attestationReportAndSessionInfo;
 use userboundkey_enclave_gen::stubs::untrusted;
 
 use windows_enclave::veinterop::{
@@ -213,7 +216,7 @@ pub fn create_user_bound_key_with_custom_key(
     key_credential_creation_option: u32,
     custom_key_bytes: &[u8],
 ) -> Result<Vec<u8>, UserBoundKeyError> {
-    // Format the key name (calls VTL0)
+    // Format the key name (calls VTL0) - this is the FIRST VTL0 call
     let formatted_key_name = untrusted::userboundkey_format_key_name(&key_name.into())
         .map_err(|e| UserBoundKeyError::AbiError(e))?;
 
@@ -224,6 +227,7 @@ pub fn create_user_bound_key_with_custom_key(
     let enclave_ptr = get_enclave_base_address_u64()?;
 
     // Establish session (calls VTL0 which triggers Windows Hello)
+    // Requires at least 2 enclave threads - one for this call and one for the callback
     let credential_and_session = untrusted::userboundkey_establish_session_for_create(
         enclave_ptr,
         &key_name.into(),

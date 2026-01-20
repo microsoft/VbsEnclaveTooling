@@ -9,8 +9,8 @@
 use core::sync::atomic::{AtomicPtr, Ordering};
 
 use windows_enclave::vertdll::{
-    EnclaveGetEnclaveInformation, ENCLAVE_FLAG_DYNAMIC_DEBUG_ACTIVE,
-    ENCLAVE_FLAG_DYNAMIC_DEBUG_ENABLED, ENCLAVE_FLAG_FULL_DEBUG_ENABLED, ENCLAVE_INFORMATION,
+    ENCLAVE_FLAG_DYNAMIC_DEBUG_ACTIVE, ENCLAVE_FLAG_DYNAMIC_DEBUG_ENABLED,
+    ENCLAVE_FLAG_FULL_DEBUG_ENABLED, ENCLAVE_INFORMATION, EnclaveGetEnclaveInformation,
 };
 
 use super::types::UserBoundKeyError;

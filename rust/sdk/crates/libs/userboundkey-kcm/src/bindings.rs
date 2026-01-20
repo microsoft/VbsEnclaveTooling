@@ -1763,67 +1763,6 @@ impl KeyCredentialManager {
             .and_then(|| windows_core::Type::from_abi(result__))
         })
     }
-    pub fn RequestCreateAsync2<P4, P7>(
-        name: &windows_core::HSTRING,
-        option: KeyCredentialCreationOption,
-        algorithm: &windows_core::HSTRING,
-        message: &windows_core::HSTRING,
-        cacheconfiguration: P4,
-        windowid: WindowId,
-        callbacktype: ChallengeResponseKind,
-        attestationcallback: P7,
-    ) -> windows_core::Result<windows_future::IAsyncOperation<KeyCredentialRetrievalResult>>
-    where
-        P4: windows_core::Param<KeyCredentialCacheConfiguration>,
-        P7: windows_core::Param<AttestationChallengeHandler>,
-    {
-        Self::IKeyCredentialManagerStatics2(|this| unsafe {
-            let mut result__ = core::mem::zeroed();
-            (windows_core::Interface::vtable(this).RequestCreateAsync)(
-                windows_core::Interface::as_raw(this),
-                core::mem::transmute_copy(name),
-                option,
-                core::mem::transmute_copy(algorithm),
-                core::mem::transmute_copy(message),
-                cacheconfiguration.param().abi(),
-                windowid,
-                callbacktype,
-                attestationcallback.param().abi(),
-                &mut result__,
-            )
-            .and_then(|| windows_core::Type::from_abi(result__))
-        })
-    }
-    pub fn OpenAsync2<P2>(
-        name: &windows_core::HSTRING,
-        callbacktype: ChallengeResponseKind,
-        attestationcallback: P2,
-    ) -> windows_core::Result<windows_future::IAsyncOperation<KeyCredentialRetrievalResult>>
-    where
-        P2: windows_core::Param<AttestationChallengeHandler>,
-    {
-        Self::IKeyCredentialManagerStatics2(|this| unsafe {
-            let mut result__ = core::mem::zeroed();
-            (windows_core::Interface::vtable(this).OpenAsync)(
-                windows_core::Interface::as_raw(this),
-                core::mem::transmute_copy(name),
-                callbacktype,
-                attestationcallback.param().abi(),
-                &mut result__,
-            )
-            .and_then(|| windows_core::Type::from_abi(result__))
-        })
-    }
-    pub fn GetSecureId() -> windows_core::Result<IBuffer> {
-        Self::IKeyCredentialManagerStatics2(|this| unsafe {
-            let mut result__ = core::mem::zeroed();
-            (windows_core::Interface::vtable(this).GetSecureId)(
-                windows_core::Interface::as_raw(this),
-                &mut result__,
-            )
-            .and_then(|| windows_core::Type::from_abi(result__))
-        })
-    }
     fn IKeyCredentialManagerStatics<
         R,
         F: FnOnce(&IKeyCredentialManagerStatics) -> windows_core::Result<R>,
@@ -1833,18 +1772,6 @@ impl KeyCredentialManager {
         static SHARED: windows_core::imp::FactoryCache<
             KeyCredentialManager,
             IKeyCredentialManagerStatics,
-        > = windows_core::imp::FactoryCache::new();
-        SHARED.call(callback)
-    }
-    fn IKeyCredentialManagerStatics2<
-        R,
-        F: FnOnce(&IKeyCredentialManagerStatics2) -> windows_core::Result<R>,
-    >(
-        callback: F,
-    ) -> windows_core::Result<R> {
-        static SHARED: windows_core::imp::FactoryCache<
-            KeyCredentialManager,
-            IKeyCredentialManagerStatics2,
         > = windows_core::imp::FactoryCache::new();
         SHARED.call(callback)
     }
@@ -1953,6 +1880,7 @@ impl KeyCredentialStatus {
     pub const UserPrefersPassword: Self = Self(4i32);
     pub const CredentialAlreadyExists: Self = Self(5i32);
     pub const SecurityDeviceLocked: Self = Self(6i32);
+    pub const AlgorithmNotSupported: Self = Self(7i32);
 }
 impl windows_core::TypeKind for KeyCredentialStatus {
     type TypeKind = windows_core::CopyType;

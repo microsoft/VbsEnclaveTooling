@@ -4,14 +4,17 @@
 //! Cryptographic utilities for VTL1 enclave operations
 //!
 //! This module provides crypto primitives used by user-bound key operations,
-//! including random number generation and enclave sealing.
+//! including random number generation, enclave sealing, and AES-GCM encryption.
 
 use alloc::vec::Vec;
 
-use windows_enclave::bcrypt::{BCryptGenRandom, BCRYPT_USE_SYSTEM_PREFERRED_RNG};
+use windows_enclave::bcrypt::{
+    BCRYPT_AES_GCM_ALG_HANDLE, BCRYPT_KEY_HANDLE, BCRYPT_USE_SYSTEM_PREFERRED_RNG, BCryptDecrypt,
+    BCryptDestroyKey, BCryptEncrypt, BCryptGenRandom, BCryptGenerateSymmetricKey,
+};
 use windows_enclave::vertdll::{
-    EnclaveSealData, EnclaveUnsealData, GetProcessHeap, HEAP_ZERO_MEMORY, HeapAlloc, HeapFree,
-    ENCLAVE_UNSEAL_FLAG_STALE_KEY,
+    ENCLAVE_UNSEAL_FLAG_STALE_KEY, EnclaveSealData, EnclaveUnsealData, GetProcessHeap,
+    HEAP_ZERO_MEMORY, HeapAlloc, HeapFree,
 };
 
 use super::types::UserBoundKeyError;
@@ -294,6 +297,307 @@ pub fn make_nonce_from_number(nonce: u64) -> [u8; NONCE_SIZE] {
     buffer
 }
 
+/// Zero nonce for AES-GCM (all zeros)
+pub const ZERO_NONCE: [u8; NONCE_SIZE] = [0u8; NONCE_SIZE];
+
+//
+// BCRYPT_AUTHENTICATED_CIPHER_MODE_INFO structure
+// This is not in the generated bindings, so we define it manually.
+// See: https://learn.microsoft.com/en-us/windows/win32/api/bcrypt/ns-bcrypt-bcrypt_authenticated_cipher_mode_info
+//
+
+/// Version for BCRYPT_AUTHENTICATED_CIPHER_MODE_INFO
+const BCRYPT_AUTHENTICATED_CIPHER_MODE_INFO_VERSION: u32 = 1;
+
+/// Authenticated cipher mode info structure for AES-GCM
+#[repr(C)]
+#[derive(Clone)]
+pub struct BcryptAuthenticatedCipherModeInfo {
+    pub cb_size: u32,
+    pub dw_info_version: u32,
+    pub pb_nonce: *mut u8,
+    pub cb_nonce: u32,
+    pub pb_auth_data: *mut u8,
+    pub cb_auth_data: u32,
+    pub pb_tag: *mut u8,
+    pub cb_tag: u32,
+    pub pb_mac_context: *mut u8,
+    pub cb_mac_context: u32,
+    pub cb_aad: u32,
+    pub cb_data: u64,
+    pub dw_flags: u32,
+}
+
+impl Default for BcryptAuthenticatedCipherModeInfo {
+    fn default() -> Self {
+        Self {
+            cb_size: core::mem::size_of::<Self>() as u32,
+            dw_info_version: BCRYPT_AUTHENTICATED_CIPHER_MODE_INFO_VERSION,
+            pb_nonce: core::ptr::null_mut(),
+            cb_nonce: 0,
+            pb_auth_data: core::ptr::null_mut(),
+            cb_auth_data: 0,
+            pb_tag: core::ptr::null_mut(),
+            cb_tag: 0,
+            pb_mac_context: core::ptr::null_mut(),
+            cb_mac_context: 0,
+            cb_aad: 0,
+            cb_data: 0,
+            dw_flags: 0,
+        }
+    }
+}
+
+impl BcryptAuthenticatedCipherModeInfo {
+    /// Create a new cipher mode info for encryption (tag will be written)
+    pub fn for_encrypt(nonce: &mut [u8], tag: &mut [u8]) -> Self {
+        Self {
+            cb_size: core::mem::size_of::<Self>() as u32,
+            dw_info_version: BCRYPT_AUTHENTICATED_CIPHER_MODE_INFO_VERSION,
+            pb_nonce: nonce.as_mut_ptr(),
+            cb_nonce: nonce.len() as u32,
+            pb_auth_data: core::ptr::null_mut(),
+            cb_auth_data: 0,
+            pb_tag: tag.as_mut_ptr(),
+            cb_tag: tag.len() as u32,
+            pb_mac_context: core::ptr::null_mut(),
+            cb_mac_context: 0,
+            cb_aad: 0,
+            cb_data: 0,
+            dw_flags: 0,
+        }
+    }
+
+    /// Create a new cipher mode info for decryption (tag is input)
+    pub fn for_decrypt(nonce: &[u8], tag: &[u8]) -> Self {
+        Self {
+            cb_size: core::mem::size_of::<Self>() as u32,
+            dw_info_version: BCRYPT_AUTHENTICATED_CIPHER_MODE_INFO_VERSION,
+            pb_nonce: nonce.as_ptr() as *mut u8,
+            cb_nonce: nonce.len() as u32,
+            pb_auth_data: core::ptr::null_mut(),
+            cb_auth_data: 0,
+            pb_tag: tag.as_ptr() as *mut u8,
+            cb_tag: tag.len() as u32,
+            pb_mac_context: core::ptr::null_mut(),
+            cb_mac_context: 0,
+            cb_aad: 0,
+            cb_data: 0,
+            dw_flags: 0,
+        }
+    }
+}
+
+//
+// Symmetric Key Handle (RAII wrapper)
+//
+
+/// RAII wrapper for BCrypt symmetric key handle
+pub struct SymmetricKeyHandle {
+    handle: BCRYPT_KEY_HANDLE,
+}
+
+impl SymmetricKeyHandle {
+    /// Create a symmetric key from raw key bytes using AES-GCM
+    pub fn from_bytes(key_bytes: &[u8]) -> Result<Self, UserBoundKeyError> {
+        let mut handle: BCRYPT_KEY_HANDLE = core::ptr::null_mut();
+
+        unsafe {
+            let status = BCryptGenerateSymmetricKey(
+                BCRYPT_AES_GCM_ALG_HANDLE,
+                &mut handle,
+                core::ptr::null_mut(), // No key object buffer needed
+                0,
+                key_bytes.as_ptr(),
+                key_bytes.len() as u32,
+                0,
+            );
+            check_ntstatus(status)?;
+        }
+
+        Ok(Self { handle })
+    }
+
+    /// Get the raw handle for use with BCrypt functions
+    pub fn handle(&self) -> BCRYPT_KEY_HANDLE {
+        self.handle
+    }
+}
+
+impl Drop for SymmetricKeyHandle {
+    fn drop(&mut self) {
+        if !self.handle.is_null() {
+            unsafe {
+                let _ = BCryptDestroyKey(self.handle);
+            }
+        }
+    }
+}
+
+//
+// AES-GCM Encryption / Decryption
+//
+
+/// Encrypt data using AES-GCM
+///
+/// # Arguments
+/// * `key` - The symmetric key handle
+/// * `plaintext` - Data to encrypt
+/// * `nonce` - 12-byte nonce (IV)
+///
+/// # Returns
+/// A tuple of (ciphertext, tag) where tag is 16 bytes
+pub fn encrypt(
+    key: &SymmetricKeyHandle,
+    plaintext: &[u8],
+    nonce: &[u8; NONCE_SIZE],
+) -> Result<(Vec<u8>, [u8; TAG_SIZE]), UserBoundKeyError> {
+    let mut tag = [0u8; TAG_SIZE];
+    let mut nonce_copy = *nonce;
+
+    // AES-GCM: ciphertext length equals plaintext length
+    let mut ciphertext = alloc::vec![0u8; plaintext.len()];
+    let mut result_size: u32 = 0;
+
+    let cipher_info = BcryptAuthenticatedCipherModeInfo::for_encrypt(&mut nonce_copy, &mut tag);
+
+    unsafe {
+        let status = BCryptEncrypt(
+            key.handle(),
+            plaintext.as_ptr(),
+            plaintext.len() as u32,
+            &cipher_info as *const _ as *const core::ffi::c_void,
+            core::ptr::null_mut(), // No IV buffer (using nonce in cipher_info)
+            0,
+            ciphertext.as_mut_ptr(),
+            ciphertext.len() as u32,
+            &mut result_size,
+            0,
+        );
+        check_ntstatus(status)?;
+    }
+
+    Ok((ciphertext, tag))
+}
+
+/// Decrypt data using AES-GCM
+///
+/// # Arguments
+/// * `key` - The symmetric key handle
+/// * `ciphertext` - Data to decrypt
+/// * `nonce` - 12-byte nonce (IV) used during encryption
+/// * `tag` - 16-byte authentication tag from encryption
+///
+/// # Returns
+/// The decrypted plaintext
+pub fn decrypt(
+    key: &SymmetricKeyHandle,
+    ciphertext: &[u8],
+    nonce: &[u8; NONCE_SIZE],
+    tag: &[u8; TAG_SIZE],
+) -> Result<Vec<u8>, UserBoundKeyError> {
+    // AES-GCM: plaintext length equals ciphertext length
+    let mut plaintext = alloc::vec![0u8; ciphertext.len()];
+    let mut result_size: u32 = 0;
+
+    let cipher_info = BcryptAuthenticatedCipherModeInfo::for_decrypt(nonce, tag);
+
+    unsafe {
+        let status = BCryptDecrypt(
+            key.handle(),
+            ciphertext.as_ptr(),
+            ciphertext.len() as u32,
+            &cipher_info as *const _ as *const core::ffi::c_void,
+            core::ptr::null_mut(), // No IV buffer (using nonce in cipher_info)
+            0,
+            plaintext.as_mut_ptr(),
+            plaintext.len() as u32,
+            &mut result_size,
+            0,
+        );
+
+        // STATUS_AUTH_TAG_MISMATCH = 0xC000A002
+        if status == -1073700862i32 {
+            return Err(UserBoundKeyError::InvalidData(
+                "Authentication tag mismatch",
+            ));
+        }
+        check_ntstatus(status)?;
+    }
+
+    Ok(plaintext)
+}
+
+/// Encrypt data and append the tag to the output
+///
+/// # Arguments
+/// * `key` - The symmetric key handle
+/// * `plaintext` - Data to encrypt
+/// * `nonce` - 12-byte nonce (IV)
+///
+/// # Returns
+/// Combined output: [ciphertext][tag:16 bytes]
+pub fn encrypt_and_tag(
+    key: &SymmetricKeyHandle,
+    plaintext: &[u8],
+    nonce: &[u8; NONCE_SIZE],
+) -> Result<Vec<u8>, UserBoundKeyError> {
+    let (ciphertext, tag) = encrypt(key, plaintext, nonce)?;
+
+    let mut combined = Vec::with_capacity(ciphertext.len() + TAG_SIZE);
+    combined.extend_from_slice(&ciphertext);
+    combined.extend_from_slice(&tag);
+
+    Ok(combined)
+}
+
+/// Encrypt data with zero nonce and append tag
+///
+/// Uses a zero nonce (all zeros). Only safe when each key is used once.
+pub fn encrypt_and_tag_zero_nonce(
+    key: &SymmetricKeyHandle,
+    plaintext: &[u8],
+) -> Result<Vec<u8>, UserBoundKeyError> {
+    encrypt_and_tag(key, plaintext, &ZERO_NONCE)
+}
+
+/// Decrypt data that has the tag appended
+///
+/// # Arguments
+/// * `key` - The symmetric key handle
+/// * `combined` - Combined input: [ciphertext][tag:16 bytes]
+/// * `nonce` - 12-byte nonce (IV) used during encryption
+///
+/// # Returns
+/// The decrypted plaintext
+pub fn decrypt_and_untag(
+    key: &SymmetricKeyHandle,
+    combined: &[u8],
+    nonce: &[u8; NONCE_SIZE],
+) -> Result<Vec<u8>, UserBoundKeyError> {
+    if combined.len() < TAG_SIZE {
+        return Err(UserBoundKeyError::InvalidData("Data too short for tag"));
+    }
+
+    let ciphertext_len = combined.len() - TAG_SIZE;
+    let ciphertext = &combined[..ciphertext_len];
+    let tag: [u8; TAG_SIZE] = combined[ciphertext_len..]
+        .try_into()
+        .map_err(|_| UserBoundKeyError::InvalidData("Invalid tag length"))?;
+
+    decrypt(key, ciphertext, nonce, &tag)
+}
+
+/// Decrypt data with zero nonce that has tag appended
+///
+/// Uses a zero nonce (all zeros).
+pub fn decrypt_and_untag_zero_nonce(
+    key: &SymmetricKeyHandle,
+    combined: &[u8],
+) -> Result<Vec<u8>, UserBoundKeyError> {
+    decrypt_and_untag(key, combined, &ZERO_NONCE)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -302,7 +606,10 @@ mod tests {
     fn test_make_nonce_from_number() {
         let nonce = make_nonce_from_number(0x0102030405060708);
         assert_eq!(nonce[0..4], [0, 0, 0, 0]);
-        assert_eq!(nonce[4..12], [0x08, 0x07, 0x06, 0x05, 0x04, 0x03, 0x02, 0x01]);
+        assert_eq!(
+            nonce[4..12],
+            [0x08, 0x07, 0x06, 0x05, 0x04, 0x03, 0x02, 0x01]
+        );
     }
 
     #[test]

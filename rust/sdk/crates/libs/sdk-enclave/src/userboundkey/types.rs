@@ -27,3 +27,23 @@ impl From<userboundkey_enclave_gen::AbiError> for UserBoundKeyError {
         UserBoundKeyError::AbiError(err)
     }
 }
+
+impl UserBoundKeyError {
+    /// Convert the error to an HRESULT code
+    pub fn to_hresult(&self) -> i32 {
+        match self {
+            UserBoundKeyError::Hresult(hr) => *hr,
+            UserBoundKeyError::AbiError(e) => e.to_hresult().0,
+            UserBoundKeyError::AllocationFailed => -2147024882, // E_OUTOFMEMORY
+            UserBoundKeyError::InvalidData(_) => -2147024809,   // E_INVALIDARG
+            UserBoundKeyError::SecurityViolation(_) => -2147024891, // E_ACCESSDENIED
+            UserBoundKeyError::StaleKey => 0x80090325_u32 as i32, // SEC_E_BAD_PKGID or similar
+            UserBoundKeyError::NotImplemented(_) => -2147467263, // E_NOTIMPL
+        }
+    }
+
+    /// Check if this error indicates the sealing key is stale
+    pub fn is_stale_key(&self) -> bool {
+        matches!(self, UserBoundKeyError::StaleKey)
+    }
+}

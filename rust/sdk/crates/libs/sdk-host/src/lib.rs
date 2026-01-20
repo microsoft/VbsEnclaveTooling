@@ -3,6 +3,8 @@
 
 mod host_ffi;
 
+pub mod enclave;
+
 #[cfg(feature = "userboundkey")]
 pub mod userboundkey;
 

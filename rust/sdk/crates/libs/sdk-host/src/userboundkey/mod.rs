@@ -158,16 +158,31 @@ fn create_challenge_callback(
     enclave_ptr: usize,
 ) -> AttestationChallengeHandler {
     AttestationChallengeHandler::new(move |challenge: windows_core::Ref<KcmIBuffer>| {
+        println!("[SDK-Host] Challenge callback invoked!");
+
         // Get the IBuffer reference using ok() which returns Result<&T>
         let challenge_buffer: &KcmIBuffer = challenge.ok()?;
         // Convert KcmIBuffer to Vec<u8>
         let challenge_vec = kcm_buffer_to_vec(challenge_buffer)?;
 
+        println!(
+            "[SDK-Host] Challenge size: {} bytes, calling VTL1 for attestation report...",
+            challenge_vec.len()
+        );
+
         // Call into VTL1 to get attestation report
         let enclave_interface = UserBoundKeyVtl0Host::new(enclave_ptr as *mut core::ffi::c_void);
         let attestation_result = enclave_interface
             .userboundkey_get_attestation_report(&challenge_vec)
-            .map_err(|_| windows_core::Error::from(E_FAIL))?;
+            .map_err(|e| {
+                println!("[SDK-Host] VTL1 attestation call failed: {:?}", e);
+                windows_core::Error::from(E_FAIL)
+            })?;
+
+        println!(
+            "[SDK-Host] Got attestation report: {} bytes",
+            attestation_result.report.len()
+        );
 
         // Store session handle
         {
@@ -249,19 +264,29 @@ impl Untrusted for UntrustedImpl {
         cacheConfig: &keyCredentialCacheConfig,
         keyCredentialCreationOption: u32,
     ) -> Result<credentialAndSessionInfo, AbiError> {
+        println!("[SDK-Host] userboundkey_establish_session_for_create called");
+        println!(
+            "[SDK-Host]   keyName={}, windowId={}, option={}",
+            keyName, windowId, keyCredentialCreationOption
+        );
+
         let algorithm = get_algorithm(ecdhProtocol)?;
+        println!("[SDK-Host]   algorithm resolved");
 
         let cache_configuration =
             convert_cache_config(cacheConfig).map_err(|e| AbiError::Hresult(e.code().0))?;
+        println!("[SDK-Host]   cache config created");
 
         let session_info = Arc::new(Mutex::new(UniqueSessionHandle::new()));
         let enclave_ptr = enclave as usize;
 
         // Try to delete existing key first (ignore errors)
         let key_name_hstring = HSTRING::from(keyName.as_str());
+        println!("[SDK-Host]   Deleting existing key (if any)...");
         if let Ok(delete_op) = KeyCredentialManager::DeleteAsync(&key_name_hstring) {
             let _ = delete_op.join();
         }
+        println!("[SDK-Host]   Delete complete");
 
         // Create the credential with VBS attestation
         let message_hstring = HSTRING::from(message.as_str());
@@ -269,6 +294,8 @@ impl Untrusted for UntrustedImpl {
         let creation_option = KeyCredentialCreationOption(keyCredentialCreationOption as i32);
 
         let callback = create_challenge_callback(session_info.clone(), enclave_ptr);
+
+        println!("[SDK-Host]   Calling KeyCredentialManager::RequestCreateAsync2...");
 
         let credential_result = KeyCredentialManager::RequestCreateAsync2(
             &key_name_hstring,
@@ -280,9 +307,19 @@ impl Untrusted for UntrustedImpl {
             ChallengeResponseKind::VirtualizationBasedSecurityEnclave,
             &callback,
         )
-        .map_err(|e| AbiError::Hresult(e.code().0))?
-        .join()
-        .map_err(|e| AbiError::Hresult(e.code().0))?;
+        .map_err(|e| {
+            println!("[SDK-Host]   RequestCreateAsync2 failed to start: {:?}", e);
+            AbiError::Hresult(e.code().0)
+        })?;
+
+        println!("[SDK-Host]   RequestCreateAsync2 started, waiting for completion (join)...");
+
+        let credential_result = credential_result.join().map_err(|e| {
+            println!("[SDK-Host]   RequestCreateAsync2.join() failed: {:?}", e);
+            AbiError::Hresult(e.code().0)
+        })?;
+
+        println!("[SDK-Host]   RequestCreateAsync2 completed!");
 
         // Check if operation was successful
         let status = credential_result
