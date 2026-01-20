@@ -58,17 +58,11 @@ fn get_encryption_key() -> Option<&'static SymmetricKeyHandle> {
     unsafe { ENCRYPTION_KEY.as_ref() }
 }
 
-/// Helper function to convert WString to String for SDK calls
-fn wstring_to_string(ws: &WString) -> alloc::string::String {
-    // WString stores UTF-16 in wchars field, convert to UTF-8 String
-    alloc::string::String::from_utf16_lossy(&ws.wchars)
-}
-
 /// Helper function to ensure user-bound key is loaded.
 /// Handles initial load attempt and optional reseal if needed.
 fn ensure_user_bound_key_loaded(
-    hello_key_name: &str,
-    pin_message: &str,
+    hello_key_name: &[u16],
+    pin_message: &[u16],
     window_id: u64,
     secured_encryption_key_bytes: &[u8],
     needs_reseal: &mut bool,
@@ -170,23 +164,21 @@ impl Trusted for EnclaveImpl {
         let _ = debug_print(&String::from("CreateUserBoundKey: Starting"));
 
         let cache_config = create_secure_cache_config();
-        let key_name = wstring_to_string(helloKeyName);
-        let pin_msg = wstring_to_string(pinMessage);
 
         let _ = debug_print(&format!(
-            "CreateUserBoundKey: key_name={}, windowId={}, option={}",
-            key_name, windowId, keyCredentialCreationOption
+            "CreateUserBoundKey: windowId={}, option={}",
+            windowId, keyCredentialCreationOption
         ));
 
         let _ = debug_print(&String::from(
             "CreateUserBoundKey: Calling SDK create_user_bound_key...",
         ));
 
-        // Create user-bound key with enclave sealing
+        // Create user-bound key with enclave sealing (pass wchars directly)
         let sealed_key = create_user_bound_key(
-            &key_name,
+            &helloKeyName.wchars,
             &cache_config,
-            &pin_msg,
+            &pinMessage.wchars,
             windowId,
             EnclaveSealingIdentityPolicy::SealToExactCode,
             RUNTIME_POLICY_NO_DEBUG,
@@ -215,15 +207,13 @@ impl Trusted for EnclaveImpl {
         securedEncryptionKeyBytes: &Vec<u8>,
         inputData: &WString,
     ) -> Result<EncryptResult, AbiError> {
-        let key_name = wstring_to_string(helloKeyName);
-        let pin_msg = wstring_to_string(pinMessage);
         let mut needs_reseal = false;
         let mut resealed_bytes = Vec::new();
 
-        // Ensure key is loaded (handles reseal if needed)
+        // Ensure key is loaded (handles reseal if needed) - pass wchars directly
         ensure_user_bound_key_loaded(
-            &key_name,
-            &pin_msg,
+            &helloKeyName.wchars,
+            &pinMessage.wchars,
             windowId,
             securedEncryptionKeyBytes,
             &mut needs_reseal,
@@ -267,8 +257,6 @@ impl Trusted for EnclaveImpl {
         securedEncryptionKeyBytes: &Vec<u8>,
         combinedInputData: &Vec<u8>,
     ) -> Result<DecryptResult, AbiError> {
-        let key_name = wstring_to_string(helloKeyName);
-        let pin_msg = wstring_to_string(pinMessage);
         let mut needs_reseal = false;
         let mut resealed_bytes = Vec::new();
 
@@ -294,10 +282,10 @@ impl Trusted for EnclaveImpl {
         let tag = &combinedInputData[4..4 + tag_size];
         let encrypted = &combinedInputData[4 + tag_size..];
 
-        // Ensure key is loaded
+        // Ensure key is loaded - pass wchars directly
         ensure_user_bound_key_loaded(
-            &key_name,
-            &pin_msg,
+            &helloKeyName.wchars,
+            &pinMessage.wchars,
             windowId,
             securedEncryptionKeyBytes,
             &mut needs_reseal,

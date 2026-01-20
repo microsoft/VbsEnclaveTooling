@@ -50,9 +50,9 @@ enclave
         // Returns credential handle and session info on success.
         credentialAndSessionInfo userboundkey_establish_session_for_create(
             uint64_t enclave,
-            string keyName,
+            wstring keyName,
             uint64_t ecdhProtocol,
-            string message,
+            wstring message,
             uint64_t windowId,
             keyCredentialCacheConfig cacheConfig,
             uint32_t keyCredentialCreationOption
@@ -62,8 +62,8 @@ enclave
         // Returns credential handle and session info on success.
         credentialAndSessionInfo userboundkey_establish_session_for_load(
             uint64_t enclave,
-            string keyName,
-            string message,
+            wstring keyName,
+            wstring message,
             uint64_t windowId
         );
 
@@ -72,7 +72,7 @@ enclave
         vector<uint8_t> userboundkey_get_authorization_context_from_credential(
             uint64_t credential,
             vector<uint8_t> encryptedRequest,
-            string message,
+            wstring message,
             uint64_t windowId
         );
 
@@ -81,14 +81,14 @@ enclave
         vector<uint8_t> userboundkey_get_secret_from_credential(
             uint64_t credential,
             vector<uint8_t> encryptedRequest,
-            string message,
+            wstring message,
             uint64_t windowId
         );
 
         // Format a key name with current user's SID for Windows Hello.
-        // Returns the formatted key name string.
-        string userboundkey_format_key_name(
-            string keyName
+        // Returns the formatted key name wide string.
+        wstring userboundkey_format_key_name(
+            wstring keyName
         );
 
         // Delete/release a credential handle in VTL0.

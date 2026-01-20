@@ -148,13 +148,26 @@ fn get_ephemeral_public_key_bytes_from_bound_key(
     Ok(bound_key_bytes[4..4 + public_key_size].to_vec())
 }
 
-/// Validate that formatted key name ends with expected suffix
-fn validate_formatted_key_name(
-    formatted_key_name: &str,
-    original_key_name: &str,
+/// Validate that formatted key name ends with expected suffix (wide string version)
+fn validate_formatted_key_name_wide(
+    formatted_key_name: &[u16],
+    original_key_name: &[u16],
 ) -> Result<(), UserBoundKeyError> {
-    let expected_suffix = alloc::format!("//{}", original_key_name);
-    if !formatted_key_name.ends_with(&expected_suffix) {
+    // Build expected suffix: "//" + original_key_name
+    let slash_slash: [u16; 2] = ['/' as u16, '/' as u16];
+    let expected_suffix_len = 2 + original_key_name.len();
+
+    if formatted_key_name.len() < expected_suffix_len {
+        return Err(UserBoundKeyError::SecurityViolation(
+            "Formatted key name does not match expected pattern",
+        ));
+    }
+
+    // Check if formatted_key_name ends with "//{original_key_name}"
+    let suffix_start = formatted_key_name.len() - expected_suffix_len;
+    let formatted_suffix = &formatted_key_name[suffix_start..];
+
+    if formatted_suffix[0..2] != slash_slash || formatted_suffix[2..] != *original_key_name {
         return Err(UserBoundKeyError::SecurityViolation(
             "Formatted key name does not match expected pattern",
         ));
@@ -171,9 +184,9 @@ fn validate_formatted_key_name(
 /// 4. Seals the protected key to the enclave
 ///
 /// # Arguments
-/// * `key_name` - Name for the Windows Hello credential
+/// * `key_name` - Name for the Windows Hello credential (UTF-16 wide string without null terminator)
 /// * `cache_config` - Cache configuration for the credential
-/// * `message` - Message to display during Windows Hello prompt
+/// * `message` - Message to display during Windows Hello prompt (UTF-16 wide string without null terminator)
 /// * `window_id` - Window ID for the prompt
 /// * `sealing_policy` - Enclave sealing identity policy
 /// * `runtime_policy` - Runtime policy flags
@@ -182,9 +195,9 @@ fn validate_formatted_key_name(
 /// # Returns
 /// Sealed key material that can be stored and later loaded
 pub fn create_user_bound_key(
-    key_name: &str,
+    key_name: &[u16],
     cache_config: &keyCredentialCacheConfig,
-    message: &str,
+    message: &[u16],
     window_id: u64,
     sealing_policy: EnclaveSealingIdentityPolicy,
     runtime_policy: u32,
@@ -207,9 +220,9 @@ pub fn create_user_bound_key(
 
 /// Create a user-bound key with custom key bytes
 pub fn create_user_bound_key_with_custom_key(
-    key_name: &str,
+    key_name: &[u16],
     cache_config: &keyCredentialCacheConfig,
-    message: &str,
+    message: &[u16],
     window_id: u64,
     sealing_policy: EnclaveSealingIdentityPolicy,
     runtime_policy: u32,
@@ -217,22 +230,31 @@ pub fn create_user_bound_key_with_custom_key(
     custom_key_bytes: &[u8],
 ) -> Result<Vec<u8>, UserBoundKeyError> {
     // Format the key name (calls VTL0) - this is the FIRST VTL0 call
-    let formatted_key_name = untrusted::userboundkey_format_key_name(&key_name.into())
+    // Create WString from key_name slice
+    let key_name_wstring = userboundkey_enclave_gen::implementation::types::edl::WString {
+        wchars: key_name.to_vec(),
+    };
+    let formatted_key_name_wstring = untrusted::userboundkey_format_key_name(&key_name_wstring)
         .map_err(|e| UserBoundKeyError::AbiError(e))?;
 
-    // Security validation
-    validate_formatted_key_name(&formatted_key_name, key_name)?;
+    // Security validation (wide string version)
+    validate_formatted_key_name_wide(&formatted_key_name_wstring.wchars, key_name)?;
 
     // Get enclave base address
     let enclave_ptr = get_enclave_base_address_u64()?;
+
+    // Create WString for message
+    let message_wstring = userboundkey_enclave_gen::implementation::types::edl::WString {
+        wchars: message.to_vec(),
+    };
 
     // Establish session (calls VTL0 which triggers Windows Hello)
     // Requires at least 2 enclave threads - one for this call and one for the callback
     let credential_and_session = untrusted::userboundkey_establish_session_for_create(
         enclave_ptr,
-        &key_name.into(),
+        &key_name_wstring,
         BCRYPT_ECDH_P384_ALG_HANDLE_U64,
-        &message.into(),
+        &message_wstring,
         window_id,
         cache_config,
         key_credential_creation_option,
@@ -250,11 +272,9 @@ pub fn create_user_bound_key_with_custom_key(
     let mut encrypted_request_size: u32 = 0;
     let mut local_nonce: u64 = 0;
 
-    // Convert formatted key name to wide string
-    let formatted_key_name_wide: Vec<u16> = formatted_key_name
-        .encode_utf16()
-        .chain(core::iter::once(0))
-        .collect();
+    // Add null terminator for Windows API
+    let mut formatted_key_name_wide: Vec<u16> = formatted_key_name_wstring.wchars.clone();
+    formatted_key_name_wide.push(0);
 
     unsafe {
         let hr = CreateUserBoundKeyRequestForRetrieveAuthorizationContext(
@@ -286,7 +306,7 @@ pub fn create_user_bound_key_with_custom_key(
     let auth_context_blob = untrusted::userboundkey_get_authorization_context_from_credential(
         credential.get(),
         &encrypted_request,
-        &message.into(),
+        &message_wstring,
         window_id,
     )
     .map_err(|e| UserBoundKeyError::AbiError(e))?;
@@ -357,9 +377,9 @@ pub fn create_user_bound_key_with_custom_key(
 /// Load a previously created user-bound key
 ///
 /// # Arguments
-/// * `key_name` - Name of the Windows Hello credential
+/// * `key_name` - Name of the Windows Hello credential (UTF-16 wide string without null terminator)
 /// * `cache_config` - Expected cache configuration
-/// * `message` - Message to display during Windows Hello prompt
+/// * `message` - Message to display during Windows Hello prompt (UTF-16 wide string without null terminator)
 /// * `window_id` - Window ID for the prompt
 /// * `sealed_bound_key_bytes` - Previously sealed key material
 ///
@@ -367,9 +387,9 @@ pub fn create_user_bound_key_with_custom_key(
 /// A tuple of (decrypted user key bytes, needs_reseal flag).
 /// If `needs_reseal` is true, the caller should reseal the key with [`reseal_user_bound_key`].
 pub fn load_user_bound_key(
-    key_name: &str,
+    key_name: &[u16],
     cache_config: &keyCredentialCacheConfig,
-    message: &str,
+    message: &[u16],
     window_id: u64,
     sealed_bound_key_bytes: &[u8],
 ) -> Result<(Vec<u8>, bool), UserBoundKeyError> {
@@ -384,21 +404,29 @@ pub fn load_user_bound_key(
     // Extract ephemeral public key from bound key structure
     let ephemeral_public_key = get_ephemeral_public_key_bytes_from_bound_key(&bound_key_bytes)?;
 
-    // Format the key name
-    let formatted_key_name = untrusted::userboundkey_format_key_name(&key_name.into())
+    // Format the key name (calls VTL0)
+    let key_name_wstring = userboundkey_enclave_gen::implementation::types::edl::WString {
+        wchars: key_name.to_vec(),
+    };
+    let formatted_key_name_wstring = untrusted::userboundkey_format_key_name(&key_name_wstring)
         .map_err(|e| UserBoundKeyError::AbiError(e))?;
 
-    // Security validation
-    validate_formatted_key_name(&formatted_key_name, key_name)?;
+    // Security validation (wide string version)
+    validate_formatted_key_name_wide(&formatted_key_name_wstring.wchars, key_name)?;
 
     // Get enclave base address
     let enclave_ptr = get_enclave_base_address_u64()?;
 
+    // Create WString for message
+    let message_wstring = userboundkey_enclave_gen::implementation::types::edl::WString {
+        wchars: message.to_vec(),
+    };
+
     // Establish session for load (calls VTL0)
     let credential_and_session = untrusted::userboundkey_establish_session_for_load(
         enclave_ptr,
-        &key_name.into(),
-        &message.into(),
+        &key_name_wstring,
+        &message_wstring,
         window_id,
     )
     .map_err(|e| UserBoundKeyError::AbiError(e))?;
@@ -414,10 +442,9 @@ pub fn load_user_bound_key(
     let mut encrypted_rac_size: u32 = 0;
     let mut local_nonce: u64 = 0;
 
-    let formatted_key_name_wide: Vec<u16> = formatted_key_name
-        .encode_utf16()
-        .chain(core::iter::once(0))
-        .collect();
+    // Add null terminator for Windows API
+    let mut formatted_key_name_wide: Vec<u16> = formatted_key_name_wstring.wchars.clone();
+    formatted_key_name_wide.push(0);
 
     unsafe {
         let hr = CreateUserBoundKeyRequestForRetrieveAuthorizationContext(
@@ -444,7 +471,7 @@ pub fn load_user_bound_key(
     let auth_context_blob = untrusted::userboundkey_get_authorization_context_from_credential(
         credential.get(),
         &encrypted_rac_request,
-        &message.into(),
+        &message_wstring,
         window_id,
     )
     .map_err(|e| UserBoundKeyError::AbiError(e))?;
@@ -511,7 +538,7 @@ pub fn load_user_bound_key(
     let secret = untrusted::userboundkey_get_secret_from_credential(
         credential.get(),
         &encrypted_dss_request,
-        &message.into(),
+        &message_wstring,
         window_id,
     )
     .map_err(|e| UserBoundKeyError::AbiError(e))?;

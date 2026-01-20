@@ -66,9 +66,9 @@ fn print_menu(is_key_loaded: bool) {
     io::stdout().flush().unwrap();
 }
 
-/// Create a WString from a Rust string
+/// Create a WString from a Rust string (without null terminator - SDK adds it when needed)
 fn to_wstring(s: &str) -> WString {
-    let wchars: Vec<u16> = s.encode_utf16().chain(std::iter::once(0)).collect();
+    let wchars: Vec<u16> = s.encode_utf16().collect();
     WString { wchars }
 }
 

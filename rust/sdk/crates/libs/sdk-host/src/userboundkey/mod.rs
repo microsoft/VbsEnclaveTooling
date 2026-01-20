@@ -13,7 +13,8 @@ pub use types::*;
 use userboundkey_host_gen::AbiError;
 pub use userboundkey_host_gen::UserBoundKeyVtl0Host;
 pub use userboundkey_host_gen::implementation::types::{
-    attestationReportAndSessionInfo, credentialAndSessionInfo, keyCredentialCacheConfig,
+    attestationReportAndSessionInfo, credentialAndSessionInfo, edl::WString,
+    keyCredentialCacheConfig,
 };
 use userboundkey_host_gen::implementation::untrusted::Untrusted;
 
@@ -195,51 +196,16 @@ fn create_challenge_callback(
     })
 }
 
-/// Format a key name with user SID for Windows Hello
-fn format_user_hello_key_name(name: &str) -> Result<String, AbiError> {
-    unsafe {
-        let mut process_token = HANDLE::default();
-        OpenProcessToken(GetCurrentProcess(), TOKEN_QUERY, &mut process_token)
-            .map_err(|_| AbiError::Hresult(E_FAIL.0))?;
-
-        // Get token user info size
-        let mut return_length: u32 = 0;
-        let _ = GetTokenInformation(process_token, TokenUser, None, 0, &mut return_length);
-
-        // Allocate buffer and get token user info
-        let mut buffer = vec![0u8; return_length as usize];
-        GetTokenInformation(
-            process_token,
-            TokenUser,
-            Some(buffer.as_mut_ptr() as *mut _),
-            return_length,
-            &mut return_length,
-        )
-        .map_err(|_| AbiError::Hresult(E_FAIL.0))?;
-
-        let _ = CloseHandle(process_token);
-
-        let token_user = &*(buffer.as_ptr() as *const TOKEN_USER);
-        let user_sid = token_user.User.Sid;
-
-        // Convert SID to string
-        let sid_string = sid_to_string(user_sid)?;
-
-        // Format: {SID}//{SID}//{keyName}
-        Ok(format!("{}//{}//{}", sid_string, sid_string, name))
-    }
-}
-
-/// Convert a PSID to a string representation
-fn sid_to_string(sid: PSID) -> Result<String, AbiError> {
+/// Convert a PSID to a wide string representation (Vec<u16>)
+fn sid_to_wide_string(sid: PSID) -> Result<Vec<u16>, AbiError> {
     unsafe {
         let mut string_sid = PWSTR::null();
         ConvertSidToStringSidW(sid, &mut string_sid).map_err(|_| AbiError::Hresult(E_FAIL.0))?;
 
-        // Convert PWSTR to String
+        // Convert PWSTR to Vec<u16>
         let len = (0..).take_while(|&i| *string_sid.0.add(i) != 0).count();
         let slice = std::slice::from_raw_parts(string_sid.0, len);
-        let result = String::from_utf16_lossy(slice);
+        let result = slice.to_vec();
 
         // Note: We're leaking the string memory here since LocalFree requires more setup.
         // In a production implementation, proper cleanup should be added.
@@ -252,22 +218,27 @@ fn sid_to_string(sid: PSID) -> Result<String, AbiError> {
 /// Untrusted implementation struct
 pub struct UntrustedImpl;
 
+/// Helper to convert WString to HSTRING
+fn wstring_to_hstring(ws: &WString) -> HSTRING {
+    HSTRING::from_wide(&ws.wchars)
+}
+
 #[allow(non_snake_case)]
 #[allow(unused_variables)]
 impl Untrusted for UntrustedImpl {
     fn userboundkey_establish_session_for_create(
         enclave: u64,
-        keyName: &String,
+        keyName: &WString,
         ecdhProtocol: u64,
-        message: &String,
+        message: &WString,
         windowId: u64,
         cacheConfig: &keyCredentialCacheConfig,
         keyCredentialCreationOption: u32,
     ) -> Result<credentialAndSessionInfo, AbiError> {
         println!("[SDK-Host] userboundkey_establish_session_for_create called");
         println!(
-            "[SDK-Host]   keyName={}, windowId={}, option={}",
-            keyName, windowId, keyCredentialCreationOption
+            "[SDK-Host]   windowId={}, option={}",
+            windowId, keyCredentialCreationOption
         );
 
         let algorithm = get_algorithm(ecdhProtocol)?;
@@ -281,7 +252,7 @@ impl Untrusted for UntrustedImpl {
         let enclave_ptr = enclave as usize;
 
         // Try to delete existing key first (ignore errors)
-        let key_name_hstring = HSTRING::from(keyName.as_str());
+        let key_name_hstring = wstring_to_hstring(keyName);
         println!("[SDK-Host]   Deleting existing key (if any)...");
         if let Ok(delete_op) = KeyCredentialManager::DeleteAsync(&key_name_hstring) {
             let _ = delete_op.join();
@@ -289,7 +260,7 @@ impl Untrusted for UntrustedImpl {
         println!("[SDK-Host]   Delete complete");
 
         // Create the credential with VBS attestation
-        let message_hstring = HSTRING::from(message.as_str());
+        let message_hstring = wstring_to_hstring(message);
         let win_id = WindowId { Value: windowId };
         let creation_option = KeyCredentialCreationOption(keyCredentialCreationOption as i32);
 
@@ -353,15 +324,15 @@ impl Untrusted for UntrustedImpl {
 
     fn userboundkey_establish_session_for_load(
         enclave: u64,
-        keyName: &String,
-        message: &String,
+        keyName: &WString,
+        message: &WString,
         windowId: u64,
     ) -> Result<credentialAndSessionInfo, AbiError> {
         let _ = (message, windowId); // Mark as intentionally unused
         let session_info = Arc::new(Mutex::new(UniqueSessionHandle::new()));
         let enclave_ptr = enclave as usize;
 
-        let key_name_hstring = HSTRING::from(keyName.as_str());
+        let key_name_hstring = wstring_to_hstring(keyName);
         let callback = create_challenge_callback(session_info.clone(), enclave_ptr);
 
         let credential_result = KeyCredentialManager::OpenAsync2(
@@ -405,7 +376,7 @@ impl Untrusted for UntrustedImpl {
     fn userboundkey_get_authorization_context_from_credential(
         credential: u64,
         encryptedRequest: &Vec<u8>,
-        message: &String,
+        message: &WString,
         windowId: u64,
     ) -> Result<Vec<u8>, AbiError> {
         // Reconstruct KeyCredential from raw pointer
@@ -438,7 +409,7 @@ impl Untrusted for UntrustedImpl {
     fn userboundkey_get_secret_from_credential(
         credential: u64,
         encryptedRequest: &Vec<u8>,
-        message: &String,
+        message: &WString,
         windowId: u64,
     ) -> Result<Vec<u8>, AbiError> {
         // Reconstruct KeyCredential from raw pointer
@@ -461,7 +432,7 @@ impl Untrusted for UntrustedImpl {
             vec_to_kcm_buffer(encryptedRequest).map_err(|e| AbiError::Hresult(e.code().0))?;
 
         let win_id = WindowId { Value: windowId };
-        let message_hstring = HSTRING::from(message.as_str());
+        let message_hstring = wstring_to_hstring(message);
 
         // Call RequestDeriveSharedSecretAsync on the credential
         let operation_result = key_credential
@@ -477,8 +448,47 @@ impl Untrusted for UntrustedImpl {
         kcm_buffer_to_vec(&result_buffer).map_err(|e| AbiError::Hresult(e.code().0))
     }
 
-    fn userboundkey_format_key_name(keyName: &String) -> Result<String, AbiError> {
-        format_user_hello_key_name(keyName)
+    fn userboundkey_format_key_name(keyName: &WString) -> Result<WString, AbiError> {
+        unsafe {
+            let mut process_token = HANDLE::default();
+            OpenProcessToken(GetCurrentProcess(), TOKEN_QUERY, &mut process_token)
+                .map_err(|_| AbiError::Hresult(E_FAIL.0))?;
+
+            // Get token user info size
+            let mut return_length: u32 = 0;
+            let _ = GetTokenInformation(process_token, TokenUser, None, 0, &mut return_length);
+
+            // Allocate buffer and get token user info
+            let mut buffer = vec![0u8; return_length as usize];
+            GetTokenInformation(
+                process_token,
+                TokenUser,
+                Some(buffer.as_mut_ptr() as *mut _),
+                return_length,
+                &mut return_length,
+            )
+            .map_err(|_| AbiError::Hresult(E_FAIL.0))?;
+
+            let _ = CloseHandle(process_token);
+
+            let token_user = &*(buffer.as_ptr() as *const TOKEN_USER);
+            let user_sid = token_user.User.Sid;
+
+            // Convert SID to wide string
+            let sid_wide = sid_to_wide_string(user_sid)?;
+
+            // Build formatted key: {SID}//{SID}//{keyName}
+            let slash_slash: [u16; 2] = ['/' as u16, '/' as u16];
+            let mut result =
+                Vec::with_capacity(sid_wide.len() + 2 + sid_wide.len() + 2 + keyName.wchars.len());
+            result.extend_from_slice(&sid_wide);
+            result.extend_from_slice(&slash_slash);
+            result.extend_from_slice(&sid_wide);
+            result.extend_from_slice(&slash_slash);
+            result.extend_from_slice(&keyName.wchars);
+
+            Ok(WString { wchars: result })
+        }
     }
 
     fn userboundkey_delete_credential(credential: u64) -> Result<(), AbiError> {
