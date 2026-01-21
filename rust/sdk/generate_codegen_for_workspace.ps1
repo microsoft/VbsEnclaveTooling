@@ -6,9 +6,10 @@ $errorActionPreference = "Stop"
 . "$PSScriptRoot\..\scripts\get_common_paths.ps1"
 
 # SDK crate paths
-$edlPath      = Join-Path $repoRoot "src\VbsEnclaveSDK\veil_abi.edl"
+$edlPath      = Join-Path $SdkWorkspacePath "crates/libs/edl/veil_abi.edl"
 $enclaveSdkCrate = Join-Path $SdkWorkspacePath "crates/libs/sdk-enclave"
 $hostSdkCrate    = Join-Path $SdkWorkspacePath "crates/libs/sdk-host"
+$importDir = Join-Path $SdkWorkspacePath "crates/libs/edl/"
 
 # Generate edlcodegen crates for the sdk-host and sdk-enclave crates 
 . "$scriptsDir\generate_codegen_crates.ps1" `
@@ -16,7 +17,8 @@ $hostSdkCrate    = Join-Path $SdkWorkspacePath "crates/libs/sdk-host"
     -EnclaveOutDir "$enclaveSdkCrate\generated" `
     -EdlPath $edlPath `
     -Namespace "veil_abi" `
-    -Vtl0ClassName "export_interface"
+    -Vtl0ClassName "export_interface" `
+    -ImportDirectories $importDir
 
 # Below this comment, Call the generate_codegen_crates.ps1 script
 # on any other crates in the sdk workspace that need codegen bindings.

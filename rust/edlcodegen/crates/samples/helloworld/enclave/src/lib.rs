@@ -6,7 +6,8 @@ extern crate alloc;
 mod edl_impls;
 mod enclave_constants;
 use enclave_constants::*;
-use core::panic::PanicInfo;
+use core::panic::{ PanicInfo};
+use tracelogging as tlg;
 
 // Developer creates their own panic handler for no_std environments.
 // Note: The rust analyzer in VSCode shows red squiggly lines in the IDE.
@@ -55,11 +56,25 @@ pub static __enclave_config: ImageEnclaveConfig = ImageEnclaveConfig {
     enclave_flags: IMAGE_ENCLAVE_FLAG_PRIMARY_IMAGE,
 };
 
+tlg::define_provider!(
+    HELLO_WORLD_PROVIDER,
+    "HelloWorldProvider",
+);
+
 #[unsafe(no_mangle)]
 #[allow(non_snake_case)]
 pub extern "system" fn DllMain(
     _instance: *const core::ffi::c_void,
-    _reason: u32,
+    reason: u32,
     _reserved: *mut core::ffi::c_void,) -> bool {
+
+    // Export SDK enclave functions from dll.
+    vbsenclave_sdk_enclave::export_enclave_functions();
+
+    // DLL_PROCESS_ATTACH
+    if reason == 1 {
+        vbsenclave_sdk_enclave::etw::add_provider(&HELLO_WORLD_PROVIDER);
+    }
+
     true
 }

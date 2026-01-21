@@ -15,13 +15,16 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let test_host = TestVtl0Host::new(enclave_container.enclave);
 
     if let Err(err) = test_host.register_vtl0_callbacks::<HostImpl>() {
-        panic!("Failed to register VTL0 callbacks: HRESULT: {:x}", err.to_hresult().0);
+        return Err(format!("Failed to register VTL0 callbacks: HRESULT: {:x}", err.to_hresult().0).into());
+    }
+
+    if let Err(err) = vbsenclave_sdk_host::register_sdk_callbacks(enclave_container.enclave) {
+        return Err(format!("Failed to register SDK VTL0 callbacks: HRESULT: {:x}", err.to_hresult().0).into());
     }
 
     let secret_result = test_host.do_secret_math(42, 58);
     if let Err(err) = secret_result {
-        panic!("do_secret_math failed: HRESULT {:x}", err.to_hresult().0);
-
+        return Err(format!("do_secret_math failed: HRESULT {:x}", err.to_hresult().0).into());
     }
     
     let secret_value = secret_result.unwrap();

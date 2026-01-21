@@ -103,6 +103,9 @@ impl EnclaveContainer {
     unsafe fn unload_enclave(enclave: *mut c_void) {
         if !enclave.is_null() {
             unsafe {
+                // Explicitly unregister ETW providers before unloading the enclave.
+                let _ = vbsenclave_sdk_host::unregister_etw_providers(enclave);
+                
                 if !TerminateEnclave(enclave,  TRUE).as_bool() {
                     print_unload_error("Failed to terminate enclave before deletion", HRESULT::from_thread());
                     return;

@@ -5,6 +5,8 @@ edition =  { workspace = true }
 
 [dependencies]
 spin = { workspace = true }
+
+tracelogging = { workspace = true, default-features = false, features = ["etw", "kernel_mode"] }
+uuid = { workspace = true, default-features = false, features = [ "v4"] }
 veil_abi_enclave_gen = { path = "./generated/veil_abi_gen" }
 windows-enclave = {workspace = true }
-

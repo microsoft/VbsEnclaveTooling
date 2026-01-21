@@ -1,0 +1,15 @@
+// Copyright (c) Microsoft Corporation.
+// Licensed under the MIT License.
+
+enclave
+{
+    import "veil_tracelogging.edl";
+    
+    trusted
+    {
+    };
+
+    untrusted
+    {
+    };
+};
