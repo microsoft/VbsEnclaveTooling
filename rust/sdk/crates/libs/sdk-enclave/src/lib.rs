@@ -6,12 +6,10 @@ extern crate alloc;
 
 mod enclave_ffi;
 
-#[cfg(feature = "userboundkey")]
 pub mod userboundkey;
 
 // Re-export the userboundkey generated enclave crate.
 // This is used internally by the export_sdk_enclave_functions! macro.
-#[cfg(feature = "userboundkey")]
 pub use userboundkey_enclave_gen;
 
 /// Export all SDK enclave functions.
@@ -29,7 +27,6 @@ pub use userboundkey_enclave_gen;
 ///
 /// This is equivalent to manually exporting each SDK module's functions,
 /// but hides the internal implementation details.
-#[cfg(feature = "userboundkey")]
 #[macro_export]
 macro_rules! export_sdk_enclave_functions {
     () => {

@@ -20,11 +20,16 @@ pub use types::*;
 // Re-export the cache config type for use by samples
 pub use userboundkey_enclave_gen::implementation::types::keyCredentialCacheConfig;
 
+// Re-export widestring types for public API consumers
+pub use widestring::U16Str;
+
 use alloc::vec::Vec;
 
+use userboundkey_enclave_gen::AbiError;
 use userboundkey_enclave_gen::implementation::trusted::Trusted;
 use userboundkey_enclave_gen::implementation::types::attestationReportAndSessionInfo;
 use userboundkey_enclave_gen::stubs::untrusted;
+use widestring::U16String;
 
 use windows_enclave::veinterop::{
     CloseUserBoundKeyAuthContext, CloseUserBoundKeySession,
@@ -43,6 +48,48 @@ use utils::get_enclave_base_address_u64;
 // BCRYPT_ECDH_P384_ALG_HANDLE = ((BCRYPT_ALG_HANDLE) 0x000002b1)
 // Stored as u64 for EDL interface compatibility.
 const BCRYPT_ECDH_P384_ALG_HANDLE_U64: u64 = 0x000002b1;
+
+/// RAII wrapper for heap-allocated buffers returned by veinterop APIs.
+/// Automatically frees the buffer via HeapFree when dropped.
+struct HeapBuffer {
+    ptr: *mut core::ffi::c_void,
+    size: u32,
+}
+
+impl HeapBuffer {
+    /// Takes ownership of a heap-allocated buffer.
+    ///
+    /// # Safety
+    /// The pointer must have been allocated via GetProcessHeap/HeapAlloc
+    /// and the size must be accurate.
+    unsafe fn from_raw(ptr: *mut core::ffi::c_void, size: u32) -> Self {
+        Self { ptr, size }
+    }
+
+    /// Returns true if the buffer is null or empty.
+    fn is_empty(&self) -> bool {
+        self.ptr.is_null() || self.size == 0
+    }
+
+    /// Copies the buffer contents to a Vec.
+    fn to_vec(&self) -> Vec<u8> {
+        if self.is_empty() {
+            return Vec::new();
+        }
+        unsafe { core::slice::from_raw_parts(self.ptr as *const u8, self.size as usize).to_vec() }
+    }
+}
+
+impl Drop for HeapBuffer {
+    fn drop(&mut self) {
+        if !self.ptr.is_null() {
+            unsafe {
+                let heap = GetProcessHeap();
+                HeapFree(heap, 0, self.ptr);
+            }
+        }
+    }
+}
 
 /// RAII wrapper for session handle
 struct UniqueSessionHandle(USER_BOUND_KEY_SESSION_HANDLE);
@@ -150,11 +197,11 @@ fn get_ephemeral_public_key_bytes_from_bound_key(
 
 /// Validate that formatted key name ends with expected suffix (wide string version)
 fn validate_formatted_key_name_wide(
-    formatted_key_name: &[u16],
-    original_key_name: &[u16],
+    formatted_key_name: &U16Str,
+    original_key_name: &U16Str,
 ) -> Result<(), UserBoundKeyError> {
     // Build expected suffix: "//" + original_key_name
-    let slash_slash: [u16; 2] = ['/' as u16, '/' as u16];
+    let slash_slash = U16String::from_str("//");
     let expected_suffix_len = 2 + original_key_name.len();
 
     if formatted_key_name.len() < expected_suffix_len {
@@ -165,9 +212,11 @@ fn validate_formatted_key_name_wide(
 
     // Check if formatted_key_name ends with "//{original_key_name}"
     let suffix_start = formatted_key_name.len() - expected_suffix_len;
-    let formatted_suffix = &formatted_key_name[suffix_start..];
+    let formatted_suffix = &formatted_key_name.as_slice()[suffix_start..];
 
-    if formatted_suffix[0..2] != slash_slash || formatted_suffix[2..] != *original_key_name {
+    if formatted_suffix[0..2] != slash_slash.as_slice()[..]
+        || formatted_suffix[2..] != *original_key_name.as_slice()
+    {
         return Err(UserBoundKeyError::SecurityViolation(
             "Formatted key name does not match expected pattern",
         ));
@@ -195,9 +244,9 @@ fn validate_formatted_key_name_wide(
 /// # Returns
 /// Sealed key material that can be stored and later loaded
 pub fn create_user_bound_key(
-    key_name: &[u16],
+    key_name: &U16Str,
     cache_config: &keyCredentialCacheConfig,
-    message: &[u16],
+    message: &U16Str,
     window_id: u64,
     sealing_policy: EnclaveSealingIdentityPolicy,
     runtime_policy: u32,
@@ -220,9 +269,9 @@ pub fn create_user_bound_key(
 
 /// Create a user-bound key with custom key bytes
 pub fn create_user_bound_key_with_custom_key(
-    key_name: &[u16],
+    key_name: &U16Str,
     cache_config: &keyCredentialCacheConfig,
-    message: &[u16],
+    message: &U16Str,
     window_id: u64,
     sealing_policy: EnclaveSealingIdentityPolicy,
     runtime_policy: u32,
@@ -232,20 +281,21 @@ pub fn create_user_bound_key_with_custom_key(
     // Format the key name (calls VTL0) - this is the FIRST VTL0 call
     // Create WString from key_name slice
     let key_name_wstring = userboundkey_enclave_gen::implementation::types::edl::WString {
-        wchars: key_name.to_vec(),
+        wchars: key_name.as_slice().to_vec(),
     };
     let formatted_key_name_wstring = untrusted::userboundkey_format_key_name(&key_name_wstring)
         .map_err(|e| UserBoundKeyError::AbiError(e))?;
 
     // Security validation (wide string version)
-    validate_formatted_key_name_wide(&formatted_key_name_wstring.wchars, key_name)?;
+    let formatted_key_name_u16str = U16Str::from_slice(&formatted_key_name_wstring.wchars);
+    validate_formatted_key_name_wide(formatted_key_name_u16str, key_name)?;
 
     // Get enclave base address
     let enclave_ptr = get_enclave_base_address_u64()?;
 
     // Create WString for message
     let message_wstring = userboundkey_enclave_gen::implementation::types::edl::WString {
-        wchars: message.to_vec(),
+        wchars: message.as_slice().to_vec(),
     };
 
     // Establish session (calls VTL0 which triggers Windows Hello)
@@ -272,14 +322,13 @@ pub fn create_user_bound_key_with_custom_key(
     let mut encrypted_request_size: u32 = 0;
     let mut local_nonce: u64 = 0;
 
-    // Add null terminator for Windows API
-    let mut formatted_key_name_wide: Vec<u16> = formatted_key_name_wstring.wchars.clone();
-    formatted_key_name_wide.push(0);
+    // Create null-terminated wide string for Windows API
+    let formatted_key_name_with_null = U16String::from(formatted_key_name_u16str);
 
     unsafe {
         let hr = CreateUserBoundKeyRequestForRetrieveAuthorizationContext(
             session_handle.get(),
-            formatted_key_name_wide.as_ptr(),
+            formatted_key_name_with_null.as_ptr(),
             &mut local_nonce,
             &mut encrypted_request_ptr,
             &mut encrypted_request_size,
@@ -287,20 +336,17 @@ pub fn create_user_bound_key_with_custom_key(
         check_hr(hr)?;
     }
 
-    // Convert to Vec
-    let encrypted_request = unsafe {
-        core::slice::from_raw_parts(
-            encrypted_request_ptr as *const u8,
-            encrypted_request_size as usize,
-        )
-        .to_vec()
-    };
+    // Take ownership of the heap-allocated buffer
+    let encrypted_request_buf =
+        unsafe { HeapBuffer::from_raw(encrypted_request_ptr, encrypted_request_size) };
 
-    // Free the allocated memory
-    unsafe {
-        let heap = GetProcessHeap();
-        HeapFree(heap, 0, encrypted_request_ptr);
+    // Defensive check - API contract guarantees valid output on S_OK
+    if encrypted_request_buf.is_empty() {
+        return Err(UserBoundKeyError::InvalidData("API returned empty request"));
     }
+
+    // Convert to Vec (HeapBuffer will free on drop)
+    let encrypted_request = encrypted_request_buf.to_vec();
 
     // Get authorization context from credential (calls VTL0)
     let auth_context_blob = untrusted::userboundkey_get_authorization_context_from_credential(
@@ -334,7 +380,7 @@ pub fn create_user_bound_key_with_custom_key(
 
     unsafe {
         let hr = ValidateUserBoundKeyAuthContext(
-            formatted_key_name_wide.as_ptr(),
+            formatted_key_name_with_null.as_ptr(),
             auth_context.get(),
             1,
             &prop,
@@ -357,16 +403,18 @@ pub fn create_user_bound_key_with_custom_key(
         check_hr(hr)?;
     }
 
-    // Convert bound key to Vec
-    let bound_key_bytes = unsafe {
-        core::slice::from_raw_parts(bound_key_ptr as *const u8, bound_key_size as usize).to_vec()
-    };
+    // Take ownership of the heap-allocated buffer
+    let bound_key_buf = unsafe { HeapBuffer::from_raw(bound_key_ptr, bound_key_size) };
 
-    // Free the allocated memory
-    unsafe {
-        let heap = GetProcessHeap();
-        HeapFree(heap, 0, bound_key_ptr);
+    // Defensive check - API contract guarantees valid output on S_OK
+    if bound_key_buf.is_empty() {
+        return Err(UserBoundKeyError::InvalidData(
+            "API returned empty bound key",
+        ));
     }
+
+    // Convert bound key to Vec (HeapBuffer will free on drop)
+    let bound_key_bytes = bound_key_buf.to_vec();
 
     // Seal the bound key
     let sealed_key = seal_data(&bound_key_bytes, sealing_policy, runtime_policy)?;
@@ -387,9 +435,9 @@ pub fn create_user_bound_key_with_custom_key(
 /// A tuple of (decrypted user key bytes, needs_reseal flag).
 /// If `needs_reseal` is true, the caller should reseal the key with [`reseal_user_bound_key`].
 pub fn load_user_bound_key(
-    key_name: &[u16],
+    key_name: &U16Str,
     cache_config: &keyCredentialCacheConfig,
-    message: &[u16],
+    message: &U16Str,
     window_id: u64,
     sealed_bound_key_bytes: &[u8],
 ) -> Result<(Vec<u8>, bool), UserBoundKeyError> {
@@ -406,20 +454,21 @@ pub fn load_user_bound_key(
 
     // Format the key name (calls VTL0)
     let key_name_wstring = userboundkey_enclave_gen::implementation::types::edl::WString {
-        wchars: key_name.to_vec(),
+        wchars: key_name.as_slice().to_vec(),
     };
     let formatted_key_name_wstring = untrusted::userboundkey_format_key_name(&key_name_wstring)
         .map_err(|e| UserBoundKeyError::AbiError(e))?;
 
     // Security validation (wide string version)
-    validate_formatted_key_name_wide(&formatted_key_name_wstring.wchars, key_name)?;
+    let formatted_key_name_u16str = U16Str::from_slice(&formatted_key_name_wstring.wchars);
+    validate_formatted_key_name_wide(formatted_key_name_u16str, key_name)?;
 
     // Get enclave base address
     let enclave_ptr = get_enclave_base_address_u64()?;
 
     // Create WString for message
     let message_wstring = userboundkey_enclave_gen::implementation::types::edl::WString {
-        wchars: message.to_vec(),
+        wchars: message.as_slice().to_vec(),
     };
 
     // Establish session for load (calls VTL0)
@@ -442,14 +491,13 @@ pub fn load_user_bound_key(
     let mut encrypted_rac_size: u32 = 0;
     let mut local_nonce: u64 = 0;
 
-    // Add null terminator for Windows API
-    let mut formatted_key_name_wide: Vec<u16> = formatted_key_name_wstring.wchars.clone();
-    formatted_key_name_wide.push(0);
+    // Create null-terminated wide string for Windows API
+    let formatted_key_name_with_null = U16String::from(formatted_key_name_u16str);
 
     unsafe {
         let hr = CreateUserBoundKeyRequestForRetrieveAuthorizationContext(
             session_handle.get(),
-            formatted_key_name_wide.as_ptr(),
+            formatted_key_name_with_null.as_ptr(),
             &mut local_nonce,
             &mut encrypted_rac_ptr,
             &mut encrypted_rac_size,
@@ -457,15 +505,16 @@ pub fn load_user_bound_key(
         check_hr(hr)?;
     }
 
-    let encrypted_rac_request = unsafe {
-        core::slice::from_raw_parts(encrypted_rac_ptr as *const u8, encrypted_rac_size as usize)
-            .to_vec()
-    };
+    // Take ownership of the heap-allocated buffer
+    let encrypted_rac_buf = unsafe { HeapBuffer::from_raw(encrypted_rac_ptr, encrypted_rac_size) };
 
-    unsafe {
-        let heap = GetProcessHeap();
-        HeapFree(heap, 0, encrypted_rac_ptr);
+    // Defensive check - API contract guarantees valid output on S_OK
+    if encrypted_rac_buf.is_empty() {
+        return Err(UserBoundKeyError::InvalidData("API returned empty request"));
     }
+
+    // Convert to Vec (HeapBuffer will free on drop)
+    let encrypted_rac_request = encrypted_rac_buf.to_vec();
 
     // Get authorization context (calls VTL0)
     let auth_context_blob = untrusted::userboundkey_get_authorization_context_from_credential(
@@ -499,7 +548,7 @@ pub fn load_user_bound_key(
 
     unsafe {
         let hr = ValidateUserBoundKeyAuthContext(
-            formatted_key_name_wide.as_ptr(),
+            formatted_key_name_with_null.as_ptr(),
             auth_context.get(),
             1,
             &prop,
@@ -514,7 +563,7 @@ pub fn load_user_bound_key(
     unsafe {
         let hr = CreateUserBoundKeyRequestForDeriveSharedSecret(
             session_handle.get(),
-            formatted_key_name_wide.as_ptr(),
+            formatted_key_name_with_null.as_ptr(),
             ephemeral_public_key.as_ptr() as *const core::ffi::c_void,
             ephemeral_public_key.len() as u32,
             &mut local_nonce,
@@ -524,15 +573,16 @@ pub fn load_user_bound_key(
         check_hr(hr)?;
     }
 
-    let encrypted_dss_request = unsafe {
-        core::slice::from_raw_parts(encrypted_dss_ptr as *const u8, encrypted_dss_size as usize)
-            .to_vec()
-    };
+    // Take ownership of the heap-allocated buffer
+    let encrypted_dss_buf = unsafe { HeapBuffer::from_raw(encrypted_dss_ptr, encrypted_dss_size) };
 
-    unsafe {
-        let heap = GetProcessHeap();
-        HeapFree(heap, 0, encrypted_dss_ptr);
+    // Defensive check - API contract guarantees valid output on S_OK
+    if encrypted_dss_buf.is_empty() {
+        return Err(UserBoundKeyError::InvalidData("API returned empty request"));
     }
+
+    // Convert to Vec (HeapBuffer will free on drop)
+    let encrypted_dss_request = encrypted_dss_buf.to_vec();
 
     // Get secret from credential (calls VTL0 - prompts for Windows Hello)
     let secret = untrusted::userboundkey_get_secret_from_credential(
@@ -562,14 +612,18 @@ pub fn load_user_bound_key(
         check_hr(hr)?;
     }
 
-    let user_key_bytes = unsafe {
-        core::slice::from_raw_parts(user_key_ptr as *const u8, user_key_size as usize).to_vec()
-    };
+    // Take ownership of the heap-allocated buffer
+    let user_key_buf = unsafe { HeapBuffer::from_raw(user_key_ptr, user_key_size) };
 
-    unsafe {
-        let heap = GetProcessHeap();
-        HeapFree(heap, 0, user_key_ptr);
+    // Defensive check - API contract guarantees valid output on S_OK
+    if user_key_buf.is_empty() {
+        return Err(UserBoundKeyError::InvalidData(
+            "API returned empty user key",
+        ));
     }
+
+    // Convert to Vec (HeapBuffer will free on drop)
+    let user_key_bytes = user_key_buf.to_vec();
 
     Ok((user_key_bytes, false))
 }
@@ -608,48 +662,49 @@ pub struct TrustedImpl;
 impl Trusted for TrustedImpl {
     fn userboundkey_get_attestation_report(
         challenge: &Vec<u8>,
-    ) -> Result<attestationReportAndSessionInfo, userboundkey_enclave_gen::AbiError> {
-        unsafe {
-            let mut report_ptr: *mut core::ffi::c_void = core::ptr::null_mut();
-            let mut report_size: u32 = 0;
-            let mut session_handle: USER_BOUND_KEY_SESSION_HANDLE = core::ptr::null_mut();
+    ) -> Result<attestationReportAndSessionInfo, AbiError> {
+        let mut report_ptr: *mut core::ffi::c_void = core::ptr::null_mut();
+        let mut report_size: u32 = 0;
+        let mut session_handle: USER_BOUND_KEY_SESSION_HANDLE = core::ptr::null_mut();
 
-            let hr = InitializeUserBoundKeySession(
+        let hr = unsafe {
+            InitializeUserBoundKeySession(
                 challenge.as_ptr() as *const core::ffi::c_void,
                 challenge.len() as u32,
                 &mut report_ptr,
                 &mut report_size,
                 &mut session_handle,
-            );
+            )
+        };
 
-            if hr < 0 {
-                return Err(userboundkey_enclave_gen::AbiError::Hresult(hr));
-            }
-
-            // Convert report to Vec
-            let report =
-                core::slice::from_raw_parts(report_ptr as *const u8, report_size as usize).to_vec();
-
-            // Free the allocated memory
-            let heap = GetProcessHeap();
-            HeapFree(heap, 0, report_ptr);
-
-            Ok(attestationReportAndSessionInfo {
-                report,
-                sessionInfo: session_handle as u64,
-            })
+        if hr < 0 {
+            return Err(AbiError::Hresult(hr));
         }
+
+        // Take ownership of the heap-allocated buffer
+        let report_buf = unsafe { HeapBuffer::from_raw(report_ptr, report_size) };
+
+        // Defensive check - API contract guarantees valid output on S_OK
+        if report_buf.is_empty() {
+            return Err(AbiError::Hresult(-1));
+        }
+
+        // Convert report to Vec (HeapBuffer will free on drop)
+        let report = report_buf.to_vec();
+
+        Ok(attestationReportAndSessionInfo {
+            report,
+            sessionInfo: session_handle as u64,
+        })
     }
 
-    fn userboundkey_close_session(
-        sessionInfo: u64,
-    ) -> Result<(), userboundkey_enclave_gen::AbiError> {
+    fn userboundkey_close_session(sessionInfo: u64) -> Result<(), AbiError> {
         if sessionInfo != 0 {
             unsafe {
                 let session_handle = sessionInfo as USER_BOUND_KEY_SESSION_HANDLE;
                 let hr = CloseUserBoundKeySession(session_handle);
                 if hr < 0 {
-                    return Err(userboundkey_enclave_gen::AbiError::Hresult(hr));
+                    return Err(AbiError::Hresult(hr));
                 }
             }
         }

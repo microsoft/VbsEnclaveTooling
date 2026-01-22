@@ -30,9 +30,9 @@ edlcodegen-tools = { git = "https://github.com/microsoft/VbsEnclaveTooling" }
 regex = "1.11"
 spin = "0.10.0"
 userboundkey-kcm = { version = "0.1.0", path = "crates/libs/userboundkey-kcm" }
-userboundkey_host_gen = { version = "0.0.0", path = "crates/libs/sdk-host/generated/userboundkey_gen" }
 vbsenclave-sdk-enclave = { version = "0.1.0", path = "crates/libs/sdk-enclave" }
 vbsenclave-sdk-host = { version = "0.1.0", path = "crates/libs/sdk-host" }
+widestring = { version = "1.1", default-features = false, features = ["alloc"] }
 windows = "0.62.2"
 windows-bindgen = "0.66.0"
 windows-enclave = { version = "0.1.0", path = "crates/libs/windows-enclave" }

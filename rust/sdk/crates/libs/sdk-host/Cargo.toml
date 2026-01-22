@@ -3,10 +3,6 @@ name = "vbsenclave-sdk-host"
 version = "0.1.0"
 edition.workspace = true
 
-[features]
-default = []
-userboundkey = []
-
 [dependencies.windows]
 workspace = true
 features = [
@@ -24,5 +20,6 @@ features = [
 spin = { workspace = true }
 userboundkey-kcm = { workspace = true }
 userboundkey_host_gen = { path = "./generated/userboundkey_gen" }
+widestring = { workspace = true }
 windows-core = { workspace = true }
 windows-future = { workspace = true }

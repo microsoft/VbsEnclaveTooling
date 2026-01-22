@@ -11,6 +11,6 @@ path = "src/main.rs"
 # Generated code from userboundkey_sample.edl
 userboundkey_sample_host_gen = { path = "generated/userboundkey_sample_gen" }
 # The SDK provides the enclave loading and VTL0 userboundkey callbacks
-vbsenclave-sdk-host = { workspace = true, features = ["userboundkey"] }
+vbsenclave-sdk-host = { workspace = true }
 # Windows APIs
 windows = { workspace = true, features = ["Win32_Foundation", "Security_Cryptography", "Storage_Streams", "Win32_UI_WindowsAndMessaging"] }

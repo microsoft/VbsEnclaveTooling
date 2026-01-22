@@ -15,6 +15,7 @@ windows_link::link!("vertdll.dll" "system" fn EnclaveRestrictContainingProcessAc
 windows_link::link!("vertdll.dll" "system" fn LdrDisableThreadCalloutsForDll(baseaddress: *mut core::ffi::c_void) -> NTSTATUS);
 windows_link::link!("vertdll.dll" "system" fn LdrResolveDelayLoadedAPI(parentmodulebase: *const core::ffi::c_void, delayloaddescriptor: *const IMAGE_DELAYLOAD_DESCRIPTOR, failuredllhook: PDELAYLOAD_FAILURE_DLL_CALLBACK, failuresystemhook: PDELAYLOAD_FAILURE_SYSTEM_ROUTINE, thunkaddress: *mut IMAGE_THUNK_DATA32, flags: u32) -> *mut core::ffi::c_void);
 windows_link::link!("vertdll.dll" "system" fn RtlGetLastNtStatus() -> NTSTATUS);
+windows_link::link!("vertdll.dll" "system" fn RtlNtStatusToDosError(status: NTSTATUS) -> u32);
 windows_link::link!("vertdll.dll" "system" fn RtlRaiseStatus(status: NTSTATUS));
 windows_link::link!("vertdll.dll" "system" fn RtlUnhandledExceptionFilter(exceptionpointers: *const EXCEPTION_POINTERS) -> i32);
 

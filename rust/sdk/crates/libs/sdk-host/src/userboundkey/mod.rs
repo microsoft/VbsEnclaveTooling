@@ -499,13 +499,13 @@ impl Untrusted for UntrustedImpl {
             let sid_wide = sid_to_wide_string(user_sid)?;
 
             // Build formatted key: {SID}//{SID}//{keyName}
-            let slash_slash: [u16; 2] = ['/' as u16, '/' as u16];
+            let slash_slash = widestring::u16str!("//");
             let mut result =
                 Vec::with_capacity(sid_wide.len() + 2 + sid_wide.len() + 2 + keyName.wchars.len());
             result.extend_from_slice(&sid_wide);
-            result.extend_from_slice(&slash_slash);
+            result.extend_from_slice(slash_slash.as_slice());
             result.extend_from_slice(&sid_wide);
-            result.extend_from_slice(&slash_slash);
+            result.extend_from_slice(slash_slash.as_slice());
             result.extend_from_slice(&keyName.wchars);
 
             Ok(WString { wchars: result })

@@ -20,8 +20,9 @@ use userboundkey_sample_enclave_gen::stubs::untrusted::debug_print;
 
 // Import SDK functions and types
 use vbsenclave_sdk_enclave::userboundkey::{
-    EnclaveSealingIdentityPolicy, SymmetricKeyHandle, TAG_SIZE, ZERO_NONCE, create_user_bound_key,
-    decrypt, encrypt, keyCredentialCacheConfig, load_user_bound_key, reseal_user_bound_key,
+    EnclaveSealingIdentityPolicy, SymmetricKeyHandle, TAG_SIZE, U16Str, ZERO_NONCE,
+    create_user_bound_key, decrypt, encrypt, keyCredentialCacheConfig, load_user_bound_key,
+    reseal_user_bound_key,
 };
 
 /// Runtime policy: no dynamic debug allowed
@@ -61,8 +62,8 @@ fn get_encryption_key() -> Option<&'static SymmetricKeyHandle> {
 /// Helper function to ensure user-bound key is loaded.
 /// Handles initial load attempt and optional reseal if needed.
 fn ensure_user_bound_key_loaded(
-    hello_key_name: &[u16],
-    pin_message: &[u16],
+    hello_key_name: &U16Str,
+    pin_message: &U16Str,
     window_id: u64,
     secured_encryption_key_bytes: &[u8],
     needs_reseal: &mut bool,
@@ -155,11 +156,11 @@ impl Trusted for EnclaveImpl {
             "CreateUserBoundKey: Calling SDK create_user_bound_key...",
         ));
 
-        // Create user-bound key with enclave sealing (pass wchars directly)
+        // Create user-bound key with enclave sealing
         let sealed_key = create_user_bound_key(
-            &helloKeyName.wchars,
+            U16Str::from_slice(&helloKeyName.wchars),
             &cache_config,
-            &pinMessage.wchars,
+            U16Str::from_slice(&pinMessage.wchars),
             windowId,
             EnclaveSealingIdentityPolicy::SealToExactCode,
             RUNTIME_POLICY_NO_DEBUG,
@@ -191,10 +192,10 @@ impl Trusted for EnclaveImpl {
         let mut needs_reseal = false;
         let mut resealed_bytes = Vec::new();
 
-        // Ensure key is loaded (handles reseal if needed) - pass wchars directly
+        // Ensure key is loaded (handles reseal if needed)
         ensure_user_bound_key_loaded(
-            &helloKeyName.wchars,
-            &pinMessage.wchars,
+            U16Str::from_slice(&helloKeyName.wchars),
+            U16Str::from_slice(&pinMessage.wchars),
             windowId,
             securedEncryptionKeyBytes,
             &mut needs_reseal,
@@ -263,10 +264,10 @@ impl Trusted for EnclaveImpl {
         let tag = &combinedInputData[4..4 + tag_size];
         let encrypted = &combinedInputData[4 + tag_size..];
 
-        // Ensure key is loaded - pass wchars directly
+        // Ensure key is loaded
         ensure_user_bound_key_loaded(
-            &helloKeyName.wchars,
-            &pinMessage.wchars,
+            U16Str::from_slice(&helloKeyName.wchars),
+            U16Str::from_slice(&pinMessage.wchars),
             windowId,
             securedEncryptionKeyBytes,
             &mut needs_reseal,

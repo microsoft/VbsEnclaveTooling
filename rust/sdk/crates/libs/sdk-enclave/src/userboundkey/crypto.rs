@@ -9,13 +9,11 @@
 use alloc::vec::Vec;
 
 use windows_enclave::bcrypt::{
-    BCRYPT_AES_GCM_ALG_HANDLE, BCRYPT_KEY_HANDLE, BCRYPT_USE_SYSTEM_PREFERRED_RNG, BCryptDecrypt,
-    BCryptDestroyKey, BCryptEncrypt, BCryptGenRandom, BCryptGenerateSymmetricKey,
+    BCRYPT_AES_GCM_ALG_HANDLE, BCRYPT_AUTHENTICATED_CIPHER_MODE_INFO, BCRYPT_KEY_HANDLE,
+    BCRYPT_USE_SYSTEM_PREFERRED_RNG, BCryptDecrypt, BCryptDestroyKey, BCryptEncrypt,
+    BCryptGenRandom, BCryptGenerateSymmetricKey,
 };
-use windows_enclave::vertdll::{
-    ENCLAVE_UNSEAL_FLAG_STALE_KEY, EnclaveSealData, EnclaveUnsealData, GetProcessHeap,
-    HEAP_ZERO_MEMORY, HeapAlloc, HeapFree,
-};
+use windows_enclave::vertdll::{ENCLAVE_UNSEAL_FLAG_STALE_KEY, EnclaveSealData, EnclaveUnsealData};
 
 use super::types::UserBoundKeyError;
 
@@ -60,63 +58,6 @@ pub enum EnclaveSealingIdentityPolicy {
 }
 
 //
-// RAII Helpers
-//
-
-/// RAII wrapper for heap-allocated memory
-pub struct HeapBuffer {
-    ptr: *mut core::ffi::c_void,
-    size: usize,
-}
-
-impl HeapBuffer {
-    /// Allocate a new heap buffer of the specified size
-    pub fn new(size: usize) -> Option<Self> {
-        unsafe {
-            let heap = GetProcessHeap();
-            let ptr = HeapAlloc(heap, HEAP_ZERO_MEMORY, size);
-            if ptr.is_null() {
-                None
-            } else {
-                Some(Self { ptr, size })
-            }
-        }
-    }
-
-    /// Get a const pointer to the buffer
-    #[allow(dead_code)]
-    pub fn as_ptr(&self) -> *const core::ffi::c_void {
-        self.ptr
-    }
-
-    /// Get a mutable pointer to the buffer
-    pub fn as_mut_ptr(&mut self) -> *mut core::ffi::c_void {
-        self.ptr
-    }
-
-    /// Get the buffer contents as a slice
-    pub fn as_slice(&self) -> &[u8] {
-        unsafe { core::slice::from_raw_parts(self.ptr as *const u8, self.size) }
-    }
-
-    /// Copy the buffer contents to a Vec
-    pub fn to_vec(&self) -> Vec<u8> {
-        self.as_slice().to_vec()
-    }
-}
-
-impl Drop for HeapBuffer {
-    fn drop(&mut self) {
-        if !self.ptr.is_null() {
-            unsafe {
-                let heap = GetProcessHeap();
-                HeapFree(heap, 0, self.ptr);
-            }
-        }
-    }
-}
-
-//
 // Helper Functions
 //
 
@@ -138,9 +79,7 @@ fn check_ntstatus(status: i32) -> Result<(), UserBoundKeyError> {
     if status >= 0 {
         Ok(())
     } else {
-        // Convert NTSTATUS to HRESULT-like error
-        // NTSTATUS errors have the high bit set; HRESULT uses 0x8xxxxxxx format
-        Err(UserBoundKeyError::Hresult(status))
+        Err(UserBoundKeyError::NtStatus(status))
     }
 }
 
@@ -208,22 +147,21 @@ pub fn seal_data(
         );
         check_hr(hr)?;
 
-        // Allocate buffer and seal
-        let mut sealed_buffer =
-            HeapBuffer::new(sealed_size as usize).ok_or(UserBoundKeyError::AllocationFailed)?;
+        // Allocate Vec and seal directly into it
+        let mut sealed_buffer = alloc::vec![0u8; sealed_size as usize];
 
         let hr = EnclaveSealData(
             data.as_ptr() as *const core::ffi::c_void,
             data.len() as u32,
             sealing_policy as i32,
             runtime_policy,
-            sealed_buffer.as_mut_ptr(),
+            sealed_buffer.as_mut_ptr() as *mut core::ffi::c_void,
             sealed_size,
             &mut sealed_size,
         );
         check_hr(hr)?;
 
-        Ok(sealed_buffer.to_vec())
+        Ok(sealed_buffer)
     }
 }
 
@@ -252,15 +190,14 @@ pub fn unseal_data(sealed_data: &[u8]) -> Result<(Vec<u8>, u32), UserBoundKeyErr
         );
         check_hr(hr)?;
 
-        // Allocate buffer and unseal
-        let mut unsealed_buffer =
-            HeapBuffer::new(unsealed_size as usize).ok_or(UserBoundKeyError::AllocationFailed)?;
+        // Allocate Vec and unseal directly into it
+        let mut unsealed_buffer = alloc::vec![0u8; unsealed_size as usize];
         let mut unseal_flags: u32 = 0;
 
         let hr = EnclaveUnsealData(
             sealed_data.as_ptr() as *const core::ffi::c_void,
             sealed_data.len() as u32,
-            unsealed_buffer.as_mut_ptr(),
+            unsealed_buffer.as_mut_ptr() as *mut core::ffi::c_void,
             unsealed_size,
             &mut unsealed_size,
             core::ptr::null_mut(),
@@ -268,7 +205,7 @@ pub fn unseal_data(sealed_data: &[u8]) -> Result<(Vec<u8>, u32), UserBoundKeyErr
         );
         check_hr(hr)?;
 
-        Ok((unsealed_buffer.to_vec(), unseal_flags))
+        Ok((unsealed_buffer, unseal_flags))
     }
 }
 
@@ -287,7 +224,7 @@ pub fn is_stale_key(unseal_flags: u32) -> bool {
 
 /// Create a nonce buffer from a numeric value
 ///
-/// Creates a 12-byte nonce with the value placed at the end (big-endian position).
+/// Creates a 12-byte nonce with the value placed at the end (little-endian).
 #[allow(dead_code)]
 pub fn make_nonce_from_number(nonce: u64) -> [u8; NONCE_SIZE] {
     let mut buffer = [0u8; NONCE_SIZE];
@@ -299,94 +236,6 @@ pub fn make_nonce_from_number(nonce: u64) -> [u8; NONCE_SIZE] {
 
 /// Zero nonce for AES-GCM (all zeros)
 pub const ZERO_NONCE: [u8; NONCE_SIZE] = [0u8; NONCE_SIZE];
-
-//
-// BCRYPT_AUTHENTICATED_CIPHER_MODE_INFO structure
-// This is not in the generated bindings, so we define it manually.
-// See: https://learn.microsoft.com/en-us/windows/win32/api/bcrypt/ns-bcrypt-bcrypt_authenticated_cipher_mode_info
-//
-
-/// Version for BCRYPT_AUTHENTICATED_CIPHER_MODE_INFO
-const BCRYPT_AUTHENTICATED_CIPHER_MODE_INFO_VERSION: u32 = 1;
-
-/// Authenticated cipher mode info structure for AES-GCM
-#[repr(C)]
-#[derive(Clone)]
-pub struct BcryptAuthenticatedCipherModeInfo {
-    pub cb_size: u32,
-    pub dw_info_version: u32,
-    pub pb_nonce: *mut u8,
-    pub cb_nonce: u32,
-    pub pb_auth_data: *mut u8,
-    pub cb_auth_data: u32,
-    pub pb_tag: *mut u8,
-    pub cb_tag: u32,
-    pub pb_mac_context: *mut u8,
-    pub cb_mac_context: u32,
-    pub cb_aad: u32,
-    pub cb_data: u64,
-    pub dw_flags: u32,
-}
-
-impl Default for BcryptAuthenticatedCipherModeInfo {
-    fn default() -> Self {
-        Self {
-            cb_size: core::mem::size_of::<Self>() as u32,
-            dw_info_version: BCRYPT_AUTHENTICATED_CIPHER_MODE_INFO_VERSION,
-            pb_nonce: core::ptr::null_mut(),
-            cb_nonce: 0,
-            pb_auth_data: core::ptr::null_mut(),
-            cb_auth_data: 0,
-            pb_tag: core::ptr::null_mut(),
-            cb_tag: 0,
-            pb_mac_context: core::ptr::null_mut(),
-            cb_mac_context: 0,
-            cb_aad: 0,
-            cb_data: 0,
-            dw_flags: 0,
-        }
-    }
-}
-
-impl BcryptAuthenticatedCipherModeInfo {
-    /// Create a new cipher mode info for encryption (tag will be written)
-    pub fn for_encrypt(nonce: &mut [u8], tag: &mut [u8]) -> Self {
-        Self {
-            cb_size: core::mem::size_of::<Self>() as u32,
-            dw_info_version: BCRYPT_AUTHENTICATED_CIPHER_MODE_INFO_VERSION,
-            pb_nonce: nonce.as_mut_ptr(),
-            cb_nonce: nonce.len() as u32,
-            pb_auth_data: core::ptr::null_mut(),
-            cb_auth_data: 0,
-            pb_tag: tag.as_mut_ptr(),
-            cb_tag: tag.len() as u32,
-            pb_mac_context: core::ptr::null_mut(),
-            cb_mac_context: 0,
-            cb_aad: 0,
-            cb_data: 0,
-            dw_flags: 0,
-        }
-    }
-
-    /// Create a new cipher mode info for decryption (tag is input)
-    pub fn for_decrypt(nonce: &[u8], tag: &[u8]) -> Self {
-        Self {
-            cb_size: core::mem::size_of::<Self>() as u32,
-            dw_info_version: BCRYPT_AUTHENTICATED_CIPHER_MODE_INFO_VERSION,
-            pb_nonce: nonce.as_ptr() as *mut u8,
-            cb_nonce: nonce.len() as u32,
-            pb_auth_data: core::ptr::null_mut(),
-            cb_auth_data: 0,
-            pb_tag: tag.as_ptr() as *mut u8,
-            cb_tag: tag.len() as u32,
-            pb_mac_context: core::ptr::null_mut(),
-            cb_mac_context: 0,
-            cb_aad: 0,
-            cb_data: 0,
-            dw_flags: 0,
-        }
-    }
-}
 
 //
 // Symmetric Key Handle (RAII wrapper)
@@ -459,7 +308,7 @@ pub fn encrypt(
     let mut ciphertext = alloc::vec![0u8; plaintext.len()];
     let mut result_size: u32 = 0;
 
-    let cipher_info = BcryptAuthenticatedCipherModeInfo::for_encrypt(&mut nonce_copy, &mut tag);
+    let cipher_info = BCRYPT_AUTHENTICATED_CIPHER_MODE_INFO::for_encrypt(&mut nonce_copy, &mut tag);
 
     unsafe {
         let status = BCryptEncrypt(
@@ -500,7 +349,7 @@ pub fn decrypt(
     let mut plaintext = alloc::vec![0u8; ciphertext.len()];
     let mut result_size: u32 = 0;
 
-    let cipher_info = BcryptAuthenticatedCipherModeInfo::for_decrypt(nonce, tag);
+    let cipher_info = BCRYPT_AUTHENTICATED_CIPHER_MODE_INFO::for_decrypt(nonce, tag);
 
     unsafe {
         let status = BCryptDecrypt(

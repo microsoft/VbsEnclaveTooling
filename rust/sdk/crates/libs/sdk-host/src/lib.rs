@@ -5,7 +5,6 @@ mod host_ffi;
 
 pub mod enclave;
 
-#[cfg(feature = "userboundkey")]
 pub mod userboundkey;
 
 // The userboundkey-kcm crate is not intended to be published as a standalone package.
@@ -37,7 +36,6 @@ pub use userboundkey_kcm::KeyCredentialManager;
 /// let enclave = EnclaveHandle::create_and_initialize(path, size, owner_id)?;
 /// register_sdk_callbacks(enclave.as_ptr())?;
 /// ```
-#[cfg(feature = "userboundkey")]
 pub fn register_sdk_callbacks(enclave_ptr: *mut core::ffi::c_void) -> Result<(), String> {
     // Register userboundkey callbacks
     let sdk_wrapper = userboundkey::UserBoundKeyVtl0Host::new(enclave_ptr);

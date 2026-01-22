@@ -14,4 +14,4 @@ edlcodegen-tools = { workspace = true }
 # Generated code from userboundkey_sample.edl
 userboundkey_sample_enclave_gen = { path = "generated/userboundkey_sample_gen" }
 # The SDK provides the userboundkey implementation
-vbsenclave-sdk-enclave = { workspace = true, features = ["userboundkey"] }
+vbsenclave-sdk-enclave = { workspace = true }
