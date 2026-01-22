@@ -24,19 +24,9 @@ fn panic(_panic: &PanicInfo<'_>) -> ! {
 // Export the sample's enclave functions (CreateUserBoundKey, LoadUserBoundKeyAndEncryptData, etc.)
 userboundkey_sample_enclave_gen::export_enclave_functions!(edl_impls::EnclaveImpl);
 
-// Export the SDK's userboundkey enclave functions in a separate module to avoid naming conflicts.
-// This is necessary because:
-// 1. The SDK's userboundkey module (create_user_bound_key, load_user_bound_key, etc.)
-//    internally calls VTL0 through the userboundkey.edl untrusted functions.
-// 2. The host needs to register those callbacks, which requires the
-//    __AbiRegisterVtl0Callbacks_userboundkey__ export.
-// 3. The SDK also exports trusted functions (get_attestation_report, close_session)
-//    that are called by the Windows Hello attestation flow.
-mod sdk_exports {
-    vbsenclave_sdk_enclave::userboundkey_enclave_gen::export_enclave_functions!(
-        vbsenclave_sdk_enclave::userboundkey::TrustedImpl
-    );
-}
+// Export the SDK's enclave functions (userboundkey callbacks, attestation, etc.)
+// This single macro call handles all SDK features and hides internal implementation details.
+vbsenclave_sdk_enclave::export_sdk_enclave_functions!();
 
 /// Enclave policy flags - enable debugging in debug builds
 pub const ENCLAVE_CONFIG_POLICY_FLAGS: u32 = {

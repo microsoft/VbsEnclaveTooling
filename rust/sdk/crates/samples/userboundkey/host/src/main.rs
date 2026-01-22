@@ -16,8 +16,7 @@ use std::path::{Path, PathBuf};
 // VBS Enclave SDK for loading enclaves
 use vbsenclave_sdk_host::KeyCredentialManager;
 use vbsenclave_sdk_host::enclave::{EnclaveHandle, megabytes};
-// SDK's userboundkey module for VTL0 callbacks
-use vbsenclave_sdk_host::userboundkey::{UntrustedImpl as SdkUntrustedImpl, UserBoundKeyVtl0Host};
+use vbsenclave_sdk_host::register_sdk_callbacks;
 
 // Windows APIs for buffer conversion
 use windows::Security::Cryptography::CryptographicBuffer;
@@ -128,12 +127,9 @@ fn load_enclave(
         .register_vtl0_callbacks::<edl_impls::UntrustedImpl>()
         .map_err(|e| format!("Failed to register sample callbacks: {:?}", e))?;
 
-    // Register the SDK's VTL0 callbacks so enclave can call back to host
-    // The SDK enclave functions (create_user_bound_key, etc.) use these callbacks
-    let sdk_wrapper = UserBoundKeyVtl0Host::new(enclave.as_ptr());
-    sdk_wrapper
-        .register_vtl0_callbacks::<SdkUntrustedImpl>()
-        .map_err(|e| format!("Failed to register SDK callbacks: {:?}", e))?;
+    // Register all SDK VTL0 callbacks so enclave can call back to host
+    // This single function call handles all SDK features (userboundkey, etc.)
+    register_sdk_callbacks(enclave.as_ptr())?;
 
     println!("Enclave loaded and callbacks registered successfully.");
     Ok((enclave, wrapper))
