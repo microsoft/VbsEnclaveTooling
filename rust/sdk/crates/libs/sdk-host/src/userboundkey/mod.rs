@@ -6,17 +6,13 @@
 //! Implements EDL untrusted callbacks for user-bound key operations.
 //! This module provides VTL0/host-side Windows Hello integration with VBS enclave support.
 
-mod types;
-
-#[allow(unused_imports)]
-pub use types::*;
-use userboundkey_host_gen::AbiError;
-pub use userboundkey_host_gen::UserBoundKeyVtl0Host;
-pub use userboundkey_host_gen::implementation::types::{
+use sdk_host_gen::AbiError;
+pub use sdk_host_gen::UserBoundKeyVtl0Host;
+pub use sdk_host_gen::implementation::types::{
     attestationReportAndSessionInfo, credentialAndSessionInfo, edl::WString,
     keyCredentialCacheConfig,
 };
-use userboundkey_host_gen::implementation::untrusted::Untrusted;
+use sdk_host_gen::implementation::untrusted::Untrusted;
 
 use std::sync::{Arc, Mutex};
 

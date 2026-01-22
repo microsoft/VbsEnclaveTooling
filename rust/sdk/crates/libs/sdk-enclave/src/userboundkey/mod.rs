@@ -18,17 +18,17 @@ pub use crypto::{
 pub use types::*;
 
 // Re-export the cache config type for use by samples
-pub use userboundkey_enclave_gen::implementation::types::keyCredentialCacheConfig;
+pub use sdk_enclave_gen::implementation::types::keyCredentialCacheConfig;
 
 // Re-export widestring types for public API consumers
 pub use widestring::U16Str;
 
 use alloc::vec::Vec;
 
-use userboundkey_enclave_gen::AbiError;
-use userboundkey_enclave_gen::implementation::trusted::Trusted;
-use userboundkey_enclave_gen::implementation::types::attestationReportAndSessionInfo;
-use userboundkey_enclave_gen::stubs::untrusted;
+use sdk_enclave_gen::AbiError;
+use sdk_enclave_gen::implementation::trusted::Trusted;
+use sdk_enclave_gen::implementation::types::attestationReportAndSessionInfo;
+use sdk_enclave_gen::stubs::untrusted;
 use widestring::U16String;
 
 use windows_enclave::veinterop::{
@@ -280,7 +280,7 @@ pub fn create_user_bound_key_with_custom_key(
 ) -> Result<Vec<u8>, UserBoundKeyError> {
     // Format the key name (calls VTL0) - this is the FIRST VTL0 call
     // Create WString from key_name slice
-    let key_name_wstring = userboundkey_enclave_gen::implementation::types::edl::WString {
+    let key_name_wstring = sdk_enclave_gen::implementation::types::edl::WString {
         wchars: key_name.as_slice().to_vec(),
     };
     let formatted_key_name_wstring = untrusted::userboundkey_format_key_name(&key_name_wstring)
@@ -294,7 +294,7 @@ pub fn create_user_bound_key_with_custom_key(
     let enclave_ptr = get_enclave_base_address_u64()?;
 
     // Create WString for message
-    let message_wstring = userboundkey_enclave_gen::implementation::types::edl::WString {
+    let message_wstring = sdk_enclave_gen::implementation::types::edl::WString {
         wchars: message.as_slice().to_vec(),
     };
 
@@ -453,7 +453,7 @@ pub fn load_user_bound_key(
     let ephemeral_public_key = get_ephemeral_public_key_bytes_from_bound_key(&bound_key_bytes)?;
 
     // Format the key name (calls VTL0)
-    let key_name_wstring = userboundkey_enclave_gen::implementation::types::edl::WString {
+    let key_name_wstring = sdk_enclave_gen::implementation::types::edl::WString {
         wchars: key_name.as_slice().to_vec(),
     };
     let formatted_key_name_wstring = untrusted::userboundkey_format_key_name(&key_name_wstring)
@@ -467,7 +467,7 @@ pub fn load_user_bound_key(
     let enclave_ptr = get_enclave_base_address_u64()?;
 
     // Create WString for message
-    let message_wstring = userboundkey_enclave_gen::implementation::types::edl::WString {
+    let message_wstring = sdk_enclave_gen::implementation::types::edl::WString {
         wchars: message.as_slice().to_vec(),
     };
 

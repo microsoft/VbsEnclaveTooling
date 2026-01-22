@@ -17,9 +17,9 @@ features = [
 ]
 
 [dependencies]
+sdk_host_gen = { path = "./generated/sdk_gen" }
 spin = { workspace = true }
 userboundkey-kcm = { workspace = true }
-userboundkey_host_gen = { path = "./generated/userboundkey_gen" }
 widestring = { workspace = true }
 windows-core = { workspace = true }
 windows-future = { workspace = true }

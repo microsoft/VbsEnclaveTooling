@@ -50,16 +50,16 @@ $veilAbiEdl = Join-Path $repoRoot "src\VbsEnclaveSDK\veil_abi.edl"
 
 if ($LASTEXITCODE -ne 0) { throw "veil_abi EDL generation failed." }
 
-# Generate userboundkey EDL bindings  
-$userboundkeyEdl = Join-Path $sdkRoot "crates\libs\userboundkey.edl"
+# Generate SDK EDL bindings  
+$sdkEdl = Join-Path $sdkRoot "crates\libs\sdk.edl"
 & $generateScript `
     -HostAppOutDir "$hostSdkCrate\generated" `
     -EnclaveOutDir "$enclaveSdkCrate\generated" `
-    -EdlPath $userboundkeyEdl `
-    -Namespace "userboundkey" `
+    -EdlPath $sdkEdl `
+    -Namespace "sdk" `
     -Vtl0ClassName "UserBoundKeyVtl0Host"
 
-if ($LASTEXITCODE -ne 0) { throw "userboundkey EDL generation failed." }
+if ($LASTEXITCODE -ne 0) { throw "SDK EDL generation failed." }
 
 Write-Host "SDK EDL bindings generated." -ForegroundColor Green
 

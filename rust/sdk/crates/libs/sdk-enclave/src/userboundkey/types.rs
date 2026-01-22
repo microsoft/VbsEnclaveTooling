@@ -3,7 +3,7 @@
 
 //! Type definitions for user-bound key operations
 
-use userboundkey_enclave_gen::AbiError;
+use sdk_enclave_gen::AbiError;
 use windows_enclave::vertdll::RtlNtStatusToDosError;
 
 /// Error type for user-bound key operations

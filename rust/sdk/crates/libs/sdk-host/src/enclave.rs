@@ -26,6 +26,7 @@
 
 use std::ffi::c_void;
 use std::path::Path;
+use widestring::U16CString;
 use windows::core::{Error, HRESULT, Result};
 
 // FFI declarations for enclave APIs
@@ -81,21 +82,12 @@ pub const DEFAULT_ENCLAVE_SIZE: usize = 32 * 1024 * 1024;
 
 /// Enclave creation info for VBS enclaves.
 #[repr(C)]
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Default)]
 pub struct EnclaveCreateInfoVbs {
     /// Flags for enclave creation.
     pub flags: u32,
     /// Owner ID for the enclave.
     pub owner_id: [u8; IMAGE_ENCLAVE_LONG_ID_LENGTH],
-}
-
-impl Default for EnclaveCreateInfoVbs {
-    fn default() -> Self {
-        Self {
-            flags: 0,
-            owner_id: [0u8; IMAGE_ENCLAVE_LONG_ID_LENGTH],
-        }
-    }
 }
 
 /// Enclave initialization info for VBS enclaves.
@@ -204,11 +196,18 @@ pub fn create(
 ///
 /// Returns an error if loading fails.
 pub fn load_image(enclave: *mut c_void, image_path: &Path) -> Result<()> {
-    let wide_path: Vec<u16> = image_path
-        .as_os_str()
-        .encode_wide()
-        .chain(std::iter::once(0))
-        .collect();
+    let path_str = image_path.to_str().ok_or_else(|| {
+        Error::new(
+            HRESULT(-2147024809i32), // E_INVALIDARG
+            "Invalid path: not valid UTF-8",
+        )
+    })?;
+    let wide_path = U16CString::from_str(path_str).map_err(|_| {
+        Error::new(
+            HRESULT(-2147024809i32), // E_INVALIDARG
+            "Invalid path: contains interior null",
+        )
+    })?;
 
     let result = unsafe { ffi::LoadEnclaveImageW(enclave, wide_path.as_ptr()) };
 
@@ -222,8 +221,6 @@ pub fn load_image(enclave: *mut c_void, image_path: &Path) -> Result<()> {
 
     Ok(())
 }
-
-use std::os::windows::ffi::OsStrExt;
 
 /// Initialize an enclave after loading its image.
 ///
@@ -397,7 +394,3 @@ impl Drop for EnclaveHandle {
         }
     }
 }
-
-// EnclaveHandle is Send but not Sync - you can move it between threads
-// but shouldn't share references across threads.
-unsafe impl Send for EnclaveHandle {}

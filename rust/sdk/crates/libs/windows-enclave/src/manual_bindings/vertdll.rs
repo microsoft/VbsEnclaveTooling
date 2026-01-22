@@ -69,3 +69,33 @@ pub const IMAGE_ENCLAVE_SHORT_ID_LENGTH: usize = 16;
 pub const ENCLAVE_TYPE_SGX: u32 = 0x00000001;
 pub const ENCLAVE_TYPE_SGX2: u32 = 0x00000002;
 pub const ENCLAVE_TYPE_VBS: u32 = 0x00000010;
+
+// Enclave policy flags
+#[allow(dead_code)]
+pub const IMAGE_ENCLAVE_POLICY_DEBUGGABLE: u32 = 0x0000_0001;
+
+// Enclave image flags
+pub const IMAGE_ENCLAVE_FLAG_PRIMARY_IMAGE: u32 = 0x0000_0001;
+
+/// Enclave configuration structure.
+/// See: https://learn.microsoft.com/en-us/windows/win32/api/winnt/ns-winnt-image_enclave_config64
+#[repr(C)]
+pub struct ImageEnclaveConfig {
+    pub size: u32,
+    pub minimum_required_config_size: u32,
+    pub policy_flags: u32,
+    pub number_of_imports: u32,
+    pub import_list: u32,
+    pub import_entry_size: u32,
+    pub family_id: [u8; IMAGE_ENCLAVE_SHORT_ID_LENGTH],
+    pub image_id: [u8; IMAGE_ENCLAVE_SHORT_ID_LENGTH],
+    pub image_version: u32,
+    pub security_version: u32,
+    pub enclave_size: usize,
+    pub number_of_threads: u32,
+    pub enclave_flags: u32,
+}
+
+/// Minimum config size required (offset of enclave_flags field).
+pub const IMAGE_ENCLAVE_MINIMUM_CONFIG_SIZE: u32 =
+    core::mem::offset_of!(ImageEnclaveConfig, enclave_flags) as u32;

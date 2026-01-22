@@ -75,20 +75,16 @@ fn to_wstring(s: &str) -> WString {
 /// Get secure ID from Windows Hello.
 ///
 /// Returns the secure ID buffer that identifies this Windows Hello user.
-fn get_secure_id_from_windows_hello() -> Result<Vec<u8>, String> {
+fn get_secure_id_from_windows_hello() -> Result<Vec<u8>, Box<dyn std::error::Error>> {
     // Get the secure ID buffer from KeyCredentialManager
-    let secure_id_buffer = KeyCredentialManager::GetSecureId()
-        .map_err(|e| format!("Failed to get secure ID: {:?}", e))?;
+    let secure_id_buffer = KeyCredentialManager::GetSecureId()?;
 
     // Cast from userboundkey_kcm::IBuffer to windows::Storage::Streams::IBuffer
-    let windows_buffer: windows::Storage::Streams::IBuffer = secure_id_buffer
-        .cast()
-        .map_err(|e| format!("Failed to cast IBuffer: {:?}", e))?;
+    let windows_buffer: windows::Storage::Streams::IBuffer = secure_id_buffer.cast()?;
 
     // Convert IBuffer to Vec<u8> using CryptographicBuffer
     let mut byte_array = windows::core::Array::<u8>::new();
-    CryptographicBuffer::CopyToByteArray(&windows_buffer, &mut byte_array)
-        .map_err(|e| format!("Failed to copy buffer: {:?}", e))?;
+    CryptographicBuffer::CopyToByteArray(&windows_buffer, &mut byte_array)?;
 
     Ok(byte_array.to_vec())
 }
@@ -96,30 +92,19 @@ fn get_secure_id_from_windows_hello() -> Result<Vec<u8>, String> {
 /// Load the enclave DLL and return the wrapper interface
 fn load_enclave(
     enclave_path: &Path,
-) -> Result<(EnclaveHandle, userboundkey_sampleWrapper), String> {
+) -> Result<(EnclaveHandle, userboundkey_sampleWrapper), Box<dyn std::error::Error>> {
     println!("Loading enclave from: {}", enclave_path.display());
 
-    // Try to get the secure ID from Windows Hello.
-    // If Windows Hello isn't available, we continue without owner ID but key creation will fail.
-    let owner_id = match get_secure_id_from_windows_hello() {
-        Ok(id) => {
-            println!("Got secure ID from Windows Hello ({} bytes)", id.len());
-            Some(id)
-        }
-        Err(e) => {
-            println!("Warning: Could not get secure ID from Windows Hello: {}", e);
-            println!("Enclave will load but user-bound key operations may fail.");
-            None
-        }
-    };
+    // Get the secure ID from Windows Hello - required for user-bound key operations
+    let owner_id = get_secure_id_from_windows_hello()?;
+    println!(
+        "Got secure ID from Windows Hello ({} bytes)",
+        owner_id.len()
+    );
 
     // Create, load, and initialize the enclave (512MB)
-    let enclave = EnclaveHandle::create_and_initialize(
-        enclave_path,
-        megabytes(512),
-        owner_id.as_deref(), // Pass the secure ID as owner ID if available
-    )
-    .map_err(|e| format!("Failed to create/initialize enclave: {:?}", e))?;
+    let enclave =
+        EnclaveHandle::create_and_initialize(enclave_path, megabytes(512), Some(&owner_id))?;
 
     // Create the wrapper interface for enclave calls
     let wrapper = userboundkey_sampleWrapper::new(enclave.as_ptr());
@@ -127,7 +112,12 @@ fn load_enclave(
     // Register the sample's VTL0 callbacks (for debug_print, etc.)
     wrapper
         .register_vtl0_callbacks::<edl_impls::UntrustedImpl>()
-        .map_err(|e| format!("Failed to register sample callbacks: {:?}", e))?;
+        .map_err(|e| {
+            format!(
+                "Failed to register sample callbacks: 0x{:08X}",
+                e.to_hresult().0
+            )
+        })?;
 
     // Register all SDK VTL0 callbacks so enclave can call back to host
     // This single function call handles all SDK features (userboundkey, etc.)
@@ -137,7 +127,7 @@ fn load_enclave(
     Ok((enclave, wrapper))
 }
 
-fn main() {
+fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("=== User-Bound Key Sample (Rust) ===");
     println!();
 
@@ -149,14 +139,7 @@ fn main() {
     let enclave_path = exe_dir.join("userboundkey_sample_enclave.dll");
 
     // Load the enclave
-    let (_enclave_handle, enclave) = match load_enclave(&enclave_path) {
-        Ok(result) => result,
-        Err(e) => {
-            eprintln!("Failed to load enclave: {}", e);
-            eprintln!("Make sure {} exists.", enclave_path.display());
-            return;
-        }
-    };
+    let (_enclave_handle, enclave) = load_enclave(&enclave_path)?;
 
     let key_file_path = get_key_file_path();
     let encrypted_file_path = get_encrypted_file_path();
@@ -371,4 +354,5 @@ fn main() {
 
     // EnclaveHandle will automatically terminate and delete the enclave on drop
     println!("Enclave cleanup complete.");
+    Ok(())
 }

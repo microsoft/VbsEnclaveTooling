@@ -8,9 +8,9 @@ mod enclave_ffi;
 
 pub mod userboundkey;
 
-// Re-export the userboundkey generated enclave crate.
+// Re-export the SDK generated enclave crate.
 // This is used internally by the export_sdk_enclave_functions! macro.
-pub use userboundkey_enclave_gen;
+pub use sdk_enclave_gen;
 
 /// Export all SDK enclave functions.
 ///
@@ -33,9 +33,7 @@ macro_rules! export_sdk_enclave_functions {
         // Export SDK userboundkey enclave functions in a private module
         // to avoid naming conflicts with the application's own exports
         mod __sdk_userboundkey_exports {
-            $crate::userboundkey_enclave_gen::export_enclave_functions!(
-                $crate::userboundkey::TrustedImpl
-            );
+            $crate::sdk_enclave_gen::export_enclave_functions!($crate::userboundkey::TrustedImpl);
         }
 
         // Future SDK features will be added here as additional modules

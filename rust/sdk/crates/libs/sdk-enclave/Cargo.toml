@@ -4,7 +4,7 @@ version = "0.1.0"
 edition =  { workspace = true }
 
 [dependencies]
+sdk_enclave_gen = { path = "./generated/sdk_gen" }
 spin = { workspace = true }
-userboundkey_enclave_gen = { path = "./generated/userboundkey_gen" }
 widestring = { workspace = true }
 windows-enclave = { workspace = true }

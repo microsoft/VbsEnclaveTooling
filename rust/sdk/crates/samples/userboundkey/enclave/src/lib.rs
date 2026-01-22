@@ -10,10 +10,12 @@
 extern crate alloc;
 
 mod edl_impls;
-mod enclave_constants;
 
 use core::panic::PanicInfo;
-use enclave_constants::*;
+use windows_enclave::vertdll::{
+    IMAGE_ENCLAVE_FLAG_PRIMARY_IMAGE, IMAGE_ENCLAVE_MINIMUM_CONFIG_SIZE,
+    IMAGE_ENCLAVE_POLICY_DEBUGGABLE, ImageEnclaveConfig,
+};
 
 // Panic handler for no_std environment
 #[panic_handler]
