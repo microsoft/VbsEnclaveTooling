@@ -171,8 +171,8 @@ Get-CimInstance -ClassName Win32_DeviceGuard -Namespace root\Microsoft\Windows\D
 
 When running the sample, the following files are created in the current directory:
 
-- `userboundkey.sealed` - The sealed encryption key
-- `encrypted_userbound.bin` - Encrypted data output
+- `MyEncryptionKey-001` - The sealed encryption key
+- `encrypted_userbound` - Encrypted data output
 
 ## Architecture
 

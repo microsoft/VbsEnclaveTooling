@@ -24,7 +24,7 @@ use windows::{
     Security::Cryptography::CryptographicBuffer,
     Storage::Streams::IBuffer,
     Win32::{
-        Foundation::{CloseHandle, E_FAIL, E_INVALIDARG, HANDLE},
+        Foundation::{CloseHandle, E_FAIL, E_INVALIDARG, HANDLE, HLOCAL, LocalFree},
         Security::Authorization::ConvertSidToStringSidW,
         Security::{GetTokenInformation, PSID, TOKEN_QUERY, TOKEN_USER, TokenUser},
         System::Threading::{GetCurrentProcess, OpenProcessToken},
@@ -187,7 +187,17 @@ fn create_challenge_callback(
 
         // Store session handle
         {
-            let mut session = session_info.lock().unwrap();
+            let mut session = match session_info.lock() {
+                Ok(guard) => guard,
+                Err(poisoned) => {
+                    println!(
+                        "[SDK-Host] Warning: session_info mutex was poisoned: {:?}",
+                        poisoned
+                    );
+                    // Recover the guard from the poisoned mutex - the data may still be usable
+                    poisoned.into_inner()
+                }
+            };
             session.set(attestation_result.sessionInfo as usize, enclave_ptr);
         }
 
@@ -207,9 +217,8 @@ fn sid_to_wide_string(sid: PSID) -> Result<Vec<u16>, AbiError> {
         let slice = std::slice::from_raw_parts(string_sid.0, len);
         let result = slice.to_vec();
 
-        // Note: We're leaking the string memory here since LocalFree requires more setup.
-        // In a production implementation, proper cleanup should be added.
-        let _ = string_sid.0; // Prevent unused warning
+        // Free the memory allocated by ConvertSidToStringSidW
+        let _ = LocalFree(Some(HLOCAL(string_sid.0 as *mut _)));
 
         Ok(result)
     }
@@ -308,7 +317,13 @@ impl Untrusted for UntrustedImpl {
 
         // Transfer session ownership
         let session_handle = {
-            let mut session = session_info.lock().unwrap();
+            let mut session = match session_info.lock() {
+                Ok(guard) => guard,
+                Err(poisoned) => {
+                    println!("[SDK-Host] Warning: session_info mutex was poisoned");
+                    poisoned.into_inner()
+                }
+            };
             session.release() as u64
         };
 
@@ -360,7 +375,13 @@ impl Untrusted for UntrustedImpl {
 
         // Transfer session ownership
         let session_handle = {
-            let mut session = session_info.lock().unwrap();
+            let mut session = match session_info.lock() {
+                Ok(guard) => guard,
+                Err(poisoned) => {
+                    println!("[SDK-Host] Warning: session_info mutex was poisoned");
+                    poisoned.into_inner()
+                }
+            };
             session.release() as u64
         };
 

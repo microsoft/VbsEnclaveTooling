@@ -74,13 +74,9 @@ fn ensure_user_bound_key_loaded(
     }
 
     let secure_config = create_secure_cache_config();
-    #[allow(unused_assignments)]
-    let mut loaded_key_bytes: Vec<u8> = Vec::new();
-    #[allow(unused_assignments)]
-    let mut load_succeeded = false;
 
-    // First attempt to load the user-bound key
-    match load_user_bound_key(
+    // Try to load the user-bound key, with fallback to reseal on failure
+    let loaded_key_bytes = match load_user_bound_key(
         hello_key_name,
         &secure_config,
         pin_message,
@@ -88,59 +84,44 @@ fn ensure_user_bound_key_loaded(
         secured_encryption_key_bytes,
     ) {
         Ok((key_bytes, stale)) => {
-            loaded_key_bytes = key_bytes;
-            load_succeeded = true;
-
             // If stale, mark for reseal
             if stale {
                 *needs_reseal = true;
                 if let Ok(resealed) = reseal_user_bound_key(
-                    &loaded_key_bytes,
+                    &key_bytes,
                     EnclaveSealingIdentityPolicy::SealToExactCode,
                     RUNTIME_POLICY_NO_DEBUG,
                 ) {
                     *resealed_encryption_key_bytes = resealed;
                 }
             }
+            key_bytes
         }
         Err(e) => {
             // First load failed, attempt reseal and retry
-            match reseal_user_bound_key(
+            let resealed_bytes = reseal_user_bound_key(
                 secured_encryption_key_bytes,
                 EnclaveSealingIdentityPolicy::SealToExactCode,
                 RUNTIME_POLICY_NO_DEBUG,
-            ) {
-                Ok(resealed_bytes) => {
-                    *needs_reseal = true;
-                    *resealed_encryption_key_bytes = resealed_bytes.clone();
+            )
+            .map_err(|_| AbiError::Hresult(e.to_hresult()))?;
 
-                    // Retry loading with resealed bytes
-                    match load_user_bound_key(
-                        hello_key_name,
-                        &secure_config,
-                        pin_message,
-                        window_id,
-                        &resealed_bytes,
-                    ) {
-                        Ok((key_bytes, _)) => {
-                            loaded_key_bytes = key_bytes;
-                            load_succeeded = true;
-                        }
-                        Err(e2) => {
-                            return Err(AbiError::Hresult(e2.to_hresult()));
-                        }
-                    }
-                }
-                Err(_) => {
-                    return Err(AbiError::Hresult(e.to_hresult()));
-                }
-            }
+            *needs_reseal = true;
+            *resealed_encryption_key_bytes = resealed_bytes.clone();
+
+            // Retry loading with resealed bytes
+            let (key_bytes, _) = load_user_bound_key(
+                hello_key_name,
+                &secure_config,
+                pin_message,
+                window_id,
+                &resealed_bytes,
+            )
+            .map_err(|e2| AbiError::Hresult(e2.to_hresult()))?;
+
+            key_bytes
         }
-    }
-
-    if !load_succeeded {
-        return Err(AbiError::Hresult(-2147024809)); // E_INVALIDARG
-    }
+    };
 
     // Create symmetric key from loaded raw key material
     let symmetric_key = SymmetricKeyHandle::from_bytes(&loaded_key_bytes)

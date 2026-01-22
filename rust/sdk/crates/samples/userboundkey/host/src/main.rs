@@ -21,6 +21,7 @@ use vbsenclave_sdk_host::register_sdk_callbacks;
 // Windows APIs for buffer conversion
 use windows::Security::Cryptography::CryptographicBuffer;
 use windows::Win32::UI::WindowsAndMessaging::GetForegroundWindow;
+use windows::core::Interface;
 
 // Generated host stubs for enclave calls
 use userboundkey_sample_host_gen::implementation::types::edl::WString;
@@ -80,8 +81,9 @@ fn get_secure_id_from_windows_hello() -> Result<Vec<u8>, String> {
         .map_err(|e| format!("Failed to get secure ID: {:?}", e))?;
 
     // Cast from userboundkey_kcm::IBuffer to windows::Storage::Streams::IBuffer
-    let windows_buffer: windows::Storage::Streams::IBuffer =
-        unsafe { std::mem::transmute(secure_id_buffer) };
+    let windows_buffer: windows::Storage::Streams::IBuffer = secure_id_buffer
+        .cast()
+        .map_err(|e| format!("Failed to cast IBuffer: {:?}", e))?;
 
     // Convert IBuffer to Vec<u8> using CryptographicBuffer
     let mut byte_array = windows::core::Array::<u8>::new();
