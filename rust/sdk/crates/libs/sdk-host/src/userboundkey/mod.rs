@@ -7,12 +7,11 @@
 //! This module provides VTL0/host-side Windows Hello integration with VBS enclave support.
 
 use sdk_host_gen::AbiError;
-pub use sdk_host_gen::UserBoundKeyVtl0Host;
+pub use sdk_host_gen::SdkHost;
 pub use sdk_host_gen::implementation::types::{
     attestationReportAndSessionInfo, credentialAndSessionInfo, edl::WString,
     keyCredentialCacheConfig,
 };
-use sdk_host_gen::implementation::untrusted::Untrusted;
 
 use std::sync::{Arc, Mutex};
 
@@ -71,8 +70,7 @@ impl UniqueSessionHandle {
     fn reset(&mut self) {
         if self.handle != 0 && self.enclave_ptr != 0 {
             // Call back to VTL1 to close session
-            let enclave_interface =
-                UserBoundKeyVtl0Host::new(self.enclave_ptr as *mut core::ffi::c_void);
+            let enclave_interface = SdkHost::new(self.enclave_ptr as *mut core::ffi::c_void);
             let _ = enclave_interface.userboundkey_close_session(self.handle as u64);
         }
         self.handle = 0;
@@ -168,7 +166,7 @@ fn create_challenge_callback(
         );
 
         // Call into VTL1 to get attestation report
-        let enclave_interface = UserBoundKeyVtl0Host::new(enclave_ptr as *mut core::ffi::c_void);
+        let enclave_interface = SdkHost::new(enclave_ptr as *mut core::ffi::c_void);
         let attestation_result = enclave_interface
             .userboundkey_get_attestation_report(&challenge_vec)
             .map_err(|e| {
@@ -220,306 +218,317 @@ fn sid_to_wide_string(sid: PSID) -> Result<Vec<u16>, AbiError> {
     }
 }
 
-/// Untrusted implementation struct
-pub struct UntrustedImpl;
-
 /// Helper to convert WString to HSTRING
 fn wstring_to_hstring(ws: &WString) -> HSTRING {
     HSTRING::from_wide(&ws.wchars)
 }
 
+/// Establish a session for creating a new Windows Hello key.
 #[allow(non_snake_case)]
 #[allow(unused_variables)]
-impl Untrusted for UntrustedImpl {
-    fn userboundkey_establish_session_for_create(
-        enclave: u64,
-        keyName: &WString,
-        ecdhProtocol: u64,
-        message: &WString,
-        windowId: u64,
-        cacheConfig: &keyCredentialCacheConfig,
-        keyCredentialCreationOption: u32,
-    ) -> Result<credentialAndSessionInfo, AbiError> {
-        println!("[SDK-Host] userboundkey_establish_session_for_create called");
-        println!(
-            "[SDK-Host]   windowId={}, option={}",
-            windowId, keyCredentialCreationOption
-        );
+pub fn userboundkey_establish_session_for_create(
+    enclave: u64,
+    keyName: &WString,
+    ecdhProtocol: u64,
+    message: &WString,
+    windowId: u64,
+    cacheConfig: &keyCredentialCacheConfig,
+    keyCredentialCreationOption: u32,
+) -> Result<credentialAndSessionInfo, AbiError> {
+    println!("[SDK-Host] userboundkey_establish_session_for_create called");
+    println!(
+        "[SDK-Host]   windowId={}, option={}",
+        windowId, keyCredentialCreationOption
+    );
 
-        let algorithm = get_algorithm(ecdhProtocol)?;
-        println!("[SDK-Host]   algorithm resolved");
+    let algorithm = get_algorithm(ecdhProtocol)?;
+    println!("[SDK-Host]   algorithm resolved");
 
-        let cache_configuration =
-            convert_cache_config(cacheConfig).map_err(|e| AbiError::Hresult(e.code().0))?;
-        println!("[SDK-Host]   cache config created");
+    let cache_configuration =
+        convert_cache_config(cacheConfig).map_err(|e| AbiError::Hresult(e.code().0))?;
+    println!("[SDK-Host]   cache config created");
 
-        let session_info = Arc::new(Mutex::new(UniqueSessionHandle::new()));
-        let enclave_ptr = enclave as usize;
+    let session_info = Arc::new(Mutex::new(UniqueSessionHandle::new()));
+    let enclave_ptr = enclave as usize;
 
-        // Try to delete existing key first (ignore errors)
-        let key_name_hstring = wstring_to_hstring(keyName);
-        println!("[SDK-Host]   Deleting existing key (if any)...");
-        if let Ok(delete_op) = KeyCredentialManager::DeleteAsync(&key_name_hstring) {
-            let _ = delete_op.join();
-        }
-        println!("[SDK-Host]   Delete complete");
+    // Try to delete existing key first (ignore errors)
+    let key_name_hstring = wstring_to_hstring(keyName);
+    println!("[SDK-Host]   Deleting existing key (if any)...");
+    if let Ok(delete_op) = KeyCredentialManager::DeleteAsync(&key_name_hstring) {
+        let _ = delete_op.join();
+    }
+    println!("[SDK-Host]   Delete complete");
 
-        // Create the credential with VBS attestation
-        let message_hstring = wstring_to_hstring(message);
-        let win_id = WindowId { Value: windowId };
-        let creation_option = KeyCredentialCreationOption(keyCredentialCreationOption as i32);
+    // Create the credential with VBS attestation
+    let message_hstring = wstring_to_hstring(message);
+    let win_id = WindowId { Value: windowId };
+    let creation_option = KeyCredentialCreationOption(keyCredentialCreationOption as i32);
 
-        let callback = create_challenge_callback(session_info.clone(), enclave_ptr);
+    let callback = create_challenge_callback(session_info.clone(), enclave_ptr);
 
-        println!("[SDK-Host]   Calling KeyCredentialManager::RequestCreateAsync2...");
+    println!("[SDK-Host]   Calling KeyCredentialManager::RequestCreateAsync2...");
 
-        let credential_result = KeyCredentialManager::RequestCreateAsync2(
-            &key_name_hstring,
-            creation_option,
-            &algorithm,
-            &message_hstring,
-            &cache_configuration,
-            win_id,
-            ChallengeResponseKind::VirtualizationBasedSecurityEnclave,
-            &callback,
-        )
-        .map_err(|e| {
-            println!("[SDK-Host]   RequestCreateAsync2 failed to start: {:?}", e);
-            AbiError::Hresult(e.code().0)
-        })?;
+    let credential_result = KeyCredentialManager::RequestCreateAsync2(
+        &key_name_hstring,
+        creation_option,
+        &algorithm,
+        &message_hstring,
+        &cache_configuration,
+        win_id,
+        ChallengeResponseKind::VirtualizationBasedSecurityEnclave,
+        &callback,
+    )
+    .map_err(|e| {
+        println!("[SDK-Host]   RequestCreateAsync2 failed to start: {:?}", e);
+        AbiError::Hresult(e.code().0)
+    })?;
 
-        println!("[SDK-Host]   RequestCreateAsync2 started, waiting for completion (join)...");
+    println!("[SDK-Host]   RequestCreateAsync2 started, waiting for completion (join)...");
 
-        let credential_result = credential_result.join().map_err(|e| {
-            println!("[SDK-Host]   RequestCreateAsync2.join() failed: {:?}", e);
-            AbiError::Hresult(e.code().0)
-        })?;
+    let credential_result = credential_result.join().map_err(|e| {
+        println!("[SDK-Host]   RequestCreateAsync2.join() failed: {:?}", e);
+        AbiError::Hresult(e.code().0)
+    })?;
 
-        println!("[SDK-Host]   RequestCreateAsync2 completed!");
+    println!("[SDK-Host]   RequestCreateAsync2 completed!");
 
-        // Check if operation was successful
-        let status = credential_result
-            .Status()
-            .map_err(|e| AbiError::Hresult(e.code().0))?;
-        if status != KeyCredentialStatus::Success {
-            return Err(AbiError::Hresult(status.0));
-        }
-
-        // Get credential and convert to raw pointer
-        let credential = credential_result
-            .Credential()
-            .map_err(|e| AbiError::Hresult(e.code().0))?;
-        let credential_ptr = windows_core::Interface::as_raw(&credential) as u64;
-
-        // Transfer session ownership
-        let session_handle = {
-            let mut session = match session_info.lock() {
-                Ok(guard) => guard,
-                Err(poisoned) => {
-                    println!("[SDK-Host] Warning: session_info mutex was poisoned");
-                    poisoned.into_inner()
-                }
-            };
-            session.release() as u64
-        };
-
-        // Add reference to credential since we're transferring ownership
-        // We need to prevent the credential from being released
-        std::mem::forget(credential);
-
-        Ok(credentialAndSessionInfo {
-            credential: credential_ptr,
-            sessionInfo: session_handle,
-        })
+    // Check if operation was successful
+    let status = credential_result
+        .Status()
+        .map_err(|e| AbiError::Hresult(e.code().0))?;
+    if status != KeyCredentialStatus::Success {
+        return Err(AbiError::Hresult(status.0));
     }
 
-    fn userboundkey_establish_session_for_load(
-        enclave: u64,
-        keyName: &WString,
-        message: &WString,
-        windowId: u64,
-    ) -> Result<credentialAndSessionInfo, AbiError> {
-        let _ = (message, windowId); // Mark as intentionally unused
-        let session_info = Arc::new(Mutex::new(UniqueSessionHandle::new()));
-        let enclave_ptr = enclave as usize;
+    // Get credential and convert to raw pointer
+    let credential = credential_result
+        .Credential()
+        .map_err(|e| AbiError::Hresult(e.code().0))?;
+    let credential_ptr = windows_core::Interface::as_raw(&credential) as u64;
 
-        let key_name_hstring = wstring_to_hstring(keyName);
-        let callback = create_challenge_callback(session_info.clone(), enclave_ptr);
+    // Transfer session ownership
+    let session_handle = {
+        let mut session = match session_info.lock() {
+            Ok(guard) => guard,
+            Err(poisoned) => {
+                println!("[SDK-Host] Warning: session_info mutex was poisoned");
+                poisoned.into_inner()
+            }
+        };
+        session.release() as u64
+    };
 
-        let credential_result = KeyCredentialManager::OpenAsync2(
-            &key_name_hstring,
-            ChallengeResponseKind::VirtualizationBasedSecurityEnclave,
-            &callback,
-        )
+    // Add reference to credential since we're transferring ownership
+    // We need to prevent the credential from being released
+    std::mem::forget(credential);
+
+    Ok(credentialAndSessionInfo {
+        credential: credential_ptr,
+        sessionInfo: session_handle,
+    })
+}
+
+/// Establish a session for loading an existing Windows Hello key.
+#[allow(non_snake_case)]
+#[allow(unused_variables)]
+pub fn userboundkey_establish_session_for_load(
+    enclave: u64,
+    keyName: &WString,
+    message: &WString,
+    windowId: u64,
+) -> Result<credentialAndSessionInfo, AbiError> {
+    let _ = (message, windowId); // Mark as intentionally unused
+    let session_info = Arc::new(Mutex::new(UniqueSessionHandle::new()));
+    let enclave_ptr = enclave as usize;
+
+    let key_name_hstring = wstring_to_hstring(keyName);
+    let callback = create_challenge_callback(session_info.clone(), enclave_ptr);
+
+    let credential_result = KeyCredentialManager::OpenAsync2(
+        &key_name_hstring,
+        ChallengeResponseKind::VirtualizationBasedSecurityEnclave,
+        &callback,
+    )
+    .map_err(|e| AbiError::Hresult(e.code().0))?
+    .join()
+    .map_err(|e| AbiError::Hresult(e.code().0))?;
+
+    // Check if operation was successful
+    let status = credential_result
+        .Status()
+        .map_err(|e| AbiError::Hresult(e.code().0))?;
+    if status != KeyCredentialStatus::Success {
+        return Err(AbiError::Hresult(status.0));
+    }
+
+    // Get credential and convert to raw pointer
+    let credential = credential_result
+        .Credential()
+        .map_err(|e| AbiError::Hresult(e.code().0))?;
+    let credential_ptr = windows_core::Interface::as_raw(&credential) as u64;
+
+    // Transfer session ownership
+    let session_handle = {
+        let mut session = match session_info.lock() {
+            Ok(guard) => guard,
+            Err(poisoned) => {
+                println!("[SDK-Host] Warning: session_info mutex was poisoned");
+                poisoned.into_inner()
+            }
+        };
+        session.release() as u64
+    };
+
+    // Prevent credential from being released (transfer ownership)
+    std::mem::forget(credential);
+
+    Ok(credentialAndSessionInfo {
+        credential: credential_ptr,
+        sessionInfo: session_handle,
+    })
+}
+
+/// Get authorization context from a credential.
+#[allow(non_snake_case)]
+#[allow(unused_variables)]
+#[allow(clippy::ptr_arg)] // Signature must match EDL-generated trait
+pub fn userboundkey_get_authorization_context_from_credential(
+    credential: u64,
+    encryptedRequest: &Vec<u8>,
+    message: &WString,
+    windowId: u64,
+) -> Result<Vec<u8>, AbiError> {
+    // Reconstruct KeyCredential from raw pointer
+    // We use from_raw and then manually AddRef since the caller owns the credential
+    let key_credential: KeyCredential = unsafe {
+        let raw_ptr = credential as *mut core::ffi::c_void;
+        if raw_ptr.is_null() {
+            return Err(AbiError::Hresult(E_INVALIDARG.0));
+        }
+        // Clone increases ref count - the original is still owned by caller
+        let temp = KeyCredential::from_raw(raw_ptr);
+        let cloned = temp.clone();
+        // Forget temp to not decrement refcount
+        core::mem::forget(temp);
+        cloned
+    };
+
+    // Convert encrypted request to IBuffer
+    let encrypted_buffer =
+        vec_to_kcm_buffer(encryptedRequest).map_err(|e| AbiError::Hresult(e.code().0))?;
+
+    // Call RetrieveAuthorizationContext on the credential
+    let auth_context = key_credential
+        .RetrieveAuthorizationContext(&encrypted_buffer)
+        .map_err(|e| AbiError::Hresult(e.code().0))?;
+
+    kcm_buffer_to_vec(&auth_context).map_err(|e| AbiError::Hresult(e.code().0))
+}
+
+/// Get shared secret from a credential.
+#[allow(non_snake_case)]
+#[allow(unused_variables)]
+#[allow(clippy::ptr_arg)] // Signature must match EDL-generated trait
+pub fn userboundkey_get_secret_from_credential(
+    credential: u64,
+    encryptedRequest: &Vec<u8>,
+    message: &WString,
+    windowId: u64,
+) -> Result<Vec<u8>, AbiError> {
+    // Reconstruct KeyCredential from raw pointer
+    // We use from_raw and then manually AddRef since the caller owns the credential
+    let key_credential: KeyCredential = unsafe {
+        let raw_ptr = credential as *mut core::ffi::c_void;
+        if raw_ptr.is_null() {
+            return Err(AbiError::Hresult(E_INVALIDARG.0));
+        }
+        // Clone increases ref count - the original is still owned by caller
+        let temp = KeyCredential::from_raw(raw_ptr);
+        let cloned = temp.clone();
+        // Forget temp to not decrement refcount
+        core::mem::forget(temp);
+        cloned
+    };
+
+    // Convert encrypted request to IBuffer
+    let encrypted_buffer =
+        vec_to_kcm_buffer(encryptedRequest).map_err(|e| AbiError::Hresult(e.code().0))?;
+
+    let win_id = WindowId { Value: windowId };
+    let message_hstring = wstring_to_hstring(message);
+
+    // Call RequestDeriveSharedSecretAsync on the credential
+    let operation_result = key_credential
+        .RequestDeriveSharedSecretAsync(win_id, &message_hstring, &encrypted_buffer)
         .map_err(|e| AbiError::Hresult(e.code().0))?
         .join()
         .map_err(|e| AbiError::Hresult(e.code().0))?;
 
-        // Check if operation was successful
-        let status = credential_result
-            .Status()
-            .map_err(|e| AbiError::Hresult(e.code().0))?;
-        if status != KeyCredentialStatus::Success {
-            return Err(AbiError::Hresult(status.0));
-        }
+    let result_buffer = operation_result
+        .Result()
+        .map_err(|e| AbiError::Hresult(e.code().0))?;
 
-        // Get credential and convert to raw pointer
-        let credential = credential_result
-            .Credential()
-            .map_err(|e| AbiError::Hresult(e.code().0))?;
-        let credential_ptr = windows_core::Interface::as_raw(&credential) as u64;
+    kcm_buffer_to_vec(&result_buffer).map_err(|e| AbiError::Hresult(e.code().0))
+}
 
-        // Transfer session ownership
-        let session_handle = {
-            let mut session = match session_info.lock() {
-                Ok(guard) => guard,
-                Err(poisoned) => {
-                    println!("[SDK-Host] Warning: session_info mutex was poisoned");
-                    poisoned.into_inner()
-                }
-            };
-            session.release() as u64
-        };
-
-        // Prevent credential from being released (transfer ownership)
-        std::mem::forget(credential);
-
-        Ok(credentialAndSessionInfo {
-            credential: credential_ptr,
-            sessionInfo: session_handle,
-        })
-    }
-
-    fn userboundkey_get_authorization_context_from_credential(
-        credential: u64,
-        encryptedRequest: &Vec<u8>,
-        message: &WString,
-        windowId: u64,
-    ) -> Result<Vec<u8>, AbiError> {
-        // Reconstruct KeyCredential from raw pointer
-        // We use from_raw and then manually AddRef since the caller owns the credential
-        let key_credential: KeyCredential = unsafe {
-            let raw_ptr = credential as *mut core::ffi::c_void;
-            if raw_ptr.is_null() {
-                return Err(AbiError::Hresult(E_INVALIDARG.0));
-            }
-            // Clone increases ref count - the original is still owned by caller
-            let temp = KeyCredential::from_raw(raw_ptr);
-            let cloned = temp.clone();
-            // Forget temp to not decrement refcount
-            core::mem::forget(temp);
-            cloned
-        };
-
-        // Convert encrypted request to IBuffer
-        let encrypted_buffer =
-            vec_to_kcm_buffer(encryptedRequest).map_err(|e| AbiError::Hresult(e.code().0))?;
-
-        // Call RetrieveAuthorizationContext on the credential
-        let auth_context = key_credential
-            .RetrieveAuthorizationContext(&encrypted_buffer)
-            .map_err(|e| AbiError::Hresult(e.code().0))?;
-
-        kcm_buffer_to_vec(&auth_context).map_err(|e| AbiError::Hresult(e.code().0))
-    }
-
-    fn userboundkey_get_secret_from_credential(
-        credential: u64,
-        encryptedRequest: &Vec<u8>,
-        message: &WString,
-        windowId: u64,
-    ) -> Result<Vec<u8>, AbiError> {
-        // Reconstruct KeyCredential from raw pointer
-        // We use from_raw and then manually AddRef since the caller owns the credential
-        let key_credential: KeyCredential = unsafe {
-            let raw_ptr = credential as *mut core::ffi::c_void;
-            if raw_ptr.is_null() {
-                return Err(AbiError::Hresult(E_INVALIDARG.0));
-            }
-            // Clone increases ref count - the original is still owned by caller
-            let temp = KeyCredential::from_raw(raw_ptr);
-            let cloned = temp.clone();
-            // Forget temp to not decrement refcount
-            core::mem::forget(temp);
-            cloned
-        };
-
-        // Convert encrypted request to IBuffer
-        let encrypted_buffer =
-            vec_to_kcm_buffer(encryptedRequest).map_err(|e| AbiError::Hresult(e.code().0))?;
-
-        let win_id = WindowId { Value: windowId };
-        let message_hstring = wstring_to_hstring(message);
-
-        // Call RequestDeriveSharedSecretAsync on the credential
-        let operation_result = key_credential
-            .RequestDeriveSharedSecretAsync(win_id, &message_hstring, &encrypted_buffer)
-            .map_err(|e| AbiError::Hresult(e.code().0))?
-            .join()
-            .map_err(|e| AbiError::Hresult(e.code().0))?;
-
-        let result_buffer = operation_result
-            .Result()
-            .map_err(|e| AbiError::Hresult(e.code().0))?;
-
-        kcm_buffer_to_vec(&result_buffer).map_err(|e| AbiError::Hresult(e.code().0))
-    }
-
-    fn userboundkey_format_key_name(keyName: &WString) -> Result<WString, AbiError> {
-        unsafe {
-            let mut process_token = HANDLE::default();
-            OpenProcessToken(GetCurrentProcess(), TOKEN_QUERY, &mut process_token)
-                .map_err(|_| AbiError::Hresult(E_FAIL.0))?;
-
-            // Get token user info size
-            let mut return_length: u32 = 0;
-            let _ = GetTokenInformation(process_token, TokenUser, None, 0, &mut return_length);
-
-            // Allocate buffer and get token user info
-            let mut buffer = vec![0u8; return_length as usize];
-            GetTokenInformation(
-                process_token,
-                TokenUser,
-                Some(buffer.as_mut_ptr() as *mut _),
-                return_length,
-                &mut return_length,
-            )
+/// Format a key name with the current user's SID.
+#[allow(non_snake_case)]
+pub fn userboundkey_format_key_name(keyName: &WString) -> Result<WString, AbiError> {
+    unsafe {
+        let mut process_token = HANDLE::default();
+        OpenProcessToken(GetCurrentProcess(), TOKEN_QUERY, &mut process_token)
             .map_err(|_| AbiError::Hresult(E_FAIL.0))?;
 
-            let _ = CloseHandle(process_token);
+        // Get token user info size
+        let mut return_length: u32 = 0;
+        let _ = GetTokenInformation(process_token, TokenUser, None, 0, &mut return_length);
 
-            let token_user = &*(buffer.as_ptr() as *const TOKEN_USER);
-            let user_sid = token_user.User.Sid;
+        // Allocate buffer and get token user info
+        let mut buffer = vec![0u8; return_length as usize];
+        GetTokenInformation(
+            process_token,
+            TokenUser,
+            Some(buffer.as_mut_ptr() as *mut _),
+            return_length,
+            &mut return_length,
+        )
+        .map_err(|_| AbiError::Hresult(E_FAIL.0))?;
 
-            // Convert SID to wide string
-            let sid_wide = sid_to_wide_string(user_sid)?;
+        let _ = CloseHandle(process_token);
 
-            // Build formatted key: {SID}//{SID}//{keyName}
-            let slash_slash = widestring::u16str!("//");
-            let mut result =
-                Vec::with_capacity(sid_wide.len() + 2 + sid_wide.len() + 2 + keyName.wchars.len());
-            result.extend_from_slice(&sid_wide);
-            result.extend_from_slice(slash_slash.as_slice());
-            result.extend_from_slice(&sid_wide);
-            result.extend_from_slice(slash_slash.as_slice());
-            result.extend_from_slice(&keyName.wchars);
+        let token_user = &*(buffer.as_ptr() as *const TOKEN_USER);
+        let user_sid = token_user.User.Sid;
 
-            Ok(WString { wchars: result })
-        }
+        // Convert SID to wide string
+        let sid_wide = sid_to_wide_string(user_sid)?;
+
+        // Build formatted key: {SID}//{SID}//{keyName}
+        let slash_slash = widestring::u16str!("//");
+        let mut result =
+            Vec::with_capacity(sid_wide.len() + 2 + sid_wide.len() + 2 + keyName.wchars.len());
+        result.extend_from_slice(&sid_wide);
+        result.extend_from_slice(slash_slash.as_slice());
+        result.extend_from_slice(&sid_wide);
+        result.extend_from_slice(slash_slash.as_slice());
+        result.extend_from_slice(&keyName.wchars);
+
+        Ok(WString { wchars: result })
+    }
+}
+
+/// Delete a credential handle.
+#[allow(non_snake_case)]
+pub fn userboundkey_delete_credential(credential: u64) -> Result<(), AbiError> {
+    if credential == 0 {
+        return Ok(());
     }
 
-    fn userboundkey_delete_credential(credential: u64) -> Result<(), AbiError> {
-        if credential == 0 {
-            return Ok(());
-        }
-
-        // Take ownership of the credential and let it drop
-        unsafe {
-            let raw_ptr = credential as *mut core::ffi::c_void;
-            let _ = KeyCredential::from_raw(raw_ptr);
-            // Credential will be released when dropped
-        }
-
-        Ok(())
+    // Take ownership of the credential and let it drop
+    unsafe {
+        let raw_ptr = credential as *mut core::ffi::c_void;
+        let _ = KeyCredential::from_raw(raw_ptr);
+        // Credential will be released when dropped
     }
+
+    Ok(())
 }

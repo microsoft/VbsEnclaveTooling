@@ -10,11 +10,10 @@
 //!
 //! ```no_run
 //! use vbsenclave_sdk_host::enclave::{EnclaveHandle, megabytes};
-//! use std::path::Path;
 //!
 //! // Create and initialize an enclave
 //! let enclave = EnclaveHandle::create_and_initialize(
-//!     Path::new("my_enclave.dll"),
+//!     "my_enclave.dll",
 //!     megabytes(32),
 //!     None, // Use default owner ID
 //! )?;
@@ -25,7 +24,6 @@
 //! ```
 
 use std::ffi::c_void;
-use std::path::Path;
 use widestring::U16CString;
 use windows::core::{Error, HRESULT, Result};
 
@@ -190,7 +188,7 @@ pub fn create(
 /// # Arguments
 ///
 /// * `enclave` - Pointer to the enclave.
-/// * `image_path` - Path to the enclave DLL.
+/// * `image_path` - Path to the enclave DLL (filename or full path).
 ///
 /// # Safety
 ///
@@ -199,14 +197,8 @@ pub fn create(
 /// # Errors
 ///
 /// Returns an error if loading fails.
-pub unsafe fn load_image(enclave: *mut c_void, image_path: &Path) -> Result<()> {
-    let path_str = image_path.to_str().ok_or_else(|| {
-        Error::new(
-            HRESULT(-2147024809i32), // E_INVALIDARG
-            "Invalid path: not valid UTF-8",
-        )
-    })?;
-    let wide_path = U16CString::from_str(path_str).map_err(|_| {
+pub unsafe fn load_image(enclave: *mut c_void, image_path: &str) -> Result<()> {
+    let wide_path = U16CString::from_str(image_path).map_err(|_| {
         Error::new(
             HRESULT(-2147024809i32), // E_INVALIDARG
             "Invalid path: contains interior null",
@@ -327,7 +319,8 @@ impl EnclaveHandle {
     ///
     /// # Arguments
     ///
-    /// * `dll_path` - Path to the enclave DLL.
+    /// * `dll_path` - Path to the enclave DLL (filename or full path).
+    ///   If just a filename, `LoadEnclaveImageW` will search the current directory and PATH.
     /// * `size` - Size of the enclave in bytes. Use [`megabytes`] helper.
     /// * `owner_id` - Optional owner ID bytes. If None, uses zeros.
     ///
@@ -335,17 +328,16 @@ impl EnclaveHandle {
     ///
     /// ```no_run
     /// use vbsenclave_sdk_host::enclave::{EnclaveHandle, megabytes};
-    /// use std::path::Path;
     ///
     /// let enclave = EnclaveHandle::create_and_initialize(
-    ///     Path::new("my_enclave.dll"),
+    ///     "my_enclave.dll",
     ///     megabytes(32),
     ///     None,
     /// )?;
     /// # Ok::<(), windows::core::Error>(())
     /// ```
     pub fn create_and_initialize(
-        dll_path: &Path,
+        dll_path: &str,
         size: usize,
         owner_id: Option<&[u8]>,
     ) -> Result<Self> {
@@ -360,12 +352,12 @@ impl EnclaveHandle {
     ///
     /// # Arguments
     ///
-    /// * `dll_path` - Path to the enclave DLL.
+    /// * `dll_path` - Path to the enclave DLL (filename or full path).
     /// * `size` - Size of the enclave in bytes. Use [`megabytes`] helper.
     /// * `owner_id` - Optional owner ID bytes. If None, uses zeros.
     /// * `thread_count` - Number of threads to initialize. Use at least 2 for callback support.
     pub fn create_and_initialize_with_threads(
-        dll_path: &Path,
+        dll_path: &str,
         size: usize,
         owner_id: Option<&[u8]>,
         thread_count: u32,

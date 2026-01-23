@@ -10,10 +10,37 @@
 
 extern crate alloc;
 
-use alloc::{boxed::Box, format, vec::Vec};
+use alloc::vec::Vec;
 use core::ffi::c_void;
+use core::fmt;
 use windows_enclave::bcrypt::*;
 use windows_enclave::vertdll::*;
+
+/// Cryptographic operation errors
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum CryptoError {
+    /// HRESULT failure from Windows API
+    Hresult(i32),
+    /// NTSTATUS failure from BCrypt/NT API
+    NtStatus(i32),
+    /// Authentication tag mismatch during decryption
+    AuthTagMismatch,
+    /// Data is too short for the expected format
+    DataTooShort,
+}
+
+impl fmt::Display for CryptoError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            CryptoError::Hresult(hr) => write!(f, "HRESULT error: 0x{:08x}", hr),
+            CryptoError::NtStatus(status) => write!(f, "NTSTATUS error: 0x{:08x}", status),
+            CryptoError::AuthTagMismatch => write!(f, "Authentication tag mismatch"),
+            CryptoError::DataTooShort => write!(f, "Data too short"),
+        }
+    }
+}
+
+impl core::error::Error for CryptoError {}
 
 /// Sealing identity policy for enclave data sealing
 #[derive(Debug, Clone, Copy)]
@@ -29,17 +56,17 @@ pub enum EnclaveSealingIdentityPolicy {
 //
 
 /// Check HRESULT and convert to error
-pub fn check_hr(hr: i32) -> Result<(), Box<dyn core::error::Error>> {
+pub fn check_hr(hr: i32) -> Result<(), CryptoError> {
     if hr < 0 {
-        return Err(format!("HRESULT error: 0x{:08x}", hr).into());
+        return Err(CryptoError::Hresult(hr));
     }
     Ok(())
 }
 
 /// Check NTSTATUS and convert to error
-pub fn check_ntstatus(status: i32) -> Result<(), Box<dyn core::error::Error>> {
+pub fn check_ntstatus(status: i32) -> Result<(), CryptoError> {
     if status < 0 {
-        return Err(format!("NTSTATUS error: 0x{:08x}", status).into());
+        return Err(CryptoError::NtStatus(status));
     }
     Ok(())
 }
@@ -52,7 +79,7 @@ pub fn check_ntstatus(status: i32) -> Result<(), Box<dyn core::error::Error>> {
 ///
 /// Uses BCryptGenRandom with BCRYPT_USE_SYSTEM_PREFERRED_RNG flag.
 /// This is safe to call from enclaves as it uses the enclave's entropy source.
-pub fn generate_random(buffer: &mut [u8]) -> Result<(), Box<dyn core::error::Error>> {
+pub fn generate_random(buffer: &mut [u8]) -> Result<(), CryptoError> {
     unsafe {
         let status = BCryptGenRandom(
             core::ptr::null_mut(), // Use system RNG
@@ -66,23 +93,21 @@ pub fn generate_random(buffer: &mut [u8]) -> Result<(), Box<dyn core::error::Err
 }
 
 /// Generate random bytes of the specified length
-pub fn generate_random_bytes(count: usize) -> Result<Vec<u8>, Box<dyn core::error::Error>> {
+pub fn generate_random_bytes(count: usize) -> Result<Vec<u8>, CryptoError> {
     let mut buffer = alloc::vec![0u8; count];
     generate_random(&mut buffer)?;
     Ok(buffer)
 }
 
 /// Generate a cryptographically secure random u64
-pub fn generate_random_u64() -> Result<u64, Box<dyn core::error::Error>> {
+pub fn generate_random_u64() -> Result<u64, CryptoError> {
     let mut buffer = [0u8; 8];
     generate_random(&mut buffer)?;
     Ok(u64::from_le_bytes(buffer))
 }
 
 /// Generate random bytes suitable for use as a symmetric key
-pub fn generate_symmetric_key_bytes(
-    key_size: usize,
-) -> Result<Vec<u8>, Box<dyn core::error::Error>> {
+pub fn generate_symmetric_key_bytes(key_size: usize) -> Result<Vec<u8>, CryptoError> {
     generate_random_bytes(key_size)
 }
 
@@ -106,7 +131,7 @@ pub fn seal_data(
     data: &[u8],
     sealing_policy: EnclaveSealingIdentityPolicy,
     runtime_policy: u32,
-) -> Result<Vec<u8>, Box<dyn core::error::Error>> {
+) -> Result<Vec<u8>, CryptoError> {
     unsafe {
         // First call to get required size
         let mut sealed_size: u32 = 0;
@@ -149,7 +174,7 @@ pub fn seal_data(
 /// # Returns
 /// A tuple of (unsealed_data, unseal_flags). Check unseal_flags for stale key flags
 /// to determine if the sealing key has changed and the data should be resealed.
-pub fn unseal_data(sealed_data: &[u8]) -> Result<(Vec<u8>, u32), Box<dyn core::error::Error>> {
+pub fn unseal_data(sealed_data: &[u8]) -> Result<(Vec<u8>, u32), CryptoError> {
     unsafe {
         // First call to get required size
         let mut unsealed_size: u32 = 0;
@@ -211,7 +236,7 @@ pub struct SymmetricKeyHandle {
 
 impl SymmetricKeyHandle {
     /// Create a symmetric key from raw key bytes using AES-GCM
-    pub fn from_bytes(key_bytes: &[u8]) -> Result<Self, Box<dyn core::error::Error>> {
+    pub fn from_bytes(key_bytes: &[u8]) -> Result<Self, CryptoError> {
         let mut handle: BCRYPT_KEY_HANDLE = core::ptr::null_mut();
 
         unsafe {
@@ -265,7 +290,7 @@ pub fn encrypt(
     plaintext: &[u8],
     nonce: &[u8],
     tag_size: usize,
-) -> Result<(Vec<u8>, Vec<u8>), Box<dyn core::error::Error>> {
+) -> Result<(Vec<u8>, Vec<u8>), CryptoError> {
     let mut tag = alloc::vec![0u8; tag_size];
     let mut nonce_copy = nonce.to_vec();
 
@@ -309,7 +334,7 @@ pub fn decrypt(
     ciphertext: &[u8],
     nonce: &[u8],
     tag: &[u8],
-) -> Result<Vec<u8>, Box<dyn core::error::Error>> {
+) -> Result<Vec<u8>, CryptoError> {
     // AES-GCM: plaintext length equals ciphertext length
     let mut plaintext = alloc::vec![0u8; ciphertext.len()];
     let mut result_size: u32 = 0;
@@ -332,7 +357,7 @@ pub fn decrypt(
 
         // STATUS_AUTH_TAG_MISMATCH = 0xC000A002
         if status == -1073700862i32 {
-            return Err("Authentication tag mismatch".into());
+            return Err(CryptoError::AuthTagMismatch);
         }
         check_ntstatus(status)?;
     }
@@ -355,7 +380,7 @@ pub fn encrypt_and_tag(
     plaintext: &[u8],
     nonce: &[u8],
     tag_size: usize,
-) -> Result<Vec<u8>, Box<dyn core::error::Error>> {
+) -> Result<Vec<u8>, CryptoError> {
     let (ciphertext, tag) = encrypt(key, plaintext, nonce, tag_size)?;
 
     let mut combined = Vec::with_capacity(ciphertext.len() + tag_size);
@@ -380,9 +405,9 @@ pub fn decrypt_and_untag(
     combined: &[u8],
     nonce: &[u8],
     tag_size: usize,
-) -> Result<Vec<u8>, Box<dyn core::error::Error>> {
+) -> Result<Vec<u8>, CryptoError> {
     if combined.len() < tag_size {
-        return Err("Data too short for tag".into());
+        return Err(CryptoError::DataTooShort);
     }
 
     let ciphertext_len = combined.len() - tag_size;
@@ -400,7 +425,7 @@ pub fn encrypt_and_tag_zero_nonce(
     plaintext: &[u8],
     nonce_size: usize,
     tag_size: usize,
-) -> Result<Vec<u8>, Box<dyn core::error::Error>> {
+) -> Result<Vec<u8>, CryptoError> {
     let zero_nonce = alloc::vec![0u8; nonce_size];
     encrypt_and_tag(key, plaintext, &zero_nonce, tag_size)
 }
@@ -413,7 +438,7 @@ pub fn decrypt_and_untag_zero_nonce(
     combined: &[u8],
     nonce_size: usize,
     tag_size: usize,
-) -> Result<Vec<u8>, Box<dyn core::error::Error>> {
+) -> Result<Vec<u8>, CryptoError> {
     let zero_nonce = alloc::vec![0u8; nonce_size];
     decrypt_and_untag(key, combined, &zero_nonce, tag_size)
 }

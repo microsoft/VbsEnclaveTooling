@@ -3,8 +3,8 @@
 
 //! Type definitions for user-bound key operations
 
-use crate::common::EnclaveUtilsError;
-use alloc::{boxed::Box, string::String};
+use crate::common::{CryptoError, EnclaveUtilsError};
+use alloc::string::String;
 use sdk_enclave_gen::AbiError;
 use windows_enclave::vertdll::RtlNtStatusToDosError;
 
@@ -45,9 +45,18 @@ impl From<EnclaveUtilsError> for UserBoundKeyError {
     }
 }
 
-impl From<Box<dyn core::error::Error>> for UserBoundKeyError {
-    fn from(err: Box<dyn core::error::Error>) -> Self {
-        UserBoundKeyError::CryptoError(alloc::format!("{}", err))
+impl From<CryptoError> for UserBoundKeyError {
+    fn from(err: CryptoError) -> Self {
+        match err {
+            CryptoError::Hresult(hr) => UserBoundKeyError::Hresult(hr),
+            CryptoError::NtStatus(status) => UserBoundKeyError::NtStatus(status),
+            CryptoError::AuthTagMismatch => {
+                UserBoundKeyError::CryptoError(String::from("Authentication tag mismatch"))
+            }
+            CryptoError::DataTooShort => {
+                UserBoundKeyError::CryptoError(String::from("Data too short for tag"))
+            }
+        }
     }
 }
 

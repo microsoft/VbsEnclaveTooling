@@ -11,7 +11,7 @@ mod edl_impls;
 
 use std::fs;
 use std::io::{self, Write};
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 
 // VBS Enclave SDK for loading enclaves
 use vbsenclave_sdk_host::KeyCredentialManager;
@@ -91,9 +91,9 @@ fn get_secure_id_from_windows_hello() -> Result<Vec<u8>, Box<dyn std::error::Err
 
 /// Load the enclave DLL and return the wrapper interface
 fn load_enclave(
-    enclave_path: &Path,
+    enclave_path: &str,
 ) -> Result<(EnclaveHandle, UntrustedImpl), Box<dyn std::error::Error>> {
-    println!("Loading enclave from: {}", enclave_path.display());
+    println!("Loading enclave from: {}", enclave_path);
 
     // Get the secure ID from Windows Hello - required for user-bound key operations
     let owner_id = get_secure_id_from_windows_hello()?;
@@ -121,7 +121,12 @@ fn load_enclave(
 
     // Register all SDK VTL0 callbacks so enclave can call back to host
     // This single function call handles all SDK features (userboundkey, etc.)
-    register_sdk_callbacks(enclave.as_ptr())?;
+    register_sdk_callbacks(enclave.as_ptr()).map_err(|e| {
+        format!(
+            "Failed to register SDK callbacks: 0x{:08X}",
+            e.to_hresult().0
+        )
+    })?;
 
     println!("Enclave loaded and callbacks registered successfully.");
     Ok((enclave, wrapper))
@@ -131,15 +136,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("=== User-Bound Key Sample (Rust) ===");
     println!();
 
-    // Get enclave DLL path (should be in same directory as host executable)
-    let exe_dir = std::env::current_exe()
-        .ok()
-        .and_then(|p| p.parent().map(|p| p.to_path_buf()))
-        .unwrap_or_else(|| std::env::current_dir().unwrap());
-    let enclave_path = exe_dir.join("userboundkey_sample_enclave.dll");
-
-    // Load the enclave
-    let (_enclave_handle, enclave) = load_enclave(&enclave_path)?;
+    // Load the enclave (LoadEnclaveImageW searches current directory and PATH)
+    let (_enclave_handle, enclave) = load_enclave("userboundkey_sample_enclave.dll")?;
 
     let key_file_path = get_key_file_path();
     let encrypted_file_path = get_encrypted_file_path();
@@ -147,12 +145,12 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut is_key_loaded = false;
 
     // Try to load existing key from file
-    if key_file_path.exists() {
-        if let Ok(data) = load_binary_data(&key_file_path) {
-            secured_key_bytes = data;
-            is_key_loaded = true;
-            println!("Found existing key file: {}", key_file_path.display());
-        }
+    if key_file_path.exists()
+        && let Ok(data) = load_binary_data(&key_file_path)
+    {
+        secured_key_bytes = data;
+        is_key_loaded = true;
+        println!("Found existing key file: {}", key_file_path.display());
     }
 
     // Window ID - use foreground window for Windows Hello prompts

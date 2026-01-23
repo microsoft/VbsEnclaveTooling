@@ -6,7 +6,7 @@
 //! This module provides general-purpose utilities for enclave operations
 //! that can be used across different SDK modules.
 
-use core::sync::atomic::{AtomicPtr, Ordering};
+use core::mem;
 use spin::Once;
 
 use windows_enclave::vertdll::{
@@ -30,62 +30,49 @@ impl EnclaveUtilsError {
     }
 }
 
-/// Get singleton for enclave information cache pointer
-fn enclave_info_cache() -> &'static AtomicPtr<ENCLAVE_INFORMATION> {
-    static ENCLAVE_INFO_CACHE: Once<AtomicPtr<ENCLAVE_INFORMATION>> = Once::new();
-    ENCLAVE_INFO_CACHE.call_once(|| AtomicPtr::new(core::ptr::null_mut()))
-}
+/// Wrapper for ENCLAVE_INFORMATION that implements Send + Sync.
+/// SAFETY: The BaseAddress pointer is read-only after initialization
+/// and points to enclave memory which is valid for the enclave's lifetime.
+#[derive(Clone, Copy)]
+struct SyncEnclaveInfo(ENCLAVE_INFORMATION);
 
-/// Get enclave information, caching it on first access
+// SAFETY: ENCLAVE_INFORMATION contains a *mut c_void (BaseAddress) but:
+// 1. It's effectively read-only after initialization
+// 2. It points to enclave memory mapped for the process lifetime
+// 3. We only ever read from it, never write through it
+unsafe impl Send for SyncEnclaveInfo {}
+unsafe impl Sync for SyncEnclaveInfo {}
+
+/// Cached enclave information (initialized once)
+static ENCLAVE_INFO: Once<Result<SyncEnclaveInfo, EnclaveUtilsError>> = Once::new();
+
+/// Get enclave information, initializing and caching it on first access.
 ///
-/// This function retrieves the enclave information from the system on first call
-/// and caches it for subsequent calls, similar to `veil::vtl1::enclave_information()`.
+/// - Thread-safe
+/// - No heap allocation
+/// - No atomic pointer management
+/// - Error is cached to avoid repeated syscalls
 pub fn get_enclave_information() -> Result<ENCLAVE_INFORMATION, EnclaveUtilsError> {
-    let cache = enclave_info_cache();
+    ENCLAVE_INFO
+        .call_once(|| {
+            let mut info: ENCLAVE_INFORMATION = unsafe { mem::zeroed() };
 
-    // Check if already cached
-    let ptr = cache.load(Ordering::Acquire);
-    if !ptr.is_null() {
-        return Ok(unsafe { *ptr });
-    }
+            let hr = unsafe {
+                EnclaveGetEnclaveInformation(
+                    mem::size_of::<ENCLAVE_INFORMATION>() as u32,
+                    &mut info,
+                )
+            };
 
-    // Initialize enclave information
-    let mut info: ENCLAVE_INFORMATION = unsafe { core::mem::zeroed() };
-
-    let hr = unsafe {
-        EnclaveGetEnclaveInformation(
-            core::mem::size_of::<ENCLAVE_INFORMATION>() as u32,
-            &mut info,
-        )
-    };
-
-    if hr < 0 {
-        return Err(EnclaveUtilsError::Hresult(hr));
-    }
-
-    // Leak the box to get a 'static pointer
-    let boxed = alloc::boxed::Box::new(info);
-    let new_ptr = alloc::boxed::Box::into_raw(boxed);
-
-    // Try to set the cache (compare-and-swap)
-    match cache.compare_exchange(
-        core::ptr::null_mut(),
-        new_ptr,
-        Ordering::Release,
-        Ordering::Acquire,
-    ) {
-        Ok(_) => {
-            // We successfully set the cache
-            Ok(unsafe { *new_ptr })
-        }
-        Err(existing) => {
-            // Another thread beat us - free our allocation and use theirs
-            unsafe {
-                let _ = alloc::boxed::Box::from_raw(new_ptr);
+            if hr < 0 {
+                return Err(EnclaveUtilsError::Hresult(hr));
             }
-            Ok(unsafe { *existing })
-        }
-    }
+
+            Ok(SyncEnclaveInfo(info))
+        })
+        .as_ref()
+        .map(|s| s.0)
+        .map_err(|e| *e)
 }
 
 /// Get the base address of the enclave

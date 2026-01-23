@@ -37,8 +37,9 @@ The sample consists of:
 ### Prerequisites
 
 Building the enclave DLL requires:
-- Windows SDK with VBS enclave libraries (`ucrt_enclave`)
-- SDK versions 10.0.19041.0, 10.0.22621.0, or 10.0.26100.0 are known to work
+- **Windows 11 Build 26100.2314 or later** or **Windows Server 2025 or later**
+- Windows SDK 10.0.26100.0 or later with VBS enclave libraries (`ucrt_enclave`)
+- `veinterop.lib` from SDK 10.0.26100.7463 or later (for VBS enclave interop APIs)
 - Visual Studio 2022 with MSVC enclave toolchain
 - A code signing certificate for VBS enclaves (see below)
 

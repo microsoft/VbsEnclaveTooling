@@ -3,9 +3,15 @@
 
 mod host_ffi;
 
+pub mod common;
 pub mod enclave;
-
 pub mod userboundkey;
+
+// Re-export AbiError for consumers who call register_sdk_callbacks
+pub use sdk_host_gen::AbiError;
+
+// Re-export HostImpl for consumers
+pub use common::HostImpl;
 
 // The userboundkey-kcm crate is not intended to be published as a standalone package.
 // Long term, these KCM APIs should be consumed from the windows-rs crate.
@@ -36,18 +42,13 @@ pub use userboundkey_kcm::KeyCredentialManager;
 /// let enclave = EnclaveHandle::create_and_initialize(path, size, owner_id)?;
 /// register_sdk_callbacks(enclave.as_ptr())?;
 /// ```
-pub fn register_sdk_callbacks(
-    enclave_ptr: *mut core::ffi::c_void,
-) -> Result<(), Box<dyn std::error::Error>> {
-    // Register userboundkey callbacks
-    let sdk_wrapper = userboundkey::UserBoundKeyVtl0Host::new(enclave_ptr);
-    sdk_wrapper
-        .register_vtl0_callbacks::<userboundkey::UntrustedImpl>()
-        .map_err(|e| format!("Failed to register SDK userboundkey callbacks: {:?}", e))?;
+pub fn register_sdk_callbacks(enclave_ptr: *mut core::ffi::c_void) -> Result<(), AbiError> {
+    // Register SDK callbacks using the SdkHost interface and HostImpl
+    let sdk_wrapper = userboundkey::SdkHost::new(enclave_ptr);
+    sdk_wrapper.register_vtl0_callbacks::<HostImpl>()?;
 
     // Future SDK features will be added here:
     // #[cfg(feature = "secure_storage")]
-    // { ... register secure_storage callbacks ... }
 
     Ok(())
 }

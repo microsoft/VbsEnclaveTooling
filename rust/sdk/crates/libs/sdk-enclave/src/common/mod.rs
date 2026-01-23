@@ -7,6 +7,9 @@
 //! different SDK modules for enclave operations.
 
 pub mod crypto;
+pub mod sdk_impls;
 mod utils;
 
+pub use crypto::CryptoError;
+pub use sdk_impls::EnclaveImpl;
 pub use utils::*;

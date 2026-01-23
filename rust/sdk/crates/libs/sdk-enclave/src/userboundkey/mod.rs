@@ -24,7 +24,6 @@ pub use widestring::U16Str;
 use alloc::vec::Vec;
 
 use sdk_enclave_gen::AbiError;
-use sdk_enclave_gen::implementation::trusted::Trusted;
 use sdk_enclave_gen::implementation::types::attestationReportAndSessionInfo;
 use sdk_enclave_gen::stubs::untrusted;
 use widestring::U16String;
@@ -654,59 +653,62 @@ pub fn reseal_user_bound_key(
     Ok(resealed_data)
 }
 
-/// Implementation of the Trusted trait for EDL-generated code
-pub struct TrustedImpl;
-
+/// Get attestation report for a challenge and initialize a user-bound key session.
+///
+/// This is the trusted implementation called from the EDL interface.
 #[allow(non_snake_case)]
-impl Trusted for TrustedImpl {
-    fn userboundkey_get_attestation_report(
-        challenge: &Vec<u8>,
-    ) -> Result<attestationReportAndSessionInfo, AbiError> {
-        let mut report_ptr: *mut core::ffi::c_void = core::ptr::null_mut();
-        let mut report_size: u32 = 0;
-        let mut session_handle: USER_BOUND_KEY_SESSION_HANDLE = core::ptr::null_mut();
+#[allow(clippy::ptr_arg)] // Signature must match EDL-generated trait
+pub fn userboundkey_get_attestation_report(
+    challenge: &Vec<u8>,
+) -> Result<attestationReportAndSessionInfo, AbiError> {
+    let mut report_ptr: *mut core::ffi::c_void = core::ptr::null_mut();
+    let mut report_size: u32 = 0;
+    let mut session_handle: USER_BOUND_KEY_SESSION_HANDLE = core::ptr::null_mut();
 
-        let hr = unsafe {
-            InitializeUserBoundKeySession(
-                challenge.as_ptr() as *const core::ffi::c_void,
-                challenge.len() as u32,
-                &mut report_ptr,
-                &mut report_size,
-                &mut session_handle,
-            )
-        };
+    let hr = unsafe {
+        InitializeUserBoundKeySession(
+            challenge.as_ptr() as *const core::ffi::c_void,
+            challenge.len() as u32,
+            &mut report_ptr,
+            &mut report_size,
+            &mut session_handle,
+        )
+    };
 
-        if hr < 0 {
-            return Err(AbiError::Hresult(hr));
-        }
-
-        // Take ownership of the heap-allocated buffer
-        let report_buf = unsafe { HeapBuffer::from_raw(report_ptr, report_size) };
-
-        // Defensive check - API contract guarantees valid output on S_OK
-        if report_buf.is_empty() {
-            return Err(AbiError::Hresult(-1));
-        }
-
-        // Convert report to Vec (HeapBuffer will free on drop)
-        let report = report_buf.to_vec();
-
-        Ok(attestationReportAndSessionInfo {
-            report,
-            sessionInfo: session_handle as u64,
-        })
+    if hr < 0 {
+        return Err(AbiError::Hresult(hr));
     }
 
-    fn userboundkey_close_session(sessionInfo: u64) -> Result<(), AbiError> {
-        if sessionInfo != 0 {
-            unsafe {
-                let session_handle = sessionInfo as USER_BOUND_KEY_SESSION_HANDLE;
-                let hr = CloseUserBoundKeySession(session_handle);
-                if hr < 0 {
-                    return Err(AbiError::Hresult(hr));
-                }
+    // Take ownership of the heap-allocated buffer
+    let report_buf = unsafe { HeapBuffer::from_raw(report_ptr, report_size) };
+
+    // Defensive check - API contract guarantees valid output on S_OK
+    if report_buf.is_empty() {
+        return Err(AbiError::Hresult(-1));
+    }
+
+    // Convert report to Vec (HeapBuffer will free on drop)
+    let report = report_buf.to_vec();
+
+    Ok(attestationReportAndSessionInfo {
+        report,
+        sessionInfo: session_handle as u64,
+    })
+}
+
+/// Close a user-bound key session and release associated resources.
+///
+/// This is the trusted implementation called from the EDL interface.
+#[allow(non_snake_case)]
+pub fn userboundkey_close_session(sessionInfo: u64) -> Result<(), AbiError> {
+    if sessionInfo != 0 {
+        unsafe {
+            let session_handle = sessionInfo as USER_BOUND_KEY_SESSION_HANDLE;
+            let hr = CloseUserBoundKeySession(session_handle);
+            if hr < 0 {
+                return Err(AbiError::Hresult(hr));
             }
         }
-        Ok(())
     }
+    Ok(())
 }

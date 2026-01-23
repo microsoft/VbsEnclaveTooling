@@ -31,10 +31,10 @@ pub use sdk_enclave_gen;
 #[macro_export]
 macro_rules! export_sdk_enclave_functions {
     () => {
-        // Export SDK userboundkey enclave functions in a private module
+        // Export SDK enclave functions in a private module
         // to avoid naming conflicts with the application's own exports
-        mod __sdk_userboundkey_exports {
-            $crate::sdk_enclave_gen::export_enclave_functions!($crate::userboundkey::TrustedImpl);
+        mod __sdk_exports {
+            $crate::sdk_enclave_gen::export_enclave_functions!($crate::common::EnclaveImpl);
         }
 
         // Future SDK features will be added here as additional modules

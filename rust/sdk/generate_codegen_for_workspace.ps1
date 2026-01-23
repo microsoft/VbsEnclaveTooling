@@ -1,7 +1,7 @@
 # Generates EDL code bindings for the entire SDK workspace.
 #
 # This script generates Rust bindings from EDL files for:
-# - SDK core libraries (veil_abi and sdk namespaces)
+# - SDK core libraries (sdk namespace)
 # - Sample applications (userboundkey_sample)
 #
 # Use this script when:
@@ -17,26 +17,17 @@ $errorActionPreference = "Stop"
 . "$PSScriptRoot\..\scripts\get_common_paths.ps1"
 
 # SDK crate paths
-$edlPath      = Join-Path $repoRoot "src\VbsEnclaveSDK\veil_abi.edl"
 $enclaveSdkCrate = Join-Path $SdkWorkspacePath "crates/libs/sdk-enclave"
 $hostSdkCrate    = Join-Path $SdkWorkspacePath "crates/libs/sdk-host"
 
-# Generate veil_abi EDL bindings (core VBS enclave interface)
-. "$scriptsDir\generate_codegen_crates.ps1" `
-    -HostAppOutDir "$hostSdkCrate\generated" `
-    -EnclaveOutDir "$enclaveSdkCrate\generated" `
-    -EdlPath $edlPath `
-    -Namespace "veil_abi" `
-    -Vtl0ClassName "export_interface"
-
-# Generate SDK EDL bindings (user-bound key APIs and other SDK features)  
+# Generate SDK EDL bindings (user-bound key APIs and other SDK features)
 $sdkEdl = Join-Path $SdkWorkspacePath "crates\libs\sdk.edl"
 . "$scriptsDir\generate_codegen_crates.ps1" `
     -HostAppOutDir "$hostSdkCrate\generated" `
     -EnclaveOutDir "$enclaveSdkCrate\generated" `
     -EdlPath $sdkEdl `
     -Namespace "sdk" `
-    -Vtl0ClassName "UserBoundKeyVtl0Host"
+    -Vtl0ClassName "SdkHost"
 
 # Generate sample EDL bindings (userboundkey sample application interface)
 $sampleDir = Join-Path $SdkWorkspacePath "crates\samples\userboundkey"
