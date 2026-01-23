@@ -1880,7 +1880,6 @@ impl KeyCredentialStatus {
     pub const UserPrefersPassword: Self = Self(4i32);
     pub const CredentialAlreadyExists: Self = Self(5i32);
     pub const SecurityDeviceLocked: Self = Self(6i32);
-    pub const AlgorithmNotSupported: Self = Self(7i32);
 }
 impl windows_core::TypeKind for KeyCredentialStatus {
     type TypeKind = windows_core::CopyType;

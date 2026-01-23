@@ -8,22 +8,10 @@ members = [
     "crates/libs/userboundkey-kcm",
     "crates/tests/sdk",
     "crates/libs/windows-enclave",
-    # Sample crates
-    "crates/samples/userboundkey/enclave",
-    "crates/samples/userboundkey/host",
-    "crates/samples/userboundkey/enclave/generated/userboundkey_sample_gen",
-    "crates/samples/userboundkey/host/generated/userboundkey_sample_gen",
 ]
 
 [workspace.package]
 edition = "2024"
-
-# Enclaves require panic=abort since they are no_std cdylib
-[profile.dev]
-panic = "abort"
-
-[profile.release]
-panic = "abort"
 
 [workspace.dependencies]
 edlcodegen-tools = { git = "https://github.com/microsoft/VbsEnclaveTooling" }

@@ -51,6 +51,8 @@ $libsImportDir = Join-Path $SdkWorkspacePath "crates\libs"
     -ImportDir $libsImportDir `
     -Vtl0ClassName "UntrustedImpl"
 
-# Format the workspace after code generation to make sure all generated code
-# is properly formatted.
+# Format SDK workspace
 . "$scriptsDir\invoke_rustfmt_workspace.ps1" -WorkspacePath $PSScriptRoot
+
+# Format sample workspace (now in its own workspace)
+. "$scriptsDir\invoke_rustfmt_workspace.ps1" -WorkspacePath $sampleDir
