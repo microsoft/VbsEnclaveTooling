@@ -4,9 +4,9 @@ version = "0.1.0"
 edition =  { workspace = true }
 
 [dependencies]
+sdk_enclave_gen = { path = "./generated/sdk_gen" }
 spin = { workspace = true }
-
-tracelogging = { workspace = true, default-features = false, features = ["etw", "kernel_mode"] }
-uuid = { workspace = true, default-features = false, features = [ "v4"] }
 veil_abi_enclave_gen = { path = "./generated/veil_abi_gen" }
+widestring = { workspace = true }
 windows-enclave = {workspace = true }
+

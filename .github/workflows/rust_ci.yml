@@ -97,11 +97,8 @@ jobs:
 
       - name: test SDK
         working-directory: ./rust/sdk
-        # Don't test the enclave crates here as they require special setup. (vertdll + veinterop can't be used outside of an enclave).
-        # We will need to do real integration tests for those later.
-        run: >
-          cargo test
+        run: cargo test 
           --workspace
           --exclude vbsenclave-sdk-enclave
           --exclude windows-enclave
-          --exclude veil_abi_enclave_gen
+          --exclude sdk_enclave_gen

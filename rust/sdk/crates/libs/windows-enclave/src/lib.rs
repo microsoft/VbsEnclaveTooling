@@ -12,6 +12,7 @@ mod manual_bindings;
 
 pub mod bcrypt {
     include!(concat!(env!("OUT_DIR"), "/bcrypt.rs"));
+    pub use super::manual_bindings::bcrypt::*;
 }
 
 pub mod vertdll {
