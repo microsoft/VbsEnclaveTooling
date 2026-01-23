@@ -5,10 +5,6 @@
 #![allow(dead_code)]
 #![allow(non_snake_case)]
 
-// Unconditionally use no_std during non-cargo testing.
-// While allowing std for cargo unit/integration tests.
-#[cfg(test)]
-extern crate std;
 mod enclave_ffi;
 use veil_abi_enclave_gen::export_enclave_functions;
 extern crate alloc;
