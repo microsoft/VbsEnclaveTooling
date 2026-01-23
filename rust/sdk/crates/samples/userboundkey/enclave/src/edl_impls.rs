@@ -143,18 +143,18 @@ impl Trusted for EnclaveImpl {
         windowId: u64,
         keyCredentialCreationOption: u32,
     ) -> Result<Vec<u8>, AbiError> {
-        let _ = debug_print(&String::from("CreateUserBoundKey: Starting"));
+        debug_print(&String::from("CreateUserBoundKey: Starting"))?;
 
         let cache_config = create_secure_cache_config();
 
-        let _ = debug_print(&format!(
+        debug_print(&format!(
             "CreateUserBoundKey: windowId={}, option={}",
             windowId, keyCredentialCreationOption
-        ));
+        ))?;
 
-        let _ = debug_print(&String::from(
+        debug_print(&String::from(
             "CreateUserBoundKey: Calling SDK create_user_bound_key...",
-        ));
+        ))?;
 
         // Create user-bound key with enclave sealing
         let sealed_key = create_user_bound_key(
@@ -171,10 +171,10 @@ impl Trusted for EnclaveImpl {
             AbiError::Hresult(e.to_hresult())
         })?;
 
-        let _ = debug_print(&format!(
+        debug_print(&format!(
             "CreateUserBoundKey: Success! Got {} sealed bytes",
             sealed_key.len()
-        ));
+        ))?;
 
         // Return sealed key bytes - do NOT create symmetric key here
         // The key is created on load, not on create.

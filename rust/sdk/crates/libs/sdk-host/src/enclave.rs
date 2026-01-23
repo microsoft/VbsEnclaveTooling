@@ -192,10 +192,14 @@ pub fn create(
 /// * `enclave` - Pointer to the enclave.
 /// * `image_path` - Path to the enclave DLL.
 ///
+/// # Safety
+///
+/// The caller must ensure `enclave` is a valid pointer returned by `create()`.
+///
 /// # Errors
 ///
 /// Returns an error if loading fails.
-pub fn load_image(enclave: *mut c_void, image_path: &Path) -> Result<()> {
+pub unsafe fn load_image(enclave: *mut c_void, image_path: &Path) -> Result<()> {
     let path_str = image_path.to_str().ok_or_else(|| {
         Error::new(
             HRESULT(-2147024809i32), // E_INVALIDARG
@@ -229,10 +233,14 @@ pub fn load_image(enclave: *mut c_void, image_path: &Path) -> Result<()> {
 /// * `enclave` - Pointer to the enclave.
 /// * `thread_count` - Number of threads to create (usually 1).
 ///
+/// # Safety
+///
+/// The caller must ensure `enclave` is a valid pointer returned by `create()`.
+///
 /// # Errors
 ///
 /// Returns an error if initialization fails.
-pub fn initialize(enclave: *mut c_void, thread_count: u32) -> Result<()> {
+pub unsafe fn initialize(enclave: *mut c_void, thread_count: u32) -> Result<()> {
     let init_info = EnclaveInitInfoVbs {
         length: core::mem::size_of::<EnclaveInitInfoVbs>() as u32,
         thread_count,
@@ -267,7 +275,11 @@ pub fn initialize(enclave: *mut c_void, thread_count: u32) -> Result<()> {
 ///
 /// * `enclave` - Pointer to the enclave.
 /// * `wait` - If true, wait for all threads to terminate.
-pub fn terminate(enclave: *mut c_void, wait: bool) {
+///
+/// # Safety
+///
+/// The caller must ensure `enclave` is a valid pointer returned by `create()`.
+pub unsafe fn terminate(enclave: *mut c_void, wait: bool) {
     unsafe {
         let _ = ffi::TerminateEnclave(enclave, if wait { 1 } else { 0 });
     }
@@ -278,7 +290,11 @@ pub fn terminate(enclave: *mut c_void, wait: bool) {
 /// # Arguments
 ///
 /// * `enclave` - Pointer to the enclave.
-pub fn delete(enclave: *mut c_void) {
+///
+/// # Safety
+///
+/// The caller must ensure `enclave` is a valid pointer returned by `create()`.
+pub unsafe fn delete(enclave: *mut c_void) {
     unsafe {
         let _ = ffi::DeleteEnclave(enclave);
     }
@@ -361,10 +377,12 @@ impl EnclaveHandle {
         let handle = unsafe { Self::from_raw(enclave_ptr) };
 
         // Load the enclave image
-        load_image(enclave_ptr, dll_path)?;
+        // SAFETY: enclave_ptr was just returned by create() and is valid
+        unsafe { load_image(enclave_ptr, dll_path)? };
 
         // Initialize with specified thread count
-        initialize(enclave_ptr, thread_count)?;
+        // SAFETY: enclave_ptr is valid and image has been loaded
+        unsafe { initialize(enclave_ptr, thread_count)? };
 
         Ok(handle)
     }
@@ -388,9 +406,13 @@ impl EnclaveHandle {
 impl Drop for EnclaveHandle {
     fn drop(&mut self) {
         if !self.enclave.is_null() {
-            // fWait = TRUE means wait for all threads to terminate
-            terminate(self.enclave, true);
-            delete(self.enclave);
+            // SAFETY: self.enclave is valid because it came from create()
+            // and we only set it to null after this point
+            unsafe {
+                // fWait = TRUE means wait for all threads to terminate
+                terminate(self.enclave, true);
+                delete(self.enclave);
+            }
         }
     }
 }

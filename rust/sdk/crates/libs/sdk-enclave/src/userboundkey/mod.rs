@@ -266,6 +266,7 @@ pub fn create_user_bound_key(
 }
 
 /// Create a user-bound key with custom key bytes
+#[allow(clippy::too_many_arguments)]
 pub fn create_user_bound_key_with_custom_key(
     key_name: &U16Str,
     cache_config: &keyCredentialCacheConfig,
@@ -282,7 +283,7 @@ pub fn create_user_bound_key_with_custom_key(
         wchars: key_name.as_slice().to_vec(),
     };
     let formatted_key_name_wstring = untrusted::userboundkey_format_key_name(&key_name_wstring)
-        .map_err(|e| UserBoundKeyError::AbiError(e))?;
+        .map_err(UserBoundKeyError::AbiError)?;
 
     // Security validation (wide string version)
     let formatted_key_name_u16str = U16Str::from_slice(&formatted_key_name_wstring.wchars);
@@ -307,7 +308,7 @@ pub fn create_user_bound_key_with_custom_key(
         cache_config,
         key_credential_creation_option,
     )
-    .map_err(|e| UserBoundKeyError::AbiError(e))?;
+    .map_err(UserBoundKeyError::AbiError)?;
 
     // RAII wrappers for cleanup
     let credential = UniqueCredential::new(credential_and_session.credential);
@@ -353,7 +354,7 @@ pub fn create_user_bound_key_with_custom_key(
         &message_wstring,
         window_id,
     )
-    .map_err(|e| UserBoundKeyError::AbiError(e))?;
+    .map_err(UserBoundKeyError::AbiError)?;
 
     // Get auth context handle
     let mut auth_context_handle: USER_BOUND_KEY_AUTH_CONTEXT_HANDLE = core::ptr::null_mut();
@@ -455,7 +456,7 @@ pub fn load_user_bound_key(
         wchars: key_name.as_slice().to_vec(),
     };
     let formatted_key_name_wstring = untrusted::userboundkey_format_key_name(&key_name_wstring)
-        .map_err(|e| UserBoundKeyError::AbiError(e))?;
+        .map_err(UserBoundKeyError::AbiError)?;
 
     // Security validation (wide string version)
     let formatted_key_name_u16str = U16Str::from_slice(&formatted_key_name_wstring.wchars);
@@ -476,7 +477,7 @@ pub fn load_user_bound_key(
         &message_wstring,
         window_id,
     )
-    .map_err(|e| UserBoundKeyError::AbiError(e))?;
+    .map_err(UserBoundKeyError::AbiError)?;
 
     // RAII wrappers
     let credential = UniqueCredential::new(credential_and_session.credential);
@@ -521,7 +522,7 @@ pub fn load_user_bound_key(
         &message_wstring,
         window_id,
     )
-    .map_err(|e| UserBoundKeyError::AbiError(e))?;
+    .map_err(UserBoundKeyError::AbiError)?;
 
     // Get auth context handle
     let mut auth_context_handle: USER_BOUND_KEY_AUTH_CONTEXT_HANDLE = core::ptr::null_mut();
@@ -589,7 +590,7 @@ pub fn load_user_bound_key(
         &message_wstring,
         window_id,
     )
-    .map_err(|e| UserBoundKeyError::AbiError(e))?;
+    .map_err(UserBoundKeyError::AbiError)?;
 
     // Unprotect the user key
     let mut user_key_ptr: *mut core::ffi::c_void = core::ptr::null_mut();
