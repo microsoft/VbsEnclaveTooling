@@ -3,6 +3,8 @@
 
 //! Type definitions for user-bound key operations
 
+use crate::common::EnclaveUtilsError;
+use alloc::{boxed::Box, string::String};
 use sdk_enclave_gen::AbiError;
 use windows_enclave::vertdll::RtlNtStatusToDosError;
 
@@ -25,11 +27,27 @@ pub enum UserBoundKeyError {
     StaleKey,
     /// Feature not implemented
     NotImplemented(&'static str),
+    /// General cryptographic error
+    CryptoError(String),
 }
 
 impl From<AbiError> for UserBoundKeyError {
     fn from(err: AbiError) -> Self {
         UserBoundKeyError::AbiError(err)
+    }
+}
+
+impl From<EnclaveUtilsError> for UserBoundKeyError {
+    fn from(err: EnclaveUtilsError) -> Self {
+        match err {
+            EnclaveUtilsError::Hresult(hr) => UserBoundKeyError::Hresult(hr),
+        }
+    }
+}
+
+impl From<Box<dyn core::error::Error>> for UserBoundKeyError {
+    fn from(err: Box<dyn core::error::Error>) -> Self {
+        UserBoundKeyError::CryptoError(alloc::format!("{}", err))
     }
 }
 
@@ -62,6 +80,7 @@ impl UserBoundKeyError {
             UserBoundKeyError::SecurityViolation(_) => -2147024891, // E_ACCESSDENIED
             UserBoundKeyError::StaleKey => 0x80090325_u32 as i32, // SEC_E_BAD_PKGID or similar
             UserBoundKeyError::NotImplemented(_) => -2147467263, // E_NOTIMPL
+            UserBoundKeyError::CryptoError(_) => -2147467259,   // E_FAIL
         }
     }
 

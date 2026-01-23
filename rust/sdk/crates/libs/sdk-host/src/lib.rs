@@ -26,7 +26,7 @@ pub use userboundkey_kcm::KeyCredentialManager;
 ///
 /// # Returns
 ///
-/// Returns `Ok(())` on success, or an error string on failure.
+/// Returns `Ok(())` on success, or an error on failure.
 ///
 /// # Example
 ///
@@ -36,7 +36,9 @@ pub use userboundkey_kcm::KeyCredentialManager;
 /// let enclave = EnclaveHandle::create_and_initialize(path, size, owner_id)?;
 /// register_sdk_callbacks(enclave.as_ptr())?;
 /// ```
-pub fn register_sdk_callbacks(enclave_ptr: *mut core::ffi::c_void) -> Result<(), String> {
+pub fn register_sdk_callbacks(
+    enclave_ptr: *mut core::ffi::c_void,
+) -> Result<(), Box<dyn std::error::Error>> {
     // Register userboundkey callbacks
     let sdk_wrapper = userboundkey::UserBoundKeyVtl0Host::new(enclave_ptr);
     sdk_wrapper

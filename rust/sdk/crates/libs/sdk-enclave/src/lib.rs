@@ -6,6 +6,7 @@ extern crate alloc;
 
 mod enclave_ffi;
 
+pub mod common;
 pub mod userboundkey;
 
 // Re-export the SDK generated enclave crate.

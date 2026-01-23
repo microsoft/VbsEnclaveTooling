@@ -8,12 +8,10 @@
 
 mod crypto;
 mod types;
-mod utils;
 
 pub use crypto::{
     EnclaveSealingIdentityPolicy, NONCE_SIZE, SYMMETRIC_KEY_SIZE_BYTES, SymmetricKeyHandle,
-    TAG_SIZE, ZERO_NONCE, decrypt, decrypt_and_untag, decrypt_and_untag_zero_nonce, encrypt,
-    encrypt_and_tag, encrypt_and_tag_zero_nonce,
+    TAG_SIZE, ZERO_NONCE, decrypt, encrypt,
 };
 pub use types::*;
 
@@ -41,8 +39,8 @@ use windows_enclave::veinterop::{
 };
 use windows_enclave::vertdll::{GetProcessHeap, HeapFree};
 
+use crate::common::get_enclave_base_address_u64;
 use crypto::{check_hr, generate_symmetric_key_bytes, is_stale_key, seal_data, unseal_data};
-use utils::get_enclave_base_address_u64;
 
 // BCrypt algorithm pseudo-handle value from Windows SDK bcrypt.h.
 // BCRYPT_ECDH_P384_ALG_HANDLE = ((BCRYPT_ALG_HANDLE) 0x000002b1)
@@ -253,7 +251,7 @@ pub fn create_user_bound_key(
     key_credential_creation_option: u32,
 ) -> Result<Vec<u8>, UserBoundKeyError> {
     // Generate symmetric key
-    let user_key_bytes = generate_symmetric_key_bytes()?;
+    let user_key_bytes = generate_symmetric_key_bytes(SYMMETRIC_KEY_SIZE_BYTES)?;
 
     create_user_bound_key_with_custom_key(
         key_name,

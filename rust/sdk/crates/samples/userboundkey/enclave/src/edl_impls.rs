@@ -90,7 +90,7 @@ fn ensure_user_bound_key_loaded(
                 *needs_reseal = true;
                 if let Ok(resealed) = reseal_user_bound_key(
                     &key_bytes,
-                    EnclaveSealingIdentityPolicy::SealToExactCode,
+                    EnclaveSealingIdentityPolicy::EnclaveIdentity,
                     RUNTIME_POLICY_NO_DEBUG,
                 ) {
                     *resealed_encryption_key_bytes = resealed;
@@ -102,7 +102,7 @@ fn ensure_user_bound_key_loaded(
             // First load failed, attempt reseal and retry
             let resealed_bytes = reseal_user_bound_key(
                 secured_encryption_key_bytes,
-                EnclaveSealingIdentityPolicy::SealToExactCode,
+                EnclaveSealingIdentityPolicy::EnclaveIdentity,
                 RUNTIME_POLICY_NO_DEBUG,
             )
             .map_err(|_| AbiError::Hresult(e.to_hresult()))?;
@@ -126,7 +126,7 @@ fn ensure_user_bound_key_loaded(
 
     // Create symmetric key from loaded raw key material
     let symmetric_key = SymmetricKeyHandle::from_bytes(&loaded_key_bytes)
-        .map_err(|e| AbiError::Hresult(e.to_hresult()))?;
+        .map_err(|_| AbiError::Hresult(-2147467259))?; // E_FAIL
     set_encryption_key(symmetric_key);
 
     Ok(())
@@ -162,7 +162,7 @@ impl Trusted for EnclaveImpl {
             &cache_config,
             U16Str::from_slice(&pinMessage.wchars),
             windowId,
-            EnclaveSealingIdentityPolicy::SealToExactCode,
+            EnclaveSealingIdentityPolicy::EnclaveIdentity,
             RUNTIME_POLICY_NO_DEBUG,
             keyCredentialCreationOption,
         )

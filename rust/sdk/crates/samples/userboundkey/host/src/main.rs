@@ -25,7 +25,7 @@ use windows::core::Interface;
 
 // Generated host stubs for enclave calls
 use userboundkey_sample_host_gen::implementation::types::edl::WString;
-use userboundkey_sample_host_gen::stubs::trusted::userboundkey_sampleWrapper;
+use userboundkey_sample_host_gen::stubs::trusted::UntrustedImpl;
 
 const KEY_NAME: &str = "MyEncryptionKey-001";
 const PIN_MESSAGE: &str = "User-Bound Key Sample";
@@ -92,7 +92,7 @@ fn get_secure_id_from_windows_hello() -> Result<Vec<u8>, Box<dyn std::error::Err
 /// Load the enclave DLL and return the wrapper interface
 fn load_enclave(
     enclave_path: &Path,
-) -> Result<(EnclaveHandle, userboundkey_sampleWrapper), Box<dyn std::error::Error>> {
+) -> Result<(EnclaveHandle, UntrustedImpl), Box<dyn std::error::Error>> {
     println!("Loading enclave from: {}", enclave_path.display());
 
     // Get the secure ID from Windows Hello - required for user-bound key operations
@@ -107,7 +107,7 @@ fn load_enclave(
         EnclaveHandle::create_and_initialize(enclave_path, megabytes(512), Some(&owner_id))?;
 
     // Create the wrapper interface for enclave calls
-    let wrapper = userboundkey_sampleWrapper::new(enclave.as_ptr());
+    let wrapper = UntrustedImpl::new(enclave.as_ptr());
 
     // Register the sample's VTL0 callbacks (for debug_print, etc.)
     wrapper

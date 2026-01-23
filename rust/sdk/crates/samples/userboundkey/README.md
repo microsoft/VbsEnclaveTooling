@@ -52,19 +52,30 @@ Test-Path "C:\Program Files (x86)\Windows Kits\10\Lib\10.0.26100.0\ucrt_enclave"
 Use the provided build script that generates EDL bindings, builds, and signs in one step:
 
 ```powershell
-cd C:\VbsEnclaveTooling\rust\sdk\crates\samples\userboundkey
+cd C:\VbsEnclaveTooling\rust\sdk
 
 # Build with your signing certificate
-.\build.ps1 -CertName "YourCertificateName"
+.\generate_and_build_crates.ps1 -CertName "YourCertificateName"
 
 # For release build
-.\build.ps1 -CertName "YourCertificateName" -Configuration Release
+.\generate_and_build_crates.ps1 -Configuration release -CertName "YourCertificateName"
 ```
 
 The script performs:
-1. **Generate EDL bindings** - Creates Rust bindings from the EDL file
-2. **Build** - Compiles both host and enclave
-3. **Sign** - Signs the enclave DLL with veiid.exe and signtool
+1. **Generate EDL bindings** - Creates Rust bindings from all EDL files (SDK + samples)
+2. **Build** - Compiles entire SDK workspace including samples
+3. **Sign** - Signs all enclave DLLs with veiid.exe and signtool
+
+### EDL Generation Only
+
+If you're working on EDL files and want fast intellisense updates without building:
+
+```powershell
+cd C:\VbsEnclaveTooling\rust\sdk
+
+# Generate EDL bindings only (fast)
+.\generate_codegen_for_workspace.ps1
+```
 
 ### Manual Build Commands
 
@@ -114,8 +125,8 @@ Get-CimInstance -ClassName Win32_DeviceGuard -Namespace root\Microsoft\Windows\D
 
 1. **Build the sample using the build script:**
    ```powershell
-   cd C:\VbsEnclaveTooling\rust\sdk\crates\samples\userboundkey
-   .\build.ps1 -CertName "YourCertificateName"
+   cd C:\VbsEnclaveTooling\rust\sdk
+   .\generate_and_build_crates.ps1 -CertName "YourCertificateName"
    ```
 
 2. **Run the sample:**
