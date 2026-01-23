@@ -1,0 +1,99 @@
+// Copyright (c) Microsoft Corporation.
+// Licensed under the MIT License.
+
+// EDL file for user-bound key operations between VTL0 (host) and VTL1 (enclave).
+// This defines the cross-VTL interface for Windows Hello VBS enclave integration.
+
+enclave
+{
+    // Configuration for credential caching behavior
+    struct keyCredentialCacheConfig
+    {
+        uint32_t cacheOption;
+        uint32_t cacheTimeoutInSeconds;
+        uint32_t cacheUsageCount;
+    };
+
+    // Result from VTL1 attestation report generation
+    struct attestationReportAndSessionInfo
+    {
+        vector<uint8_t> report;
+        uint64_t sessionInfo;
+    };
+
+    // Result from VTL0 credential establishment
+    struct credentialAndSessionInfo
+    {
+        uint64_t credential;
+        uint64_t sessionInfo;
+    };
+
+    // Trusted functions: Called from VTL0 into VTL1 (enclave)
+    trusted
+    {
+        // Generate an attestation report for the given challenge.
+        // This initializes a user-bound key session in VTL1.
+        attestationReportAndSessionInfo userboundkey_get_attestation_report(
+            vector<uint8_t> challenge
+        );
+
+        // Close a user-bound key session and release associated resources.
+        void userboundkey_close_session(
+            uint64_t sessionInfo
+        );
+    };
+
+    // Untrusted functions: Called from VTL1 into VTL0 (host)
+    untrusted
+    {
+        // Establish a session for creating a new Windows Hello key.
+        // Returns credential handle and session info on success.
+        credentialAndSessionInfo userboundkey_establish_session_for_create(
+            uint64_t enclave,
+            wstring keyName,
+            uint64_t ecdhProtocol,
+            wstring message,
+            uint64_t windowId,
+            keyCredentialCacheConfig cacheConfig,
+            uint32_t keyCredentialCreationOption
+        );
+
+        // Establish a session for loading an existing Windows Hello key.
+        // Returns credential handle and session info on success.
+        credentialAndSessionInfo userboundkey_establish_session_for_load(
+            uint64_t enclave,
+            wstring keyName,
+            wstring message,
+            uint64_t windowId
+        );
+
+        // Get authorization context from credential using encrypted KCM request.
+        // Returns the authorization context bytes.
+        vector<uint8_t> userboundkey_get_authorization_context_from_credential(
+            uint64_t credential,
+            vector<uint8_t> encryptedRequest,
+            wstring message,
+            uint64_t windowId
+        );
+
+        // Derive shared secret from credential using encrypted KCM request.
+        // Returns the encrypted shared secret bytes.
+        vector<uint8_t> userboundkey_get_secret_from_credential(
+            uint64_t credential,
+            vector<uint8_t> encryptedRequest,
+            wstring message,
+            uint64_t windowId
+        );
+
+        // Format a key name with current user's SID for Windows Hello.
+        // Returns the formatted key name wide string.
+        wstring userboundkey_format_key_name(
+            wstring keyName
+        );
+
+        // Delete/release a credential handle in VTL0.
+        void userboundkey_delete_credential(
+            uint64_t credential
+        );
+    };
+};

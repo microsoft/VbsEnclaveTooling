@@ -22,23 +22,37 @@ if (-not (Test-Path $sdkRegPath)) {
     throw "Windows SDK not found. Please install the latest Windows 11 SDK."
 }
 
-# Read the two important values
+# Read the installation folder
 $sdk = Get-ItemProperty -Path $sdkRegPath
-
 $installationFolder = $sdk.InstallationFolder
-$productVersion     = $sdk.ProductVersion
 
 Write-Host "`nAttempting to run veiid.exe and sign enclave DLL using certificate '$CertName'..."
 
-if (-not $installationFolder -or -not $productVersion) {
+if (-not $installationFolder) {
     throw "Incomplete Windows SDK installation. Please reinstall the latest Windows SDK."
 }
 
-# Build full SDK bin path
-$sdkBin = Join-Path $installationFolder "bin\$productVersion.0\x64"
+# Find an SDK version that has veiid.exe in its bin folder
+# List all version folders under bin and find one with veiid.exe
+$binRoot = Join-Path $installationFolder "bin"
+if (-not (Test-Path $binRoot)) {
+    throw "Windows SDK bin folder not found at: $binRoot. Please install the latest Windows SDK."
+}
 
-if (-not (Test-Path $sdkBin)) {
-    throw "Windows SDK bin folder not found at: $sdkBin. Please install (or repair) the latest Windows SDK."
+$sdkBin = $null
+$versionFolders = Get-ChildItem -Path $binRoot -Directory | Sort-Object Name -Descending
+foreach ($versionFolder in $versionFolders) {
+    $candidateBin = Join-Path $versionFolder.FullName "x64"
+    $candidateVeiid = Join-Path $candidateBin "veiid.exe"
+    if (Test-Path $candidateVeiid) {
+        $sdkBin = $candidateBin
+        Write-Host "Found SDK tools in: $sdkBin"
+        break
+    }
+}
+
+if (-not $sdkBin) {
+    throw "Could not find veiid.exe in any SDK version under $binRoot. Please install Windows SDK 10.0.26100.0 or higher."
 }
 
 # Compute tool paths
@@ -84,3 +98,6 @@ if ($LASTEXITCODE -ne 0) {
 } else {
     Write-Host "Enclave DLL signing completed with no warnings."
 }
+
+# Exit with success since signing completed (even with warnings)
+exit 0

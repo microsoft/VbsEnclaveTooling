@@ -13,7 +13,9 @@ param(
     [Parameter(Mandatory = $true)]
     [string]$Namespace = "",
 
-    [string]$Vtl0ClassName = ""
+    [string]$Vtl0ClassName = "",
+
+    [string]$ImportDirectories = ""
 )
 
 $ErrorActionPreference = "Stop"
@@ -27,7 +29,8 @@ $ErrorActionPreference = "Stop"
     --language rust `
     --EdlPath $EdlPath `
     --VirtualTrustLayer enclave `
-    --OutputDirectory $EnclaveOutDir
+    --OutputDirectory $EnclaveOutDir `
+    --ImportDirectories $ImportDirectories
 
 # Run codegen for the host crate
 & $edlCodeGenToolsPath `
@@ -36,4 +39,5 @@ $ErrorActionPreference = "Stop"
     --EdlPath $EdlPath `
     --VirtualTrustLayer hostapp `
     --Vtl0ClassName $Vtl0ClassName `
-    --OutputDirectory $HostAppOutDir
+    --OutputDirectory $HostAppOutDir `
+    --ImportDirectories $ImportDirectories

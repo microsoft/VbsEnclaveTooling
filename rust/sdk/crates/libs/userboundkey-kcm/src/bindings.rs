@@ -1492,6 +1492,46 @@ impl KeyCredential {
             .and_then(|| windows_core::Type::from_abi(result__))
         }
     }
+    pub fn RequestDeriveSharedSecretAsync<P2>(
+        &self,
+        windowid: WindowId,
+        message: &windows_core::HSTRING,
+        encryptedrequest: P2,
+    ) -> windows_core::Result<windows_future::IAsyncOperation<KeyCredentialOperationResult>>
+    where
+        P2: windows_core::Param<IBuffer>,
+    {
+        let this = &windows_core::Interface::cast::<IKeyCredential2>(self)?;
+        unsafe {
+            let mut result__ = core::mem::zeroed();
+            (windows_core::Interface::vtable(this).RequestDeriveSharedSecretAsync)(
+                windows_core::Interface::as_raw(this),
+                windowid,
+                core::mem::transmute_copy(message),
+                encryptedrequest.param().abi(),
+                &mut result__,
+            )
+            .and_then(|| windows_core::Type::from_abi(result__))
+        }
+    }
+    pub fn RetrieveAuthorizationContext<P0>(
+        &self,
+        encryptedrequest: P0,
+    ) -> windows_core::Result<IBuffer>
+    where
+        P0: windows_core::Param<IBuffer>,
+    {
+        let this = &windows_core::Interface::cast::<IKeyCredential2>(self)?;
+        unsafe {
+            let mut result__ = core::mem::zeroed();
+            (windows_core::Interface::vtable(this).RetrieveAuthorizationContext)(
+                windows_core::Interface::as_raw(this),
+                encryptedrequest.param().abi(),
+                &mut result__,
+            )
+            .and_then(|| windows_core::Type::from_abi(result__))
+        }
+    }
 }
 impl windows_core::RuntimeType for KeyCredential {
     const SIGNATURE: windows_core::imp::ConstBuffer =
@@ -1953,6 +1993,7 @@ impl KeyCredentialStatus {
     pub const UserPrefersPassword: Self = Self(4i32);
     pub const CredentialAlreadyExists: Self = Self(5i32);
     pub const SecurityDeviceLocked: Self = Self(6i32);
+    pub const AlgorithmNotSupported: Self = Self(7i32);
 }
 impl windows_core::TypeKind for KeyCredentialStatus {
     type TypeKind = windows_core::CopyType;

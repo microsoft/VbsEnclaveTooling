@@ -1,0 +1,19 @@
+[package]
+name = "userboundkey-sample-enclave"
+version = "0.1.0"
+edition = { workspace = true }
+
+[lib]
+# Make sure crate builds a dll and not a static lib
+crate-type = ["cdylib"]
+
+[build-dependencies]
+edlcodegen-tools = { workspace = true }
+
+[dependencies]
+# Generated code from userboundkey_sample.edl
+userboundkey_sample_enclave_gen = { path = "generated/userboundkey_sample_gen" }
+# The SDK provides the userboundkey implementation
+vbsenclave-sdk-enclave = { workspace = true }
+# For enclave configuration constants
+windows-enclave = { workspace = true }

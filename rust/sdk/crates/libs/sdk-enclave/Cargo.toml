@@ -4,7 +4,7 @@ version = "0.1.0"
 edition =  { workspace = true }
 
 [dependencies]
+sdk_enclave_gen = { path = "./generated/sdk_gen" }
 spin = { workspace = true }
-veil_abi_enclave_gen = { path = "./generated/veil_abi_gen" }
-windows-enclave = {workspace = true }
-
+widestring = { workspace = true }
+windows-enclave = { workspace = true }

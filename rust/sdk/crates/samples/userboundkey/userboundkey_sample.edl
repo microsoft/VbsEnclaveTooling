@@ -1,0 +1,66 @@
+// Copyright (c) Microsoft Corporation.
+// Licensed under the MIT License.
+
+// Sample EDL for user-bound key operations.
+// Note: This sample uses the SDK's userboundkey module which has its own
+// EDL callbacks. The SDK host registers those callbacks separately.
+
+enclave
+{
+    // Result from encrypt operation
+    struct EncryptResult
+    {
+        // Combined output: [tag_size(4 bytes)][tag][encrypted_data]
+        vector<uint8_t> combinedOutputData;
+        bool needsReseal;
+        vector<uint8_t> resealedEncryptionKeyBytes;
+    };
+
+    // Result from decrypt operation
+    struct DecryptResult
+    {
+        wstring decryptedData;
+        bool needsReseal;
+        vector<uint8_t> resealedEncryptionKeyBytes;
+    };
+
+    // Trusted functions: Called from host (VTL0) into enclave (VTL1)
+    trusted
+    {
+        // Create a new user-bound encryption key protected by Windows Hello.
+        // Returns the sealed key bytes that should be stored by the host.
+        vector<uint8_t> CreateUserBoundKey(
+            wstring helloKeyName,
+            wstring pinMessage,
+            uintptr_t windowId,
+            uint32_t keyCredentialCreationOption
+        );
+
+        // Load an existing user-bound key and encrypt data.
+        // Handles reseal if the key was sealed with an older enclave version.
+        EncryptResult LoadUserBoundKeyAndEncryptData(
+            wstring helloKeyName,
+            wstring pinMessage,
+            uintptr_t windowId,
+            vector<uint8_t> securedEncryptionKeyBytes,
+            wstring inputData
+        );
+
+        // Load an existing user-bound key and decrypt data.
+        // Handles reseal if the key was sealed with an older enclave version.
+        DecryptResult LoadUserBoundKeyAndDecryptData(
+            wstring helloKeyName,
+            wstring pinMessage,
+            uintptr_t windowId,
+            vector<uint8_t> securedEncryptionKeyBytes,
+            vector<uint8_t> combinedInputData
+        );
+    };
+
+    // Untrusted functions: Called from enclave (VTL1) to host (VTL0)
+    untrusted
+    {
+        // Debug print function - prints to console from enclave
+        void debug_print(string message);
+    };
+};

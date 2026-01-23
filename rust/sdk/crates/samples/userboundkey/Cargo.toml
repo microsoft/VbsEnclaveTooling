@@ -1,0 +1,34 @@
+# Workspace for the user-bound key sample (host and enclave)
+[workspace]
+resolver = "3"
+members = [
+    "host",
+    "host/generated/userboundkey_sample_gen",
+    "enclave",
+    "enclave/generated/userboundkey_sample_gen",
+]
+
+[workspace.package]
+edition = "2024"
+
+[workspace.dependencies]
+# SDK dependencies - use path for local development
+vbsenclave-sdk-enclave = { version = "0.1.0", path = "../../libs/sdk-enclave" }
+vbsenclave-sdk-host = { version = "0.1.0", path = "../../libs/sdk-host" }
+windows-enclave = { version = "0.1.0", path = "../../libs/windows-enclave" }
+
+# External dependencies
+edlcodegen-tools = { git = "https://github.com/microsoft/VbsEnclaveTooling" }
+spin = "0.10.0"
+widestring = { version = "1.1", default-features = false, features = ["alloc"] }
+windows = "0.62.2"
+windows-core = "0.62.2"
+
+# The enclave crate requires panic=abort (no_std cdylib).
+# This applies to the entire workspace, but the host is a simple CLI
+# so it doesn't critically need unwinding.
+[profile.dev]
+panic = "abort"
+
+[profile.release]
+panic = "abort"
