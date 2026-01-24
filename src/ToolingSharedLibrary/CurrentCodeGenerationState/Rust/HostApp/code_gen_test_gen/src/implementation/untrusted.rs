@@ -5,9 +5,10 @@
 #![allow(non_snake_case)]
 
 use crate::implementation::types::*;
+use widestring::{U16String, U16Str};
 
 pub trait Untrusted {
-    fn FuncWithAllArgs(arg1 : bool, arg2 : Option<&u32>, arg3 : Option<&mut i32>, arg4 : Option<&mut u64>, arg5 : &mut TestStruct1, arg6 : Option<&mut TestStruct2>, arg7 : &mut Vec<TestStruct2>, arg8 : &mut Vec<i16>, arg9 : &mut [widestring::U16String;2]) -> Result<i32, edlcodegen_host::AbiError>;
+    fn FuncWithAllArgs(arg1 : bool, arg2 : Option<&u32>, arg3 : Option<&mut i32>, arg4 : Option<&mut u64>, arg5 : &mut TestStruct1, arg6 : Option<&mut TestStruct2>, arg7 : &mut Vec<TestStruct2>, arg8 : &mut Vec<i16>, arg9 : &mut [U16String;2]) -> Result<i32, edlcodegen_host::AbiError>;
 
     crate::define_trait_callback_functions!();
 }

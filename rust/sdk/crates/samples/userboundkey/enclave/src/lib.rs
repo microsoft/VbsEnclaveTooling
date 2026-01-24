@@ -12,6 +12,7 @@ extern crate alloc;
 mod edl_impls;
 
 use core::panic::PanicInfo;
+#[allow(unused_imports)]
 use windows_enclave::vertdll::{
     IMAGE_ENCLAVE_FLAG_PRIMARY_IMAGE, IMAGE_ENCLAVE_MINIMUM_CONFIG_SIZE,
     IMAGE_ENCLAVE_POLICY_DEBUGGABLE, ImageEnclaveConfig,

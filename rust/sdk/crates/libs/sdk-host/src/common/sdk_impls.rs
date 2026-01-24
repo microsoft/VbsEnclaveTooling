@@ -8,13 +8,11 @@
 //! This pattern allows feature implementations to live in their own modules
 //! while the trait impl acts as a thin wrapper.
 
-use sdk_host_gen::AbiError;
-use sdk_host_gen::implementation::types::{
-    credentialAndSessionInfo, edl::WString, keyCredentialCacheConfig,
-};
-use sdk_host_gen::implementation::untrusted::Untrusted;
-
 use crate::userboundkey;
+use sdk_host_gen::AbiError;
+use sdk_host_gen::implementation::types::{credentialAndSessionInfo, keyCredentialCacheConfig};
+use sdk_host_gen::implementation::untrusted::Untrusted;
+use widestring::{U16Str, U16String};
 
 /// SDK host implementation of the Untrusted trait.
 ///
@@ -26,9 +24,9 @@ pub struct HostImpl;
 impl Untrusted for HostImpl {
     fn userboundkey_establish_session_for_create(
         enclave: u64,
-        keyName: &WString,
+        keyName: &U16Str,
         ecdhProtocol: u64,
-        message: &WString,
+        message: &U16Str,
         windowId: u64,
         cacheConfig: &keyCredentialCacheConfig,
         keyCredentialCreationOption: u32,
@@ -46,8 +44,8 @@ impl Untrusted for HostImpl {
 
     fn userboundkey_establish_session_for_load(
         enclave: u64,
-        keyName: &WString,
-        message: &WString,
+        keyName: &U16Str,
+        message: &U16Str,
         windowId: u64,
     ) -> Result<credentialAndSessionInfo, AbiError> {
         userboundkey::userboundkey_establish_session_for_load(enclave, keyName, message, windowId)
@@ -55,8 +53,8 @@ impl Untrusted for HostImpl {
 
     fn userboundkey_get_authorization_context_from_credential(
         credential: u64,
-        encryptedRequest: &Vec<u8>,
-        message: &WString,
+        encryptedRequest: &[u8],
+        message: &U16Str,
         windowId: u64,
     ) -> Result<Vec<u8>, AbiError> {
         userboundkey::userboundkey_get_authorization_context_from_credential(
@@ -69,8 +67,8 @@ impl Untrusted for HostImpl {
 
     fn userboundkey_get_secret_from_credential(
         credential: u64,
-        encryptedRequest: &Vec<u8>,
-        message: &WString,
+        encryptedRequest: &[u8],
+        message: &U16Str,
         windowId: u64,
     ) -> Result<Vec<u8>, AbiError> {
         userboundkey::userboundkey_get_secret_from_credential(
@@ -81,7 +79,7 @@ impl Untrusted for HostImpl {
         )
     }
 
-    fn userboundkey_format_key_name(keyName: &WString) -> Result<WString, AbiError> {
+    fn userboundkey_format_key_name(keyName: &U16Str) -> Result<U16String, AbiError> {
         userboundkey::userboundkey_format_key_name(keyName)
     }
 

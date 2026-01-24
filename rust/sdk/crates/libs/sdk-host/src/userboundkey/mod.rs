@@ -9,8 +9,7 @@
 use sdk_host_gen::AbiError;
 pub use sdk_host_gen::SdkHost;
 pub use sdk_host_gen::implementation::types::{
-    attestationReportAndSessionInfo, credentialAndSessionInfo, edl::WString,
-    keyCredentialCacheConfig,
+    attestationReportAndSessionInfo, credentialAndSessionInfo, keyCredentialCacheConfig,
 };
 
 use std::sync::{Arc, Mutex};
@@ -34,7 +33,7 @@ use userboundkey_kcm::{
     KeyCredentialCacheOption, KeyCredentialCreationOption, KeyCredentialManager,
     KeyCredentialStatus, TimeSpan, WindowId,
 };
-
+use widestring::{U16Str, U16String};
 /// RAII wrapper for session handle that calls back to VTL1 on cleanup
 struct UniqueSessionHandle {
     handle: usize,
@@ -219,8 +218,8 @@ fn sid_to_wide_string(sid: PSID) -> Result<Vec<u16>, AbiError> {
 }
 
 /// Helper to convert WString to HSTRING
-fn wstring_to_hstring(ws: &WString) -> HSTRING {
-    HSTRING::from_wide(&ws.wchars)
+fn wstring_to_hstring(ws: &U16Str) -> HSTRING {
+    HSTRING::from_wide(ws.as_slice())
 }
 
 /// Establish a session for creating a new Windows Hello key.
@@ -228,9 +227,9 @@ fn wstring_to_hstring(ws: &WString) -> HSTRING {
 #[allow(unused_variables)]
 pub fn userboundkey_establish_session_for_create(
     enclave: u64,
-    keyName: &WString,
+    keyName: &U16Str,
     ecdhProtocol: u64,
-    message: &WString,
+    message: &U16Str,
     windowId: u64,
     cacheConfig: &keyCredentialCacheConfig,
     keyCredentialCreationOption: u32,
@@ -333,8 +332,8 @@ pub fn userboundkey_establish_session_for_create(
 #[allow(unused_variables)]
 pub fn userboundkey_establish_session_for_load(
     enclave: u64,
-    keyName: &WString,
-    message: &WString,
+    keyName: &U16Str,
+    message: &U16Str,
     windowId: u64,
 ) -> Result<credentialAndSessionInfo, AbiError> {
     let _ = (message, windowId); // Mark as intentionally unused
@@ -394,8 +393,8 @@ pub fn userboundkey_establish_session_for_load(
 #[allow(clippy::ptr_arg)] // Signature must match EDL-generated trait
 pub fn userboundkey_get_authorization_context_from_credential(
     credential: u64,
-    encryptedRequest: &Vec<u8>,
-    message: &WString,
+    encryptedRequest: &[u8],
+    message: &U16Str,
     windowId: u64,
 ) -> Result<Vec<u8>, AbiError> {
     // Reconstruct KeyCredential from raw pointer
@@ -431,8 +430,8 @@ pub fn userboundkey_get_authorization_context_from_credential(
 #[allow(clippy::ptr_arg)] // Signature must match EDL-generated trait
 pub fn userboundkey_get_secret_from_credential(
     credential: u64,
-    encryptedRequest: &Vec<u8>,
-    message: &WString,
+    encryptedRequest: &[u8],
+    message: &U16Str,
     windowId: u64,
 ) -> Result<Vec<u8>, AbiError> {
     // Reconstruct KeyCredential from raw pointer
@@ -473,7 +472,7 @@ pub fn userboundkey_get_secret_from_credential(
 
 /// Format a key name with the current user's SID.
 #[allow(non_snake_case)]
-pub fn userboundkey_format_key_name(keyName: &WString) -> Result<WString, AbiError> {
+pub fn userboundkey_format_key_name(keyName: &U16Str) -> Result<U16String, AbiError> {
     unsafe {
         let mut process_token = HANDLE::default();
         OpenProcessToken(GetCurrentProcess(), TOKEN_QUERY, &mut process_token)
@@ -505,14 +504,14 @@ pub fn userboundkey_format_key_name(keyName: &WString) -> Result<WString, AbiErr
         // Build formatted key: {SID}//{SID}//{keyName}
         let slash_slash = widestring::u16str!("//");
         let mut result =
-            Vec::with_capacity(sid_wide.len() + 2 + sid_wide.len() + 2 + keyName.wchars.len());
+            Vec::with_capacity(sid_wide.len() + 2 + sid_wide.len() + 2 + keyName.len());
         result.extend_from_slice(&sid_wide);
         result.extend_from_slice(slash_slash.as_slice());
         result.extend_from_slice(&sid_wide);
         result.extend_from_slice(slash_slash.as_slice());
-        result.extend_from_slice(&keyName.wchars);
+        result.extend_from_slice(&keyName.as_slice());
 
-        Ok(WString { wchars: result })
+        Ok(U16String::from_vec(result))
     }
 }
 

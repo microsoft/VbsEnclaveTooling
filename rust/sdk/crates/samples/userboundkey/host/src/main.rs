@@ -24,7 +24,7 @@ use windows::Win32::UI::WindowsAndMessaging::GetForegroundWindow;
 use windows::core::Interface;
 
 // Generated host stubs for enclave calls
-use userboundkey_sample_host_gen::implementation::types::edl::WString;
+use userboundkey_sample_host_gen::U16String;
 use userboundkey_sample_host_gen::stubs::trusted::UntrustedImpl;
 
 const KEY_NAME: &str = "MyEncryptionKey-001";
@@ -64,12 +64,6 @@ fn print_menu(is_key_loaded: bool) {
     );
     print!("Enter your choice: ");
     io::stdout().flush().unwrap();
-}
-
-/// Create a WString from a Rust string (without null terminator - SDK adds it when needed)
-fn to_wstring(s: &str) -> WString {
-    let wchars: Vec<u16> = s.encode_utf16().collect();
-    WString { wchars }
 }
 
 /// Get secure ID from Windows Hello.
@@ -180,8 +174,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 println!("Window ID: 0x{:X}", window_id);
                 println!("Calling enclave... (Windows Hello prompt should appear)");
 
-                let key_name = to_wstring(KEY_NAME);
-                let pin_message = to_wstring(PIN_MESSAGE);
+                let key_name = U16String::from_str(KEY_NAME);
+                let pin_message = U16String::from_str(PIN_MESSAGE);
 
                 // KeyCredentialCreationOption::ReplaceExisting = 1
                 const REPLACE_EXISTING: u32 = 1;
@@ -250,9 +244,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                     continue;
                 }
 
-                let key_name = to_wstring(KEY_NAME);
-                let pin_message = to_wstring(PIN_MESSAGE);
-                let input_data = to_wstring(text.trim());
+                let key_name = U16String::from_str(KEY_NAME);
+                let pin_message = U16String::from_str(PIN_MESSAGE);
+                let input_data = U16String::from_str(text.trim());
 
                 match enclave.LoadUserBoundKeyAndEncryptData(
                     &key_name,
@@ -306,8 +300,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                     }
                 };
 
-                let key_name = to_wstring(KEY_NAME);
-                let pin_message = to_wstring(PIN_MESSAGE);
+                let key_name = U16String::from_str(KEY_NAME);
+                let pin_message = U16String::from_str(PIN_MESSAGE);
 
                 match enclave.LoadUserBoundKeyAndDecryptData(
                     &key_name,
@@ -327,13 +321,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                         }
 
                         // Convert WString to Rust String
-                        let decrypted_text: String = result
-                            .decryptedData
-                            .wchars
-                            .iter()
-                            .take_while(|&&c| c != 0)
-                            .map(|&c| char::from_u32(c as u32).unwrap_or('?'))
-                            .collect();
+                        let decrypted_text = result.decryptedData.to_string_lossy();
 
                         println!("Decrypted data: {}", decrypted_text);
                     }

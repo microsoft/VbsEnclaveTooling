@@ -14,3 +14,5 @@ pub use edlcodegen_enclave::{AbiError, return_hr_as_pvoid};
 pub use edlcodegen_enclave::enclave_helpers::{
     call_vtl1_export_from_vtl1, register_vtl0_callouts
 };
+#[allow(unused_imports)]
+pub use widestring::{U16String, U16Str};

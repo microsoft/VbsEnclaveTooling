@@ -43,7 +43,7 @@ namespace CodeGeneration::Rust
             case EdlTypeKind::String:
                 return (is_string_slice) ? "str" : "String";
             case EdlTypeKind::WString:
-                return (is_string_slice) ? "widestring::U16Str" : "widestring::U16String";
+                return (is_string_slice) ? "U16Str" : "U16String";
             default:
                 return info.m_name;
         }

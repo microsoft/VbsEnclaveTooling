@@ -8,6 +8,7 @@ use alloc::string::String;
 use alloc::vec::Vec;
 use alloc::boxed::Box;
 use crate::abi::fb_support::fb_types::code_gen_test::flatbuffer_types;
+use widestring::{U16String, U16Str};
 use edlcodegen_enclave::EdlDerive;
 
 pub const VALUE1: usize = 1;

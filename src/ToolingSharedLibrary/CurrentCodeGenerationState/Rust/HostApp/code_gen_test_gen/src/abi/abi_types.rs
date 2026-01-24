@@ -9,6 +9,7 @@ use crate::implementation::types::*;
 use crate::abi::fb_support::fb_types::code_gen_test::flatbuffer_types;
 use crate::abi::fb_support::fb_types::edl::WStringT;
 use edlcodegen_host::EdlDerive;
+use widestring::{U16String, U16Str};
 
 
 #[derive(Debug, Clone, PartialEq, Default, EdlDerive)]
@@ -26,7 +27,7 @@ pub struct FuncWithAllArgs_0_Args {
     pub m_arg6: Option<TestStruct2>,
     pub m_arg7: Vec<TestStruct2>,
     pub m_arg8: Vec<i16>,
-    pub m_arg9: [widestring::U16String;2],
+    pub m_arg9: [U16String;2],
     pub m__return_value_: i32,
 }
 
@@ -45,7 +46,7 @@ pub struct FuncWithAllArgs_1_Args {
     pub m_arg6: Option<TestStruct2>,
     pub m_arg7: Vec<TestStruct2>,
     pub m_arg8: Vec<i16>,
-    pub m_arg9: [widestring::U16String;2],
+    pub m_arg9: [U16String;2],
     pub m__return_value_: i32,
 }
 
@@ -58,26 +59,26 @@ pub struct AbiRegisterVtl0Callbacks_args
     pub m__return_value_: i32,
 }
 
-impl core::convert::From<widestring::U16String> for WStringT {
-    fn from(src: widestring::U16String) -> Self {
+impl core::convert::From<U16String> for WStringT {
+    fn from(src: U16String) -> Self {
         Self { wchars: src.clone().into_vec() }
     }
 }
 
-impl core::convert::From<WStringT> for widestring::U16String {
+impl core::convert::From<WStringT> for U16String {
     fn from(src: WStringT) -> Self {
-        widestring::U16String::from_vec(src.wchars)
+        U16String::from_vec(src.wchars)
     }
 }
 
-impl core::convert::From<widestring::U16String> for Box<WStringT> {
-    fn from(src: widestring::U16String) -> Self {
+impl core::convert::From<U16String> for Box<WStringT> {
+    fn from(src: U16String) -> Self {
         Box::new(WStringT{ wchars: src.clone().into_vec() })
     }
 }
 
-impl core::convert::From<Box<WStringT>> for widestring::U16String {
+impl core::convert::From<Box<WStringT>> for U16String {
     fn from(src: Box<WStringT>) -> Self {
-        widestring::U16String::from_vec(src.wchars)
+        U16String::from_vec(src.wchars)
     }
 }
