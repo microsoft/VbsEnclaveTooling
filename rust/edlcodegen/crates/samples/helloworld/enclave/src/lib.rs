@@ -4,10 +4,11 @@
 #![no_std]
 extern crate alloc;
 mod edl_impls;
-mod enclave_constants;
-use enclave_constants::*;
 use core::panic::{ PanicInfo};
 use tracelogging as tlg;
+use windows_enclave::vertdll::{
+    IMAGE_ENCLAVE_FLAG_PRIMARY_IMAGE, ImageEnclaveConfig, IMAGE_ENCLAVE_MINIMUM_CONFIG_SIZE
+};
 
 // Developer creates their own panic handler for no_std environments.
 // Note: The rust analyzer in VSCode shows red squiggly lines in the IDE.
@@ -24,10 +25,14 @@ fn panic(_panic: &PanicInfo<'_>) -> ! {
 // test_enclave_gen crate.
 test_enclave_gen::export_enclave_functions!(edl_impls::EnclaveImpl);
 
+// Export the SDK enclave functions using the macro from the
+// vbsenclave_sdk_enclave crate.
+vbsenclave_sdk_enclave::export_sdk_enclave_functions!();
+
 pub const ENCLAVE_CONFIG_POLICY_FLAGS: u32 = {
     // Enable debuggability of the enclave in debug builds.
     #[cfg(debug_assertions)]
-    { IMAGE_ENCLAVE_POLICY_DEBUGGABLE }
+    { windows_enclave::vertdll::IMAGE_ENCLAVE_POLICY_DEBUGGABLE }
 
     // Disable debuggability in release builds.
     #[cfg(not(debug_assertions))]
@@ -67,9 +72,6 @@ pub extern "system" fn DllMain(
     _instance: *const core::ffi::c_void,
     reason: u32,
     _reserved: *mut core::ffi::c_void,) -> bool {
-
-    // Export SDK enclave functions from dll.
-    vbsenclave_sdk_enclave::export_enclave_functions();
 
     // DLL_PROCESS_ATTACH
     if reason == 1 {

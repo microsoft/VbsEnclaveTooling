@@ -1,11 +1,10 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
+use sdk_host_gen::AbiError;
+use sdk_host_gen::SdkHost;
+use sdk_host_gen::implementation::types as codegen_types;
 use std::sync::{OnceLock, RwLock};
-use veil_abi_host_gen::AbiError;
-use veil_abi_host_gen::export_interface;
-use veil_abi_host_gen::implementation::types as codegen_types;
-use veil_abi_host_gen::implementation::untrusted::Untrusted;
 use windows::Win32::System::Diagnostics::Etw;
 
 #[repr(C)]
@@ -71,8 +70,8 @@ unsafe extern "system" fn etw_call_back(
     let context = unsafe { &*(callback_context as *const EtwProviderContext) };
 
     // At this point edlcodegen callback infrastructure is already registered. So, we can create
-    // the interface to call the etw passthrough callback.
-    let interface = export_interface::new(context.enclave as *mut core::ffi::c_void);
+    // the host interface to call the etw passthrough callback.
+    let host = SdkHost::new(context.enclave as *mut core::ffi::c_void);
 
     // Windows guid pointer comes from the Etw Framework. It is expected to be valid. We have to use unsafe because
     // we're dereferencing a raw pointer in rust.
@@ -100,7 +99,7 @@ unsafe extern "system" fn etw_call_back(
     }
 
     // send callback data back to enclave
-    let _ = interface.etw_callback_passthrough(
+    let _ = host.etw_callback_passthrough(
         &context.registration_id,
         &abi_source_guid,
         is_enabled.0,
@@ -111,139 +110,134 @@ unsafe extern "system" fn etw_call_back(
     );
 }
 
-pub struct HostImpl {}
+pub fn event_unregister(reg_handle: u64) -> Result<u32, AbiError> {
+    let result = unsafe { Etw::EventUnregister(Etw::REGHANDLE(reg_handle as i64)) };
+    Ok(result)
+}
 
-impl Untrusted for HostImpl {
-    fn event_unregister(reg_handle: u64) -> Result<u32, AbiError> {
-        let result = unsafe { Etw::EventUnregister(Etw::REGHANDLE(reg_handle as i64)) };
-        Ok(result)
-    }
+pub fn event_register(
+    provider_id: &codegen_types::Guid,
+    registration_id: &codegen_types::Guid,
+    enclave: u64,
+    reg_handle: &mut u64,
+) -> Result<u32, AbiError> {
+    let guid = abi_guid_to_winguid(provider_id);
+    let mut etw_context = etw_context_list()
+        .write()
+        .expect("Failed to acquire ETW context list write lock");
 
-    fn event_register(
-        provider_id: &codegen_types::Guid,
-        registration_id: &codegen_types::Guid,
-        enclave: u64,
-        reg_handle: &mut u64,
-    ) -> Result<u32, AbiError> {
-        let guid = abi_guid_to_winguid(provider_id);
+    etw_context.list.push(EtwProviderContext {
+        provider_id: provider_id.clone(),
+        registration_id: registration_id.clone(),
+        enclave,
+    });
 
-        let mut etw_context = etw_context_list()
-            .write()
-            .expect("Failed to acquire ETW context list write lock");
+    let context_entry = etw_context.list.last().unwrap();
+    let last_entry_pvoid = context_entry as *const _ as *const core::ffi::c_void;
 
-        etw_context.list.push(EtwProviderContext {
-            provider_id: provider_id.clone(),
-            registration_id: registration_id.clone(),
-            enclave,
+    let result = unsafe {
+        let mut handle = Etw::REGHANDLE(0);
+        let res_code = Etw::EventRegister(
+            &guid,
+            Some(etw_call_back),
+            Some(last_entry_pvoid),
+            &mut handle,
+        );
+
+        *reg_handle = handle.0 as u64;
+        res_code
+    };
+
+    Ok(result)
+}
+
+pub fn event_write_transfer(
+    reg_handle: u64,
+    descriptor: &codegen_types::EventDescriptor,
+    activity_id: &Option<codegen_types::Guid>,
+    related_id: &Option<codegen_types::Guid>,
+    user_data: &[codegen_types::EventDataDescriptor],
+) -> Result<u32, AbiError> {
+    let etw_descriptor = Etw::EVENT_DESCRIPTOR {
+        Id: descriptor.id,
+        Version: descriptor.version,
+        Channel: descriptor.channel,
+        Level: descriptor.level,
+        Opcode: descriptor.opcode,
+        Task: descriptor.task,
+        Keyword: descriptor.keyword,
+    };
+
+    let etw_activity_id = match activity_id {
+        Some(guid) => {
+            let win_guid = abi_guid_to_winguid(guid);
+            Some(&win_guid as *const windows::core::GUID)
+        }
+        None => None,
+    };
+
+    let etw_related_id = match related_id {
+        Some(guid) => {
+            let win_guid = abi_guid_to_winguid(guid);
+            Some(&win_guid as *const windows::core::GUID)
+        }
+        None => None,
+    };
+
+    let mut descriptors: Vec<Etw::EVENT_DATA_DESCRIPTOR> = Vec::with_capacity(user_data.len());
+    for desc in user_data.iter() {
+        descriptors.push(Etw::EVENT_DATA_DESCRIPTOR {
+            Ptr: desc.descriptor.as_ptr() as u64,
+            Size: desc.descriptor.len() as u32,
+            Anonymous: Etw::EVENT_DATA_DESCRIPTOR_0 {
+                Reserved: desc.reserved,
+            },
         });
-
-        let context_entry = etw_context.list.last().unwrap();
-        let last_entry_pvoid = context_entry as *const _ as *const core::ffi::c_void;
-
-        let result = unsafe {
-            let mut handle = Etw::REGHANDLE(0);
-            let res_code = Etw::EventRegister(
-                &guid,
-                Some(etw_call_back),
-                Some(last_entry_pvoid),
-                &mut handle,
-            );
-
-            *reg_handle = handle.0 as u64;
-            res_code
-        };
-
-        Ok(result)
     }
 
-    fn event_write_transfer(
-        reg_handle: u64,
-        descriptor: &codegen_types::EventDescriptor,
-        activity_id: &Option<codegen_types::Guid>,
-        related_id: &Option<codegen_types::Guid>,
-        user_data: &Vec<codegen_types::EventDataDescriptor>,
-    ) -> Result<u32, AbiError> {
-        let etw_descriptor = Etw::EVENT_DESCRIPTOR {
-            Id: descriptor.id,
-            Version: descriptor.version,
-            Channel: descriptor.channel,
-            Level: descriptor.level,
-            Opcode: descriptor.opcode,
-            Task: descriptor.task,
-            Keyword: descriptor.keyword,
-        };
-
-        let etw_activity_id = match activity_id {
-            Some(guid) => {
-                let win_guid = abi_guid_to_winguid(guid);
-                Some(&win_guid as *const windows::core::GUID)
-            }
-            None => None,
-        };
-
-        let etw_related_id = match related_id {
-            Some(guid) => {
-                let win_guid = abi_guid_to_winguid(guid);
-                Some(&win_guid as *const windows::core::GUID)
-            }
-            None => None,
-        };
-
-        let mut descriptors: Vec<Etw::EVENT_DATA_DESCRIPTOR> = Vec::with_capacity(user_data.len());
-        for desc in user_data.iter() {
-            descriptors.push(Etw::EVENT_DATA_DESCRIPTOR {
-                Ptr: desc.descriptor.as_ptr() as u64,
-                Size: desc.descriptor.len() as u32,
-                Anonymous: Etw::EVENT_DATA_DESCRIPTOR_0 {
-                    Reserved: desc.reserved,
-                },
-            });
-        }
-
-        let mut op_descriptor: Option<&[Etw::EVENT_DATA_DESCRIPTOR]> = None;
-        if !descriptors.is_empty() {
-            op_descriptor = Some(descriptors.as_slice());
-        }
-
-        let result = unsafe {
-            Etw::EventWriteTransfer(
-                Etw::REGHANDLE(reg_handle as i64),
-                &etw_descriptor,
-                etw_activity_id,
-                etw_related_id,
-                op_descriptor,
-            )
-        };
-
-        Ok(result)
+    let mut op_descriptor: Option<&[Etw::EVENT_DATA_DESCRIPTOR]> = None;
+    if !descriptors.is_empty() {
+        op_descriptor = Some(descriptors.as_slice());
     }
 
-    fn event_set_information(
-        reg_handle: u64,
-        information_class: u32,
-        information: &Vec<u8>,
-    ) -> Result<u32, AbiError> {
-        let info_class = Etw::EVENT_INFO_CLASS(information_class as i32);
-        let result = unsafe {
-            Etw::EventSetInformation(
-                Etw::REGHANDLE(reg_handle as i64),
-                info_class,
-                information.as_ptr() as *const core::ffi::c_void,
-                information.len() as u32,
-            )
-        };
+    let result = unsafe {
+        Etw::EventWriteTransfer(
+            Etw::REGHANDLE(reg_handle as i64),
+            &etw_descriptor,
+            etw_activity_id,
+            etw_related_id,
+            op_descriptor,
+        )
+    };
 
-        Ok(result)
-    }
+    Ok(result)
+}
 
-    fn event_activity_id_control(
-        control_code: u32,
-        activity_id: &mut codegen_types::Guid,
-    ) -> Result<u32, AbiError> {
-        let mut win_guid = abi_guid_to_winguid(activity_id);
-        let result = unsafe { Etw::EventActivityIdControl(control_code, &mut win_guid) };
+pub fn event_set_information(
+    reg_handle: u64,
+    information_class: u32,
+    information: &[u8],
+) -> Result<u32, AbiError> {
+    let info_class = Etw::EVENT_INFO_CLASS(information_class as i32);
+    let result = unsafe {
+        Etw::EventSetInformation(
+            Etw::REGHANDLE(reg_handle as i64),
+            info_class,
+            information.as_ptr() as *const core::ffi::c_void,
+            information.len() as u32,
+        )
+    };
 
-        *activity_id = winguid_to_abi_guid(&win_guid);
-        Ok(result)
-    }
+    Ok(result)
+}
+
+pub fn event_activity_id_control(
+    control_code: u32,
+    activity_id: &mut codegen_types::Guid,
+) -> Result<u32, AbiError> {
+    let mut win_guid = abi_guid_to_winguid(activity_id);
+    let result = unsafe { Etw::EventActivityIdControl(control_code, &mut win_guid) };
+
+    *activity_id = winguid_to_abi_guid(&win_guid);
+    Ok(result)
 }

@@ -1,16 +1,14 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
+use crate::common;
 use alloc::{collections::BTreeMap, vec::Vec};
 use core::marker::PhantomData;
-use core::mem;
+use sdk_enclave_gen::AbiError;
+use sdk_enclave_gen::implementation::types as edl_types;
+use sdk_enclave_gen::stubs::untrusted::{self};
 use spin::{Once, RwLock};
 use tracelogging::{Channel, Level, Opcode, Provider};
-use veil_abi_enclave_gen::AbiError;
-use veil_abi_enclave_gen::implementation::trusted::Trusted;
-use veil_abi_enclave_gen::implementation::types as edl_types;
-use veil_abi_enclave_gen::stubs::untrusted::{self};
-use windows_enclave::vertdll;
 
 /// Information about a registered ETW provider.
 /// The registration_id is generated during registration
@@ -38,7 +36,7 @@ fn etw_providers() -> &'static RwLock<Vec<&'static Provider>> {
     ETW_PROVIDERS.call_once(|| RwLock::new(Vec::new()))
 }
 
-fn register_providers() {
+pub fn register_providers() {
     static REGISTER_PROVIDERS_ONCE: Once<()> = Once::new();
     REGISTER_PROVIDERS_ONCE.call_once(|| {
         for &provider in etw_providers().read().iter() {
@@ -49,14 +47,12 @@ fn register_providers() {
     });
 }
 
-/// Public function to be called by developer at dll load time.
 /// Adds a single ETW provider to be registered later.
 /// The provider must have been create using the `tracelogging` crate.
 pub fn add_provider(provider: &'static Provider) {
     etw_providers().write().push(provider);
 }
 
-/// Public function to be called by developer at dll load time.
 /// Adds multiple ETW providers to be registered later.
 /// The provider must have been create using the `tracelogging` crate.
 pub fn add_providers(providers: &[&'static Provider]) {
@@ -66,7 +62,6 @@ pub fn add_providers(providers: &[&'static Provider]) {
     }
 }
 
-/// Public function to be called by developer at dll unload time.
 /// Unregisters all ETW providers added via `add_provider` or `add_providers`.
 pub fn unregister_providers() {
     for provider in etw_providers().read().iter() {
@@ -123,7 +118,6 @@ fn result_from_abi(result: Result<u32, AbiError>) -> u32 {
             AbiError::Win32Error(code) => code,
             // Can't convert HRESULT to Win32 error code directly,
             // return a generic error code.
-            // TODO: improve this mapping if needed.
             AbiError::Hresult(_) => 0x0000054F_u32, //ERROR_INTERNAL_ERROR
         }
     }
@@ -178,18 +172,14 @@ unsafe extern "system" fn EtwRegister(
         map.table.insert(registration_id, info);
     }
 
-    let mut enclave_info = vertdll::ENCLAVE_INFORMATION::default();
-
-    let hr = unsafe {
-        vertdll::EnclaveGetEnclaveInformation(
-            mem::size_of::<vertdll::ENCLAVE_INFORMATION>() as u32,
-            &mut enclave_info,
-        )
+    let enclave_info = match common::get_enclave_information() {
+        Ok(info) => info,
+        Err(_) => {
+            // There is no accurate NTSTATUS mapping for HRESULT errors,
+            // so return a generic error code.
+            return 0x0000054F_u32; //ERROR_INTERNAL_ERROR
+        }
     };
-
-    if hr != 0 {
-        return 0x0000054F_u32; // ERROR_INTERNAL_ERROR
-    }
 
     let result = untrusted::event_register(
         &uuid_to_abi(&uuid_prov_id),
@@ -307,62 +297,48 @@ unsafe extern "system" fn EtwActivityIdControl(
     result_from_abi(result)
 }
 
-pub struct EnclaveImpl {}
+pub fn etw_callback_passthrough(
+    registration_id: &edl_types::Guid,
+    source_id: &edl_types::Guid,
+    event_control_code: u32,
+    level: u8,
+    match_any_keyword: u64,
+    match_all_keyword: u64,
+    filter_data: &edl_types::EventFilterDescriptor,
+) -> Result<(), AbiError> {
+    let reg_id = uuid::Uuid::from_fields(
+        registration_id.data1,
+        registration_id.data2,
+        registration_id.data3,
+        &registration_id.data4,
+    );
 
-impl Trusted for EnclaveImpl {
-    fn etw_callback_passthrough(
-        registration_id: &edl_types::Guid,
-        source_id: &edl_types::Guid,
-        event_control_code: u32,
-        level: u8,
-        match_any_keyword: u64,
-        match_all_keyword: u64,
-        filter_data: &edl_types::EventFilterDescriptor,
-    ) -> Result<(), AbiError> {
-        let reg_id = uuid::Uuid::from_fields(
-            registration_id.data1,
-            registration_id.data2,
-            registration_id.data3,
-            &registration_id.data4,
-        );
+    let map = etw_registration_map().read();
+    let info: &EtwProviderInfo = map
+        .table
+        .get(&reg_id)
+        .ok_or(AbiError::Win32Error(0x00000490))?; // ERROR_NOT_FOUND
 
-        let map = etw_registration_map().read();
-        let info: &EtwProviderInfo = map
-            .table
-            .get(&reg_id)
-            .ok_or(AbiError::Win32Error(0x00000490))?; // ERROR_NOT_FOUND
+    let filter_data = EventFilterDescriptor {
+        ptr: filter_data.descriptor.as_ptr() as u64,
+        size: filter_data.descriptor.len() as u32,
+        Type: filter_data.type_data,
+        lifetime: PhantomData,
+    };
 
-        let filter_data = EventFilterDescriptor {
-            ptr: filter_data.descriptor.as_ptr() as u64,
-            size: filter_data.descriptor.len() as u32,
-            Type: filter_data.type_data,
-            lifetime: PhantomData,
-        };
+    // Call the etw frameworks original callback function that was passed during registration.
+    // this will then call the developers callback they passed to provider.register_with_callback().
+    // See: https://github.com/microsoft/tracelogging/blob/rust1.2.4/etw/rust/tracelogging/src/provider.rs#L217
+    // The etw frameworks callback is guaranteed to be valid since it was passed during registration.
+    (info.callback)(
+        source_id,
+        event_control_code,
+        level.into(),
+        match_any_keyword,
+        match_all_keyword,
+        &filter_data as *const EventFilterDescriptor as usize,
+        info.callback_context,
+    );
 
-        // Call the etw frameworks original callback function that was passed during registration.
-        // this will then call the developers callback they passed to provider.register_with_callback().
-        // See: https://github.com/microsoft/tracelogging/blob/rust1.2.4/etw/rust/tracelogging/src/provider.rs#L217
-        // The etw frameworks callback is guaranteed to be valid since it was passed during registration.
-        (info.callback)(
-            source_id,
-            event_control_code,
-            level.into(),
-            match_any_keyword,
-            match_all_keyword,
-            &filter_data as *const EventFilterDescriptor as usize,
-            info.callback_context,
-        );
-
-        Ok(())
-    }
-
-    fn register_etw_providers() -> Result<(), AbiError> {
-        register_providers();
-        Ok(())
-    }
-
-    fn unregister_etw_providers() -> Result<(), AbiError> {
-        unregister_providers();
-        Ok(())
-    }
+    Ok(())
 }

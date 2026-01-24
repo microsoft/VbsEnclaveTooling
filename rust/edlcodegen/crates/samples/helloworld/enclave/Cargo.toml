@@ -15,3 +15,4 @@ edlcodegen-tools = { workspace = true }
 test_enclave_gen = {path = "generated/test_gen" }
 tracelogging = { workspace = true, features = ["macros", "etw", "kernel_mode"]}
 vbsenclave-sdk-enclave = { workspace = true }
+windows-enclave  = { workspace = true }

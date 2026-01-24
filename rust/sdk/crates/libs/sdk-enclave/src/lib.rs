@@ -4,18 +4,16 @@
 #![no_std]
 #![allow(dead_code)]
 #![allow(non_snake_case)]
-
-mod enclave_ffi;
+extern crate alloc;
 
 pub mod common;
+pub mod etw;
 pub mod userboundkey;
 
-// Re-export the SDK generated enclave crate.
-// This is used internally by the export_sdk_enclave_functions! macro.
-pub use sdk_enclave_gen;
-
-// Re-export Uuid from the uuid crate for use in enclave code.
-pub use uuid::Uuid;
+// Re-export generated SDK enclave's export macro
+// and println stub for use in this crate's macros.
+pub use sdk_enclave_gen::export_enclave_functions;
+pub use sdk_enclave_gen::stubs::untrusted::println;
 
 /// Export all SDK enclave functions.
 ///
@@ -38,9 +36,22 @@ macro_rules! export_sdk_enclave_functions {
         // Export SDK enclave functions in a private module
         // to avoid naming conflicts with the application's own exports
         mod __sdk_exports {
-            $crate::sdk_enclave_gen::export_enclave_functions!($crate::common::EnclaveImpl);
+            $crate::export_enclave_functions!($crate::common::EnclaveImpl);
         }
-
-        // Future SDK features will be added here as additional modules
     };
+}
+
+/// Print formatted output from the enclave to the host's standard output.
+/// This macro works like `format!` and appends a newline.
+/// # Example
+/// ```rust,ignore
+/// use vbsenclave_sdk_enclave::enclave_println;
+/// enclave_println!("Hello from the enclave: {}", 42);
+/// ```
+#[macro_export]
+macro_rules! enclave_println {
+    ($($arg:tt)*) => {{
+        let mut s = alloc::format!($($arg)*);
+        let _ = $crate::println(&s);
+    }};
 }

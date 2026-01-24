@@ -21,6 +21,7 @@ features = [
 sdk_host_gen = { path = "./generated/sdk_gen" }
 spin = { workspace = true }
 userboundkey-kcm = { workspace = true }
+uuid = {version = "1.19.0", default-features = false }
 widestring = { workspace = true }
 windows-core = { workspace = true }
 windows-future = { workspace = true }

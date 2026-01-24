@@ -6,7 +6,8 @@ edition =  { workspace = true }
 [dependencies]
 sdk_enclave_gen = { path = "./generated/sdk_gen" }
 spin = { workspace = true }
-veil_abi_enclave_gen = { path = "./generated/veil_abi_gen" }
+tracelogging = { workspace = true, features = ["etw", "kernel_mode"] }
+uuid = { workspace = true, default-features = false, features = [ "v4"] }
 widestring = { workspace = true }
 windows-enclave = {workspace = true }
 
