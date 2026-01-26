@@ -509,7 +509,7 @@ pub fn userboundkey_format_key_name(keyName: &U16Str) -> Result<U16String, AbiEr
         result.extend_from_slice(slash_slash.as_slice());
         result.extend_from_slice(&sid_wide);
         result.extend_from_slice(slash_slash.as_slice());
-        result.extend_from_slice(&keyName.as_slice());
+        result.extend_from_slice(keyName.as_slice());
 
         Ok(U16String::from_vec(result))
     }
