@@ -19,14 +19,16 @@ $errorActionPreference = "Stop"
 # SDK crate paths
 $enclaveSdkCrate = Join-Path $SdkWorkspacePath "crates/libs/sdk-enclave"
 $hostSdkCrate    = Join-Path $SdkWorkspacePath "crates/libs/sdk-host"
+$sdkImportDir = Join-Path $SdkWorkspacePath "crates/libs/edl/sdk"
 
 # Generate SDK EDL bindings (user-bound key APIs and other SDK features)
-$sdkEdl = Join-Path $SdkWorkspacePath "crates\libs\sdk.edl"
+$sdkEdl = Join-Path $sdkImportDir "sdk.edl"
 . "$scriptsDir\generate_codegen_crates.ps1" `
     -HostAppOutDir "$hostSdkCrate\generated" `
     -EnclaveOutDir "$enclaveSdkCrate\generated" `
     -EdlPath $sdkEdl `
     -Namespace "sdk" `
+    -ImportDirectories $sdkImportDir `
     -Vtl0ClassName "SdkHost"
 
 # Generate sample EDL bindings (userboundkey sample application interface)
@@ -39,7 +41,6 @@ $libsImportDir = Join-Path $SdkWorkspacePath "crates\libs"
     -EnclaveOutDir "$sampleDir\enclave\generated" `
     -EdlPath $sampleEdl `
     -Namespace "userboundkey_sample" `
-    -ImportDir $libsImportDir `
     -Vtl0ClassName "UntrustedImpl"
 
 # Format SDK workspace

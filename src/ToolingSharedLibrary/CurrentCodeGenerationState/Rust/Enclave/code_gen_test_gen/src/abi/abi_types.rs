@@ -13,6 +13,7 @@ use crate::abi::fb_support::fb_types::edl::WStringT;
 use edlcodegen_enclave::EdlDerive;
 
 
+#[repr(C)]
 #[derive(Debug, Clone, PartialEq, Default, EdlDerive)]
 #[target_struct(flatbuffer_types::FuncWithAllArgs_0_ArgsT)]
 pub struct FuncWithAllArgs_0_Args {
@@ -32,6 +33,7 @@ pub struct FuncWithAllArgs_0_Args {
     pub m__return_value_: i32,
 }
 
+#[repr(C)]
 #[derive(Debug, Clone, PartialEq, Default, EdlDerive)]
 #[target_struct(flatbuffer_types::FuncWithAllArgs_1_ArgsT)]
 pub struct FuncWithAllArgs_1_Args {

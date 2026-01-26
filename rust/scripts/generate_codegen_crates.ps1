@@ -32,6 +32,11 @@ $ErrorActionPreference = "Stop"
     --OutputDirectory $EnclaveOutDir `
     --ImportDirectories $ImportDirectories
 
+if ($LASTEXITCODE -ne 0) {
+    # The exe prints out the error code and text on failure.
+    throw "EdlCodegen failed to generate the enclave crate"
+}
+
 # Run codegen for the host crate
 & $edlCodeGenToolsPath `
     --namespace $Namespace `
@@ -41,3 +46,8 @@ $ErrorActionPreference = "Stop"
     --Vtl0ClassName $Vtl0ClassName `
     --OutputDirectory $HostAppOutDir `
     --ImportDirectories $ImportDirectories
+
+if ($LASTEXITCODE -ne 0) {
+    # The exe prints out the error code and text on failure.
+    throw "EdlCodegen failed to generate the host crate"
+}
