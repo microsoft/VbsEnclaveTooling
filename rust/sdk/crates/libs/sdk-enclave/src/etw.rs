@@ -181,14 +181,20 @@ unsafe extern "system" fn EtwRegister(
         }
     };
 
-    let result = untrusted::event_register(
+    let abi_result = untrusted::event_register(
         &uuid_to_abi(&uuid_prov_id),
         &uuid_to_abi(&registration_id),
         enclave_info.BaseAddress as u64, // So the host can identify the enclave
         reg_handle,
     );
 
-    result_from_abi(result)
+    let result = result_from_abi(abi_result);
+    if result != 0 {
+        let mut map = etw_registration_map().write();
+        map.table.remove(&registration_id);
+    }
+
+    result
 }
 
 /// Implementation of declared ETW SetInformation function called by the ETW framework.

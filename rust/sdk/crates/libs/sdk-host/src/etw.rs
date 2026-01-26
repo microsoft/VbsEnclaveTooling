@@ -16,7 +16,9 @@ pub struct EtwProviderContext {
 
 #[derive(Default)]
 pub struct EtwContextList {
-    list: Vec<EtwProviderContext>,
+    #[allow(clippy::vec_box)]
+    /// Each entry is boxed to guarantee a stable address for ETW callbacks.
+    list: Vec<Box<EtwProviderContext>>,
 }
 
 static ETW_CONTEXT_LIST: OnceLock<RwLock<EtwContextList>> = OnceLock::new();
@@ -36,6 +38,11 @@ fn winguid_to_abi_guid(guid: &windows::core::GUID) -> codegen_types::Guid {
 
 fn abi_guid_to_winguid(guid: &codegen_types::Guid) -> windows::core::GUID {
     windows::core::GUID::from_values(guid.data1, guid.data2, guid.data3, guid.data4)
+}
+
+fn opt_abi_guid_to_opt_winguid(guid: &Option<codegen_types::Guid>) -> Option<windows::core::GUID> {
+    guid.as_ref()
+        .map(|g| windows::core::GUID::from_values(g.data1, g.data2, g.data3, g.data4))
 }
 
 // This is the callback function that will be called by the ETW framework when
@@ -126,23 +133,19 @@ pub fn event_register(
         .write()
         .expect("Failed to acquire ETW context list write lock");
 
-    etw_context.list.push(EtwProviderContext {
+    let boxed_context = Box::new(EtwProviderContext {
         provider_id: provider_id.clone(),
         registration_id: registration_id.clone(),
         enclave,
     });
 
-    let context_entry = etw_context.list.last().unwrap();
-    let last_entry_pvoid = context_entry as *const _ as *const core::ffi::c_void;
+    let context_ptr = Box::as_ref(&boxed_context) as *const _ as *const core::ffi::c_void;
+    etw_context.list.push(boxed_context);
 
     let result = unsafe {
         let mut handle = Etw::REGHANDLE(0);
-        let res_code = Etw::EventRegister(
-            &guid,
-            Some(etw_call_back),
-            Some(last_entry_pvoid),
-            &mut handle,
-        );
+        let res_code =
+            Etw::EventRegister(&guid, Some(etw_call_back), Some(context_ptr), &mut handle);
 
         *reg_handle = handle.0 as u64;
         res_code
@@ -168,22 +171,6 @@ pub fn event_write_transfer(
         Keyword: descriptor.keyword,
     };
 
-    let etw_activity_id = match activity_id {
-        Some(guid) => {
-            let win_guid = abi_guid_to_winguid(guid);
-            Some(&win_guid as *const windows::core::GUID)
-        }
-        None => None,
-    };
-
-    let etw_related_id = match related_id {
-        Some(guid) => {
-            let win_guid = abi_guid_to_winguid(guid);
-            Some(&win_guid as *const windows::core::GUID)
-        }
-        None => None,
-    };
-
     let mut descriptors: Vec<Etw::EVENT_DATA_DESCRIPTOR> = Vec::with_capacity(user_data.len());
     for desc in user_data.iter() {
         descriptors.push(Etw::EVENT_DATA_DESCRIPTOR {
@@ -200,12 +187,18 @@ pub fn event_write_transfer(
         op_descriptor = Some(descriptors.as_slice());
     }
 
+    let win_activity_id = opt_abi_guid_to_opt_winguid(activity_id);
+    let win_activity_id_ptr = win_activity_id.as_ref().map(|g| g as *const _);
+
+    let win_related_id = opt_abi_guid_to_opt_winguid(related_id);
+    let win_related_id_ptr = win_related_id.as_ref().map(|g| g as *const _);
+
     let result = unsafe {
         Etw::EventWriteTransfer(
             Etw::REGHANDLE(reg_handle as i64),
             &etw_descriptor,
-            etw_activity_id,
-            etw_related_id,
+            win_activity_id_ptr,
+            win_related_id_ptr,
             op_descriptor,
         )
     };

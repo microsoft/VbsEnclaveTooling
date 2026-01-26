@@ -5,7 +5,14 @@ inside VBS Enclaves. When providers are registered with the SDK, it manages
 provider registration and deregistration, and transparently forwards ETW calls between the
 enclave and the host. No additional integration steps are required.
 
-## Enclave Usage
+> [!Note]
+> This document explains how to enable TraceLogging within enclaves.
+> Using `TraceLogging` on the host is straightforward: add the `tracelogging` crate
+> as a dependency and follow the public example and documentation
+> [here](https://docs.rs/tracelogging/1.2.4/tracelogging/#example).
+> No dependency on any of our crates is required for host-side TraceLogging.
+
+## Inside your Enclave
 
 ### 1. Add dependencies
 
@@ -56,7 +63,7 @@ pub extern "system" fn DllMain(instance: *const c_void, reason: u32, reserved: *
 }
 ```
 
-## Host Usage
+## Inside your Host
 
 ### 1. Add dependencies
 
@@ -97,3 +104,9 @@ vbsenclave_sdk_host::unregister_etw_providers(enclave)?;
 
 The HelloWorld sample [here](https://github.com/microsoft/VbsEnclaveTooling/tree/main/rust/edlcodegen/crates/samples/helloworld)
 demonstrates this usage.
+
+## Viewing trace events
+Developers can collect trace events using the [TraceView](https://learn.microsoft.com/en-us/windows-hardware/drivers/devtest/traceview) graphical user
+interface or by using the [Tracelog](https://learn.microsoft.com/en-us/windows-hardware/drivers/devtest/tracelog) command-line
+interface. Both applications can be found in the latest
+release of the [Windows SDK](https://learn.microsoft.com/en-us/windows/apps/windows-sdk/downloads).
