@@ -215,8 +215,7 @@ unsafe extern "system" fn EtwSetInformation(
     let info_slice =
         unsafe { core::slice::from_raw_parts(information, information_length as usize) };
 
-    let result =
-        untrusted::event_set_information(reg_handle, information_class, &info_slice.to_vec());
+    let result = untrusted::event_set_information(reg_handle, information_class, info_slice);
 
     result_from_abi(result)
 }
@@ -284,8 +283,8 @@ unsafe extern "system" fn EtwWriteTransfer(
     let result = untrusted::event_write_transfer(
         reg_handle,
         &abi_descriptor,
-        &activity_guid,
-        &related_guid,
+        activity_guid.as_ref(),
+        related_guid.as_ref(),
         &abi_data.to_vec(),
     );
 

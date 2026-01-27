@@ -40,9 +40,8 @@ fn abi_guid_to_winguid(guid: &codegen_types::Guid) -> windows::core::GUID {
     windows::core::GUID::from_values(guid.data1, guid.data2, guid.data3, guid.data4)
 }
 
-fn opt_abi_guid_to_opt_winguid(guid: &Option<codegen_types::Guid>) -> Option<windows::core::GUID> {
-    guid.as_ref()
-        .map(|g| windows::core::GUID::from_values(g.data1, g.data2, g.data3, g.data4))
+fn opt_abi_guid_to_opt_winguid(guid: Option<&codegen_types::Guid>) -> Option<windows::core::GUID> {
+    guid.map(|g| windows::core::GUID::from_values(g.data1, g.data2, g.data3, g.data4))
 }
 
 // This is the callback function that will be called by the ETW framework when
@@ -157,8 +156,8 @@ pub fn event_register(
 pub fn event_write_transfer(
     reg_handle: u64,
     descriptor: &codegen_types::EventDescriptor,
-    activity_id: &Option<codegen_types::Guid>,
-    related_id: &Option<codegen_types::Guid>,
+    activity_id: Option<&codegen_types::Guid>,
+    related_id: Option<&codegen_types::Guid>,
     user_data: &[codegen_types::EventDataDescriptor],
 ) -> Result<u32, AbiError> {
     let etw_descriptor = Etw::EVENT_DESCRIPTOR {

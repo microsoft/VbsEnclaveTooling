@@ -8,15 +8,14 @@
 //! This pattern allows feature implementations to live in their own modules
 //! while the trait impl acts as a thin wrapper.
 
-use sdk_host_gen::AbiError;
-use sdk_host_gen::implementation::types::{
-    EventDataDescriptor, EventDescriptor, Guid, credentialAndSessionInfo, edl::WString,
-    keyCredentialCacheConfig,
-};
-use sdk_host_gen::implementation::untrusted::Untrusted;
-
 use crate::etw;
 use crate::userboundkey;
+use sdk_host_gen::AbiError;
+use sdk_host_gen::implementation::types::{
+    EventDataDescriptor, EventDescriptor, Guid, credentialAndSessionInfo, keyCredentialCacheConfig,
+};
+use sdk_host_gen::implementation::untrusted::Untrusted;
+use widestring::{U16Str, U16String};
 
 /// SDK host implementation of the Untrusted trait.
 ///
@@ -107,9 +106,9 @@ impl Untrusted for HostImpl {
     fn event_write_transfer(
         reg_handle: u64,
         descriptor: &EventDescriptor,
-        activity_id: &Option<Guid>,
-        related_id: &Option<Guid>,
-        user_data: &Vec<EventDataDescriptor>,
+        activity_id: Option<&Guid>,
+        related_id: Option<&Guid>,
+        user_data: &[EventDataDescriptor],
     ) -> Result<u32, AbiError> {
         etw::event_write_transfer(reg_handle, descriptor, activity_id, related_id, user_data)
     }
@@ -117,7 +116,7 @@ impl Untrusted for HostImpl {
     fn event_set_information(
         reg_handle: u64,
         information_class: u32,
-        information: &Vec<u8>,
+        information: &[u8],
     ) -> Result<u32, AbiError> {
         etw::event_set_information(reg_handle, information_class, information)
     }
@@ -129,7 +128,7 @@ impl Untrusted for HostImpl {
         etw::event_activity_id_control(control_code, activity_id)
     }
 
-    fn println(msg: &String) -> Result<(), AbiError> {
+    fn println(msg: &str) -> Result<(), AbiError> {
         super::enclave_println(msg);
         Ok(())
     }
