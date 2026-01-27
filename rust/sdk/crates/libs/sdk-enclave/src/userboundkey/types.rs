@@ -3,10 +3,9 @@
 
 //! Type definitions for user-bound key operations
 
-use crate::common::{CryptoError, EnclaveUtilsError};
+use crate::common::{CryptoError, EnclaveUtilsError, ntstatus_to_hresult};
 use alloc::string::String;
 use sdk_enclave_gen::AbiError;
-use windows_enclave::vertdll::RtlNtStatusToDosError;
 
 /// Error type for user-bound key operations
 #[derive(Debug)]
@@ -60,29 +59,12 @@ impl From<CryptoError> for UserBoundKeyError {
     }
 }
 
-/// Converts a Win32 error code to an HRESULT.
-/// Equivalent to the HRESULT_FROM_WIN32 macro.
-#[inline]
-fn hresult_from_win32(error: u32) -> i32 {
-    if error == 0 {
-        0 // S_OK
-    } else {
-        // FACILITY_WIN32 = 7, so (7 << 16) | 0x80000000 = 0x80070000
-        ((error & 0x0000FFFF) | 0x80070000) as i32
-    }
-}
-
 impl UserBoundKeyError {
     /// Convert the error to an HRESULT code
     pub fn to_hresult(&self) -> i32 {
         match self {
             UserBoundKeyError::Hresult(hr) => *hr,
-            // NTSTATUS to HRESULT: Convert via RtlNtStatusToDosError then HRESULT_FROM_WIN32
-            UserBoundKeyError::NtStatus(status) => {
-                // SAFETY: RtlNtStatusToDosError is a pure function that converts NTSTATUS to Win32 error
-                let win32_error = unsafe { RtlNtStatusToDosError(*status) };
-                hresult_from_win32(win32_error)
-            }
+            UserBoundKeyError::NtStatus(status) => ntstatus_to_hresult(*status),
             UserBoundKeyError::AbiError(e) => e.to_hresult().0,
             UserBoundKeyError::AllocationFailed => -2147024882, // E_OUTOFMEMORY
             UserBoundKeyError::InvalidData(_) => -2147024809,   // E_INVALIDARG

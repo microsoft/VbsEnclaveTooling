@@ -18,6 +18,7 @@ pub enum TestEnum {
     Value1 = 1,
 }
 
+#[repr(C)]
 #[derive(Debug, Clone, PartialEq, Default, EdlDerive)]
 #[target_struct(flatbuffer_types::TestStruct1T)]
 pub struct TestStruct1 {
@@ -26,6 +27,7 @@ pub struct TestStruct1 {
     pub array1: [i64;5],
 }
 
+#[repr(C)]
 #[derive(Debug, Clone, PartialEq, Default, EdlDerive)]
 #[target_struct(flatbuffer_types::TestStruct2T)]
 pub struct TestStruct2 {

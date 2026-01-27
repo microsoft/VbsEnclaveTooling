@@ -16,3 +16,7 @@ windows = "0.62.2"
 
 # TODO: once edlcodegen-tools is published we should be able to use the version in crates.io
 edlcodegen-tools = { git = "https://github.com/microsoft/VbsEnclaveTooling" }
+tracelogging = { version = "1.2.4", default-features = false }
+vbsenclave-sdk-enclave = { path = "../../../../sdk/crates/libs/sdk-enclave" }
+vbsenclave-sdk-host = { path = "../../../../sdk/crates/libs/sdk-host" }
+windows-enclave = { path = "../../../../sdk/crates/libs/windows-enclave" }

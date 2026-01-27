@@ -12,6 +12,7 @@ use spin::Once;
 use windows_enclave::vertdll::{
     ENCLAVE_FLAG_DYNAMIC_DEBUG_ACTIVE, ENCLAVE_FLAG_DYNAMIC_DEBUG_ENABLED,
     ENCLAVE_FLAG_FULL_DEBUG_ENABLED, ENCLAVE_INFORMATION, EnclaveGetEnclaveInformation,
+    RtlNtStatusToDosError,
 };
 
 /// Common error type for enclave utility operations
@@ -111,4 +112,27 @@ pub fn is_enclave_dynamic_debug_enabled() -> Result<bool, EnclaveUtilsError> {
 pub fn is_enclave_dynamic_debug_active() -> Result<bool, EnclaveUtilsError> {
     let info = get_enclave_information()?;
     Ok((info.Identity.Flags & ENCLAVE_FLAG_DYNAMIC_DEBUG_ACTIVE) != 0)
+}
+
+/// Converts a Win32 error code to an HRESULT.
+/// Equivalent to the HRESULT_FROM_WIN32 macro.
+#[inline]
+pub fn hresult_from_win32(error: u32) -> i32 {
+    if error == 0 {
+        0 // S_OK
+    } else {
+        // FACILITY_WIN32 = 7, so (7 << 16) | 0x80000000 = 0x80070000
+        ((error & 0x0000FFFF) | 0x80070000) as i32
+    }
+}
+
+/// Convert NTSTATUS to HRESULT using RtlNtStatusToDosError
+pub fn ntstatus_to_hresult(ntstatus: i32) -> i32 {
+    // SAFETY: RtlNtStatusToDosError is a pure function that converts NTSTATUS to Win32 error
+    let win32_error = unsafe { RtlNtStatusToDosError(ntstatus) };
+    if win32_error == 0 {
+        0 // S_OK
+    } else {
+        hresult_from_win32(win32_error)
+    }
 }

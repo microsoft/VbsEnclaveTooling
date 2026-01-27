@@ -9,13 +9,16 @@
 //! # Example
 //!
 //! ```no_run
-//! use vbsenclave_sdk_host::enclave::{EnclaveHandle, megabytes};
+//! use vbsenclave_sdk_host::enclave::{
+//!     EnclaveHandle, megabytes, ENCLAVE_CREATE_INFO_FLAG_RELEASE
+//! };
 //!
 //! // Create and initialize an enclave
 //! let enclave = EnclaveHandle::create_and_initialize(
 //!     "my_enclave.dll",
 //!     megabytes(32),
 //!     None, // Use default owner ID
+//!     ENCLAVE_CREATE_INFO_FLAG_RELEASE,
 //! )?;
 //!
 //! // Use enclave.as_ptr() for enclave calls
@@ -106,6 +109,17 @@ impl Default for EnclaveInitInfoVbs {
         }
     }
 }
+
+const DEFAULT_ENCLAVE_THREADS: u32 = 2;
+
+/// Enclave creation flag to enable debuggability of the
+/// vbs enclave. Do not use this flag for production enclaves.
+pub const ENCLAVE_CREATE_INFO_FLAG_DEBUG: u32 = 0x1;
+
+/// Enclave creation flag to disable debuggability of the
+/// vbs enclave.
+/// Use this for production enclaves.
+pub const ENCLAVE_CREATE_INFO_FLAG_RELEASE: u32 = 0x0;
 
 /// Convert megabytes to bytes.
 #[inline]
@@ -327,12 +341,15 @@ impl EnclaveHandle {
     /// # Example
     ///
     /// ```no_run
-    /// use vbsenclave_sdk_host::enclave::{EnclaveHandle, megabytes};
+    /// use vbsenclave_sdk_host::enclave::{
+    ///         EnclaveHandle, ENCLAVE_CREATE_INFO_FLAG_RELEASE, megabytes
+    /// };
     ///
     /// let enclave = EnclaveHandle::create_and_initialize(
     ///     "my_enclave.dll",
     ///     megabytes(32),
     ///     None,
+    ///     ENCLAVE_CREATE_INFO_FLAG_RELEASE,
     /// )?;
     /// # Ok::<(), windows::core::Error>(())
     /// ```
@@ -340,9 +357,16 @@ impl EnclaveHandle {
         dll_path: &str,
         size: usize,
         owner_id: Option<&[u8]>,
+        flags: u32,
     ) -> Result<Self> {
         // Default to 2 threads for callback support (e.g., Windows Hello attestation)
-        Self::create_and_initialize_with_threads(dll_path, size, owner_id, 2)
+        Self::create_and_initialize_with_threads(
+            dll_path,
+            size,
+            owner_id,
+            flags,
+            DEFAULT_ENCLAVE_THREADS,
+        )
     }
 
     /// Create, load, and initialize a VBS enclave with a specific thread count.
@@ -360,10 +384,11 @@ impl EnclaveHandle {
         dll_path: &str,
         size: usize,
         owner_id: Option<&[u8]>,
+        flags: u32,
         thread_count: u32,
     ) -> Result<Self> {
         // Create the enclave
-        let enclave_ptr = create(size, owner_id, 0, 0)?;
+        let enclave_ptr = create(size, owner_id, flags, 0)?;
 
         // If any subsequent step fails, we need to clean up
         let handle = unsafe { Self::from_raw(enclave_ptr) };
@@ -398,6 +423,9 @@ impl EnclaveHandle {
 impl Drop for EnclaveHandle {
     fn drop(&mut self) {
         if !self.enclave.is_null() {
+            let host = sdk_host_gen::SdkHost::new(self.enclave);
+            let _ = host.unregister_etw_providers();
+
             // SAFETY: self.enclave is valid because it came from create()
             // and we only set it to null after this point
             unsafe {

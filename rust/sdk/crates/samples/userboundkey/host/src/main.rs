@@ -83,6 +83,18 @@ fn get_secure_id_from_windows_hello() -> Result<Vec<u8>, Box<dyn std::error::Err
     Ok(byte_array.to_vec())
 }
 
+const ENCLAVE_CREATE_INFO_FLAG: u32 = {
+    #[cfg(debug_assertions)]
+    {
+        vbsenclave_sdk_host::enclave::ENCLAVE_CREATE_INFO_FLAG_DEBUG
+    }
+
+    #[cfg(not(debug_assertions))]
+    {
+        vbsenclave_sdk_host::enclave::ENCLAVE_CREATE_INFO_FLAG_RELEASE
+    }
+};
+
 /// Load the enclave DLL and return the wrapper interface
 fn load_enclave(
     enclave_path: &str,
@@ -97,8 +109,12 @@ fn load_enclave(
     );
 
     // Create, load, and initialize the enclave (512MB)
-    let enclave =
-        EnclaveHandle::create_and_initialize(enclave_path, megabytes(512), Some(&owner_id))?;
+    let enclave = EnclaveHandle::create_and_initialize(
+        enclave_path,
+        megabytes(512),
+        Some(&owner_id),
+        ENCLAVE_CREATE_INFO_FLAG,
+    )?;
 
     // Create the wrapper interface for enclave calls
     let wrapper = UntrustedImpl::new(enclave.as_ptr());

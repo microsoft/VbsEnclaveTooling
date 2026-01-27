@@ -13,3 +13,6 @@ edlcodegen-tools = { workspace = true }
 [dependencies]
 # Note: To generate crate run rust/crates/samples/helloworld/generate_edl_crates.ps1 at least once
 test_enclave_gen = {path = "generated/test_gen" }
+tracelogging = { workspace = true, features = ["macros", "etw", "kernel_mode"]}
+vbsenclave-sdk-enclave = { workspace = true }
+windows-enclave  = { workspace = true }

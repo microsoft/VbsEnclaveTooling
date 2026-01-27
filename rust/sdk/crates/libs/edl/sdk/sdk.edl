@@ -6,6 +6,8 @@
 
 enclave
 {
+    import "tracelogging.edl";
+
     // Configuration for credential caching behavior
     struct keyCredentialCacheConfig
     {
@@ -95,5 +97,7 @@ enclave
         void userboundkey_delete_credential(
             uint64_t credential
         );
+
+        void println(string msg);
     };
 };

@@ -8,11 +8,15 @@
 //! This pattern allows feature implementations to live in their own modules
 //! while the trait impl acts as a thin wrapper.
 
-use crate::userboundkey;
 use sdk_host_gen::AbiError;
-use sdk_host_gen::implementation::types::{credentialAndSessionInfo, keyCredentialCacheConfig};
+use sdk_host_gen::implementation::types::{
+    EventDataDescriptor, EventDescriptor, Guid, credentialAndSessionInfo, edl::WString,
+    keyCredentialCacheConfig,
+};
 use sdk_host_gen::implementation::untrusted::Untrusted;
-use widestring::{U16Str, U16String};
+
+use crate::etw;
+use crate::userboundkey;
 
 /// SDK host implementation of the Untrusted trait.
 ///
@@ -85,5 +89,48 @@ impl Untrusted for HostImpl {
 
     fn userboundkey_delete_credential(credential: u64) -> Result<(), AbiError> {
         userboundkey::userboundkey_delete_credential(credential)
+    }
+
+    fn event_unregister(reg_handle: u64) -> Result<u32, AbiError> {
+        etw::event_unregister(reg_handle)
+    }
+
+    fn event_register(
+        provider_id: &Guid,
+        registration_id: &Guid,
+        enclave: u64,
+        reg_handle: &mut u64,
+    ) -> Result<u32, AbiError> {
+        etw::event_register(provider_id, registration_id, enclave, reg_handle)
+    }
+
+    fn event_write_transfer(
+        reg_handle: u64,
+        descriptor: &EventDescriptor,
+        activity_id: &Option<Guid>,
+        related_id: &Option<Guid>,
+        user_data: &Vec<EventDataDescriptor>,
+    ) -> Result<u32, AbiError> {
+        etw::event_write_transfer(reg_handle, descriptor, activity_id, related_id, user_data)
+    }
+
+    fn event_set_information(
+        reg_handle: u64,
+        information_class: u32,
+        information: &Vec<u8>,
+    ) -> Result<u32, AbiError> {
+        etw::event_set_information(reg_handle, information_class, information)
+    }
+
+    fn event_activity_id_control(
+        control_code: u32,
+        activity_id: &mut Guid,
+    ) -> Result<u32, AbiError> {
+        etw::event_activity_id_control(control_code, activity_id)
+    }
+
+    fn println(msg: &String) -> Result<(), AbiError> {
+        super::enclave_println(msg);
+        Ok(())
     }
 }

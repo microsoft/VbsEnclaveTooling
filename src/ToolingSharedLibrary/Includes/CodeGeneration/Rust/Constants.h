@@ -179,6 +179,7 @@ pub mod fb_types{{
 
     inline constexpr std::string_view c_struct_attributes =
 R"(
+#[repr(C)]
 #[derive(Debug, Clone, PartialEq, Default, EdlDerive)]
 #[target_struct(flatbuffer_types::{}T)]
 )";
