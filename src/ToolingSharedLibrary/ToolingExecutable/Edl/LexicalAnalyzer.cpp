@@ -201,7 +201,6 @@ namespace EdlProcessor
             case RIGHT_SQUARE_BRACKET:
             case RIGHT_ARROW_BRACKET:
             case LEFT_ARROW_BRACKET:
-            case ASTERISK:
             case COMMA:
             case SEMI_COLON:
             case EQUAL_SIGN:
@@ -227,6 +226,12 @@ namespace EdlProcessor
 
                 return token;
             }
+            case ASTERISK:
+                throw EdlAnalysisException(
+                    ErrorId::EdlPointersNotSupported,
+                    m_file_path.filename().generic_string(),
+                    m_line_number,
+                    m_column_number);
         }
 
         // Tokenize the name of an identifier e.g a struct field name or a hexidecimal value in an enum.

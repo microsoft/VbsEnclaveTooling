@@ -27,12 +27,12 @@ enclave
         Deci_val3,
     };
 
-    struct NestedStructNoPointers
+    struct NestedStructNoOptionals
     {
         int64_t value_in_nested_struct;
     };
 
-    struct StructWithNoPointers
+    struct StructWithNoOptionals
     {
         bool bool_val;
         int8_t int8_val;
@@ -47,7 +47,7 @@ enclave
         HexEnum hex_val;
         DecimalEnum deci_val;
 
-        NestedStructNoPointers nested_struct_val;
+        NestedStructNoOptionals nested_struct_val;
 
         HRESULT result;
     };

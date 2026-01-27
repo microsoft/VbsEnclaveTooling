@@ -112,9 +112,9 @@ struct EnclaveTestClass
     {
         auto generated_enclave_class = TestEnclave(m_enclave);
 
-        // Note: the int8_t unique ptr is returned by vtl1, and copied to vtl0 then returned to this function.
-        auto result = generated_enclave_class.ReturnInt32Ptr_From_Enclave();
-        VERIFY_IS_NOT_NULL(result.get());
+        // Note: the int8_t optional is returned by vtl1, and copied to vtl0 then returned to this function.
+        auto result = generated_enclave_class.ReturnInt32Opt_From_Enclave();
+        VERIFY_IS_TRUE(result.has_value());
         VERIFY_ARE_EQUAL(*result, std::numeric_limits<std::int32_t>::max());
     }
 
@@ -132,8 +132,8 @@ struct EnclaveTestClass
         auto generated_enclave_class = TestEnclave(m_enclave);
 
         // Note: struct is returned by vtl1, and copied to vtl0 then returned to this function.
-        StructWithNoPointers result = generated_enclave_class.ReturnStructWithValues_From_Enclave();
-        VERIFY_IS_TRUE(CompareStructWithNoPointers(result, CreateStructWithNoPointers()));
+        StructWithNoOptionals result = generated_enclave_class.ReturnStructWithValues_From_Enclave();
+        VERIFY_IS_TRUE(CompareStructWithNoOptionals(result, CreateStructWithNoOptionals()));
     }
     
     TEST_METHOD(TestPassingPrimitivesAsValues_To_Enclave_Test)
@@ -183,34 +183,34 @@ struct EnclaveTestClass
         VERIFY_ARE_EQUAL(std::numeric_limits<std::int8_t>::max(), out_int8);
     }
 
-    TEST_METHOD(TestPassingPrimitivesAsInPointers_To_Enclave_Test)
+    TEST_METHOD(TestPassingPrimitivesAsInOptionals_To_Enclave_Test)
     {
         auto generated_enclave_class = TestEnclave(m_enclave);
         std::uint8_t uint8_val = 100;
         std::uint16_t uint16_val = 100;
         std::uint32_t uint32_val = 100;
-        std::uint32_t* null_uint32_val {};
+        std::optional<std::uint32_t> empty_uint32_val {};
 
         // Note: Hresult is return by vtl1, and copied to vtl0 then returned to this function.
-        VERIFY_SUCCEEDED(generated_enclave_class.TestPassingPrimitivesAsInPointers_To_Enclave(
-            &uint8_val,
-            &uint16_val,
-            &uint32_val,
-            null_uint32_val));
+        VERIFY_SUCCEEDED(generated_enclave_class.TestPassingPrimitivesAsInOptionals_To_Enclave(
+            uint8_val,
+            uint16_val,
+            uint32_val,
+            empty_uint32_val));
     }
 
-    TEST_METHOD(TestPassingPrimitivesAsInOutPointers_To_Enclave_Test)
+    TEST_METHOD(TestPassingPrimitivesAsInOutOptionals_To_Enclave_Test)
     {
         auto generated_enclave_class = TestEnclave(m_enclave);
-        std::int8_t int8_val = 100;
-        std::int16_t int16_val = 100;
-        std::int32_t int32_val = 100;
+        std::optional<std::int8_t> int8_val = 100;
+        std::optional<std::int16_t> int16_val = 100;
+        std::optional<std::int32_t> int32_val = 100;
 
         // Note: Hresult is returned by vtl1, and copied to vtl0 then returned to this function.
-        VERIFY_SUCCEEDED(generated_enclave_class.TestPassingPrimitivesAsInOutPointers_To_Enclave(
-            &int8_val,
-            &int16_val,
-            &int32_val));
+        VERIFY_SUCCEEDED(generated_enclave_class.TestPassingPrimitivesAsInOutOptionals_To_Enclave(
+            int8_val,
+            int16_val,
+            int32_val));
 
         // The in-out parameters should have been filled in by the abi in vtl1 based on the result from
         // the vtl1 version of the function
@@ -219,24 +219,24 @@ struct EnclaveTestClass
         VERIFY_ARE_EQUAL(std::numeric_limits<std::int32_t>::max(), int32_val);
     }
 
-    TEST_METHOD(TestPassingPrimitivesAsOutPointers_To_Enclave_Test)
+    TEST_METHOD(TestPassingPrimitivesAsOutOptionals_To_Enclave_Test)
     {
         auto generated_enclave_class = TestEnclave(m_enclave);
-        std::unique_ptr<bool> bool_val = nullptr;
-        std::unique_ptr<DecimalEnum> enum_val = nullptr;
-        std::unique_ptr<std::uint64_t> uint64_val = nullptr;
+        std::optional<bool> bool_val{};
+        std::optional<DecimalEnum> enum_val{};
+        std::optional<std::uint64_t> uint64_val{};
 
         // Note: Hresult is returned by vtl1, and copied to vtl0 then returned to this function.
-        VERIFY_SUCCEEDED(generated_enclave_class.TestPassingPrimitivesAsOutPointers_To_Enclave(
+        VERIFY_SUCCEEDED(generated_enclave_class.TestPassingPrimitivesAsOutOptionals_To_Enclave(
             bool_val,
             enum_val,
             uint64_val));
 
         // The out parameters should have been filled in by the abi in vtl1 based on the result from
         // the vtl1 version of the function
-        VERIFY_IS_NOT_NULL(bool_val.get());
-        VERIFY_IS_NOT_NULL(enum_val.get());
-        VERIFY_IS_NOT_NULL(uint64_val.get());
+        VERIFY_IS_TRUE(bool_val.has_value());
+        VERIFY_IS_TRUE(enum_val.has_value());
+        VERIFY_IS_TRUE(uint64_val.has_value());
         VERIFY_ARE_EQUAL(*bool_val, true);
         VERIFY_ARE_EQUAL(*enum_val, DecimalEnum::Deci_val3);
         VERIFY_ARE_EQUAL(*uint64_val, std::numeric_limits<std::uint64_t>::max());
@@ -245,67 +245,67 @@ struct EnclaveTestClass
     TEST_METHOD(ComplexPassingOfTypes_To_Enclave_Test)
     {
         auto generated_enclave_class = TestEnclave(m_enclave);
-        auto expected_struct_values = CreateStructWithNoPointers();
-        StructWithNoPointers struct_no_pointers_1 = expected_struct_values;
-        StructWithNoPointers struct_no_pointers_2 {};
-        std::unique_ptr<StructWithNoPointers> struct_no_pointers_3;
-        StructWithNoPointers struct_no_pointers_4 {};
-        std::unique_ptr<std::uint64_t> uint64_val = nullptr;
-        StructWithNoPointers* struct_no_pointers_5 {};
-        StructWithNoPointers struct_no_pointers_6 = expected_struct_values;
-        StructWithNoPointers struct_no_pointers_7 {};
+        auto expected_struct_values = CreateStructWithNoOptionals();
+        StructWithNoOptionals struct_no_optionals_1 = expected_struct_values;
+        StructWithNoOptionals struct_no_optionals_2 {};
+        std::optional<StructWithNoOptionals> struct_no_optionals_3;
+        StructWithNoOptionals struct_no_optionals_4 {};
+        std::optional<std::uint64_t> uint64_val{};
+        std::optional<StructWithNoOptionals> struct_no_optionals_5 {};
+        StructWithNoOptionals struct_no_optionals_6 = expected_struct_values;
+        std::optional<StructWithNoOptionals> struct_no_optionals_7 = StructWithNoOptionals{};
 
-        // Note: the StructWithNoPointers object is returned by vtl1, and copied to vtl0 then returned to this function.
+        // Note: the StructWithNoOptionals object is returned by vtl1, and copied to vtl0 then returned to this function.
         auto result = generated_enclave_class.ComplexPassingOfTypes_To_Enclave(
-            struct_no_pointers_1,
-            struct_no_pointers_2,
-            struct_no_pointers_3,
-            struct_no_pointers_4,
-            struct_no_pointers_5,
-            &struct_no_pointers_6,
-            &struct_no_pointers_7,
+            struct_no_optionals_1,
+            struct_no_optionals_2,
+            struct_no_optionals_3,
+            struct_no_optionals_4,
+            struct_no_optionals_5,
+            struct_no_optionals_6,
+            struct_no_optionals_7,
             uint64_val);
 
         // The out parameters should have been filled in by the abi in vtl1 based on the result from
         // the vtl1 version of the function
-        VERIFY_IS_TRUE(CompareStructWithNoPointers(result, expected_struct_values));
-        VERIFY_IS_TRUE(CompareStructWithNoPointers(struct_no_pointers_2, expected_struct_values));
-        VERIFY_IS_NOT_NULL(struct_no_pointers_3.get());
-        VERIFY_IS_TRUE(CompareStructWithNoPointers(*struct_no_pointers_3, expected_struct_values));
-        VERIFY_IS_TRUE(CompareStructWithNoPointers(struct_no_pointers_4, expected_struct_values));
-        VERIFY_IS_NOT_NULL(uint64_val.get());
+        VERIFY_IS_TRUE(CompareStructWithNoOptionals(result, expected_struct_values));
+        VERIFY_IS_TRUE(CompareStructWithNoOptionals(struct_no_optionals_2, expected_struct_values));
+        VERIFY_IS_TRUE(struct_no_optionals_3.has_value());
+        VERIFY_IS_TRUE(CompareStructWithNoOptionals(*struct_no_optionals_3, expected_struct_values));
+        VERIFY_IS_TRUE(CompareStructWithNoOptionals(struct_no_optionals_4, expected_struct_values));
+        VERIFY_IS_TRUE(uint64_val.has_value());
         VERIFY_ARE_EQUAL(*uint64_val, std::numeric_limits<std::uint64_t>::max());
-        THROW_HR_IF(E_INVALIDARG, !CompareStructWithNoPointers(struct_no_pointers_6, expected_struct_values));
-        THROW_HR_IF(E_INVALIDARG, !CompareStructWithNoPointers(struct_no_pointers_7, expected_struct_values));
+        THROW_HR_IF(E_INVALIDARG, !CompareStructWithNoOptionals(struct_no_optionals_6, expected_struct_values));
+        THROW_HR_IF(E_INVALIDARG, !CompareStructWithNoOptionals(*struct_no_optionals_7, expected_struct_values));
     }
 
-    TEST_METHOD(ComplexPassingOfTypesThatContainPointers_To_Enclave_Test)
+    TEST_METHOD(ComplexPassingOfTypesThatContainOptionals_To_Enclave_Test)
     {
         auto generated_enclave_class = TestEnclave(m_enclave);
-        auto expected_struct_with_ptrs = CreateStructWithPointers();
-        StructWithPointers* struct_with_pointers_1_null {};
-        StructWithPointers struct_with_pointers_2 = CreateStructWithPointers();
-        StructWithPointers struct_with_pointers_3 = {};
-        std::unique_ptr<StructWithPointers> struct_with_pointers_4 {};
-        std::vector<StructWithPointers> struct_with_pointers_5(c_arbitrary_size_2);
-        std::array<StructWithPointers, c_arbitrary_size_2> struct_with_pointers_6;
+        auto expected_struct_with_opts = CreateStructWithOptionals();
+        std::optional<StructWithOptionals> struct_with_optionals_1_empty {};
+        std::optional<StructWithOptionals> struct_with_optionals_2 = CreateStructWithOptionals();
+        std::optional<StructWithOptionals> struct_with_optionals_3 = StructWithOptionals{};
+        std::optional<StructWithOptionals> struct_with_optionals_4 {};
+        std::vector<StructWithOptionals> struct_with_optionals_5(c_arbitrary_size_2);
+        std::array<StructWithOptionals, c_arbitrary_size_2> struct_with_optionals_6;
 
         // The out parameters should have been filled in by the abi in vtl1 based on the result from
         // the vtl1 version of the function
-        auto result = generated_enclave_class.ComplexPassingOfTypesThatContainPointers_To_Enclave(
-            struct_with_pointers_1_null,
-            &struct_with_pointers_2,
-            &struct_with_pointers_3,
-            struct_with_pointers_4,
-            struct_with_pointers_5,
-            struct_with_pointers_6);
+        auto result = generated_enclave_class.ComplexPassingOfTypesThatContainOptionals_To_Enclave(
+            struct_with_optionals_1_empty,
+            struct_with_optionals_2,
+            struct_with_optionals_3,
+            struct_with_optionals_4,
+            struct_with_optionals_5,
+            struct_with_optionals_6);
 
-        VERIFY_IS_TRUE(CompareStructWithPointers(result, expected_struct_with_ptrs));
-        VERIFY_IS_TRUE(CompareStructWithPointers(struct_with_pointers_3, expected_struct_with_ptrs));
-        VERIFY_IS_NOT_NULL(struct_with_pointers_4.get());
-        VERIFY_IS_TRUE(CompareStructWithPointers(*struct_with_pointers_4, expected_struct_with_ptrs));
-        VERIFY_IS_TRUE(std::equal(struct_with_pointers_5.begin(), struct_with_pointers_5.end(), c_struct_with_ptrs_arr_initialize.begin(), CompareStructWithPointers));
-        VERIFY_IS_TRUE(std::equal(struct_with_pointers_6.begin(), struct_with_pointers_6.end(), c_struct_with_ptrs_arr_initialize.begin(), CompareStructWithPointers));
+        VERIFY_IS_TRUE(CompareStructWithOptionals(result, expected_struct_with_opts));
+        VERIFY_IS_TRUE(CompareStructWithOptionals(*struct_with_optionals_3, expected_struct_with_opts));
+        VERIFY_IS_TRUE(struct_with_optionals_4.has_value());
+        VERIFY_IS_TRUE(CompareStructWithOptionals(*struct_with_optionals_4, expected_struct_with_opts));
+        VERIFY_IS_TRUE(std::equal(struct_with_optionals_5.begin(), struct_with_optionals_5.end(), c_struct_with_opts_arr_initialize.begin(), CompareStructWithOptionals));
+        VERIFY_IS_TRUE(std::equal(struct_with_optionals_6.begin(), struct_with_optionals_6.end(), c_struct_with_opts_arr_initialize.begin(), CompareStructWithOptionals));
     }
 
     TEST_METHOD(ReturnNoParams_From_Enclave_Test)
@@ -538,36 +538,36 @@ struct EnclaveTestClass
         VERIFY_SUCCEEDED(generated_enclave_class.Start_TestPassingPrimitivesAsOutValues_To_HostApp_Callback_Test());
     }
 
-    TEST_METHOD(Start_TestPassingPrimitivesAsInPointers_To_HostApp_Callback_Test)
+    TEST_METHOD(Start_TestPassingPrimitivesAsInOptionals_To_HostApp_Callback_Test)
     {
         auto generated_enclave_class = TestEnclave(m_enclave);
 
         // Note: Hresult is returned by vtl1, and copied to vtl0 then returned to this function.
-        VERIFY_SUCCEEDED(generated_enclave_class.Start_TestPassingPrimitivesAsInPointers_To_HostApp_Callback_Test());
+        VERIFY_SUCCEEDED(generated_enclave_class.Start_TestPassingPrimitivesAsInOptionals_To_HostApp_Callback_Test());
     }
 
-    TEST_METHOD(Start_TestPassingPrimitivesAsInOutPointers_To_HostApp_Callback_Test)
+    TEST_METHOD(Start_TestPassingPrimitivesAsInOutOptionals_To_HostApp_Callback_Test)
     {
         auto generated_enclave_class = TestEnclave(m_enclave);
 
         // Note: Hresult is returned by vtl1, and copied to vtl0 then returned to this function.
-        VERIFY_SUCCEEDED(generated_enclave_class.Start_TestPassingPrimitivesAsInOutPointers_To_HostApp_Callback_Test());
+        VERIFY_SUCCEEDED(generated_enclave_class.Start_TestPassingPrimitivesAsInOutOptionals_To_HostApp_Callback_Test());
     }
 
-    TEST_METHOD(Start_TestPassingPrimitivesAsOutPointers_To_HostApp_Callback_Test)
+    TEST_METHOD(Start_TestPassingPrimitivesAsOutOptionals_To_HostApp_Callback_Test)
     {
         auto generated_enclave_class = TestEnclave(m_enclave);
 
         // Note: Hresult is returned by vtl1, and copied to vtl0 then returned to this function.
-        VERIFY_SUCCEEDED(generated_enclave_class.Start_TestPassingPrimitivesAsOutPointers_To_HostApp_Callback_Test());
+        VERIFY_SUCCEEDED(generated_enclave_class.Start_TestPassingPrimitivesAsOutOptionals_To_HostApp_Callback_Test());
     }
 
-    TEST_METHOD(Start_ReturnInt32Ptr_From_HostApp_Callback_Test)
+    TEST_METHOD(Start_ReturnInt32Opt_From_HostApp_Callback_Test)
     {
         auto generated_enclave_class = TestEnclave(m_enclave);
 
         // Note: Hresult is returned by vtl1, and copied to vtl0 then returned to this function.
-        VERIFY_SUCCEEDED(generated_enclave_class.Start_ReturnInt32Ptr_From_HostApp_Callback_Test());
+        VERIFY_SUCCEEDED(generated_enclave_class.Start_ReturnInt32Opt_From_HostApp_Callback_Test());
     }
 
     TEST_METHOD(Start_ReturnUint64Val_From_HostApp_Callback_Test)
@@ -650,12 +650,12 @@ struct EnclaveTestClass
         VERIFY_SUCCEEDED(generated_enclave_class.Start_PassingArrayTypes_To_HostApp_Callback_Test());
     }
 
-    TEST_METHOD(Start_ComplexPassingOfTypesThatContainPointers_To_HostApp_Callback_Test)
+    TEST_METHOD(Start_ComplexPassingOfTypesThatContainOptionals_To_HostApp_Callback_Test)
     {
         auto generated_enclave_class = TestEnclave(m_enclave);
 
         // Note: Hresult is returned by vtl1, and copied to vtl0 then returned to this function.
-        VERIFY_SUCCEEDED(generated_enclave_class.Start_ComplexPassingOfTypesThatContainPointers_To_HostApp_Callback_Test());
+        VERIFY_SUCCEEDED(generated_enclave_class.Start_ComplexPassingOfTypesThatContainOptionals_To_HostApp_Callback_Test());
     }
 
     TEST_METHOD(Start_Throw_Winrt_Exception_From_Host_Test)
