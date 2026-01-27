@@ -220,3 +220,20 @@ When running the sample, the following files are created in the current director
 If the enclave's sealing key has changed (e.g., after an enclave update), the SDK
 will automatically detect this and provide resealed key bytes. The sample handles
 this by saving the resealed key back to disk.
+
+## Debug Output
+
+The SDK uses conditional debug printing that behaves differently between debug and release builds:
+
+### Debug Builds (`cargo build`)
+- Diagnostic messages are printed to the console (e.g., `[SDK-Host] Challenge callback invoked!`)
+- Useful for development and troubleshooting
+
+### Release Builds (`cargo build --release`)
+- Debug messages are completely compiled out (zero runtime overhead)
+- Only user-facing output from the sample app is printed
+
+To build in release mode with the build script:
+```powershell
+.\generate_and_build_crates.ps1 -IncludeSamples -Configuration release -CertName "YourCertificateName"
+```
