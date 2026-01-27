@@ -629,26 +629,27 @@ pub fn load_user_bound_key(
 /// Reseal a user-bound key with current enclave identity
 ///
 /// This function re-seals data that was previously sealed by an older enclave version.
-/// It is used when the sealing key has rotated (detected by `is_stale_key` flag from unsealing).
+/// It is used when the sealing key has rotated (detected by `needs_reseal` flag from `load_user_bound_key`).
 ///
-/// Note: The input `bound_key_bytes` should be the unsealed (decrypted) bound key data,
-/// NOT the sealed blob. If you have sealed data, first unseal it with `unseal_data`
-/// from the crypto module, then pass the unsealed result here.
+/// The function first unseals the input data, then re-seals it with the specified policy.
 ///
 /// # Arguments
-/// * `bound_key_bytes` - Previously unsealed bound key bytes (NOT sealed data)
+/// * `sealed_bound_key_bytes` - The sealed bound key bytes to reseal
 /// * `sealing_policy` - Enclave sealing identity policy for the new seal
 /// * `runtime_policy` - Runtime policy flags
 ///
 /// # Returns
 /// Newly sealed key material that can be stored and used with future loads
 pub fn reseal_user_bound_key(
-    bound_key_bytes: &[u8],
+    sealed_bound_key_bytes: &[u8],
     sealing_policy: EnclaveSealingIdentityPolicy,
     runtime_policy: u32,
 ) -> Result<Vec<u8>, UserBoundKeyError> {
+    // First unseal the data to get the raw bound key bytes
+    let (bound_key_bytes, _unseal_flags) = unseal_data(sealed_bound_key_bytes)?;
+
     // Re-seal with current enclave identity
-    let resealed_data = seal_data(bound_key_bytes, sealing_policy, runtime_policy)?;
+    let resealed_data = seal_data(&bound_key_bytes, sealing_policy, runtime_policy)?;
 
     Ok(resealed_data)
 }

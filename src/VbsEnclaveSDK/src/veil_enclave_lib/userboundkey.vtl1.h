@@ -50,8 +50,17 @@ namespace veil::vtl1::userboundkey
         const std::vector<uint8_t>& sealedBoundKeyBytes,
         _Out_ bool& needsReseal);
 
+    /// <summary>
+    /// Re-seals previously sealed bound key data with the current enclave identity.
+    /// This function first unseals the input data, then re-seals it with the specified policy.
+    /// Used when the sealing key has rotated (detected by needsReseal flag from load_user_bound_key).
+    /// </summary>
+    /// <param name="sealedBoundKeyBytes">The sealed bound key bytes to reseal</param>
+    /// <param name="sealingPolicy">The sealing identity policy for the new seal</param>
+    /// <param name="runtimePolicy">The runtime policy flags</param>
+    /// <returns>Newly sealed key material that can be stored and used with future loads</returns>
     std::vector<uint8_t> reseal_user_bound_key(
-        const std::vector<uint8_t>& boundKeyBytes,
+        const std::vector<uint8_t>& sealedBoundKeyBytes,
         ENCLAVE_SEALING_IDENTITY_POLICY sealingPolicy,
         uint32_t runtimePolicy);
 }

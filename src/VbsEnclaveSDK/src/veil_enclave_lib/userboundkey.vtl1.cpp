@@ -689,17 +689,22 @@ std::vector<uint8_t> load_user_bound_key(
 }
 
 std::vector<uint8_t> reseal_user_bound_key(
-    const std::vector<uint8_t>& boundKeyBytes,
+    const std::vector<uint8_t>& sealedBoundKeyBytes,
     ENCLAVE_SEALING_IDENTITY_POLICY sealingPolicy,
     uint32_t runtimePolicy)
 {
     veil::vtl1::vtl0_functions::internal::debug_print(L"DEBUG: reseal_user_bound_key - Function entered");
-    veil::vtl1::vtl0_functions::internal::debug_print((L"DEBUG: reseal_user_bound_key - boundKeyBytes size: " + std::to_wstring(boundKeyBytes.size())).c_str());
+    veil::vtl1::vtl0_functions::internal::debug_print((L"DEBUG: reseal_user_bound_key - sealedBoundKeyBytes size: " + std::to_wstring(sealedBoundKeyBytes.size())).c_str());
     veil::vtl1::vtl0_functions::internal::debug_print((L"DEBUG: reseal_user_bound_key - sealingPolicy: " + std::to_wstring(static_cast<uint32_t>(sealingPolicy))).c_str());
     veil::vtl1::vtl0_functions::internal::debug_print((L"DEBUG: reseal_user_bound_key - runtimePolicy: 0x" + std::to_wstring(runtimePolicy)).c_str());
     
     try
     {
+        // First unseal the data to get the raw bound key bytes
+        auto [boundKeyBytes, unsealingFlags] = veil::vtl1::crypto::unseal_data(sealedBoundKeyBytes);
+        
+        veil::vtl1::vtl0_functions::internal::debug_print((L"DEBUG: reseal_user_bound_key - Unsealed data, size: " + std::to_wstring(boundKeyBytes.size())).c_str());
+
         // Re-seal the bound key bytes with current enclave identity
         auto resealedData = veil::vtl1::crypto::seal_data(
             boundKeyBytes, 
