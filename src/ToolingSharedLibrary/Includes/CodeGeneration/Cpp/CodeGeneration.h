@@ -69,8 +69,9 @@ namespace CodeGeneration::Cpp
         std::string BuildStructField(const Declaration& declaration);
 
         std::string BuildStructDefinition(
-            std::string_view struct_name,
-            const std::vector<Declaration>& fields);
+            std::span<const DeveloperType> structs,
+            std::unordered_set<std::string>& seen_structs,
+            const DeveloperType struct_info);
 
         std::string BuildStructMetaData(
             std::string_view generated_parent_namespace,

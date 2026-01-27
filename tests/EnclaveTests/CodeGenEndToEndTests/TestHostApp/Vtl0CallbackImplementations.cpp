@@ -17,9 +17,9 @@ using namespace VbsEnclave;
 
 #pragma region VTL0 (HostApp) Callback implementations
 
-std::unique_ptr<std::int32_t> Untrusted::Implementation::ReturnInt32Ptr_From_HostApp()
+std::optional<std::int32_t> Untrusted::Implementation::ReturnInt32Opt_From_HostApp()
 {
-    return std::make_unique<std::int32_t>(std::numeric_limits<std::int32_t>::max());
+    return std::make_optional<std::int32_t>(std::numeric_limits<std::int32_t>::max());
 }
 
 std::uint64_t Untrusted::Implementation::ReturnUint64Val_From_HostApp()
@@ -27,9 +27,9 @@ std::uint64_t Untrusted::Implementation::ReturnUint64Val_From_HostApp()
     return std::numeric_limits<std::uint64_t>::max();
 }
 
-StructWithNoPointers Untrusted::Implementation::ReturnStructWithValues_From_HostApp()
+StructWithNoOptionals Untrusted::Implementation::ReturnStructWithValues_From_HostApp()
 {
-    return CreateStructWithNoPointers();
+    return CreateStructWithNoOptionals();
 }
 
 HRESULT Untrusted::Implementation::TestPassingPrimitivesAsValues_To_HostApp(
@@ -79,33 +79,33 @@ HRESULT Untrusted::Implementation::TestPassingPrimitivesAsOutValues_To_HostApp(
     return S_OK;
 }
 
-HRESULT Untrusted::Implementation::TestPassingPrimitivesAsInPointers_To_HostApp(
-    _In_ const std::uint8_t* uint8_val,
-    _In_ const std::uint16_t* uint16_val,
-    _In_ const std::uint32_t* uint32_val,
-    _In_ const std::uint32_t* null_uint32_val)
+HRESULT Untrusted::Implementation::TestPassingPrimitivesAsInOptionals_To_HostApp(
+    _In_ const std::optional<std::uint8_t>& uint8_val,
+    _In_ const std::optional<std::uint16_t>& uint16_val,
+    _In_ const std::optional<std::uint32_t>& uint32_val,
+    _In_ const std::optional<std::uint32_t>& empty_uint32_val)
 {
     // Confirm vtl1 parameters were correctly copied to vtl0 memory.
-    THROW_IF_NULL_ALLOC(uint8_val);
-    THROW_IF_NULL_ALLOC(uint16_val);
-    THROW_IF_NULL_ALLOC(uint32_val);
+    THROW_HR_IF(E_INVALIDARG, !uint8_val.has_value());
+    THROW_HR_IF(E_INVALIDARG, !uint16_val.has_value());
+    THROW_HR_IF(E_INVALIDARG, !uint32_val.has_value());
     THROW_HR_IF(E_INVALIDARG, 100 != *uint8_val);
     THROW_HR_IF(E_INVALIDARG, 100 != *uint16_val);
     THROW_HR_IF(E_INVALIDARG, 100 != *uint32_val);
-    THROW_HR_IF(E_INVALIDARG, null_uint32_val != nullptr);
+    THROW_HR_IF(E_INVALIDARG, empty_uint32_val.has_value()); // should be nullopt
 
     return S_OK;
 }
 
-HRESULT Untrusted::Implementation::TestPassingPrimitivesAsInOutPointers_To_HostApp(
-    _Inout_ std::int8_t* int8_val,
-    _Inout_ std::int16_t* int16_val,
-    _Inout_ std::int32_t* int32_val)
+HRESULT Untrusted::Implementation::TestPassingPrimitivesAsInOutOptionals_To_HostApp(
+    _Inout_ std::optional<std::int8_t>& int8_val,
+    _Inout_ std::optional<std::int16_t>& int16_val,
+    _Inout_ std::optional<std::int32_t>& int32_val)
 {
     // Confirm vtl1 parameters were correctly copied to vtl0 memory.
-    THROW_IF_NULL_ALLOC(int8_val);
-    THROW_IF_NULL_ALLOC(int16_val);
-    THROW_IF_NULL_ALLOC(int32_val);
+    THROW_HR_IF(E_INVALIDARG, !int8_val.has_value());
+    THROW_HR_IF(E_INVALIDARG, !int16_val.has_value());
+    THROW_HR_IF(E_INVALIDARG, !int32_val.has_value());
     THROW_HR_IF(E_INVALIDARG, 100 != *int8_val);
     THROW_HR_IF(E_INVALIDARG, 100 != *int16_val);
     THROW_HR_IF(E_INVALIDARG, 100 != *int32_val);
@@ -119,78 +119,71 @@ HRESULT Untrusted::Implementation::TestPassingPrimitivesAsInOutPointers_To_HostA
     return S_OK;
 }
 
-HRESULT Untrusted::Implementation::TestPassingPrimitivesAsOutPointers_To_HostApp(
-    _Out_ std::unique_ptr<bool>& bool_val,
-    _Out_ std::unique_ptr<DecimalEnum>& enum_val,
-    _Out_ std::unique_ptr<std::uint64_t>& uint64_val)
+HRESULT Untrusted::Implementation::TestPassingPrimitivesAsOutOptionals_To_HostApp(
+    _Out_ std::optional<bool>& bool_val,
+    _Out_ std::optional<DecimalEnum>& enum_val,
+    _Out_ std::optional<std::uint64_t>& uint64_val)
 {
-    bool_val = nullptr;
-    enum_val = nullptr;
-    uint64_val = nullptr;
-
-    bool_val = std::make_unique<bool>(true);
-    enum_val = std::make_unique<DecimalEnum>(DecimalEnum::Deci_val3);
-    uint64_val = std::make_unique<std::uint64_t>(std::numeric_limits<std::uint64_t>::max());
+    bool_val = std::make_optional<bool>(true);
+    enum_val = std::make_optional<DecimalEnum>(DecimalEnum::Deci_val3);
+    uint64_val = std::make_optional<std::uint64_t>(std::numeric_limits<std::uint64_t>::max());
 
     return S_OK;
 }
 
-StructWithNoPointers Untrusted::Implementation::ComplexPassingOfTypes_To_HostApp(
-    _In_ const StructWithNoPointers& arg1,
-    _Inout_ StructWithNoPointers& arg2,
-    _Out_ std::unique_ptr<StructWithNoPointers>& arg3,
-    _Out_ StructWithNoPointers& arg4,
-    _In_ const StructWithNoPointers* arg5_null,
-    _In_ const StructWithNoPointers* arg6,
-    _Inout_ StructWithNoPointers* arg7,
-    _Out_ std::unique_ptr<std::uint64_t>& uint64_val)
+StructWithNoOptionals Untrusted::Implementation::ComplexPassingOfTypes_To_HostApp(
+    _In_ const StructWithNoOptionals& arg1,
+    _Inout_ StructWithNoOptionals& arg2,
+    _Out_ std::optional<StructWithNoOptionals>& arg3,
+    _Out_ StructWithNoOptionals& arg4,
+    _In_ const std::optional<StructWithNoOptionals>& arg5_empty,
+    _In_ const std::optional<StructWithNoOptionals>& arg6,
+    _Inout_ std::optional<StructWithNoOptionals>& arg7,
+    _Out_ std::optional<std::uint64_t>& uint64_val)
 {
-    arg3 = nullptr;
-    uint64_val = nullptr;
-    auto struct_to_return = CreateStructWithNoPointers();
+    auto struct_to_return = CreateStructWithNoOptionals();
 
     // check in parm is expected value
-    THROW_HR_IF(E_INVALIDARG, !CompareStructWithNoPointers(arg1, struct_to_return));
-    THROW_HR_IF(E_INVALIDARG, arg5_null != nullptr);
-    THROW_HR_IF(E_INVALIDARG, !CompareStructWithNoPointers(*arg6, struct_to_return));
-    THROW_HR_IF(E_INVALIDARG, !CompareStructWithNoPointers(*arg7, {}));
+    THROW_HR_IF(E_INVALIDARG, !CompareStructWithNoOptionals(arg1, struct_to_return));
+    THROW_HR_IF(E_INVALIDARG, arg5_empty.has_value()); // should be nullopt
+    THROW_HR_IF(E_INVALIDARG, !CompareStructWithNoOptionals(*arg6, struct_to_return));
+    THROW_HR_IF(E_INVALIDARG, !CompareStructWithNoOptionals(*arg7, {}));
     arg2 = struct_to_return;
 
-    arg3 = std::make_unique<StructWithNoPointers>();
-    *arg3 = CreateStructWithNoPointers();
-    arg4 = CreateStructWithNoPointers();
-    uint64_val = std::make_unique<std::uint64_t>(std::numeric_limits<std::uint64_t>::max());
-    *arg7 = CreateStructWithNoPointers();
+    arg3 = std::make_optional<StructWithNoOptionals>();
+    *arg3 = CreateStructWithNoOptionals();
+    arg4 = CreateStructWithNoOptionals();
+    uint64_val = std::make_optional<std::uint64_t>(std::numeric_limits<std::uint64_t>::max());
+    *arg7 = CreateStructWithNoOptionals();
 
     return struct_to_return;
 }
 
-StructWithPointers Untrusted::Implementation::ComplexPassingOfTypesThatContainPointers_To_HostApp(
-    _In_ const StructWithPointers* arg1_null,
-    _In_ const StructWithPointers* arg2,
-    _Inout_ StructWithPointers* arg3,
-    _Out_ std::unique_ptr<StructWithPointers>& arg4,
-    _Inout_ std::vector<StructWithPointers>& arg5,
-    _Inout_ std::array<StructWithPointers, 2>& arg6)
+StructWithOptionals Untrusted::Implementation::ComplexPassingOfTypesThatContainOptionals_To_HostApp(
+    _In_ const std::optional<StructWithOptionals>& arg1_empty,
+    _In_ const std::optional<StructWithOptionals>& arg2,
+    _Inout_ std::optional<StructWithOptionals>& arg3,
+    _Out_ std::optional<StructWithOptionals>& arg4,
+    _Inout_ std::vector<StructWithOptionals>& arg5,
+    _Inout_ std::array<StructWithOptionals, 2>& arg6)
 {
-    arg4 = nullptr;
-    auto struct_to_return = CreateStructWithPointers();
+    auto struct_to_return = CreateStructWithOptionals();
 
     // check in parm is expected value
-    THROW_HR_IF(E_INVALIDARG, arg1_null != nullptr);
-    THROW_HR_IF(E_INVALIDARG, !CompareStructWithPointers(*arg2, struct_to_return));
-    THROW_HR_IF(E_INVALIDARG, !CompareStructWithPointers(*arg3, {}));
-    THROW_HR_IF(E_INVALIDARG, !std::equal(arg5.begin(), arg5.end(), c_struct_with_ptrs_vec_empty.begin(), CompareStructWithPointers));
-    THROW_HR_IF(E_INVALIDARG, !std::equal(arg6.begin(), arg6.end(), c_struct_with_ptrs_vec_empty.begin(), CompareStructWithPointers));
-    *arg3 = CreateStructWithPointers();
+    THROW_HR_IF(E_INVALIDARG, arg1_empty.has_value()); // should be nullopt
+    THROW_HR_IF(E_INVALIDARG, !CompareStructWithOptionals(*arg2, struct_to_return));
+    THROW_HR_IF(E_INVALIDARG, !CompareStructWithOptionals(*arg3, {}));
+    THROW_HR_IF(E_INVALIDARG, !std::equal(arg5.begin(), arg5.end(), c_struct_with_opts_vec_empty.begin(), CompareStructWithOptionals));
+    THROW_HR_IF(E_INVALIDARG, !std::equal(arg6.begin(), arg6.end(), c_struct_with_opts_vec_empty.begin(), CompareStructWithOptionals));
+    *arg3 = CreateStructWithOptionals();
 
-    arg4 = std::make_unique<StructWithPointers>();
-    *arg4 = CreateStructWithPointers();
+    arg4 = std::make_optional<StructWithOptionals>();
+    *arg4 = CreateStructWithOptionals();
 
-    for (size_t i = 0; i < c_struct_with_ptrs_arr_initialize.size(); i++)
+    for (size_t i = 0; i < c_struct_with_opts_arr_initialize.size(); i++)
     {
-        arg5[i] = CreateStructWithPointers();
-        arg6[i] = CreateStructWithPointers();
+        arg5[i] = CreateStructWithOptionals();
+        arg6[i] = CreateStructWithOptionals();
     }
 
     return struct_to_return;

@@ -91,6 +91,7 @@ namespace ErrorHelpers
         EdlOptionalCycle,
         EdlOptionalInvalidInnerType,
         EdlVectorInvalidInnerType,
+        EdlPointersNotSupported,
     };
 
     struct ErrorIdHash
@@ -170,7 +171,8 @@ namespace ErrorHelpers
         { ErrorId::EdlOptionalCycle, "Optional<T> cycle detected in '{}'." },
         { ErrorId::EdlOptionalNameIdentifierNotFound, "Expected an identifier name for an optional but found '{}'" },
         { ErrorId::EdlOptionalInvalidInnerType, "Invalid inner optional type. Valid types: structs, enums and primitives" },
-        { ErrorId::EdlVectorInvalidInnerType, "Invalid inner vector type. Valid types: structs, enums and primitives" },
+        { ErrorId::EdlVectorInvalidInnerType, "Invalid inner vector type. Valid types: structs, wstrings, strings, enums and primitives" },
+        { ErrorId::EdlPointersNotSupported, "Pointers are not supported in the vbs enclave .edl files. Use optional<T> instead, where T is your type." },
 
         // CodeGen errors
         { ErrorId::CodeGenUnableToOpenOutputFile, "Failed to open '{}' for writing." },

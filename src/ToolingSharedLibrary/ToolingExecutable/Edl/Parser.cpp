@@ -924,7 +924,12 @@ namespace EdlProcessor
                 auto edl_type = c_string_to_edltype_map.at(token_name);
 
                 // Only allow primitive types and developer types within optionals.
-                if (edl_type == EdlTypeKind::Vector || edl_type == EdlTypeKind::Optional)
+                // Disallow container types for now due to the complexity of converting
+                // between EDL and the flatbuffer object-api types.
+                if (edl_type == EdlTypeKind::Vector ||
+                    edl_type == EdlTypeKind::Optional ||
+                    edl_type == EdlTypeKind::WString ||
+                    edl_type == EdlTypeKind::String)
                 {
                     throw EdlAnalysisException(
                         ErrorId::EdlOptionalInvalidInnerType,
@@ -1097,7 +1102,7 @@ namespace EdlProcessor
     bool HasOptionalCycle(
         const std::string& start_type,
         const std::string& current_type,
-        const OrderedMap<std::string, DeveloperType>& developer_types,
+        OrderedMap<std::string, DeveloperType>& developer_types,
         std::unordered_set<std::string>& visited)
     {
         if (visited.contains(current_type))
@@ -1107,7 +1112,7 @@ namespace EdlProcessor
 
         visited.insert(current_type);
 
-        const auto& dev_type = developer_types.at(current_type);
+        auto& dev_type = developer_types.at(current_type);
         for (const auto& field : dev_type.m_fields)
         {
             const auto& info = field.m_edl_type_info;
@@ -1133,6 +1138,14 @@ namespace EdlProcessor
             if (HasOptionalCycle(start_type, inner.m_name, developer_types, visited))
             {
                 return true;
+            }
+
+            // Keep track of all optional fields in this struct so we can use it later
+            // when generating code. These structs must be fully defined before this struct
+            // can be defined.
+            if (!dev_type.m_optional_fields.contains(inner.m_name))
+            {
+                dev_type.m_optional_fields[inner.m_name] = developer_types.at(inner.m_name);
             }
         }
 

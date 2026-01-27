@@ -476,6 +476,7 @@ namespace EdlProcessor
         bool m_contains_inner_pointer {};
         bool m_contains_container_type{};
         std::filesystem::path m_parent_file{};
+        OrderedMap<std::string, DeveloperType> m_optional_fields{};
     };
 
     struct Function
