@@ -6,6 +6,17 @@
 //! Implements EDL untrusted callbacks for user-bound key operations.
 //! This module provides VTL0/host-side Windows Hello integration with VBS enclave support.
 
+/// Debug print macro that only prints in debug builds.
+/// Similar to C++ `#ifdef _VEIL_INTERNAL_DEBUG` pattern.
+macro_rules! debug_print {
+    ($($arg:tt)*) => {
+        #[cfg(debug_assertions)]
+        {
+            println!($($arg)*);
+        }
+    };
+}
+
 use sdk_host_gen::AbiError;
 pub use sdk_host_gen::SdkHost;
 pub use sdk_host_gen::implementation::types::{
@@ -153,14 +164,14 @@ fn create_challenge_callback(
     enclave_ptr: usize,
 ) -> AttestationChallengeHandler {
     AttestationChallengeHandler::new(move |challenge: windows_core::Ref<KcmIBuffer>| {
-        println!("[SDK-Host] Challenge callback invoked!");
+        debug_print!("[SDK-Host] Challenge callback invoked!");
 
         // Get the IBuffer reference using ok() which returns Result<&T>
         let challenge_buffer: &KcmIBuffer = challenge.ok()?;
         // Convert KcmIBuffer to Vec<u8>
         let challenge_vec = kcm_buffer_to_vec(challenge_buffer)?;
 
-        println!(
+        debug_print!(
             "[SDK-Host] Challenge size: {} bytes, calling VTL1 for attestation report...",
             challenge_vec.len()
         );
@@ -169,12 +180,12 @@ fn create_challenge_callback(
         let enclave_interface = SdkHost::new(enclave_ptr as *mut core::ffi::c_void);
         let attestation_result = enclave_interface
             .userboundkey_get_attestation_report(&challenge_vec)
-            .map_err(|e| {
-                println!("[SDK-Host] VTL1 attestation call failed: {:?}", e);
+            .map_err(|_e| {
+                debug_print!("[SDK-Host] VTL1 attestation call failed: {:?}", _e);
                 windows_core::Error::from(E_FAIL)
             })?;
 
-        println!(
+        debug_print!(
             "[SDK-Host] Got attestation report: {} bytes",
             attestation_result.report.len()
         );
@@ -184,7 +195,7 @@ fn create_challenge_callback(
             let mut session = match session_info.lock() {
                 Ok(guard) => guard,
                 Err(poisoned) => {
-                    println!(
+                    debug_print!(
                         "[SDK-Host] Warning: session_info mutex was poisoned: {:?}",
                         poisoned
                     );
@@ -235,29 +246,30 @@ pub fn userboundkey_establish_session_for_create(
     cacheConfig: &keyCredentialCacheConfig,
     keyCredentialCreationOption: u32,
 ) -> Result<credentialAndSessionInfo, AbiError> {
-    println!("[SDK-Host] userboundkey_establish_session_for_create called");
-    println!(
+    debug_print!("[SDK-Host] userboundkey_establish_session_for_create called");
+    debug_print!(
         "[SDK-Host]   windowId={}, option={}",
-        windowId, keyCredentialCreationOption
+        windowId,
+        keyCredentialCreationOption
     );
 
     let algorithm = get_algorithm(ecdhProtocol)?;
-    println!("[SDK-Host]   algorithm resolved");
+    debug_print!("[SDK-Host]   algorithm resolved");
 
     let cache_configuration =
         convert_cache_config(cacheConfig).map_err(|e| AbiError::Hresult(e.code().0))?;
-    println!("[SDK-Host]   cache config created");
+    debug_print!("[SDK-Host]   cache config created");
 
     let session_info = Arc::new(Mutex::new(UniqueSessionHandle::new()));
     let enclave_ptr = enclave as usize;
 
     // Try to delete existing key first (ignore errors)
     let key_name_hstring = wstring_to_hstring(keyName);
-    println!("[SDK-Host]   Deleting existing key (if any)...");
+    debug_print!("[SDK-Host]   Deleting existing key (if any)...");
     if let Ok(delete_op) = KeyCredentialManager::DeleteAsync(&key_name_hstring) {
         let _ = delete_op.join();
     }
-    println!("[SDK-Host]   Delete complete");
+    debug_print!("[SDK-Host]   Delete complete");
 
     // Create the credential with VBS attestation
     let message_hstring = wstring_to_hstring(message);
@@ -266,7 +278,7 @@ pub fn userboundkey_establish_session_for_create(
 
     let callback = create_challenge_callback(session_info.clone(), enclave_ptr);
 
-    println!("[SDK-Host]   Calling KeyCredentialManager::RequestCreateAsync2...");
+    debug_print!("[SDK-Host]   Calling KeyCredentialManager::RequestCreateAsync2...");
 
     let credential_result = KeyCredentialManager::RequestCreateAsync2(
         &key_name_hstring,
@@ -278,19 +290,19 @@ pub fn userboundkey_establish_session_for_create(
         ChallengeResponseKind::VirtualizationBasedSecurityEnclave,
         &callback,
     )
-    .map_err(|e| {
-        println!("[SDK-Host]   RequestCreateAsync2 failed to start: {:?}", e);
-        AbiError::Hresult(e.code().0)
+    .map_err(|_e| {
+        debug_print!("[SDK-Host]   RequestCreateAsync2 failed to start: {:?}", _e);
+        AbiError::Hresult(_e.code().0)
     })?;
 
-    println!("[SDK-Host]   RequestCreateAsync2 started, waiting for completion (join)...");
+    debug_print!("[SDK-Host]   RequestCreateAsync2 started, waiting for completion (join)...");
 
-    let credential_result = credential_result.join().map_err(|e| {
-        println!("[SDK-Host]   RequestCreateAsync2.join() failed: {:?}", e);
-        AbiError::Hresult(e.code().0)
+    let credential_result = credential_result.join().map_err(|_e| {
+        debug_print!("[SDK-Host]   RequestCreateAsync2.join() failed: {:?}", _e);
+        AbiError::Hresult(_e.code().0)
     })?;
 
-    println!("[SDK-Host]   RequestCreateAsync2 completed!");
+    debug_print!("[SDK-Host]   RequestCreateAsync2 completed!");
 
     // Check if operation was successful
     let status = credential_result
@@ -311,7 +323,7 @@ pub fn userboundkey_establish_session_for_create(
         let mut session = match session_info.lock() {
             Ok(guard) => guard,
             Err(poisoned) => {
-                println!("[SDK-Host] Warning: session_info mutex was poisoned");
+                debug_print!("[SDK-Host] Warning: session_info mutex was poisoned");
                 poisoned.into_inner()
             }
         };
@@ -372,7 +384,7 @@ pub fn userboundkey_establish_session_for_load(
         let mut session = match session_info.lock() {
             Ok(guard) => guard,
             Err(poisoned) => {
-                println!("[SDK-Host] Warning: session_info mutex was poisoned");
+                debug_print!("[SDK-Host] Warning: session_info mutex was poisoned");
                 poisoned.into_inner()
             }
         };
