@@ -47,7 +47,7 @@ namespace VbsEnclaveToolingTests
                 {
                     for (auto& [name, function] : functions)
                     {
-                        auto& expected_signature = c_test_func_signatures.at(function.m_name);
+                        auto& expected_signature = c_test_func_signatures.at(function.m_name);   
                         Assert::AreEqual(expected_signature, function.GetDeclarationSignature());
                     }
                 };
@@ -80,9 +80,9 @@ namespace VbsEnclaveToolingTests
                 "Color",
             };
             
-            // 35 trusted and 35 untrusted. Should match number of values in `c_test_func_signatures`
+            // 32 trusted and 32 untrusted. Should match number of values in `c_test_func_signatures`
             // which is located in EdlParserTestHelpers.h
-            auto num_of_functions_to_parse = 35;
+            auto num_of_functions_to_parse = 32;
             ParseEdlFileWithImports(
                 m_edl_file_without_duplicate_imports,
                 {std::filesystem::current_path()},

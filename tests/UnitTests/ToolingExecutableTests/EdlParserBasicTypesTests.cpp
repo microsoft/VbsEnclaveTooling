@@ -98,11 +98,6 @@ TEST_CLASS(EdlParserBasicTypesTests)
         ParseAndValidateTestFunction(m_basic_edl_file_name, "RetVoid", FunctionKind::Trusted, EdlTypeKind::Void);
     }
 
-    TEST_METHOD(Parse_RetUint32Ptr_Trusted_Function)
-    {
-        ParseAndValidateTestFunction(m_basic_edl_file_name, "RetUint32Ptr", FunctionKind::Trusted, EdlTypeKind::UInt32, FunctionReturnKind::Ptr);
-    }
-
     // Untrusted functions
 
     TEST_METHOD(Parse_UntrustedWithBasicTypes_Function)
@@ -178,11 +173,6 @@ TEST_CLASS(EdlParserBasicTypesTests)
     TEST_METHOD(Parse_RetVoid_Untrusted_Function)
     {
         ParseAndValidateTestFunction(m_basic_edl_file_name, "RetVoid", FunctionKind::Untrusted, EdlTypeKind::Void);
-    }
-
-    TEST_METHOD(Parse_RetUint32Ptr_Untrusted_Function)
-    {
-        ParseAndValidateTestFunction(m_basic_edl_file_name, "RetUint32Ptr", FunctionKind::Untrusted, EdlTypeKind::UInt32, FunctionReturnKind::Ptr);
     }
 };
 }

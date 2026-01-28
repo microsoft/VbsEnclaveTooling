@@ -12,7 +12,7 @@ enclave
     struct MyStruct0
     {
         int32_t x;
-        MyStruct2* mystruct2_ptr;
+        MyStruct2 mystruct2_ptr;
         vector<MyStruct2> mystruct2_vec;
     };
 
@@ -24,7 +24,7 @@ enclave
 
     struct MyStruct2
     {
-        MyStruct2* mystruct2;
+        vector<MyStruct1> mystructs;
     };
 
     trusted 
@@ -37,31 +37,29 @@ enclave
             [in, out] MyStruct1 arg3[5],
             [out] MyStruct1 arg4[1],
             
-            [in] MyStruct1* arg5,
-            [in, out] MyStruct1* arg6,
-            [out] MyStruct1* arg7,
+            [in] MyStruct1 arg5,
+            [in, out] MyStruct1 arg6,
+            [out] MyStruct1 arg7,
 
-            [in] MyStruct1* arg8,
-            [in, out] MyStruct1* arg9,
-            [out] MyStruct1* arg10,
+            [in] MyStruct1 arg8,
+            [in, out] MyStruct1 arg9,
+            [out] MyStruct1 arg10,
 
-            [in] MyStruct1* arg11,
-            [in, out] MyStruct1* arg12,
-            [out] MyStruct1* arg13,
+            [in] MyStruct1 arg11,
+            [in, out] MyStruct1 arg12,
+            [out] MyStruct1 arg13,
             
-            [in] MyStruct1* arg14,
-            [in, out] MyStruct1* arg15,
-            [out] MyStruct1* arg16,            
+            [in] MyStruct1 arg14,
+            [in, out] MyStruct1 arg15,
+            [out] MyStruct1 arg16,            
 
-            [in] MyStruct1* arg17,
-            [in, out] MyStruct1* arg18,
-            [out] MyStruct1* arg19,               
+            [in] MyStruct1 arg17,
+            [in, out] MyStruct1 arg18,
+            [out] MyStruct1 arg19,               
 
             size_t arg20,
             size_t arg21
         );
-
-         MyStruct1* GetStruct1Ptr();
     };
 
     untrusted
@@ -74,30 +72,28 @@ enclave
             [in, out] MyStruct1 arg3[5],
             [out] MyStruct1 arg4[1],
             
-            [in] MyStruct1* arg5,
-            [in, out] MyStruct1* arg6,
-            [out] MyStruct1* arg7,
+            [in] MyStruct1 arg5,
+            [in, out] MyStruct1 arg6,
+            [out] MyStruct1 arg7,
 
-            [in] MyStruct1* arg8,
-            [in, out] MyStruct1* arg9,
-            [out] MyStruct1* arg10,
+            [in] MyStruct1 arg8,
+            [in, out] MyStruct1 arg9,
+            [out] MyStruct1 arg10,
 
-            [in] MyStruct1* arg11,
-            [in, out] MyStruct1* arg12,
-            [out] MyStruct1* arg13,
+            [in] MyStruct1 arg11,
+            [in, out] MyStruct1 arg12,
+            [out] MyStruct1 arg13,
             
-            [in] MyStruct1* arg14,
-            [in, out] MyStruct1* arg15,
-            [out] MyStruct1* arg16,            
+            [in] MyStruct1 arg14,
+            [in, out] MyStruct1 arg15,
+            [out] MyStruct1 arg16,            
 
-            [in] MyStruct1* arg17,
-            [in, out] MyStruct1* arg18,
-            [out] MyStruct1* arg19,               
+            [in] MyStruct1 arg17,
+            [in, out] MyStruct1 arg18,
+            [out] MyStruct1 arg19,               
 
             size_t arg20,
             size_t arg21
         );
-
-        MyStruct1* GetStruct1Ptr();
     };
 };
