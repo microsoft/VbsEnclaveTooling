@@ -39,6 +39,7 @@ edlcodegen-tools = {{ git = "https://github.com/microsoft/VbsEnclaveTooling" }}
 [dependencies]
 {}
 flatbuffers = {{ version = "25.9.23", default-features = false }}
+widestring = {{ version = "1.2.1", default-features = false, features = ["alloc"] }}
 )";
 
     inline constexpr std::string_view c_build_rs_file_content =
@@ -93,7 +94,7 @@ R"({}
 #![allow(non_snake_case)]
 {}
 use crate::abi::fb_support::fb_types::{}::flatbuffer_types;
-pub use crate::abi::abi_types::edl;
+use widestring::{{U16String, U16Str}};
 use {}::EdlDerive;
 {}
 )";
@@ -108,6 +109,7 @@ use crate::implementation::types::*;
 use crate::abi::fb_support::fb_types::{}::flatbuffer_types;
 use crate::abi::fb_support::fb_types::edl::WStringT;
 use {}::EdlDerive;
+use widestring::{{U16String, U16Str}};
 
 {}
 #[derive(Debug, Clone, PartialEq, Default, EdlDerive)]
@@ -119,15 +121,29 @@ pub struct AbiRegisterVtl0Callbacks_args
     pub m__return_value_: i32,
 }}
 
-pub mod edl {{
-    {}
-    #[derive(Debug, Clone, PartialEq, Default, super::EdlDerive)]
-    #[target_struct(super::WStringT)]
-    pub struct WString {{
-        pub wchars: Vec<u16>,
+impl core::convert::From<U16String> for WStringT {{
+    fn from(src: U16String) -> Self {{
+        Self {{ wchars: src.clone().into_vec() }}
     }}
 }}
 
+impl core::convert::From<WStringT> for U16String {{
+    fn from(src: WStringT) -> Self {{
+        U16String::from_vec(src.wchars)
+    }}
+}}
+
+impl core::convert::From<U16String> for Box<WStringT> {{
+    fn from(src: U16String) -> Self {{
+        Box::new(WStringT{{ wchars: src.clone().into_vec() }})
+    }}
+}}
+
+impl core::convert::From<Box<WStringT>> for U16String {{
+    fn from(src: Box<WStringT>) -> Self {{
+        U16String::from_vec(src.wchars)
+    }}
+}}
 )";
 
     inline constexpr std::string_view c_flatbuffers_module_name = "fb_support.rs";
@@ -201,7 +217,6 @@ R"({}
 extern crate alloc;
 
 pub mod abi;
-pub use abi::abi_types::edl::WString;
 pub mod implementation;
 pub mod stubs;
 pub use edlcodegen_enclave::enclave_ffi::enable_enclave_restrict_containing_process_access_once;
@@ -209,18 +224,21 @@ pub use edlcodegen_enclave::{{AbiError, return_hr_as_pvoid}};
 pub use edlcodegen_enclave::enclave_helpers::{{
     call_vtl1_export_from_vtl1, register_vtl0_callouts
 }};
+#[allow(unused_imports)]
+pub use widestring::{{U16String, U16Str}};
 )";
 
     inline constexpr std::string_view c_host_lib_rs =
 R"({}
 #![allow(clippy::all)]
 pub mod abi;
-pub use abi::abi_types::edl::WString;
 pub mod implementation;
 pub mod stubs;
 pub use stubs::trusted::{};
 pub use edlcodegen_host::{{AbiError, abi_func_to_address, return_hr_as_pvoid}};
 pub use edlcodegen_host::host_helpers::call_vtl0_callback_from_vtl0;
+#[allow(unused_imports)]
+pub use widestring::{{U16String, U16Str}};
 )";
 
     inline constexpr std::string_view c_trait_function =
@@ -234,6 +252,7 @@ R"({}
 use alloc::string::String;
 use alloc::vec::Vec;
 use crate::implementation::types::*;
+use widestring::{{U16String, U16Str}};
 
 pub trait Trusted {{
 
@@ -247,6 +266,7 @@ R"({}
 #![allow(non_snake_case)]
 
 use crate::implementation::types::*;
+use widestring::{{U16String, U16Str}};
 
 pub trait Untrusted {{
 {}
@@ -263,9 +283,11 @@ R"({}
 use crate::abi::abi_types;
 use crate::abi::fb_support::fb_types::{}::flatbuffer_types;
 use crate::implementation::types::*;
-use alloc::string::String;
+use alloc::string::{{String, ToString}};
 use alloc::vec::Vec;
+use crate::alloc::borrow::ToOwned;
 use edlcodegen_enclave::enclave_helpers::call_vtl0_callback_from_vtl1;
+use widestring::{{U16String, U16Str}};
 {}
 )";
 
@@ -294,8 +316,10 @@ use crate::abi::fb_support::fb_types::{}::flatbuffer_types;
 use crate::implementation::types::*;
 use crate::implementation::untrusted::Untrusted;
 use edlcodegen_host::host_helpers::call_vtl1_export_from_vtl0;
+
 use edlcodegen_host::EnclaveHandle;
 use windows_strings::s;
+use widestring::{{U16String, U16Str}};
 
 pub struct {} {{
     enclave_handle: EnclaveHandle,

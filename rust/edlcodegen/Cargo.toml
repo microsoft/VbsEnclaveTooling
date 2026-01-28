@@ -20,6 +20,7 @@ edlcodegen-enclave = { version = "0.1.0", path = "crates/libs/edlcodegen-enclave
 edlcodegen-macros = { version = "0.1.0", path = "crates/libs/edlcodegen-macros" }
 edlcodegen-tools = { version = "0.1.0", path = "crates/libs/edlcodegen-tools" }
 spin = "0.10.0"
+widestring = { version = "1.2.1", default-features = false, features = ["alloc"] }
 windows = "0.62.2"
 windows-link = "0.2.1"
 windows-result = {version = "0.4.1", default-features = false }

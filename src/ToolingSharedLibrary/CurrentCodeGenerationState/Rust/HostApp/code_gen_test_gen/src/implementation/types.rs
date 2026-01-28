@@ -6,7 +6,7 @@
 #![allow(non_snake_case)]
 
 use crate::abi::fb_support::fb_types::code_gen_test::flatbuffer_types;
-pub use crate::abi::abi_types::edl;
+use widestring::{U16String, U16Str};
 use edlcodegen_host::EdlDerive;
 
 pub const VALUE1: usize = 1;

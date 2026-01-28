@@ -8,6 +8,6 @@ pub mod sdk_impls;
 pub use sdk_impls::HostImpl;
 
 /// Print a message from the enclave to the host's standard output.
-pub fn enclave_println(msg: &String) {
+pub fn enclave_println(msg: &str) {
     println!("[Enclave] {}", msg);
 }

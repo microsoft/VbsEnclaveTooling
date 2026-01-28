@@ -11,7 +11,7 @@ pub struct UntrustedImpl;
 
 impl Untrusted for UntrustedImpl {
     /// Debug print function - prints to console from enclave
-    fn debug_print(message: &String) -> Result<(), AbiError> {
+    fn debug_print(message: &str) -> Result<(), AbiError> {
         println!("[Enclave] {}", message);
         Ok(())
     }
