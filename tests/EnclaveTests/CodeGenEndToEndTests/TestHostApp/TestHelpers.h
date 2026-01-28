@@ -46,14 +46,6 @@ inline std::vector<T> CreateVector(size_t count)
     return vector;
 }
 
-inline std::unique_ptr<bool[]> CreateBoolReturnPtr( size_t size)
-{
-    auto bool_array = std::make_unique<bool[]>(size);
-    std::fill(bool_array.get(), bool_array.get() + size, true);
-    size_t arr_size_in_bytes = sizeof(bool) * size;
-    return bool_array;
-}
-
 constexpr std::array<std::int8_t, c_arbitrary_size_1> c_int8_array = {5,5,5,5,5};
 constexpr std::array<std::int16_t, c_arbitrary_size_2> c_int16_array = {6,6};
 constexpr std::array<std::int32_t, c_arbitrary_size_1> c_int32_array = {7,7,7,7,7};
@@ -75,7 +67,7 @@ HRESULT CompareArrays(const T* arr1, const T* arr2, size_t size)
     return S_OK;
 }
 
-inline StructWithNoPointers CreateStructWithNoPointers()
+inline StructWithNoOptionals CreateStructWithNoOptionals()
 {
     return {
         true,                                      // bool_val
@@ -95,7 +87,7 @@ inline StructWithNoPointers CreateStructWithNoPointers()
     };
 }
 
-inline bool CompareStructWithNoPointers(const StructWithNoPointers& a, const StructWithNoPointers& b)
+inline bool CompareStructWithNoOptionals(const StructWithNoOptionals& a, const StructWithNoOptionals& b)
 {
     // Compare all fields of the struct
 
@@ -352,25 +344,25 @@ inline bool CompareTestStruct3(TestStruct3& lhs, TestStruct3& rhs)
     return CompareTestStruct2(lhs.field5, rhs.field5);
 }
 
-inline NestedStructWithPointers CreateNestedStructWithPointers()
+inline NestedStructWithOptionals CreateNestedStructWithOptionals()
 {
-    std::unique_ptr<std::int32_t> int32_ptr = std::make_unique<std::int32_t>(100);
-    std::unique_ptr<DecimalEnum> enum_val_ptr = std::make_unique<DecimalEnum>(DecimalEnum::Deci_val3);
-    std::unique_ptr<TestStruct1> test_struct_val_ptr = std::make_unique<TestStruct1>(CreateTestStruct1());
-    return NestedStructWithPointers(std::move(int32_ptr), std::move(enum_val_ptr), std::move(test_struct_val_ptr));
+    std::optional<std::int32_t> int32_opt = std::make_optional<std::int32_t>(100);
+    std::optional<DecimalEnum> enum_val_opt = std::make_optional<DecimalEnum>(DecimalEnum::Deci_val3);
+    std::optional<TestStruct1> test_struct_val_opt = std::make_optional<TestStruct1>(CreateTestStruct1());
+    return NestedStructWithOptionals(std::move(int32_opt), std::move(enum_val_opt), std::move(test_struct_val_opt));
 }
 
 template <typename T>
-inline bool ComparePtrToPod(T* lhs_ptr, T* rhs_ptr)
+inline bool CompareOptToPod(std::optional<T> lhs_opt, std::optional<T> rhs_opt)
 {
     static_assert(std::is_standard_layout<T>::value && std::is_trivial<T>::value);
 
-    if ((lhs_ptr && !rhs_ptr) || (!lhs_ptr && rhs_ptr))
+    if ((lhs_opt && !rhs_opt) || (!lhs_opt && rhs_opt))
     {
         return false;
     }
 
-    if (lhs_ptr && rhs_ptr && (*lhs_ptr != *rhs_ptr))
+    if (lhs_opt && rhs_opt && (*lhs_opt != *rhs_opt))
     {
         return false;
     }
@@ -379,36 +371,36 @@ inline bool ComparePtrToPod(T* lhs_ptr, T* rhs_ptr)
 }
 
 template <typename T, typename FuncT>
-inline bool ComparePtrToStruct(T* lhs_ptr, T* rhs_ptr, FuncT comparison_function)
+inline bool CompareOptToStruct(std::optional<T> lhs_opt, std::optional<T> rhs_opt, FuncT comparison_function)
 {
-    if ((lhs_ptr && !rhs_ptr) || (!lhs_ptr && rhs_ptr))
+    if ((lhs_opt && !rhs_opt) || (!lhs_opt && rhs_opt))
     {
         return false;
     }
 
-    if (lhs_ptr && rhs_ptr)
+    if (lhs_opt && rhs_opt)
     {
-        return comparison_function(*lhs_ptr, *rhs_ptr);
+        return comparison_function(*lhs_opt, *rhs_opt);
     }
 
     return true;
 }
 
-inline bool CompareNestedStructWithPointers(const NestedStructWithPointers& lhs, const NestedStructWithPointers& rhs)
+inline bool CompareNestedStructWithOptionals(const NestedStructWithOptionals& lhs, const NestedStructWithOptionals& rhs)
 {
     // Compare all fields of the struct
 
-    if (!ComparePtrToPod(lhs.int32_ptr.get(), rhs.int32_ptr.get()))
+    if (!CompareOptToPod(lhs.int32_opt, rhs.int32_opt))
     {
         return false;
     }
 
-    if (!ComparePtrToPod(lhs.deci_ptr.get(), rhs.deci_ptr.get()))
+    if (!CompareOptToPod(lhs.deci_opt, rhs.deci_opt))
     {
         return false;
     }
 
-    if (!ComparePtrToStruct(lhs.struct_ptr.get(), rhs.struct_ptr.get(), CompareTestStruct1))
+    if (!CompareOptToStruct(lhs.struct_opt, rhs.struct_opt, CompareTestStruct1))
     {
         return false;
     }
@@ -416,22 +408,22 @@ inline bool CompareNestedStructWithPointers(const NestedStructWithPointers& lhs,
     return true;
 }
 
-inline StructWithPointers CreateStructWithPointers()
+inline StructWithOptionals CreateStructWithOptionals()
 {
     return
     {
-        std::make_unique<NestedStructWithPointers>(CreateNestedStructWithPointers())
+        std::make_optional<NestedStructWithOptionals>(CreateNestedStructWithOptionals())
     };
 }
 
-inline std::vector<StructWithPointers> c_struct_with_ptrs_vec_empty(c_arbitrary_size_2);
+inline std::vector<StructWithOptionals> c_struct_with_opts_vec_empty(c_arbitrary_size_2);
 
-inline std::array<StructWithPointers, c_arbitrary_size_2> c_struct_with_ptrs_arr_initialize {
-    CreateStructWithPointers(),
-    CreateStructWithPointers()
+inline std::array<StructWithOptionals, c_arbitrary_size_2> c_struct_with_opts_arr_initialize {
+    CreateStructWithOptionals(),
+    CreateStructWithOptionals()
 };
 
-inline bool CompareStructWithPointers(const StructWithPointers& lhs, const StructWithPointers& rhs)
+inline bool CompareStructWithOptionals(const StructWithOptionals& lhs, const StructWithOptionals& rhs)
 {
-    return ComparePtrToStruct(lhs.nested_struct_ptr.get(), rhs.nested_struct_ptr.get(), CompareNestedStructWithPointers);
+    return CompareOptToStruct(lhs.nested_struct_opt, rhs.nested_struct_opt, CompareNestedStructWithOptionals);
 }

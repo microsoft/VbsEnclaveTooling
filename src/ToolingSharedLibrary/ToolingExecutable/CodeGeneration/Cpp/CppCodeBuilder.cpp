@@ -24,6 +24,8 @@ namespace CodeGeneration::Cpp
         std::ostringstream enums_definitions {};
         std::ostringstream struct_declarations {};
 
+        std::vector<DeveloperType> struct_types {};
+
         for (auto& type : developer_types_map.values())
         {
             if (type.IsEdlType(EdlTypeKind::Enum) || type.IsEdlType(EdlTypeKind::AnonymousEnum))
@@ -31,19 +33,18 @@ namespace CodeGeneration::Cpp
                 enums_definitions << BuildEnumDefinition(type);
             }
             else
-            {
+            {   
+                struct_types.push_back(type);
                 struct_declarations << std::format(c_statements_for_developer_struct, type.m_name);
             }
         }
 
         types_header << struct_declarations.str() << enums_definitions.str();
+        std::unordered_set<std::string> seen_types {};
 
-        for (auto& type : developer_types_map.values())
+        for (auto& type : struct_types)
         {
-            if (type.IsEdlType(EdlTypeKind::Struct))
-            {
-                types_header << BuildStructDefinition(type.m_name, type.m_fields);
-            }
+            types_header << BuildStructDefinition(struct_types, seen_types, type);
         }
 
         return std::format(
@@ -59,10 +60,11 @@ namespace CodeGeneration::Cpp
         std::span<const DeveloperType> abi_function_developer_types)
     {
         std::ostringstream types_header {};
+        std::unordered_set<std::string> seen_types {};
 
         for (auto& type : abi_function_developer_types)
         {
-            types_header << BuildStructDefinition(type.m_name, type.m_fields);
+            types_header << BuildStructDefinition(abi_function_developer_types, seen_types, type);
         }
 
         return std::format(
@@ -192,17 +194,31 @@ namespace CodeGeneration::Cpp
     }
 
     std::string CppCodeBuilder::BuildStructDefinition(
-        std::string_view struct_name,
-        const std::vector<Declaration>& fields)
+        std::span<const DeveloperType> structs,
+        std::unordered_set<std::string>& seen_structs,
+        const DeveloperType struct_info)
     {
+        if (seen_structs.contains(struct_info.m_name))
+        {
+            return {};
+        }
+
+        seen_structs.insert(struct_info.m_name);
+        std::ostringstream all_structs_seen {};
+
+        for (auto& field : struct_info.m_optional_fields.values())
+        {
+            all_structs_seen << BuildStructDefinition(structs, seen_structs, field);
+        }
+
         auto [struct_header, struct_body, struct_footer] = BuildStartOfDefinition(
             EDL_STRUCT_KEYWORD,
-            struct_name,
+            struct_info.m_name,
             c_type_definition_tab_count);
 
         auto body_tab_count = GenerateTabs(2);
 
-        for (auto& field : fields)
+        for (auto& field : struct_info.m_fields)
         {
             struct_body << std::format(
                 "{}{} {{}}{}\n",
@@ -211,10 +227,12 @@ namespace CodeGeneration::Cpp
                 SEMI_COLON);
         }
 
-        return std::format("\n{}{}{}",
+        all_structs_seen << std::format("\n{}{}{}",
             struct_header.str(),
             struct_body.str(),
             struct_footer.str());
+
+        return all_structs_seen.str();
     }
 
     std::string CppCodeBuilder::BuildStructMetaData(

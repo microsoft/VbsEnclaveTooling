@@ -49,9 +49,9 @@ HRESULT inline VerifyContainsSameValuesArray(const T* data, size_t size, T value
 
 #pragma region VTL1 Enclave developer implementation functions
 
-std::unique_ptr<std::int32_t> Trusted::Implementation::ReturnInt32Ptr_From_Enclave()
+std::optional<std::int32_t> Trusted::Implementation::ReturnInt32Opt_From_Enclave()
 {
-    return std::make_unique<std::int32_t>(std::numeric_limits<std::int32_t>::max());
+    return std::make_optional<std::int32_t>(std::numeric_limits<std::int32_t>::max());
 }
 
 std::uint64_t Trusted::Implementation::ReturnUint64Val_From_Enclave()
@@ -59,9 +59,9 @@ std::uint64_t Trusted::Implementation::ReturnUint64Val_From_Enclave()
     return std::numeric_limits<std::uint64_t>::max();
 }
 
-StructWithNoPointers Trusted::Implementation::ReturnStructWithValues_From_Enclave()
+StructWithNoOptionals Trusted::Implementation::ReturnStructWithValues_From_Enclave()
 {
-    return CreateStructWithNoPointers();
+    return CreateStructWithNoOptionals();
 }
 
 HRESULT Trusted::Implementation::TestPassingPrimitivesAsValues_To_Enclave(
@@ -111,33 +111,33 @@ HRESULT Trusted::Implementation::TestPassingPrimitivesAsOutValues_To_Enclave(
     return S_OK;
 }
 
-HRESULT Trusted::Implementation::TestPassingPrimitivesAsInPointers_To_Enclave(
-    _In_ const std::uint8_t* uint8_val,
-    _In_ const std::uint16_t* uint16_val,
-    _In_ const std::uint32_t* uint32_val,
-    _In_ const uint32_t* null_uint32_val)
+HRESULT Trusted::Implementation::TestPassingPrimitivesAsInOptionals_To_Enclave(
+    _In_ const std::optional<std::uint8_t>& uint8_val,
+    _In_ const std::optional<std::uint16_t>& uint16_val,
+    _In_ const std::optional<std::uint32_t>& uint32_val,
+    _In_ const std::optional<uint32_t>& empty_uint32_val)
 {
     // Confirm vtl0 parameters were correctly copied to vtl1 memory.
-    THROW_HR_IF_NULL(E_INVALIDARG, uint8_val);
-    THROW_HR_IF_NULL(E_INVALIDARG, uint16_val);
-    THROW_HR_IF_NULL(E_INVALIDARG, uint32_val);
+    THROW_HR_IF(E_INVALIDARG, !uint8_val.has_value());
+    THROW_HR_IF(E_INVALIDARG, !uint16_val.has_value());
+    THROW_HR_IF(E_INVALIDARG, !uint32_val.has_value());
     THROW_HR_IF(E_INVALIDARG, 100 != *uint8_val);
     THROW_HR_IF(E_INVALIDARG, 100 != *uint16_val);
     THROW_HR_IF(E_INVALIDARG, 100 != *uint32_val);
-    THROW_HR_IF(E_INVALIDARG, null_uint32_val != nullptr);
+    THROW_HR_IF(E_INVALIDARG, empty_uint32_val.has_value()); // should be nullopt
 
     return S_OK;
 }
 
-HRESULT Trusted::Implementation::TestPassingPrimitivesAsInOutPointers_To_Enclave(
-    _Inout_ std::int8_t* int8_val,
-    _Inout_ std::int16_t* int16_val,
-    _Inout_ std::int32_t* int32_val)
+HRESULT Trusted::Implementation::TestPassingPrimitivesAsInOutOptionals_To_Enclave(
+    _Inout_ std::optional<std::int8_t>& int8_val,
+    _Inout_ std::optional<std::int16_t>& int16_val,
+    _Inout_ std::optional<std::int32_t>& int32_val)
 {
     // Confirm vtl0 parameters were correctly copied to vtl1 memory.
-    THROW_HR_IF_NULL(E_INVALIDARG, int8_val);
-    THROW_HR_IF_NULL(E_INVALIDARG, int16_val);
-    THROW_HR_IF_NULL(E_INVALIDARG, int32_val);
+    THROW_HR_IF(E_INVALIDARG, !int8_val.has_value());
+    THROW_HR_IF(E_INVALIDARG, !int16_val.has_value());
+    THROW_HR_IF(E_INVALIDARG, !int32_val.has_value());
     THROW_HR_IF(E_INVALIDARG, 100 != *int8_val);
     THROW_HR_IF(E_INVALIDARG, 100 != *int16_val);
     THROW_HR_IF(E_INVALIDARG, 100 != *int32_val);
@@ -151,49 +151,42 @@ HRESULT Trusted::Implementation::TestPassingPrimitivesAsInOutPointers_To_Enclave
     return S_OK;
 }
 
-HRESULT Trusted::Implementation::TestPassingPrimitivesAsOutPointers_To_Enclave(
-    _Out_ std::unique_ptr<bool>& bool_val,
-    _Out_ std::unique_ptr<DecimalEnum>& enum_val,
-    _Out_ std::unique_ptr<std::uint64_t>& uint64_val)
+HRESULT Trusted::Implementation::TestPassingPrimitivesAsOutOptionals_To_Enclave(
+    _Out_ std::optional<bool>& bool_val,
+    _Out_ std::optional<DecimalEnum>& enum_val,
+    _Out_ std::optional<std::uint64_t>& uint64_val)
 {
-    bool_val = nullptr;
-    enum_val = nullptr;
-    uint64_val = nullptr;
-
-    bool_val = std::make_unique<bool>(true);
-    enum_val = std::make_unique<DecimalEnum>(DecimalEnum::Deci_val3);
-    uint64_val = std::make_unique<std::uint64_t>(std::numeric_limits<std::uint64_t>::max());
+    bool_val = std::make_optional<bool>(true);
+    enum_val = std::make_optional<DecimalEnum>(DecimalEnum::Deci_val3);
+    uint64_val = std::make_optional<std::uint64_t>(std::numeric_limits<std::uint64_t>::max());
 
     return S_OK;
 }
 
-StructWithNoPointers Trusted::Implementation::ComplexPassingOfTypes_To_Enclave(
-    _In_ const StructWithNoPointers& arg1,
-    _Inout_ StructWithNoPointers& arg2,
-    _Out_ std::unique_ptr<StructWithNoPointers>& arg3,
-    _Out_ StructWithNoPointers& arg4,
-    _In_ const StructWithNoPointers* arg5_null,
-    _In_ const StructWithNoPointers* arg6,
-    _Inout_ StructWithNoPointers* arg7,
-    _Out_ std::unique_ptr<std::uint64_t>& uint64_val)
+StructWithNoOptionals Trusted::Implementation::ComplexPassingOfTypes_To_Enclave(
+    _In_ const StructWithNoOptionals& arg1,
+    _Inout_ StructWithNoOptionals& arg2,
+    _Out_ std::optional<StructWithNoOptionals>& arg3,
+    _Out_ StructWithNoOptionals& arg4,
+    _In_ const std::optional<StructWithNoOptionals>& arg5_empty,
+    _In_ const std::optional<StructWithNoOptionals>& arg6,
+    _Inout_ std::optional<StructWithNoOptionals>& arg7,
+    _Out_ std::optional<std::uint64_t>& uint64_val)
 {
-    arg3 = nullptr;
-    uint64_val = nullptr;
-    auto struct_to_return = CreateStructWithNoPointers();
-
+    auto struct_to_return = CreateStructWithNoOptionals();
     // check in parm is expected value
-    THROW_HR_IF(E_INVALIDARG, !CompareStructWithNoPointers(arg1, struct_to_return));
-    THROW_HR_IF(E_INVALIDARG, arg5_null != nullptr);
-    THROW_HR_IF(E_INVALIDARG, !CompareStructWithNoPointers(*arg6, struct_to_return));
-    THROW_HR_IF(E_INVALIDARG, !CompareStructWithNoPointers(*arg7, {}));
+    THROW_HR_IF(E_INVALIDARG, !CompareStructWithNoOptionals(arg1, struct_to_return));
+    THROW_HR_IF(E_INVALIDARG, arg5_empty.has_value()); // should be nullopt
+    THROW_HR_IF(E_INVALIDARG, !CompareStructWithNoOptionals(*arg6, struct_to_return));
+    THROW_HR_IF(E_INVALIDARG, !CompareStructWithNoOptionals(*arg7, {}));
     arg2 = struct_to_return;
 
-    arg3 = std::make_unique<StructWithNoPointers>();
-    *arg3 = CreateStructWithNoPointers();
-    arg4 = CreateStructWithNoPointers();
-    uint64_val = std::make_unique<std::uint64_t>();
+    arg3 = std::make_optional<StructWithNoOptionals>();
+    *arg3 = CreateStructWithNoOptionals();
+    arg4 = CreateStructWithNoOptionals();
+    uint64_val = std::make_optional<std::uint64_t>();
     *uint64_val = std::numeric_limits<std::uint64_t>::max();
-    *arg7 = CreateStructWithNoPointers();
+    *arg7 = CreateStructWithNoOptionals();
 
     return struct_to_return;
 }
@@ -333,32 +326,31 @@ NestedStructWithArray Trusted::Implementation::PassingArrayTypes_To_Enclave(
     return CreateNestedStructWithArray();
 }
 
-StructWithPointers Trusted::Implementation::ComplexPassingOfTypesThatContainPointers_To_Enclave(
-    _In_ const StructWithPointers* arg1_null,
-    _In_ const StructWithPointers* arg2,
-    _Inout_ StructWithPointers* arg3,
-    _Out_ std::unique_ptr<StructWithPointers>& arg4,
-    _Inout_ std::vector<StructWithPointers>& arg5,
-    _Inout_ std::array<StructWithPointers, 2>& arg6)
+StructWithOptionals Trusted::Implementation::ComplexPassingOfTypesThatContainOptionals_To_Enclave(
+    _In_ const std::optional<StructWithOptionals>& arg1_empty,
+    _In_ const std::optional<StructWithOptionals>& arg2,
+    _Inout_ std::optional<StructWithOptionals>& arg3,
+    _Out_ std::optional<StructWithOptionals>& arg4,
+    _Inout_ std::vector<StructWithOptionals>& arg5,
+    _Inout_ std::array<StructWithOptionals, 2>& arg6)
 {
-    arg4 = nullptr;
-    auto struct_to_return = CreateStructWithPointers();
+    auto struct_to_return = CreateStructWithOptionals();
 
     // check in/inout parameters contain expected values
-    THROW_HR_IF(E_INVALIDARG, arg1_null != nullptr);
-    THROW_HR_IF(E_INVALIDARG, !CompareStructWithPointers(*arg2, struct_to_return));
-    THROW_HR_IF(E_INVALIDARG, !CompareStructWithPointers(*arg3, {}));
-    THROW_HR_IF(E_INVALIDARG, !std::equal(arg5.begin(), arg5.end(), c_struct_with_ptrs_vec_empty.begin(), CompareStructWithPointers));
-    THROW_HR_IF(E_INVALIDARG, !std::equal(arg6.begin(), arg6.end(), c_struct_with_ptrs_vec_empty.begin(), CompareStructWithPointers));
+    THROW_HR_IF(E_INVALIDARG, arg1_empty.has_value()); // should be nullopt
+    THROW_HR_IF(E_INVALIDARG, !CompareStructWithOptionals(*arg2, struct_to_return));
+    THROW_HR_IF(E_INVALIDARG, !CompareStructWithOptionals(*arg3, {}));
+    THROW_HR_IF(E_INVALIDARG, !std::equal(arg5.begin(), arg5.end(), c_struct_with_opts_vec_empty.begin(), CompareStructWithOptionals));
+    THROW_HR_IF(E_INVALIDARG, !std::equal(arg6.begin(), arg6.end(), c_struct_with_opts_vec_empty.begin(), CompareStructWithOptionals));
 
-    *arg3 = CreateStructWithPointers();
-    arg4 = std::make_unique<StructWithPointers>();
-    *arg4 = CreateStructWithPointers();
+    *arg3 = CreateStructWithOptionals();
+    arg4 = std::make_optional<StructWithOptionals>();
+    *arg4 = CreateStructWithOptionals();
 
-    for (size_t i = 0; i < c_struct_with_ptrs_arr_initialize.size(); i++)
+    for (size_t i = 0; i < c_struct_with_opts_arr_initialize.size(); i++)
     {
-        arg5[i] = CreateStructWithPointers();
-        arg6[i] = CreateStructWithPointers();
+        arg5[i] = CreateStructWithOptionals();
+        arg6[i] = CreateStructWithOptionals();
     }
 
     return struct_to_return;
@@ -371,11 +363,11 @@ StructWithPointers Trusted::Implementation::ComplexPassingOfTypesThatContainPoin
 // For testing vtl0 callbacks we use HRESULTS as our success/failure metrics since we can't use TAEF in the
 // enclave.
 
-HRESULT Trusted::Implementation::Start_ReturnInt32Ptr_From_HostApp_Callback_Test()
+HRESULT Trusted::Implementation::Start_ReturnInt32Opt_From_HostApp_Callback_Test()
 {
     // Note: struct is returned by vtl1, and copied to vtl0 then returned to this function.
-    auto result = Untrusted::Stubs::ReturnInt32Ptr_From_HostApp();
-    THROW_HR_IF_NULL(E_INVALIDARG, result.get());
+    auto result = Untrusted::Stubs::ReturnInt32Opt_From_HostApp();
+    THROW_HR_IF(E_INVALIDARG, !result.has_value());
     THROW_HR_IF(E_INVALIDARG, *result != std::numeric_limits<std::int32_t>::max());
 
     return S_OK;
@@ -393,8 +385,8 @@ HRESULT Trusted::Implementation::Start_ReturnUint64Val_From_HostApp_Callback_Tes
 HRESULT Trusted::Implementation::Start_ReturnStructWithValues_From_HostApp_Callback_Test()
 {
     // Note: struct is returned by vtl0, and copied to vtl1 then returned to this function.
-    StructWithNoPointers result = Untrusted::Stubs::ReturnStructWithValues_From_HostApp();
-    THROW_HR_IF(E_INVALIDARG, !(CompareStructWithNoPointers(result, CreateStructWithNoPointers())));
+    StructWithNoOptionals result = Untrusted::Stubs::ReturnStructWithValues_From_HostApp();
+    THROW_HR_IF(E_INVALIDARG, !(CompareStructWithNoOptionals(result, CreateStructWithNoOptionals())));
 
     return S_OK;
 }
@@ -449,34 +441,34 @@ HRESULT Trusted::Implementation::Start_TestPassingPrimitivesAsOutValues_To_HostA
     return S_OK;
 }
 
-HRESULT Trusted::Implementation::Start_TestPassingPrimitivesAsInPointers_To_HostApp_Callback_Test()
+HRESULT Trusted::Implementation::Start_TestPassingPrimitivesAsInOptionals_To_HostApp_Callback_Test()
 {
-    std::uint8_t uint8_val = 100;
-    std::uint16_t uint16_val = 100;
-    std::uint32_t uint32_val = 100;
-    std::uint32_t* null_uint32_val {};
+    std::optional<std::uint8_t> uint8_val = 100;
+    std::optional<std::uint16_t> uint16_val = 100;
+    std::optional<std::uint32_t> uint32_val = 100;
+    std::optional<std::uint32_t> empty_uint32_val {};
 
     // Note: Hresult is returned by vtl0, and copied to vtl1 then returned to this function.
-    THROW_IF_FAILED(Untrusted::Stubs::TestPassingPrimitivesAsInPointers_To_HostApp(
-        &uint8_val,
-        &uint16_val,
-        &uint32_val,
-        null_uint32_val));
+    THROW_IF_FAILED(Untrusted::Stubs::TestPassingPrimitivesAsInOptionals_To_HostApp(
+        uint8_val,
+        uint16_val,
+        uint32_val,
+        empty_uint32_val));
 
     return S_OK;
 }
 
-HRESULT Trusted::Implementation::Start_TestPassingPrimitivesAsInOutPointers_To_HostApp_Callback_Test()
+HRESULT Trusted::Implementation::Start_TestPassingPrimitivesAsInOutOptionals_To_HostApp_Callback_Test()
 {
-    std::int8_t int8_val = 100;
-    std::int16_t int16_val = 100;
-    std::int32_t int32_val = 100;
+    std::optional<std::int8_t> int8_val = 100;
+    std::optional<std::int16_t> int16_val = 100;
+    std::optional<std::int32_t> int32_val = 100;
 
     // Note: Hresult is returned by vtl0, and copied to vtl1 then returned to this function.
-    THROW_IF_FAILED(Untrusted::Stubs::TestPassingPrimitivesAsInOutPointers_To_HostApp(
-        &int8_val,
-        &int16_val,
-        &int32_val));
+    THROW_IF_FAILED(Untrusted::Stubs::TestPassingPrimitivesAsInOutOptionals_To_HostApp(
+        int8_val,
+        int16_val,
+        int32_val));
 
     // The in-out parameters should have been filled in by the abi in vtl1 based on the result from
     // the vtl0 version of the function
@@ -486,23 +478,23 @@ HRESULT Trusted::Implementation::Start_TestPassingPrimitivesAsInOutPointers_To_H
 
     return S_OK;
 }
-HRESULT Trusted::Implementation::Start_TestPassingPrimitivesAsOutPointers_To_HostApp_Callback_Test()
+HRESULT Trusted::Implementation::Start_TestPassingPrimitivesAsOutOptionals_To_HostApp_Callback_Test()
 {
-    std::unique_ptr<bool> bool_val = nullptr;
-    std::unique_ptr<DecimalEnum> enum_val = nullptr;
-    std::unique_ptr<std::uint64_t> uint64_val = nullptr;
+    std::optional<bool> bool_val{};
+    std::optional<DecimalEnum> enum_val{};
+    std::optional<std::uint64_t> uint64_val{};
 
     // Note: Hresult is returned by vtl0, and copied to vtl1 then returned to this function.
-    THROW_IF_FAILED(Untrusted::Stubs::TestPassingPrimitivesAsOutPointers_To_HostApp(
+    THROW_IF_FAILED(Untrusted::Stubs::TestPassingPrimitivesAsOutOptionals_To_HostApp(
         bool_val,
         enum_val,
         uint64_val));
 
     // The out parameters should have been filled in by the abi in vtl1 based on the result from
     // the vtl0 version of the function
-    THROW_HR_IF_NULL(E_INVALIDARG, bool_val);
-    THROW_HR_IF_NULL(E_INVALIDARG, enum_val);
-    THROW_HR_IF_NULL(E_INVALIDARG, uint64_val);
+    THROW_HR_IF(E_INVALIDARG, !bool_val.has_value());
+    THROW_HR_IF(E_INVALIDARG, !enum_val.has_value());
+    THROW_HR_IF(E_INVALIDARG, !uint64_val.has_value());
     THROW_HR_IF(E_INVALIDARG, *bool_val != true);
     THROW_HR_IF(E_INVALIDARG, *enum_val != DecimalEnum::Deci_val3);
     THROW_HR_IF(E_INVALIDARG, *uint64_val != std::numeric_limits<std::uint64_t>::max());
@@ -512,69 +504,67 @@ HRESULT Trusted::Implementation::Start_TestPassingPrimitivesAsOutPointers_To_Hos
 
 HRESULT Trusted::Implementation::Start_ComplexPassingOfTypes_To_HostApp_Callback_Test()
 {
-    auto expected_struct_values = CreateStructWithNoPointers();
-    StructWithNoPointers struct_no_pointers_1 = expected_struct_values;
-    StructWithNoPointers struct_no_pointers_2 {};
-    std::unique_ptr<StructWithNoPointers> struct_no_pointers_3;
-    StructWithNoPointers struct_no_pointers_4 {};
-    std::unique_ptr<std::uint64_t> uint64_val = nullptr;
-    StructWithNoPointers* struct_no_pointers_5 {};
-    StructWithNoPointers struct_no_pointers_6 = expected_struct_values;
-    StructWithNoPointers struct_no_pointers_7 {};
-
+    auto expected_struct_values = CreateStructWithNoOptionals();
+    StructWithNoOptionals struct_no_optionals_1 = expected_struct_values;
+    StructWithNoOptionals struct_no_optionals_2 {};
+    std::optional<StructWithNoOptionals> struct_no_optionals_3;
+    StructWithNoOptionals struct_no_optionals_4 {};
+    std::optional<std::uint64_t> uint64_val{};
+    std::optional<StructWithNoOptionals> struct_no_optionals_5 {};
+    StructWithNoOptionals struct_no_optionals_6 = expected_struct_values;
+    std::optional<StructWithNoOptionals> struct_no_optionals_7  = StructWithNoOptionals{};
     // Note: Hresult is returned by vtl0, and copied to vtl1 then returned to this function.
     auto result = Untrusted::Stubs::ComplexPassingOfTypes_To_HostApp(
-        struct_no_pointers_1,
-        struct_no_pointers_2,
-        struct_no_pointers_3,
-        struct_no_pointers_4,
-        struct_no_pointers_5,
-        &struct_no_pointers_6,
-        &struct_no_pointers_7,
+        struct_no_optionals_1,
+        struct_no_optionals_2,
+        struct_no_optionals_3,
+        struct_no_optionals_4,
+        struct_no_optionals_5,
+        struct_no_optionals_6,
+        struct_no_optionals_7,
         uint64_val);
 
     // The out parameters should have been filled in by the abi in vtl1 based on the result from
     // the vtl0 version of the function
-    THROW_HR_IF(E_INVALIDARG, !(CompareStructWithNoPointers(result, CreateStructWithNoPointers())));
-    THROW_HR_IF(E_INVALIDARG, !CompareStructWithNoPointers(result, expected_struct_values));
-    THROW_HR_IF(E_INVALIDARG, !CompareStructWithNoPointers(struct_no_pointers_2, expected_struct_values));
-    THROW_HR_IF_NULL(E_INVALIDARG, struct_no_pointers_3);
-    THROW_HR_IF(E_INVALIDARG, !CompareStructWithNoPointers(*struct_no_pointers_3, expected_struct_values));
-    THROW_HR_IF(E_INVALIDARG, !CompareStructWithNoPointers(struct_no_pointers_4, expected_struct_values));
-    THROW_HR_IF_NULL(E_INVALIDARG, uint64_val);
+    THROW_HR_IF(E_INVALIDARG, !(CompareStructWithNoOptionals(result, CreateStructWithNoOptionals())));
+    THROW_HR_IF(E_INVALIDARG, !CompareStructWithNoOptionals(result, expected_struct_values));
+    THROW_HR_IF(E_INVALIDARG, !CompareStructWithNoOptionals(struct_no_optionals_2, expected_struct_values));
+    THROW_HR_IF(E_INVALIDARG, !struct_no_optionals_3.has_value());
+    THROW_HR_IF(E_INVALIDARG, !CompareStructWithNoOptionals(*struct_no_optionals_3, expected_struct_values));
+    THROW_HR_IF(E_INVALIDARG, !CompareStructWithNoOptionals(struct_no_optionals_4, expected_struct_values));
+    THROW_HR_IF(E_INVALIDARG, !uint64_val.has_value());
     THROW_HR_IF(E_INVALIDARG, *uint64_val != std::numeric_limits<std::uint64_t>::max());
-    THROW_HR_IF(E_INVALIDARG, !CompareStructWithNoPointers(struct_no_pointers_6, expected_struct_values));
-    THROW_HR_IF(E_INVALIDARG, !CompareStructWithNoPointers(struct_no_pointers_7, expected_struct_values));
+    THROW_HR_IF(E_INVALIDARG, !CompareStructWithNoOptionals(struct_no_optionals_6, expected_struct_values));
+    THROW_HR_IF(E_INVALIDARG, !CompareStructWithNoOptionals(*struct_no_optionals_7, expected_struct_values));
 
     return S_OK;
 }
 
-HRESULT Trusted::Implementation::Start_ComplexPassingOfTypesThatContainPointers_To_HostApp_Callback_Test()
+HRESULT Trusted::Implementation::Start_ComplexPassingOfTypesThatContainOptionals_To_HostApp_Callback_Test()
 {
-    auto expected_struct_with_ptrs = CreateStructWithPointers();
-    StructWithPointers* struct_with_pointers_1_null {};
-    StructWithPointers struct_with_pointers_2 = CreateStructWithPointers();
-    StructWithPointers struct_with_pointers_3 = {};
-    std::unique_ptr<StructWithPointers> struct_with_pointers_4 {};
-    std::vector<StructWithPointers> struct_with_pointers_5(c_arbitrary_size_2);
-    std::array<StructWithPointers, c_arbitrary_size_2> struct_with_pointers_6;
-
+    auto expected_struct_with_opts = CreateStructWithOptionals();
+    std::optional<StructWithOptionals> struct_with_optionals_1_empty {};
+    std::optional<StructWithOptionals> struct_with_optionals_2 = CreateStructWithOptionals();
+    std::optional<StructWithOptionals> struct_with_optionals_3 = StructWithOptionals{};
+    std::optional<StructWithOptionals> struct_with_optionals_4 {};
+    std::vector<StructWithOptionals> struct_with_optionals_5(c_arbitrary_size_2);
+    std::array<StructWithOptionals, c_arbitrary_size_2> struct_with_optionals_6;
     // The inout and out parameters should have been filled in by the abi in vtl1 based on the result from
     // the vtl0 version of the function
-    auto result = Untrusted::Stubs::ComplexPassingOfTypesThatContainPointers_To_HostApp(
-        struct_with_pointers_1_null,
-        &struct_with_pointers_2,
-        &struct_with_pointers_3,
-        struct_with_pointers_4,
-        struct_with_pointers_5,
-        struct_with_pointers_6);
+    auto result = Untrusted::Stubs::ComplexPassingOfTypesThatContainOptionals_To_HostApp(
+        struct_with_optionals_1_empty,
+        struct_with_optionals_2,
+        struct_with_optionals_3,
+        struct_with_optionals_4,
+        struct_with_optionals_5,
+        struct_with_optionals_6);
 
-    THROW_HR_IF(E_INVALIDARG, !(CompareStructWithPointers(result, expected_struct_with_ptrs)));
-    THROW_HR_IF(E_INVALIDARG, !CompareStructWithPointers(struct_with_pointers_3, expected_struct_with_ptrs));
-    THROW_HR_IF_NULL(E_INVALIDARG, struct_with_pointers_4.get());
-    THROW_HR_IF(E_INVALIDARG, !CompareStructWithPointers(*struct_with_pointers_4, expected_struct_with_ptrs));
-    THROW_HR_IF(E_INVALIDARG, !std::equal(struct_with_pointers_5.begin(), struct_with_pointers_5.end(), c_struct_with_ptrs_arr_initialize.begin(), CompareStructWithPointers));
-    THROW_HR_IF(E_INVALIDARG, !std::equal(struct_with_pointers_6.begin(), struct_with_pointers_6.end(), c_struct_with_ptrs_arr_initialize.begin(), CompareStructWithPointers));
+    THROW_HR_IF(E_INVALIDARG, !(CompareStructWithOptionals(result, expected_struct_with_opts)));
+    THROW_HR_IF(E_INVALIDARG, !CompareStructWithOptionals(*struct_with_optionals_3, expected_struct_with_opts));
+    THROW_HR_IF(E_INVALIDARG, !struct_with_optionals_4.has_value());
+    THROW_HR_IF(E_INVALIDARG, !CompareStructWithOptionals(*struct_with_optionals_4, expected_struct_with_opts));
+    THROW_HR_IF(E_INVALIDARG, !std::equal(struct_with_optionals_5.begin(), struct_with_optionals_5.end(), c_struct_with_opts_arr_initialize.begin(), CompareStructWithOptionals));
+    THROW_HR_IF(E_INVALIDARG, !std::equal(struct_with_optionals_6.begin(), struct_with_optionals_6.end(), c_struct_with_opts_arr_initialize.begin(), CompareStructWithOptionals));
 
     return S_OK;
 }

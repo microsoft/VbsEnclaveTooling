@@ -61,19 +61,16 @@ namespace VbsEnclaveToolingTests
         { "RetUint32_t", "RetUint32_t()" },
         { "RetUint64_t", "RetUint64_t()" },
         { "RetVoid", "RetVoid()" },
-        { "RetUint32Ptr", "RetUint32Ptr()" },
 
         // EnumTest.edl function signatures where key is function name and value is its signature
 
-        {"TrustedGetColor", "TrustedGetColor(Color,Color[Nine],Color[5],Color[1],Color*,Color*,Color*,Color*,Color*,Color*,Color*,Color*,Color*,Color*,Color*,Color*,Color*,Color*,Color*,size_t,size_t)"},
-        {"UntrustedGetColor", "UntrustedGetColor(Color,Color[5],Color[5],Color[1],Color*,Color*,Color*,Color*,Color*,Color*,Color*,Color*,Color*,Color*,Color*,Color*,Color*,Color*,Color*,size_t,size_t)"},
-        { "GetColorPtr", "GetColorPtr()" },
+        {"TrustedGetColor", "TrustedGetColor(Color,Color[Nine],Color[5],Color[1],Color,Color,Color,Color,Color,Color,Color,Color,Color,Color,Color,Color,Color,Color,Color,size_t,size_t)"},
+        {"UntrustedGetColor", "UntrustedGetColor(Color,Color[5],Color[5],Color[1],Color,Color,Color,Color,Color,Color,Color,Color,Color,Color,Color,Color,Color,Color,Color,size_t,size_t)"},
 
         // StructTest.edl function signatures where key is function name and value is its signature
 
-        {"TrustedGetStruct1", "TrustedGetStruct1(MyStruct1,MyStruct1[5],MyStruct1[5],MyStruct1[1],MyStruct1*,MyStruct1*,MyStruct1*,MyStruct1*,MyStruct1*,MyStruct1*,MyStruct1*,MyStruct1*,MyStruct1*,MyStruct1*,MyStruct1*,MyStruct1*,MyStruct1*,MyStruct1*,MyStruct1*,size_t,size_t)"},
-        {"UntrustedGetStruct1", "UntrustedGetStruct1(MyStruct1,MyStruct1[5],MyStruct1[5],MyStruct1[1],MyStruct1*,MyStruct1*,MyStruct1*,MyStruct1*,MyStruct1*,MyStruct1*,MyStruct1*,MyStruct1*,MyStruct1*,MyStruct1*,MyStruct1*,MyStruct1*,MyStruct1*,MyStruct1*,MyStruct1*,size_t,size_t)"},
-        { "GetStruct1Ptr", "GetStruct1Ptr()" },
+        {"TrustedGetStruct1", "TrustedGetStruct1(MyStruct1,MyStruct1[5],MyStruct1[5],MyStruct1[1],MyStruct1,MyStruct1,MyStruct1,MyStruct1,MyStruct1,MyStruct1,MyStruct1,MyStruct1,MyStruct1,MyStruct1,MyStruct1,MyStruct1,MyStruct1,MyStruct1,MyStruct1,size_t,size_t)"},
+        {"UntrustedGetStruct1", "UntrustedGetStruct1(MyStruct1,MyStruct1[5],MyStruct1[5],MyStruct1[1],MyStruct1,MyStruct1,MyStruct1,MyStruct1,MyStruct1,MyStruct1,MyStruct1,MyStruct1,MyStruct1,MyStruct1,MyStruct1,MyStruct1,MyStruct1,MyStruct1,MyStruct1,size_t,size_t)"},
 
         // ImportTest.edl function signatures where key is the function name and value is its signature
         { "NonImportFunc1", "NonImportFunc1()"},

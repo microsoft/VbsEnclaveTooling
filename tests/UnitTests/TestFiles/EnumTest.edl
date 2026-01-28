@@ -37,35 +37,33 @@ enclave
             [out] Color arg4[1],
 
             // count = 1
-            [in] Color* arg5,
-            [in,out] Color* arg6,
-            [out] Color* arg7,
+            [in] Color arg5,
+            [in,out] Color arg6,
+            [out] Color arg7,
 
             // count attribute           
-            [in] Color* arg8,
-            [in, out] Color* arg9,
-            [out] Color* arg10,
+            [in] Color arg8,
+            [in, out] Color arg9,
+            [out] Color arg10,
 
             // size attribute
-            [in] Color* arg11,
-            [in, out] Color* arg12,
-            [out] Color* arg13,
+            [in] Color arg11,
+            [in, out] Color arg12,
+            [out] Color arg13,
 
             // count parameter
-            [in] Color* arg14,
-            [in, out] Color* arg15,
-            [out] Color* arg16,
+            [in] Color arg14,
+            [in, out] Color arg15,
+            [out] Color arg16,
 
             // size parameter
-            [in] Color* arg17,
-            [in, out] Color* arg18,
-            [out] Color* arg19,
+            [in] Color arg17,
+            [in, out] Color arg18,
+            [out] Color arg19,
 
             size_t arg20,
             size_t arg21
         );
-
-        Color* GetColorPtr();
     };
 
     untrusted 
@@ -78,34 +76,32 @@ enclave
             [out] Color arg4[1],
 
             // count = 1
-            [in] Color* arg5,
-            [in, out] Color* arg6,
-            [out] Color* arg7,
+            [in] Color arg5,
+            [in, out] Color arg6,
+            [out] Color arg7,
 
             // count attribute           
-            [in] Color* arg8,
-            [in, out] Color* arg9,
-            [out] Color* arg10,
+            [in] Color arg8,
+            [in, out] Color arg9,
+            [out] Color arg10,
 
             // size attribute
-            [in] Color* arg11,
-            [in, out] Color* arg12,
-            [out] Color* arg13,
+            [in] Color arg11,
+            [in, out] Color arg12,
+            [out] Color arg13,
 
             // count parameter
-            [in] Color* arg14,
-            [in, out] Color* arg15,
-            [out] Color* arg16,
+            [in] Color arg14,
+            [in, out] Color arg15,
+            [out] Color arg16,
 
             // size parameter
-            [in] Color* arg17,
-            [in, out] Color* arg18,
-            [out] Color* arg19,
+            [in] Color arg17,
+            [in, out] Color arg18,
+            [out] Color arg19,
 
             size_t arg20,
             size_t arg21
         );
-
-        Color* GetColorPtr();
     };
 };

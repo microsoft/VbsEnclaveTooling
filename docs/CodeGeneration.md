@@ -131,13 +131,13 @@ enclave {
     {
         vector<string> vec_str;
         wstring arr_str[5];
-        int32_t* int_ptr;
+        optional<int32_t> opt_int32;
     };
 
     trusted {
         string TrustedExample(
             [out] vector<int8_t> int8_vec,
-            int64_t* some_ptr, // no attribute so by default will be _In_ attribute.
+            optional<int64_t> opt_int64, // no attribute so by default will be _In_ attribute.
             [in, out] ExampleStruct ex_struct
         );
     };
@@ -172,14 +172,12 @@ The expectation is for a developer to use the generated class in the following w
 auto generated_class = VbsEnclave::Trusted::Stubs::MyEnclave(enclave_void_star);
 THROW_IF_FAILED(generated_class.RegisterVtl0Callbacks()); // call RegisterVtl0Callbacks at least once.
 std::vector<int8_t> int8_vec {};
-int64_t some_int64 = 0;
+std::optional<int64_t> some_int64 = 200;
 ExampleStruct ex_struct{};
 ex_struct.vec_str.push_back("string 1");
 ex_struct.arr_str[0] = L"wstring 1";
-int32_t int32_val = 67678;
-ex_struct.int_ptr = &int32_val;
 
-std::string enclave_str = generated_class.TrustedExample(int8_vec, &some_int64, ex_struct);
+std::string enclave_str = generated_class.TrustedExample(int8_vec, some_int64, ex_struct);
 for (size_t i = 0; i < int8_vec.size(); i++)
 {
     // Should print 0, 1, 2, 3, 4 ... up to 9
@@ -198,7 +196,7 @@ for (auto& value : ex_struct.arr_str)
     std::wcout <<  value << std::endl;
 }
 
-std::cout <<  *ex_struct.int_ptr << std::endl; // should print 20
+std::cout <<  *ex_struct.opt_int32 << std::endl; // should print 20
 std::cout <<  enclave_str << std::endl; // should print "String from enclave!"
 ```
 
@@ -222,7 +220,7 @@ namespace VbsEnclave
     {
         std::string TrustedExample(
             _Out_ std::vector<int8_t>& int8_vec, 
-            _In_ const std::int64_t* some_ptr,
+            _In_ const std::optional<int64_t>& opt_int64,
             _Inout_ ExampleStruct& ex_struct );
     }
 }
@@ -241,14 +239,18 @@ using namespace VbsEnclave;
 
 std::string Trusted::Implementation::TrustedExample(
     _Out_ std::vector<int8_t>& int8_vec, 
-    _In_ const std::int64_t* some_ptr,
+    _In_ const std::optional<int64_t>& opt_int64,
     _Inout_ ExampleStruct& ex_struct)
 {
     int8_vec.resize(10);
     std::iota(int8_vec.begin(), int8_vec.end(), 0);
-    THROW_HR_IF_NULL(E_INVALIDARG, ex_struct.int_ptr);
-    *ex_struct.int_ptr = 20;
     
+    // Check that opt_int64 has the expected value. It should!
+    THROW_HR_IF(E_INVALIDARG, !opt_int64.has_value());
+    THROW_HR_IF(E_INVALIDARG, *opt_int64 != 200);
+
+    ex_struct.opt_int32 = 20;
+
     for (int i = 2; i < 6; i++)
     {
         ex_struct.vec_str.push_back("string "+ std::to_string(i));
@@ -258,12 +260,6 @@ std::string Trusted::Implementation::TrustedExample(
     {
         ex_struct.arr_str.push_back(L"wstring "+ std::to_wstring(i));
     }
-
-    *ex_struct.int_ptr = 20;
-
-    // Validate that the pointer was copied correctly. (It should!)
-    THROW_HR_IF_NULL(E_INVALIDARG, some_ptr);
-    THROW_HR_IF(E_INVALIDARG, *some_ptr != 67678);
 
     return "String from enclave!";
 }

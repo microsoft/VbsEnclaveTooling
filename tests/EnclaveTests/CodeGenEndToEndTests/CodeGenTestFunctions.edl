@@ -56,16 +56,16 @@ enclave
         TestStruct2 field5;
     };
 
-    struct StructWithPointers
+    struct StructWithOptionals
     {
-        NestedStructWithPointers* nested_struct_ptr;
+        optional<NestedStructWithOptionals> nested_struct_opt;
     };
 
-    struct NestedStructWithPointers
+    struct NestedStructWithOptionals
     {
-        int32_t* int32_ptr;
-        DecimalEnum* deci_ptr;
-        TestStruct1* struct_ptr;
+        optional<int32_t> int32_opt;
+        optional<DecimalEnum> deci_opt;
+        optional<TestStruct1> struct_opt;
     };
 
     // Host to enclave functions
@@ -86,51 +86,51 @@ enclave
             [out] HexEnum enum_val,
             [out] int8_t int8_val);
 
-        // Pointers should have an in or out direction. Otherwise the codegen layer will see them as [in] parameters.
-        HRESULT TestPassingPrimitivesAsInPointers_To_Enclave(
-            [in] uint8_t* uint8_val,
-            [in] uint16_t* uint16_val,
-            [in] uint32_t* uint32_val,
-            [in] uint32_t* null_uint32_val);
+        // Optionals should have an in or out direction. Otherwise the codegen layer will see them as [in] parameters.
+        HRESULT TestPassingPrimitivesAsInOptionals_To_Enclave(
+            [in] optional<uint8_t> uint8_val,
+            [in] optional<uint16_t> uint16_val,
+            [in] optional<uint32_t> uint32_val,
+            [in] optional<uint32_t> empty_uint32_val);
 
-        // Pointers should have an in or out direction. Otherwise the codegen layer will see them as [in] parameters.
-        HRESULT TestPassingPrimitivesAsInOutPointers_To_Enclave(
-            [in, out] int8_t* int8_val,
-            [in, out] int16_t* int16_val,
-            [in, out] int32_t* int32_val);
+        // Optionals should have an in or out direction. Otherwise the codegen layer will see them as [in] parameters.
+        HRESULT TestPassingPrimitivesAsInOutOptionals_To_Enclave(
+            [in, out] optional<int8_t> int8_val,
+            [in, out] optional<int16_t> int16_val,
+            [in, out] optional<int32_t> int32_val);
 
-        // Pointers should have an in or out direction. Otherwise the codegen layer will see them as [in] parameters.
-        HRESULT TestPassingPrimitivesAsOutPointers_To_Enclave(
-            [out] bool* bool_val,
-            [out] DecimalEnum* enum_val,
-            [out] uint64_t* uint64_val); 
+        // Optionals should have an in or out direction. Otherwise the codegen layer will see them as [in] parameters.
+        HRESULT TestPassingPrimitivesAsOutOptionals_To_Enclave(
+            [out] optional<bool> bool_val,
+            [out] optional<DecimalEnum> enum_val,
+            [out] optional<uint64_t> uint64_val); 
 
-        // Example of returning a pointer. Marshalling works the same way for primitive so we only need a test
+        // Example of returning a optional. Marshalling works the same way for primitive so we only need a test
         // for one.
-        int32_t* ReturnInt32Ptr_From_Enclave();
+        optional<int32_t> ReturnInt32Opt_From_Enclave();
 
         uint64_t ReturnUint64Val_From_Enclave();
 
         // Returning a more complex struct
-        StructWithNoPointers ReturnStructWithValues_From_Enclave();
+        StructWithNoOptionals ReturnStructWithValues_From_Enclave();
 
-        StructWithNoPointers ComplexPassingOfTypes_To_Enclave(
-            StructWithNoPointers arg1,
-            [in, out]StructWithNoPointers arg2,
-            [out] StructWithNoPointers* arg3,
-            [out] StructWithNoPointers arg4,
-            StructWithNoPointers* arg5_null, // pass null value
-            StructWithNoPointers* arg6,
-            [in, out] StructWithNoPointers* arg7,
-            [out] uint64_t* uint64_val);
+        StructWithNoOptionals ComplexPassingOfTypes_To_Enclave(
+            StructWithNoOptionals arg1,
+            [in, out]StructWithNoOptionals arg2,
+            [out] optional<StructWithNoOptionals> arg3,
+            [out] StructWithNoOptionals arg4,
+            optional<StructWithNoOptionals> arg5_empty, // pass empty value
+            optional<StructWithNoOptionals> arg6,
+            [in, out] optional<StructWithNoOptionals> arg7,
+            [out] optional<uint64_t> uint64_val);
         
-        StructWithPointers ComplexPassingOfTypesThatContainPointers_To_Enclave(
-            [in] StructWithPointers* arg1_null, // pass null value
-            [in] StructWithPointers* arg2,
-            [in, out] StructWithPointers* arg3,
-            [out] StructWithPointers* arg4,
-            [in, out] vector<StructWithPointers> arg5,
-            [in, out] StructWithPointers arg6[2]);
+        StructWithOptionals ComplexPassingOfTypesThatContainOptionals_To_Enclave(
+            [in] optional<StructWithOptionals> arg1_empty, // pass empty value
+            [in] optional<StructWithOptionals> arg2,
+            [in, out] optional<StructWithOptionals> arg3,
+            [out] optional<StructWithOptionals> arg4,
+            [in, out] vector<StructWithOptionals> arg5,
+            [in, out] StructWithOptionals arg6[2]);
 
         void ReturnNoParams_From_Enclave();
 
@@ -183,14 +183,14 @@ enclave
         HRESULT Start_TestPassingPrimitivesAsValues_To_HostApp_Callback_Test();
         HRESULT Start_TestPassingPrimitivesAsInOutValues_To_HostApp_Callback_Test();
         HRESULT Start_TestPassingPrimitivesAsOutValues_To_HostApp_Callback_Test();
-        HRESULT Start_TestPassingPrimitivesAsInPointers_To_HostApp_Callback_Test();
-        HRESULT Start_TestPassingPrimitivesAsInOutPointers_To_HostApp_Callback_Test();
-        HRESULT Start_TestPassingPrimitivesAsOutPointers_To_HostApp_Callback_Test(); 
-        HRESULT Start_ReturnInt32Ptr_From_HostApp_Callback_Test();
+        HRESULT Start_TestPassingPrimitivesAsInOptionals_To_HostApp_Callback_Test();
+        HRESULT Start_TestPassingPrimitivesAsInOutOptionals_To_HostApp_Callback_Test();
+        HRESULT Start_TestPassingPrimitivesAsOutOptionals_To_HostApp_Callback_Test(); 
+        HRESULT Start_ReturnInt32Opt_From_HostApp_Callback_Test();
         HRESULT Start_ReturnUint64Val_From_HostApp_Callback_Test();
         HRESULT Start_ReturnStructWithValues_From_HostApp_Callback_Test();
         HRESULT Start_ComplexPassingOfTypes_To_HostApp_Callback_Test();
-        HRESULT Start_ComplexPassingOfTypesThatContainPointers_To_HostApp_Callback_Test();
+        HRESULT Start_ComplexPassingOfTypesThatContainOptionals_To_HostApp_Callback_Test();
         void Start_ReturnNoParams_From_HostApp_Callback_Test();
         HRESULT Start_ReturnObjectInVector_From_HostApp_Callback_Test();
         HRESULT Start_PassingPrimitivesInVector_To_HostApp_Callback_Test();
@@ -220,53 +220,53 @@ enclave
             [out] HexEnum enum_val,
             [out] int8_t int8_val);
 
-        // Pointers should have an in or out direction. Otherwise the codegen layer will see them as [in] parameters.
-        HRESULT TestPassingPrimitivesAsInPointers_To_HostApp(
-            [in] uint8_t* uint8_val,
-            [in] uint16_t* uint16_val,
-            [in] uint32_t* uint32_val,
-            [in] uint32_t* null_uint32_val); // pass null value
+        // Optionals should have an in or out direction. Otherwise the codegen layer will see them as [in] parameters.
+        HRESULT TestPassingPrimitivesAsInOptionals_To_HostApp(
+            [in] optional<uint8_t> uint8_val,
+            [in] optional<uint16_t> uint16_val,
+            [in] optional<uint32_t> uint32_val,
+            [in] optional<uint32_t> empty_uint32_val); // pass empty value
 
-        // Pointers should have an in or out direction. Otherwise the codegen layer will see them as [in] parameters.
-        HRESULT TestPassingPrimitivesAsInOutPointers_To_HostApp(
-            [in, out] int8_t* int8_val,
-            [in, out] int16_t* int16_val,
-            [in, out] int32_t* int32_val);
+        // Optionals should have an in or out direction. Otherwise the codegen layer will see them as [in] parameters.
+        HRESULT TestPassingPrimitivesAsInOutOptionals_To_HostApp(
+            [in, out] optional<int8_t> int8_val,
+            [in, out] optional<int16_t> int16_val,
+            [in, out] optional<int32_t> int32_val);
 
-        // Pointers should have an in or out direction. Otherwise the codegen layer will see them as [in] parameters.
-        HRESULT TestPassingPrimitivesAsOutPointers_To_HostApp(
-            [out] bool* bool_val,
-            [out] DecimalEnum* enum_val,
-            [out] uint64_t* uint64_val); 
+        // Optionals should have an in or out direction. Otherwise the codegen layer will see them as [in] parameters.
+        HRESULT TestPassingPrimitivesAsOutOptionals_To_HostApp(
+            [out] optional<bool> bool_val,
+            [out] optional<DecimalEnum> enum_val,
+            [out] optional<uint64_t> uint64_val); 
 
-        // Example of returning a pointer. Marshalling works the same way for primitive so we only need a test
+        // Example of returning a optional. Marshalling works the same way for primitive so we only need a test
         // for one.
-        int32_t* ReturnInt32Ptr_From_HostApp();
+        optional<int32_t> ReturnInt32Opt_From_HostApp();
 
         uint64_t ReturnUint64Val_From_HostApp();
 
         // Returning a more complex struct
-        StructWithNoPointers ReturnStructWithValues_From_HostApp();
+        StructWithNoOptionals ReturnStructWithValues_From_HostApp();
 
         void ReturnNoParams_From_HostApp();
 
-        StructWithNoPointers ComplexPassingOfTypes_To_HostApp(
-            StructWithNoPointers arg1,
-            [in, out]StructWithNoPointers arg2,
-            [out] StructWithNoPointers* arg3,
-            [out] StructWithNoPointers arg4,
-            StructWithNoPointers* arg5_null, // pass null value
-            StructWithNoPointers* arg6,
-            [in, out] StructWithNoPointers* arg7,
-            [out] uint64_t* uint64_val);
+        StructWithNoOptionals ComplexPassingOfTypes_To_HostApp(
+            StructWithNoOptionals arg1,
+            [in, out]StructWithNoOptionals arg2,
+            [out] optional<StructWithNoOptionals> arg3,
+            [out] StructWithNoOptionals arg4,
+            optional<StructWithNoOptionals> arg5_empty, // pass empty value
+            optional<StructWithNoOptionals> arg6,
+            [in, out] optional<StructWithNoOptionals> arg7,
+            [out] optional<uint64_t> uint64_val);
 
-        StructWithPointers ComplexPassingOfTypesThatContainPointers_To_HostApp(
-            [in] StructWithPointers* arg1_null, // pass null value
-            [in] StructWithPointers* arg2,
-            [in, out] StructWithPointers* arg3,
-            [out] StructWithPointers* arg4,
-            [in, out] vector<StructWithPointers> arg5,
-            [in, out] StructWithPointers arg6[2]);
+        StructWithOptionals ComplexPassingOfTypesThatContainOptionals_To_HostApp(
+            [in] optional<StructWithOptionals> arg1_empty, // pass empty value
+            [in] optional<StructWithOptionals> arg2,
+            [in, out] optional<StructWithOptionals> arg3,
+            [out] optional<StructWithOptionals> arg4,
+            [in, out] vector<StructWithOptionals> arg5,
+            [in, out] StructWithOptionals arg6[2]);
 
         vector<TestStruct1> ReturnObjectInVector_From_HostApp();
 

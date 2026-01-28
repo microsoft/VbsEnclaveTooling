@@ -21,7 +21,7 @@ enclave
     struct NonImportStruct
     {
         int32_t value;
-        MyStruct2 *mystruct2_ptr;
+        MyStruct2 mystruct2_ptr;
         Color color;
         int32_t arr[Eleven];
     };
