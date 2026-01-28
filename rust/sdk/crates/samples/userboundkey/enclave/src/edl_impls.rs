@@ -14,15 +14,14 @@ use alloc::string::String;
 use alloc::vec::Vec;
 use userboundkey_sample_enclave_gen::AbiError;
 use userboundkey_sample_enclave_gen::implementation::trusted::Trusted;
-use userboundkey_sample_enclave_gen::implementation::types::edl::WString;
 use userboundkey_sample_enclave_gen::implementation::types::{DecryptResult, EncryptResult};
 use userboundkey_sample_enclave_gen::stubs::untrusted::debug_print;
+use userboundkey_sample_enclave_gen::{U16Str, U16String};
 
 // Import SDK functions and types
 use vbsenclave_sdk_enclave::userboundkey::{
-    EnclaveSealingIdentityPolicy, SymmetricKeyHandle, TAG_SIZE, U16Str, ZERO_NONCE,
-    create_user_bound_key, decrypt, encrypt, keyCredentialCacheConfig, load_user_bound_key,
-    reseal_user_bound_key,
+    EnclaveSealingIdentityPolicy, SymmetricKeyHandle, TAG_SIZE, ZERO_NONCE, create_user_bound_key,
+    decrypt, encrypt, keyCredentialCacheConfig, load_user_bound_key, reseal_user_bound_key,
 };
 
 /// Runtime policy: no dynamic debug allowed
@@ -138,8 +137,8 @@ pub struct EnclaveImpl;
 impl Trusted for EnclaveImpl {
     /// Create a user-bound key.
     fn CreateUserBoundKey(
-        helloKeyName: &WString,
-        pinMessage: &WString,
+        helloKeyName: &U16Str,
+        pinMessage: &U16Str,
         windowId: u64,
         keyCredentialCreationOption: u32,
     ) -> Result<Vec<u8>, AbiError> {
@@ -158,9 +157,9 @@ impl Trusted for EnclaveImpl {
 
         // Create user-bound key with enclave sealing
         let sealed_key = create_user_bound_key(
-            U16Str::from_slice(&helloKeyName.wchars),
+            helloKeyName,
             &cache_config,
-            U16Str::from_slice(&pinMessage.wchars),
+            pinMessage,
             windowId,
             EnclaveSealingIdentityPolicy::EnclaveIdentity,
             RUNTIME_POLICY_NO_DEBUG,
@@ -183,19 +182,19 @@ impl Trusted for EnclaveImpl {
 
     /// Load user-bound key and encrypt data.
     fn LoadUserBoundKeyAndEncryptData(
-        helloKeyName: &WString,
-        pinMessage: &WString,
+        helloKeyName: &U16Str,
+        pinMessage: &U16Str,
         windowId: u64,
-        securedEncryptionKeyBytes: &Vec<u8>,
-        inputData: &WString,
+        securedEncryptionKeyBytes: &[u8],
+        inputData: &U16Str,
     ) -> Result<EncryptResult, AbiError> {
         let mut needs_reseal = false;
         let mut resealed_bytes = Vec::new();
 
         // Ensure key is loaded (handles reseal if needed)
         ensure_user_bound_key_loaded(
-            U16Str::from_slice(&helloKeyName.wchars),
-            U16Str::from_slice(&pinMessage.wchars),
+            &helloKeyName,
+            &pinMessage,
             windowId,
             securedEncryptionKeyBytes,
             &mut needs_reseal,
@@ -207,7 +206,7 @@ impl Trusted for EnclaveImpl {
 
         // Convert input to bytes (UTF-16 LE data)
         let input_bytes: Vec<u8> = inputData
-            .wchars
+            .as_slice()
             .iter()
             .flat_map(|c| c.to_le_bytes())
             .collect();
@@ -233,11 +232,11 @@ impl Trusted for EnclaveImpl {
 
     /// Load user-bound key and decrypt data.
     fn LoadUserBoundKeyAndDecryptData(
-        helloKeyName: &WString,
-        pinMessage: &WString,
+        helloKeyName: &U16Str,
+        pinMessage: &U16Str,
         windowId: u64,
-        securedEncryptionKeyBytes: &Vec<u8>,
-        combinedInputData: &Vec<u8>,
+        securedEncryptionKeyBytes: &[u8],
+        combinedInputData: &[u8],
     ) -> Result<DecryptResult, AbiError> {
         let mut needs_reseal = false;
         let mut resealed_bytes = Vec::new();
@@ -266,8 +265,8 @@ impl Trusted for EnclaveImpl {
 
         // Ensure key is loaded
         ensure_user_bound_key_loaded(
-            U16Str::from_slice(&helloKeyName.wchars),
-            U16Str::from_slice(&pinMessage.wchars),
+            &helloKeyName,
+            &pinMessage,
             windowId,
             securedEncryptionKeyBytes,
             &mut needs_reseal,
@@ -294,11 +293,8 @@ impl Trusted for EnclaveImpl {
             .map(|chunk| u16::from_le_bytes([chunk[0], chunk[1]]))
             .collect();
 
-        // Create WString from UTF-16 data
-        let decrypted_string = WString { wchars: utf16 };
-
         Ok(DecryptResult {
-            decryptedData: decrypted_string,
+            decryptedData: U16String::from_vec(utf16),
             needsReseal: needs_reseal,
             resealedEncryptionKeyBytes: resealed_bytes,
         })

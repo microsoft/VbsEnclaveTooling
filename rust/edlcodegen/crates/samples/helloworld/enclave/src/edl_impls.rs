@@ -5,7 +5,6 @@
 use test_enclave_gen::implementation::trusted::Trusted;
 use test_enclave_gen::AbiError;
 use test_enclave_gen::stubs::untrusted::print;
-use alloc::string::ToString;
 use tracelogging as tlg;
 use crate::{HELLO_WORLD_PROVIDER};
 
@@ -20,7 +19,7 @@ impl Trusted for EnclaveImpl {
         );
         
         // Print message to console from within the enclave.
-        print(&"Performing secret math operation inside VTL1...".to_string())?;
+        print("Performing secret math operation inside VTL1...")?;
         Ok(val1 + val2)
     }
 }

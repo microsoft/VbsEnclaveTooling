@@ -15,3 +15,4 @@ edlcodegen-tools = { git = "https://github.com/microsoft/VbsEnclaveTooling" }
 [dependencies]
 edlcodegen-enclave = { git = "https://github.com/microsoft/VbsEnclaveTooling" }
 flatbuffers = { version = "25.9.23", default-features = false }
+widestring = { version = "1.2.1", default-features = false, features = ["alloc"] }

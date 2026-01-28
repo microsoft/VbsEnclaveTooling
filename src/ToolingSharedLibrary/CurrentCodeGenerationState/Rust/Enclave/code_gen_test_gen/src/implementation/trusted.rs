@@ -7,9 +7,10 @@
 use alloc::string::String;
 use alloc::vec::Vec;
 use crate::implementation::types::*;
+use widestring::{U16String, U16Str};
 
 pub trait Trusted {
 
-    fn FuncWithAllArgs(arg1: bool, arg2: &Option<u32>, arg3: &mut Option<i32>, arg4: &mut Option<u64>, arg5: &mut TestStruct1, arg6: &mut Option<TestStruct2>, arg7: &mut Vec<TestStruct2>, arg8: &mut Vec<i16>, arg9: &mut [edl::WString;2]) -> Result<i32, edlcodegen_enclave::AbiError>;
+    fn FuncWithAllArgs(arg1 : bool, arg2 : Option<&u32>, arg3 : Option<&mut i32>, arg4 : Option<&mut u64>, arg5 : &mut TestStruct1, arg6 : Option<&mut TestStruct2>, arg7 : &mut Vec<TestStruct2>, arg8 : &mut Vec<i16>, arg9 : &mut [U16String;2]) -> Result<i32, edlcodegen_enclave::AbiError>;
 
 }

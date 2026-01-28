@@ -11,7 +11,7 @@ macro_rules! define_trait_callback_functions {
             use $crate::abi::abi_types::FuncWithAllArgs_1_Args as AbiTypeT;
             use $crate::abi::fb_support::fb_types::code_gen_test::flatbuffer_types::FuncWithAllArgs_1_ArgsT as FlatBufferT;
             let abi_func = |abi_type: &mut AbiTypeT| -> Result<(), AbiError> {
-                abi_type.m__return_value_ = Self::FuncWithAllArgs(abi_type.m_arg1, &abi_type.m_arg2, &mut abi_type.m_arg3, &mut abi_type.m_arg4, &mut abi_type.m_arg5, &mut abi_type.m_arg6, &mut abi_type.m_arg7, &mut abi_type.m_arg8, &mut abi_type.m_arg9)?;
+                abi_type.m__return_value_ = Self::FuncWithAllArgs(abi_type.m_arg1, abi_type.m_arg2.as_ref(), abi_type.m_arg3.as_mut(), abi_type.m_arg4.as_mut(), &mut abi_type.m_arg5, abi_type.m_arg6.as_mut(), &mut abi_type.m_arg7, &mut abi_type.m_arg8, &mut abi_type.m_arg9)?;
                 Ok(())
             };
             return_hr_as_pvoid!(call_vtl0_callback_from_vtl0::<_, AbiTypeT, FlatBufferT>(abi_func, fn_context))

@@ -10,7 +10,6 @@
 
 use crate::etw;
 use crate::userboundkey;
-use alloc::vec::Vec;
 use sdk_enclave_gen::AbiError;
 use sdk_enclave_gen::implementation::trusted::Trusted;
 use sdk_enclave_gen::implementation::types::attestationReportAndSessionInfo;
@@ -25,7 +24,7 @@ pub struct EnclaveImpl;
 #[allow(non_snake_case)]
 impl Trusted for EnclaveImpl {
     fn userboundkey_get_attestation_report(
-        challenge: &Vec<u8>,
+        challenge: &[u8],
     ) -> Result<attestationReportAndSessionInfo, AbiError> {
         userboundkey::userboundkey_get_attestation_report(challenge)
     }
