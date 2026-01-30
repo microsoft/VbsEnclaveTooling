@@ -16,16 +16,16 @@ pub use crypto::{
 pub use types::*;
 
 // Re-export the cache config type for use by samples
-pub use sdk_enclave_gen::implementation::types::keyCredentialCacheConfig;
+pub use vbsenclave_sdk_enclave_gen::implementation::types::keyCredentialCacheConfig;
 
 // Re-export widestring types for public API consumers
 pub use widestring::U16Str;
 
 use alloc::vec::Vec;
 
-use sdk_enclave_gen::AbiError;
-use sdk_enclave_gen::implementation::types::attestationReportAndSessionInfo;
-use sdk_enclave_gen::stubs::untrusted;
+use vbsenclave_sdk_enclave_gen::AbiError;
+use vbsenclave_sdk_enclave_gen::implementation::types::attestationReportAndSessionInfo;
+use vbsenclave_sdk_enclave_gen::stubs::untrusted;
 use widestring::U16String;
 
 use windows_enclave::veinterop::{

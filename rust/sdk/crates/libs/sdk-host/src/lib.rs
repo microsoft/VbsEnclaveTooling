@@ -8,7 +8,7 @@ mod etw;
 pub mod userboundkey;
 
 use common::HostImpl;
-use sdk_host_gen::AbiError;
+use vbsenclave_sdk_host_gen::AbiError;
 
 // The userboundkey-kcm crate is not intended to be published as a standalone package.
 // Long term, these KCM APIs should be consumed from the windows-rs crate.
@@ -42,7 +42,7 @@ pub use userboundkey_kcm::KeyCredentialManager;
 /// ```
 pub fn register_sdk_callbacks(enclave_ptr: *mut core::ffi::c_void) -> Result<(), AbiError> {
     // Register SDK callbacks using the SdkHost interface and HostImpl
-    let sdk_wrapper = sdk_host_gen::SdkHost::new(enclave_ptr);
+    let sdk_wrapper = vbsenclave_sdk_host_gen::SdkHost::new(enclave_ptr);
     sdk_wrapper.register_vtl0_callbacks::<HostImpl>()?;
     sdk_wrapper.register_etw_providers()?;
 

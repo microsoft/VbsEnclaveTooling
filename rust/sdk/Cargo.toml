@@ -3,8 +3,8 @@ resolver = "3"
 members = [
     "crates/libs/sdk-enclave",
     "crates/libs/sdk-host",
-    "crates/libs/sdk-enclave/generated/sdk_gen",
-    "crates/libs/sdk-host/generated/sdk_gen",
+    "crates/libs/sdk-enclave/generated/vbsenclave_sdk_gen",
+    "crates/libs/sdk-host/generated/vbsenclave_sdk_gen",
     "crates/libs/userboundkey-kcm",
     "crates/tests/sdk",
     "crates/libs/windows-enclave",
@@ -12,16 +12,22 @@ members = [
 
 [workspace.package]
 edition = "2024"
+license = "MIT"
+keywords = ["vbs", "vbs-enclave", "vbs-enclave-sdk", "enclave", "windows"]
+categories = ["virtualization", "os"]
+repository = "https://github.com/microsoft/VbsEnclaveTooling"
 
 [workspace.dependencies]
-edlcodegen-tools = { git = "https://github.com/microsoft/VbsEnclaveTooling" }
+edlcodegen-tools = { version = "0.1" }
 regex = "1.11"
 spin = "0.10.0"
 tracelogging = { version ="1.2.4", default-features = false }
 userboundkey-kcm = { version = "0.1.0", path = "crates/libs/userboundkey-kcm" }
 uuid = {version = "1.19.0", default-features = false }
 vbsenclave-sdk-enclave = { version = "0.1.0", path = "crates/libs/sdk-enclave" }
+vbsenclave_sdk_enclave_gen = { version = "0.1.0", path = "crates/libs/sdk-enclave/generated/vbsenclave_sdk_gen" }
 vbsenclave-sdk-host = { version = "0.1.0", path = "crates/libs/sdk-host" }
+vbsenclave_sdk_host_gen = { version = "0.1.0", path = "crates/libs/sdk-host/generated/vbsenclave_sdk_gen" }
 widestring = { version = "1.1", default-features = false, features = ["alloc"] }
 windows = "0.62.2"
 windows-bindgen = "0.66.0"

@@ -27,7 +27,7 @@ $sdkEdl = Join-Path $sdkImportDir "sdk.edl"
     -HostAppOutDir "$hostSdkCrate\generated" `
     -EnclaveOutDir "$enclaveSdkCrate\generated" `
     -EdlPath $sdkEdl `
-    -Namespace "sdk" `
+    -Namespace "vbsenclave_sdk" `
     -ImportDirectories $sdkImportDir `
     -Vtl0ClassName "SdkHost"
 

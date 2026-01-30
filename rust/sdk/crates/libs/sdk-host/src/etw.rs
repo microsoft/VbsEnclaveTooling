@@ -1,10 +1,10 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
-use sdk_host_gen::AbiError;
-use sdk_host_gen::SdkHost;
-use sdk_host_gen::implementation::types as codegen_types;
 use std::sync::{OnceLock, RwLock};
+use vbsenclave_sdk_host_gen::AbiError;
+use vbsenclave_sdk_host_gen::SdkHost;
+use vbsenclave_sdk_host_gen::implementation::types as codegen_types;
 use windows::Win32::System::Diagnostics::Etw;
 
 #[repr(C)]

@@ -2,9 +2,14 @@
 name = "vbsenclave-sdk-enclave"
 version = "0.1.0"
 edition =  { workspace = true }
+license = "MIT"
+keywords = ["vbs", "vbs-enclave", "vbs-enclave-sdk", "enclave"]
+repository = "https://github.com/microsoft/VbsEnclaveTooling"
+categories = ["os", "no-std"]
+description = "Enclave-side Rust SDK for developing applications using Windows VBS enclaves"
 
 [dependencies]
-sdk_enclave_gen = { path = "./generated/sdk_gen" }
+vbsenclave_sdk_enclave_gen = { workspace = true }
 spin = { workspace = true }
 tracelogging = { workspace = true, features = ["etw", "kernel_mode"] }
 uuid = { workspace = true, default-features = false, features = [ "v4"] }

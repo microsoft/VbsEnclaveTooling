@@ -10,11 +10,11 @@
 
 use crate::etw;
 use crate::userboundkey;
-use sdk_host_gen::AbiError;
-use sdk_host_gen::implementation::types::{
+use vbsenclave_sdk_host_gen::AbiError;
+use vbsenclave_sdk_host_gen::implementation::types::{
     EventDataDescriptor, EventDescriptor, Guid, credentialAndSessionInfo, keyCredentialCacheConfig,
 };
-use sdk_host_gen::implementation::untrusted::Untrusted;
+use vbsenclave_sdk_host_gen::implementation::untrusted::Untrusted;
 use widestring::{U16Str, U16String};
 
 /// SDK host implementation of the Untrusted trait.

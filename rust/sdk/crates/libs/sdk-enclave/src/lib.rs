@@ -12,8 +12,8 @@ pub mod userboundkey;
 
 // Re-export generated SDK enclave's export macro
 // and println stub for use in this crate's macros.
-pub use sdk_enclave_gen::export_enclave_functions;
-pub use sdk_enclave_gen::stubs::untrusted::println;
+pub use vbsenclave_sdk_enclave_gen::export_enclave_functions;
+pub use vbsenclave_sdk_enclave_gen::stubs::untrusted::println;
 
 /// Export all SDK enclave functions.
 ///
