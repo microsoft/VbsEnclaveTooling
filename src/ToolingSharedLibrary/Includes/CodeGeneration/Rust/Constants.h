@@ -9,32 +9,32 @@ namespace CodeGeneration::Rust
 {
     inline constexpr std::string_view c_array_initializer = "[{};{}]";
 
-    // Temporary crate dependency string for edlcodegen-enclave until we publish to crates.io.
-    // When testing not yet merged changes to edlcodegen-enclave, add the following: rev = "<commit hash from Github branch>"
+    // When testing not yet merged changes to edlcodegen-enclave, use the following:
+    // edlcodegen-enclave = { git = "https://github.com/microsoft/VbsEnclaveTooling", rev = "<commit hash from Github branch>" }
     // after the subdir specification below.
-    inline constexpr std::string_view c_enclave_crate_dep = R"(edlcodegen-enclave = { git = "https://github.com/microsoft/VbsEnclaveTooling" })";
+    inline constexpr std::string_view c_enclave_crate_dep = R"(edlcodegen-enclave = { version = "0.1" })";
 
-    // Temporary crate dependency string for edlcodegen-host until we publish to crates.io.
-    // When testing not yet merged changes to edlcodegen-host, add the following: rev = "<commit hash from Github branch>"
+    // When testing not yet merged changes to edlcodegen-host, use the following:
+    // edlcodegen-host = { git = "https://github.com/microsoft/VbsEnclaveTooling", rev = "<commit hash from Github branch>" }
     // after the subdir specification below.
     inline constexpr std::string_view c_host_crate_dep =
-R"(edlcodegen-host = { git = "https://github.com/microsoft/VbsEnclaveTooling" }
+R"(edlcodegen-host = { version = "0.1" }
 windows-strings = "0.5")";
 
     inline constexpr std::string_view c_cargo_toml_content =
 R"([package]
 name = "{}"
-version = "0.0.0"
+version = "0.1.0"
 edition = "2024"
-publish = false
+description = "Generated internal helper crate containing EDL-derived host bindings and marshaling code"
+license = "MIT"
 
 [lib]
-doc = false
 doctest = false
 test = false
 
 [build-dependencies]
-edlcodegen-tools = {{ git = "https://github.com/microsoft/VbsEnclaveTooling" }}
+edlcodegen-tools = {{ version = "0.1" }}
 
 [dependencies]
 {}

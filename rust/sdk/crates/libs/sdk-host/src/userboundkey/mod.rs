@@ -17,9 +17,9 @@ macro_rules! debug_print {
     };
 }
 
-use sdk_host_gen::AbiError;
-pub use sdk_host_gen::SdkHost;
-pub use sdk_host_gen::implementation::types::{
+use vbsenclave_sdk_host_gen::AbiError;
+pub use vbsenclave_sdk_host_gen::SdkHost;
+pub use vbsenclave_sdk_host_gen::implementation::types::{
     attestationReportAndSessionInfo, credentialAndSessionInfo, keyCredentialCacheConfig,
 };
 

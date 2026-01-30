@@ -2,6 +2,11 @@
 name = "edlcodegen-macros"
 version = "0.1.0"
 edition.workspace = true
+license = "MIT"
+keywords = ["vbs", "vbs-enclave", "vbs-enclave-codegen", "enclave"]
+categories = ["os"]
+repository = "https://github.com/microsoft/VbsEnclaveTooling"
+description = "Internal procedural macros used by edlcodegen-generated crates"
 
 [lib]
 proc-macro = true

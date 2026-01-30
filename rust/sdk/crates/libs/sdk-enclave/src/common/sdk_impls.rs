@@ -10,10 +10,10 @@
 
 use crate::etw;
 use crate::userboundkey;
-use sdk_enclave_gen::AbiError;
-use sdk_enclave_gen::implementation::trusted::Trusted;
-use sdk_enclave_gen::implementation::types::attestationReportAndSessionInfo;
-use sdk_enclave_gen::implementation::types::{EventFilterDescriptor, Guid};
+use vbsenclave_sdk_enclave_gen::AbiError;
+use vbsenclave_sdk_enclave_gen::implementation::trusted::Trusted;
+use vbsenclave_sdk_enclave_gen::implementation::types::attestationReportAndSessionInfo;
+use vbsenclave_sdk_enclave_gen::implementation::types::{EventFilterDescriptor, Guid};
 
 /// SDK enclave implementation of the Trusted trait.
 ///

@@ -423,7 +423,7 @@ impl EnclaveHandle {
 impl Drop for EnclaveHandle {
     fn drop(&mut self) {
         if !self.enclave.is_null() {
-            let host = sdk_host_gen::SdkHost::new(self.enclave);
+            let host = vbsenclave_sdk_host_gen::SdkHost::new(self.enclave);
             let _ = host.unregister_etw_providers();
 
             // SAFETY: self.enclave is valid because it came from create()
