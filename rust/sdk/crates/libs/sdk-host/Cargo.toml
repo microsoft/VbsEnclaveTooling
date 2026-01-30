@@ -2,6 +2,11 @@
 name = "vbsenclave-sdk-host"
 version = "0.1.0"
 edition.workspace = true
+license = "MIT"
+keywords = ["vbs", "vbs-enclave", "vbs-enclave-sdk", "enclave"]
+repository = "https://github.com/microsoft/VbsEnclaveTooling"
+categories = ["os"]
+description = "Host-side Rust SDK for interacting with Windows VBS enclaves"
 
 [dependencies.windows]
 workspace = true
@@ -18,7 +23,7 @@ features = [
 ]
 
 [dependencies]
-sdk_host_gen = { path = "./generated/sdk_gen" }
+vbsenclave_sdk_host_gen = { workspace = true }
 spin = { workspace = true }
 userboundkey-kcm = { workspace = true }
 uuid = {version = "1.19.0", default-features = false }

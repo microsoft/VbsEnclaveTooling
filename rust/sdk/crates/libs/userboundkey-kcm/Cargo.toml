@@ -2,6 +2,11 @@
 name = "userboundkey-kcm"
 version = "0.1.0"
 edition.workspace = true
+license = "MIT"
+keywords = ["vbs", "vbs-enclave", "vbs-enclave-sdk", "enclave"]
+repository = "https://github.com/microsoft/VbsEnclaveTooling"
+categories = ["os"]
+description = "Internal bindings and helpers for Windows KCM User-Bound Key APIs"
 
 [build-dependencies]
 windows-bindgen = { workspace = true }

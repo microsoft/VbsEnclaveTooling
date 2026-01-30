@@ -9,7 +9,7 @@ features that interact with a VBS enclave easier. To learn more about VBS enclav
 | Language          | Supported |
 |-------------------|-----------|
 | C++ (20 or later) |    ✅     |
-| Rust              |    ❌     |
+| Rust              |    ✅     |
 
 #### Operating System Support
 

@@ -1,19 +1,19 @@
 [package]
 name = "code_gen_test_host_gen"
-version = "0.0.0"
+version = "0.1.0"
 edition = "2024"
-publish = false
+description = "Generated internal helper crate containing EDL-derived host bindings and marshaling code"
+license = "MIT"
 
 [lib]
-doc = false
 doctest = false
 test = false
 
 [build-dependencies]
-edlcodegen-tools = { git = "https://github.com/microsoft/VbsEnclaveTooling" }
+edlcodegen-tools = { version = "0.1" }
 
 [dependencies]
-edlcodegen-host = { git = "https://github.com/microsoft/VbsEnclaveTooling" }
+edlcodegen-host = { version = "0.1" }
 windows-strings = "0.5"
 flatbuffers = { version = "25.9.23", default-features = false }
 widestring = { version = "1.2.1", default-features = false, features = ["alloc"] }

@@ -5,7 +5,7 @@
 
 use crate::common::{CryptoError, EnclaveUtilsError, ntstatus_to_hresult};
 use alloc::string::String;
-use sdk_enclave_gen::AbiError;
+use vbsenclave_sdk_enclave_gen::AbiError;
 
 /// Error type for user-bound key operations
 #[derive(Debug)]

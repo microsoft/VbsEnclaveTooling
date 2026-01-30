@@ -3,6 +3,9 @@ name = "edlcodegen"
 version = "0.0.0"
 edition.workspace = true
 publish = false
+license = "MIT"
+repository = "https://github.com/microsoft/VbsEnclaveTooling"
+description = "Internal test crate for edlcodegen tooling"
 
 [lib]
 doc = false

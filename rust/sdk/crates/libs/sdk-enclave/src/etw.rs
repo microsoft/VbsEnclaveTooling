@@ -4,11 +4,11 @@
 use crate::common;
 use alloc::{collections::BTreeMap, vec::Vec};
 use core::marker::PhantomData;
-use sdk_enclave_gen::AbiError;
-use sdk_enclave_gen::implementation::types as edl_types;
-use sdk_enclave_gen::stubs::untrusted::{self};
 use spin::{Once, RwLock};
 use tracelogging::{Channel, Level, Opcode, Provider};
+use vbsenclave_sdk_enclave_gen::AbiError;
+use vbsenclave_sdk_enclave_gen::implementation::types as edl_types;
+use vbsenclave_sdk_enclave_gen::stubs::untrusted::{self};
 
 /// Information about a registered ETW provider.
 /// The registration_id is generated during registration
