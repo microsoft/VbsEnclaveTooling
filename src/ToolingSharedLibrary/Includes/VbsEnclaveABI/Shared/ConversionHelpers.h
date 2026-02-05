@@ -1,12 +1,10 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 #pragma once 
-#include <algorithm>
 #include <array>
 #include <functional>
 #include <memory>
 #include <optional>
-#include <stdexcept>
 #include <string>
 #include <type_traits>
 #include <vector>
@@ -50,7 +48,7 @@ namespace VbsEnclaveABI::Shared::Converters
     struct unique_ptr_inner_type<std::unique_ptr<T, D>> { using type = std::decay_t<T>; };
 
     template<typename T>
-    using unique_ptr_inner_type_t = unique_ptr_inner_type<std::decay_t<T>>::type;
+    using unique_ptr_inner_type_t = typename unique_ptr_inner_type<std::decay_t<T>>::type;
 
     template <typename T>
     constexpr bool is_unique_ptr_v = is_unique_ptr<std::decay_t<T>>::value;
@@ -68,7 +66,7 @@ namespace VbsEnclaveABI::Shared::Converters
     struct optional_inner_type<std::optional<T>> { using type = std::decay_t<T>; };
 
     template<typename T>
-    using optional_inner_type_t = optional_inner_type<std::decay_t<T>>::type;
+    using optional_inner_type_t = typename optional_inner_type<std::decay_t<T>>::type;
 
     template <typename T>
     constexpr bool is_optional_v = is_optional<std::decay_t<T>>::value;
@@ -86,7 +84,7 @@ namespace VbsEnclaveABI::Shared::Converters
     struct vector_inner_type<std::vector<T, Alloc>> { using type = std::decay_t<T>; };
 
     template<typename T>
-    using vector_inner_type_t = vector_inner_type<std::decay_t<T>>::type;
+    using vector_inner_type_t = typename vector_inner_type<std::decay_t<T>>::type;
 
     template <typename T>
     constexpr bool is_vector_v = is_vector<T>::value;
@@ -104,7 +102,7 @@ namespace VbsEnclaveABI::Shared::Converters
     struct std_array_inner_type<std::array<T, N>> { using type = std::decay_t<T>; };
 
     template<typename T>
-    using std_array_inner_type_t = std_array_inner_type<std::decay_t<T>>::type;
+    using std_array_inner_type_t = typename std_array_inner_type<std::decay_t<T>>::type;
 
     template <typename T>
     struct is_container_type : std::false_type {};
@@ -146,60 +144,49 @@ namespace VbsEnclaveABI::Shared::Converters
     struct vector_or_array_inner_type<std::array<T, N>> { using type = std::decay_t<T>; };
 
     template <typename T>
-    using vector_or_array_inner_type_t = vector_or_array_inner_type<std::decay_t<T>>::type;
+    using vector_or_array_inner_type_t = typename vector_or_array_inner_type<std::decay_t<T>>::type;
 
     template<typename T>
-    concept FunctionPtr =
-        std::is_pointer_v<std::decay_t<T>> &&
-        std::is_function_v<std::remove_pointer_t<std::decay_t<T>>>;
+    struct is_function_ptr : std::false_type {};
 
-    template<FunctionPtr T>
+    template<typename T>
+    struct is_function_ptr<T*> : std::is_function<T> {};
+
+    template<typename T>
+    constexpr bool is_function_ptr_v = is_function_ptr<std::decay_t<T>>::value;
+
+    template<typename T, typename = void>
     struct FunctionInfo;
 
     template<typename ReturnT, typename... Args>
-    struct FunctionInfo<ReturnT(*)(Args...)> {
+    struct FunctionInfo<ReturnT(*)(Args...), std::enable_if_t<is_function_ptr_v<ReturnT(*)(Args...)>>> {
         using ReturnType = ReturnT;
         static constexpr std::size_t NumberOfParameters = sizeof...(Args);
         template<std::size_t N>
         using arg = std::tuple_element_t<N, std::tuple<Args...>>;
     };
 
-    template<typename T>
-    concept UniquePtr = is_unique_ptr_v<T>;
+    template <typename T>
+    constexpr bool is_raw_ptr_v = std::is_pointer_v<T>;
 
-    template<typename T>
-    concept Optional = is_optional_v<T>;
-
-    template<typename T>
-    concept Vector = is_vector_v<T>;
-
-    template<typename T>
-    concept StdArray = is_std_array_v<T>;
-
-    template<typename T>
-    concept Container = is_container_v<T>;
-
-    template<typename T>
-    concept RawPtr = std::is_pointer_v<T>;
-
-    template<typename T>
-    concept Structure =
-        std::is_class_v<std::decay_t<T>> &&    // Must be a class or struct
-        !UniquePtr<std::decay_t<T>> &&   // Must not be unique ptr
-        !Optional<std::decay_t<T>> && // Must not be optional
-        !Container<std::decay_t<T>>; // Must not be wstring, string, vector or array
+    template <typename T>
+    constexpr bool is_structure_v =
+        std::is_class_v<std::decay_t<T>> &&
+        !is_unique_ptr_v<std::decay_t<T>> &&
+        !is_optional_v<std::decay_t<T>> &&
+        !is_container_v<std::decay_t<T>>;
 
     template <typename T, typename U>
-    concept AreBothArithmeticTypes = std::is_arithmetic_v<T> && std::is_arithmetic_v<U>;
+    constexpr bool are_both_arithmetic_v = std::is_arithmetic_v<T> && std::is_arithmetic_v<U>;
 
     template <typename T, typename U>
-    concept AreBothEnums = std::is_enum_v<T> && std::is_enum_v<U>;
+    constexpr bool are_both_enums_v = std::is_enum_v<T> && std::is_enum_v<U>;
 
     template <typename T, typename U>
-    concept AreBothTheSame = std::is_same_v<T, U>;
+    constexpr bool are_both_same_v = std::is_same_v<T, U>;
 
     template <typename T, typename U>
-    concept AreBothStructures = Structure<T> && Structure<U>;
+    constexpr bool are_both_structures_v = is_structure_v<T> && is_structure_v<U>;
 
     // Used only for static_asserts
     template<typename...> struct always_false : std::false_type {};
@@ -212,7 +199,7 @@ namespace VbsEnclaveABI::Shared::Converters
     >
     auto ConvertToWrapper(const Src& src, ConvertFunc&& conversion_func)
     {
-        if constexpr (UniquePtr<Src> || RawPtr<Src> || Optional<Src>)
+        if constexpr (is_unique_ptr_v<Src> || is_raw_ptr_v<Src> || is_optional_v<Src>)
         {
             if (!src)
             {
@@ -221,7 +208,7 @@ namespace VbsEnclaveABI::Shared::Converters
 
             return conversion_func(*src);
         }
-        else if constexpr (Structure<Src>)
+        else if constexpr (is_structure_v<Src>)
         {
             return conversion_func(src);
         }
@@ -231,8 +218,11 @@ namespace VbsEnclaveABI::Shared::Converters
         }
     }
 
-    template <UniquePtr Target, typename Src>
-    inline Target ConvertToUniquePtr(const Src& src)
+    template <typename Target, typename Src>
+    inline Target ConvertType(const Src& src);
+
+    template <typename Target, typename Src>
+    inline std::enable_if_t<is_unique_ptr_v<Target>, Target> ConvertToUniquePtr(const Src& src)
     {
         using TargetInnerType = unique_ptr_inner_type_t<Target>;
 
@@ -244,8 +234,8 @@ namespace VbsEnclaveABI::Shared::Converters
         return ConvertToWrapper<std::unique_ptr, TargetInnerType>(src, std::move(conversion_func));
     }
 
-    template <Optional Target, typename Src>
-    inline Target ConvertToOptional(const Src& src)
+    template <typename Target, typename Src>
+    inline std::enable_if_t<is_optional_v<Target>, Target> ConvertToOptional(const Src& src)
     {
         using TargetInnerType = optional_inner_type_t<Target>;
 
@@ -260,7 +250,7 @@ namespace VbsEnclaveABI::Shared::Converters
     template<typename T>
     inline std::wstring ConvertToStdWString(const T& wstr)
     {
-        if constexpr (UniquePtr<T>)
+        if constexpr (is_unique_ptr_v<T>)
         {
             if (!wstr)
             {
@@ -279,14 +269,14 @@ namespace VbsEnclaveABI::Shared::Converters
     inline Target CreateWStringT(const std::wstring& wchars)
     {
         using DecayedType = std::decay_t<Target>;
-        if constexpr (UniquePtr<DecayedType>)
+        if constexpr (is_unique_ptr_v<DecayedType>)
         {
             using InnerType = unique_ptr_inner_type_t<DecayedType>;
             auto ptr = std::make_unique<InnerType>();
             ptr->wchars.assign(wchars.begin(), wchars.end());
             return ptr;
         }
-        else if constexpr (Structure<DecayedType>)
+        else if constexpr (is_structure_v<DecayedType>)
         {
             DecayedType wcharT {};
             wcharT.wchars.assign(wchars.begin(), wchars.end());
@@ -298,8 +288,8 @@ namespace VbsEnclaveABI::Shared::Converters
         }
     }
 
-    template <Vector TargetContainer, typename SrcContainer, typename ConvertFunc>
-    TargetContainer TransformRangeToContainer(const SrcContainer& src, ConvertFunc&& conversion_func)
+    template <typename TargetContainer, typename SrcContainer, typename ConvertFunc>
+    std::enable_if_t<is_vector_v<TargetContainer>, TargetContainer> TransformRangeToContainer(const SrcContainer& src, ConvertFunc&& conversion_func)
     {
         TargetContainer target_vector;
         target_vector.reserve(src.size());
@@ -311,8 +301,8 @@ namespace VbsEnclaveABI::Shared::Converters
         return target_vector;
     }
 
-    template <StdArray TargetContainer, typename SrcContainer, typename ConvertFunc>
-    TargetContainer TransformRangeToContainer(const SrcContainer& src, ConvertFunc&& conversion_func)
+    template <typename TargetContainer, typename SrcContainer, typename ConvertFunc>
+    std::enable_if_t<is_std_array_v<TargetContainer>, TargetContainer> TransformRangeToContainer(const SrcContainer& src, ConvertFunc&& conversion_func)
     {
         TargetContainer arr {};
 
@@ -329,40 +319,43 @@ namespace VbsEnclaveABI::Shared::Converters
     }
 
     template <typename Target, typename Src>
+    inline std::enable_if_t<is_structure_v<Target>&& is_structure_v<Src>, std::decay_t<Target>> ConvertStruct(const Src& src);
+
+    template <typename Target, typename Src>
     inline Target ConvertType(const Src& src)
     {
         using DecayedSrc = std::decay_t<Src>;
         using DecayedTarget = std::decay_t<Target>;
 
-        if constexpr (AreBothTheSame<DecayedSrc, DecayedTarget>)
+        if constexpr (are_both_same_v<DecayedSrc, DecayedTarget>)
         {
             return src;
         }
-        else if constexpr (AreBothArithmeticTypes<DecayedSrc, DecayedTarget>)
+        else if constexpr (are_both_arithmetic_v<DecayedSrc, DecayedTarget>)
         {
             return src;
         }
-        else if constexpr (AreBothStructures<DecayedSrc, DecayedTarget>)
+        else if constexpr (are_both_structures_v<DecayedSrc, DecayedTarget>)
         {
             return ConvertStruct<DecayedTarget>(src);
         }
-        else if constexpr (AreBothEnums<DecayedSrc, DecayedTarget>)
+        else if constexpr (are_both_enums_v<DecayedSrc, DecayedTarget>)
         {
             return static_cast<DecayedTarget>(src);
         }
         // Convert WStringT flatbuffer src to std::wstring target. 
-        else if constexpr (AreBothTheSame<DecayedTarget, std::wstring>)
+        else if constexpr (are_both_same_v<DecayedTarget, std::wstring>)
         {
             // The Codegen will only pass std::wstring as a target when the source is related to WStringT.
             return ConvertToStdWString(src);
         }
         // Convert std::wstring source to WStringT flatbuffer target.
-        else if constexpr (AreBothTheSame<DecayedSrc, std::wstring>)
+        else if constexpr (are_both_same_v<DecayedSrc, std::wstring>)
         {
             // The Codegen will only pass std::wstring as a source when the target is related to WStringT.
             return CreateWStringT<DecayedTarget>(src);
         }
-        else if constexpr (UniquePtr<DecayedSrc> && Structure<DecayedTarget>)
+        else if constexpr (is_unique_ptr_v<DecayedSrc> && is_structure_v<DecayedTarget>)
         {
             if (!src)
             {
@@ -371,15 +364,15 @@ namespace VbsEnclaveABI::Shared::Converters
 
             return ConvertType<DecayedTarget>(*src);
         }
-        else if constexpr (UniquePtr<DecayedTarget>)
+        else if constexpr (is_unique_ptr_v<DecayedTarget>)
         {
             return ConvertToUniquePtr<DecayedTarget>(src);
         }
-        else if constexpr (Optional<DecayedTarget>)
+        else if constexpr (is_optional_v<DecayedTarget>)
         {
             return ConvertToOptional<DecayedTarget>(src);
         }
-        else if constexpr (Vector<DecayedTarget> || StdArray<DecayedTarget>)
+        else if constexpr (is_vector_v<DecayedTarget> || is_std_array_v<DecayedTarget>)
         {
             using InnerSrcType = vector_or_array_inner_type_t<DecayedSrc>;
             using InnerTargetType = vector_or_array_inner_type_t<DecayedTarget>;
@@ -395,8 +388,32 @@ namespace VbsEnclaveABI::Shared::Converters
         }
     }
 
-    template <Structure Target, Structure Src>
-    inline std::decay_t<Target> ConvertStruct(const Src& src)
+    template <typename DecayedSrc, typename DecayedTarget>
+    struct ConvertStructHelper
+    {
+        template<typename Src, std::size_t... I>
+        static DecayedTarget apply(const Src& src, std::index_sequence<I...>)
+        {
+            DecayedTarget target_struct {};
+            (
+                (
+                [&]
+            {
+                auto& src_field = src.*(std::get<I>(StructMetadata<DecayedSrc>::members));
+                auto& dst_field = target_struct.*(std::get<I>(StructMetadata<DecayedTarget>::members));
+                using DecayedSrcFieldT = std::decay_t<decltype(src_field)>;
+                using DecayedTargetFieldT = std::decay_t<decltype(dst_field)>;
+
+                dst_field = ConvertType<DecayedTargetFieldT>(src_field);
+            }()
+                ), ...
+            );
+            return target_struct;
+        }
+    };
+
+    template <typename Target, typename Src>
+    inline std::enable_if_t<is_structure_v<Target>&& is_structure_v<Src>, std::decay_t<Target>> ConvertStruct(const Src& src)
     {
         using DecayedSrc = std::decay_t<decltype(src)>;
         using DecayedTarget = std::decay_t<Target>;
@@ -404,33 +421,12 @@ namespace VbsEnclaveABI::Shared::Converters
         constexpr size_t N = std::tuple_size_v<decltype(StructMetadata<DecayedSrc>::members)>;
         static_assert(N == std::tuple_size_v<decltype(StructMetadata<DecayedTarget>::members)>,
             "Source and Target structs must have the same number of fields!");
-        
-        DecayedTarget target_struct{};
 
-        auto for_each_field = [&]<std::size_t... I>(std::index_sequence<I...>)
-        {
-            (
-                (
-                    [&]
-                    {
-                        auto& src_field = src.*(std::get<I>(StructMetadata<DecayedSrc>::members));
-                        auto& dst_field = target_struct.*(std::get<I>(StructMetadata<DecayedTarget>::members));
-                        using DecayedSrcFieldT = std::decay_t<decltype(src_field)>;
-                        using DecayedTargetFieldT = std::decay_t<decltype(dst_field)>;
-
-                        dst_field = ConvertType<DecayedTargetFieldT>(src_field);
-                    }()
-                ), ...
-            );
-        };
-
-        for_each_field(std::make_index_sequence<N>{});
-
-        return target_struct;
+        return ConvertStructHelper<DecayedSrc, DecayedTarget>::apply(src, std::make_index_sequence<N>{});
     }
 
-    template<UniquePtr Src, RawPtr Target>
-    inline void UpdateParameterValue(Src& src, Target& target)
+    template<typename Src, typename Target>
+    inline std::enable_if_t<is_unique_ptr_v<Src>&& is_raw_ptr_v<Target>, void> UpdateParameterValue(Src& src, Target& target)
     {
         if (src && target)
         {
@@ -439,8 +435,7 @@ namespace VbsEnclaveABI::Shared::Converters
     }
 
     template<typename Src, typename Target>
-    requires AreBothTheSame<Src, Target>
-    inline void UpdateParameterValue(Src& src, Target& target)
+    inline std::enable_if_t<are_both_same_v<Src, Target>, void> UpdateParameterValue(Src& src, Target& target)
     {
         target = std::move(src);
     }
@@ -451,10 +446,10 @@ namespace VbsEnclaveABI::Shared::Converters
         return false; // base case, all others should have a specialized template.
     }
 
-    template<RawPtr Expected, UniquePtr Actual>
-    constexpr bool ShouldCallGet()
+    template<typename Expected, typename Actual>
+    constexpr std::enable_if_t<is_raw_ptr_v<Expected>&& is_unique_ptr_v<Actual>, bool> ShouldCallGet()
     {
-        return AreBothTheSame<std::decay_t<std::remove_pointer_t<Expected>>, unique_ptr_inner_type_t<Actual>>;
+        return are_both_same_v<std::decay_t<remove_pointer_t<Expected>>, unique_ptr_inner_type_t<Actual>>;
     }
 
     template<typename Expected, typename Actual>
@@ -470,18 +465,20 @@ namespace VbsEnclaveABI::Shared::Converters
         }
     }
 
-    template <FunctionPtr FuncT, Structure DevTypeT>
-    constexpr void CallDevImpl(FuncT&& func, DevTypeT& input_args)
+    template <typename FuncT, typename DevTypeT>
+    struct CallDevImplHelper
     {
         using FuncTrait = FunctionInfo<std::decay_t<FuncT>>;
-        constexpr size_t struct_fields_size = std::tuple_size_v<decltype(StructMetadata<DevTypeT>::members)>;
 
-        auto forward_to_developer_impl = [&]<std::size_t... I>(std::index_sequence<I...>)
+        template<std::size_t... I>
+        static void apply(FuncT&& func, DevTypeT& input_args, std::index_sequence<I...>)
         {
+            constexpr size_t struct_fields_size = std::tuple_size_v<decltype(StructMetadata<DevTypeT>::members)>;
+
             if constexpr (std::is_void_v<typename FuncTrait::ReturnType>)
             {
                 static_assert(
-                    struct_fields_size == FuncTrait::NumberOfParameters, 
+                    struct_fields_size == FuncTrait::NumberOfParameters,
                     "For functions that return void, the number of fields in the abi struct must match the number of function parameters.");
 
                 std::invoke(
@@ -500,8 +497,13 @@ namespace VbsEnclaveABI::Shared::Converters
                     ConvertIfNeeded<typename FuncTrait::template arg<I>>(input_args.*(std::get<I>(StructMetadata<DevTypeT>::members)))...
                 );
             }
-        };
+        }
+    };
 
-        forward_to_developer_impl(std::make_index_sequence<FuncTrait::NumberOfParameters>{});
+    template <typename FuncT, typename DevTypeT>
+    std::enable_if_t<is_function_ptr_v<FuncT>&& is_structure_v<DevTypeT>, void> CallDevImpl(FuncT&& func, DevTypeT& input_args)
+    {
+        using FuncTrait = FunctionInfo<std::decay_t<FuncT>>;
+        CallDevImplHelper<FuncT, DevTypeT>::apply(std::forward<FuncT>(func), input_args, std::make_index_sequence<FuncTrait::NumberOfParameters>{});
     }
 }

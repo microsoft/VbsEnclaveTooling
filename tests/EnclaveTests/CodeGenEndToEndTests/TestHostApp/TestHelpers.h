@@ -349,7 +349,7 @@ inline NestedStructWithOptionals CreateNestedStructWithOptionals()
     std::optional<std::int32_t> int32_opt = std::make_optional<std::int32_t>(100);
     std::optional<DecimalEnum> enum_val_opt = std::make_optional<DecimalEnum>(DecimalEnum::Deci_val3);
     std::optional<TestStruct1> test_struct_val_opt = std::make_optional<TestStruct1>(CreateTestStruct1());
-    return NestedStructWithOptionals(std::move(int32_opt), std::move(enum_val_opt), std::move(test_struct_val_opt));
+    return NestedStructWithOptionals{std::move(int32_opt), std::move(enum_val_opt), std::move(test_struct_val_opt)};
 }
 
 template <typename T>

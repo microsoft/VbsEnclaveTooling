@@ -19,5 +19,6 @@
     <ClInclude Include="$(MSBuildThisFileDirectory)logger.any.h" />
     <ClInclude Include="$(MSBuildThisFileDirectory)taskpool.any.h" />
     <ClInclude Include="$(MSBuildThisFileDirectory)userboundkey.any.h" />
+    <ClInclude Include="$(MSBuildThisFileDirectory)types.h" />
   </ItemGroup>
 </Project>
