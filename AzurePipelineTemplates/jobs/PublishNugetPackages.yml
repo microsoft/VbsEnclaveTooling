@@ -47,12 +47,10 @@ extends:
           - input: pipelineArtifact
             pipeline: VbsEnclaveTooling
             artifactName: $(ArtifactName)
-
-        steps:
-        - task: NuGetCommand@2
-          displayName: 'Push CodeGenerator and SDK nuget packages to nuget.org'
-          inputs:
-            command: push
+          outputs:
+          - output: nuget
+            displayName: 'Push nuget package to nuget.org'
             packagesToPush: '$(Pipeline.Workspace)\Microsoft.Windows.VbsEnclave.*.nupkg'
+            packageParentPath: '$(Pipeline.Workspace)'
             nuGetFeedType: external
             publishFeedCredentials: 'VbsEnclaveTooling Nuget' # Service connection
