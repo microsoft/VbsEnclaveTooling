@@ -1,4 +1,3 @@
-
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
@@ -28,7 +27,8 @@ namespace VbsEnclaveABI::HostApp
     // Generated code uses this function to forward input parameters and retrieve
     // return parameters to the developers enclave exported function.
     template <typename ResultT, typename FlatbufferT>
-    inline ResultT CallVtl1ExportFromVtl0Impl(
+    inline std::enable_if_t<is_structure_v<FlatbufferT>, ResultT>
+    CallVtl1ExportFromVtl0Impl(
         _In_ const FlatbufferT& flatbuffer_input,
         _In_ void* enclave_instance,
         _In_ std::string_view function_name)
@@ -61,12 +61,13 @@ namespace VbsEnclaveABI::HostApp
 
         if constexpr (!std::is_void_v<ResultT>)
         {
-            return UnpackFlatbufferWithSize<FlatbufferT>(return_buffer.get(), return_buffer_size);
+            return UnpackFlatbuffer<FlatbufferT>(return_buffer.get(), return_buffer_size);
         }
     }
 
-    template <Structure ResultT, Structure FlatbufferT>
-    inline ResultT CallVtl1ExportFromVtl0(
+    template <typename ResultT, typename FlatbufferT>
+    inline std::enable_if_t<is_structure_v<ResultT> && is_structure_v<FlatbufferT>, ResultT>
+    CallVtl1ExportFromVtl0(
         _In_ const FlatbufferT& flatbuffer_input,
         _In_ void* enclave_instance,
         _In_ std::string_view function_name)
@@ -75,9 +76,9 @@ namespace VbsEnclaveABI::HostApp
         return Converters::ConvertStruct<ResultT>(flatbuffer_result);
     }
 
-    template <typename ResultT, Structure InputT>
-    requires std::is_void_v<ResultT>
-    inline void CallVtl1ExportFromVtl0(
+    template <typename ResultT, typename InputT>
+    inline std::enable_if_t<std::is_void_v<ResultT> && is_structure_v<InputT>, void>
+    CallVtl1ExportFromVtl0(
         _In_ const InputT& flatbuffer_input,
         _In_ void* enclave_instance,
         _In_ std::string_view function_name)
@@ -87,8 +88,9 @@ namespace VbsEnclaveABI::HostApp
 
     // Generated code uses this function to forward input parameters and retrieve
     // return parameters from the the developers vtl0 callback implementation function.
-    template <Structure DevTypeT, Structure FlatBufferT, FunctionPtr FuncImplT>
-    inline HRESULT CallVtl0CallbackImplFromVtl0(_In_ FuncImplT dev_impl_func, _In_ void* context)
+    template <typename DevTypeT, typename FlatBufferT, typename FuncImplT>
+    inline std::enable_if_t<is_structure_v<DevTypeT> && is_structure_v<FlatBufferT> && is_function_ptr_v<FuncImplT>, HRESULT>
+    CallVtl0CallbackImplFromVtl0(_In_ FuncImplT dev_impl_func, _In_ void* context)
     {
         auto function_context = reinterpret_cast<EnclaveFunctionContext*>(context);
         RETURN_IF_NULL_ALLOC(function_context);
@@ -97,7 +99,7 @@ namespace VbsEnclaveABI::HostApp
         RETURN_IF_NULL_ALLOC(forward_params_buffer);
         RETURN_HR_IF(E_INVALIDARG, forward_params_size > 0 && forward_params_buffer == nullptr);
 
-        auto flatbuffer_in_params = UnpackFlatbufferWithSize<FlatBufferT>(forward_params_buffer, forward_params_size);
+        auto flatbuffer_in_params = UnpackFlatbuffer<FlatBufferT>(forward_params_buffer, forward_params_size);
         auto func_args = Converters::ConvertStruct<DevTypeT>(flatbuffer_in_params);
         
         // Call user implementation

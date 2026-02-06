@@ -107,7 +107,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories);$(SolutionDir)src;</AdditionalIncludeDirectories>
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
       <GuardEHContMetadata>true</GuardEHContMetadata>
     </ClCompile>
@@ -121,7 +121,6 @@
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ItemGroup>
     <ClInclude Include="enclave_api.vtl0.h" />
-    <ClInclude Include="keycredentialmanager.vtl0.h" />
     <ClInclude Include="pch.h" />
     <ClInclude Include="taskpool.vtl0.h" />
     <ClInclude Include="logger.vtl0.h" />

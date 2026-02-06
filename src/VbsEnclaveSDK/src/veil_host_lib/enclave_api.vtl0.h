@@ -4,8 +4,16 @@
 #pragma once
 
 #include "pch.h"
-#include <span>
+#include <vector>
 #include <wil/resource.h>
+
+#if defined(VEIL_ABI_BUILDING_DLL)
+// For internal use within the SDK itself.
+#include <veil_any_inc\types.h>
+#else
+// For public consumers of the SDK.
+#include <veil\veil_any_inc\types.h>
+#endif
 
 namespace veil::vtl0
 {
@@ -33,7 +41,14 @@ namespace veil::vtl0
             return megabytes * 0x100000;
         }
 
-        inline unique_enclave create(DWORD enclaveType, std::span<const uint8_t> ownerId, DWORD flags, size_t size, size_t initialCommitment = 0, LPDWORD lpEnclaveError = nullptr)
+        inline unique_enclave create(
+            DWORD enclaveType,
+            veil::any::veil_types::span<const uint8_t> ownerId,
+            DWORD flags,
+            size_t size,
+            size_t initialCommitment = 0,
+            LPDWORD lpEnclaveError = nullptr
+        )
         {
             if (enclaveType != ENCLAVE_TYPE_VBS)
             {

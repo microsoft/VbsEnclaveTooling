@@ -25,7 +25,6 @@
 #include <wil\result_macros.h>
 #pragma warning(pop)
 
-#include <span>
 #undef max // prevent windows max macro from conflicting with flatbuffers macro
 #include <flatbuffers/verifier.h>
 #include <flatbuffers/flatbuffer_builder.h>
@@ -90,19 +89,15 @@ namespace VbsEnclaveABI::Shared
 
     // Given a flatbuffer table type, validates the content of a span as being a valid flatbuffer,
     // then unpacks it into the native table type. Throws invalid-argument if the buffer is not
-    // valid. Returns default-constructed type if the buffer is empty.
+    // valid.
     template <typename T>
-    typename T UnpackFlatbuffer(std::span<uint8_t> data)
+    typename T UnpackFlatbuffer(std::uint8_t* data, size_t size)
     {
-        if (data.empty())
-        {
-            return {};
-        }
-        THROW_HR_IF(E_INVALIDARG, data.size() < sizeof(uint32_t));
+        THROW_HR_IF(E_INVALIDARG, size < sizeof(uint32_t));
 
-        flatbuffers::Verifier verifier(data.data(), data.size());
+        flatbuffers::Verifier verifier(data, size);
         using tableType = typename T::TableType;
-        auto root = flatbuffers::GetRoot<tableType>(data.data());
+        auto root = flatbuffers::GetRoot<tableType>(data);
         THROW_HR_IF_NULL(E_INVALIDARG, root);
         THROW_HR_IF(E_INVALIDARG, !root->Verify(verifier));
 
@@ -110,12 +105,6 @@ namespace VbsEnclaveABI::Shared
         root->UnPackTo(&table);
 
         return table;
-    }
-
-    template <typename T>
-    typename T UnpackFlatbufferWithSize(std::uint8_t* data, size_t size)
-    {
-        return UnpackFlatbuffer<T>(std::span<uint8_t>(data, size));
     }
 
     constexpr const size_t c_flatbufferInitialDefaultSizeBytes = 4096;

@@ -47,8 +47,9 @@ namespace VbsEnclaveABI::Enclave
 
     // Generated ABI export functions in VTL1 call this function as an entry point to calling
     // its associated VTL1 ABI impl function.
-    template <Structure DevTypeT, Structure FlatBufferT, FunctionPtr FuncImplT>
-    inline HRESULT CallVtl1ExportFromVtl1(_In_ FuncImplT dev_impl_func, _In_ void* context)
+    template <typename DevTypeT, typename FlatBufferT, typename FuncImplT>
+    inline std::enable_if_t<is_structure_v<DevTypeT> && is_structure_v<FlatBufferT> && is_function_ptr_v<FuncImplT>, HRESULT>
+    CallVtl1ExportFromVtl1(_In_ FuncImplT dev_impl_func, _In_ void* context)
     {
         auto function_context = reinterpret_cast<EnclaveFunctionContext*>(context);
         RETURN_HR_IF_NULL(E_INVALIDARG, function_context);
@@ -71,7 +72,7 @@ namespace VbsEnclaveABI::Enclave
             forward_params_buffer,
             forward_params_size));
 
-        auto flatbuffer_in_params = UnpackFlatbufferWithSize<FlatBufferT>(input_buffer.get(), forward_params_size);
+        auto flatbuffer_in_params = UnpackFlatbuffer<FlatBufferT>(input_buffer.get(), forward_params_size);
         auto func_args = Converters::ConvertStruct<DevTypeT>(flatbuffer_in_params);
 
         // Call user implementation
@@ -107,8 +108,9 @@ namespace VbsEnclaveABI::Enclave
 
     // Abi functions in VTL1 call this function as an entry point to calling
     // its associated VTL0 callback.
-    template <typename ResultT, Structure FlatbufferT>
-    inline ResultT CallVtl0CallbackFromVtl1Impl(_In_ FlatbufferT flatbuffer_input, _In_ std::string_view function_name)
+    template <typename ResultT, typename FlatbufferT>
+    inline std::enable_if_t<is_structure_v<FlatbufferT>, ResultT>
+    CallVtl0CallbackFromVtl1Impl(_In_ FlatbufferT flatbuffer_input, _In_ std::string_view function_name)
     {
         LPENCLAVE_ROUTINE vtl0_callback = TryGetFunctionFromVtl0FunctionTable(function_name);
         THROW_HR_IF_NULL(E_INVALIDARG, vtl0_callback);
@@ -177,20 +179,21 @@ namespace VbsEnclaveABI::Enclave
 
         if constexpr (!std::is_void_v<ResultT>)
         {
-            return UnpackFlatbufferWithSize<FlatbufferT>(vtl1_returned_parameters.get(), return_buffer_size);
+            return UnpackFlatbuffer<FlatbufferT>(vtl1_returned_parameters.get(), return_buffer_size);
         }
     }
 
-    template <Structure ResultT, Structure FlatbufferT>
-    inline ResultT CallVtl0CallbackFromVtl1(_In_ const FlatbufferT& flatbuffer_input, _In_ std::string_view function_name)
+    template <typename ResultT, typename FlatbufferT>
+    inline std::enable_if_t<is_structure_v<ResultT> && is_structure_v<FlatbufferT>, ResultT>
+    CallVtl0CallbackFromVtl1(_In_ const FlatbufferT& flatbuffer_input, _In_ std::string_view function_name)
     {
         auto flatbuffer_result = CallVtl0CallbackFromVtl1Impl<FlatbufferT>(flatbuffer_input, function_name);
         return Converters::ConvertStruct<ResultT>(flatbuffer_result);
     }
 
-    template <typename ResultT, Structure FlatbufferT>
-    requires std::is_void_v<ResultT>
-    inline void CallVtl0CallbackFromVtl1(_In_ const FlatbufferT& flatbuffer_input, _In_ std::string_view function_name)
+    template <typename ResultT, typename FlatbufferT>
+    inline std::enable_if_t<std::is_void_v<ResultT> && is_structure_v<FlatbufferT>, void>
+    CallVtl0CallbackFromVtl1(_In_ const FlatbufferT& flatbuffer_input, _In_ std::string_view function_name)
     {
         CallVtl0CallbackFromVtl1Impl<void>(flatbuffer_input, function_name);
     }
