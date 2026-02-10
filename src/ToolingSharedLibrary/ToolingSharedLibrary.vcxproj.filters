@@ -133,8 +133,6 @@
     <None Include="packages.config" />
     <None Include="README.md" />
     <None Include="vcpkg.json" />
-    <None Include="VersionHelper\helpers.targets" />
-    <None Include="VersionHelper\Version.ps1" />
   </ItemGroup>
   <ItemGroup>
     <Text Include="Includes\Edl\LexicalAnalyzer.h">

@@ -249,16 +249,13 @@
     <ClCompile Include="ToolingExecutable\Edl\Parser.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="VersionHelper\helpers.targets" />
     <None Include="packages.config" />
     <None Include="README.md" />
     <None Include="vcpkg.json" />
-    <None Include="VersionHelper\Version.ps1" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
     <Import Project="..\..\packages\Microsoft.Windows.ImplementationLibrary.1.0.240803.1\build\native\Microsoft.Windows.ImplementationLibrary.targets" Condition="Exists('..\..\packages\Microsoft.Windows.ImplementationLibrary.1.0.240803.1\build\native\Microsoft.Windows.ImplementationLibrary.targets')" />
-    <Import Project="$(ProjectDir)VersionHelper\helpers.targets" />
   </ImportGroup>
   <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
     <PropertyGroup>
