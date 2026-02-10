@@ -29,13 +29,15 @@ extends:
   parameters:
     release:
       category: NonAzure
+    featureFlags:
+      use1esentry: false
 
     stages:
     - stage: 'Publish'
       displayName: 'Publish to NuGet'
       variables:
         ob_release_environment: Production
-        
+
       jobs:
       - job: ReleaseToNugetOrg
         pool:
@@ -47,10 +49,12 @@ extends:
           - input: pipelineArtifact
             pipeline: VbsEnclaveTooling
             artifactName: $(ArtifactName)
-          outputs:
-          - output: nuget
-            displayName: 'Push nuget package to nuget.org'
+
+        steps:
+        - task: NuGetCommand@2
+          displayName: 'Push nuget package to nuget.org'
+          inputs:
+            command: push
             packagesToPush: '$(Pipeline.Workspace)\Microsoft.Windows.VbsEnclave.*.nupkg'
-            packageParentPath: '$(Pipeline.Workspace)'
             nuGetFeedType: external
             publishFeedCredentials: 'VbsEnclaveTooling Nuget' # Service connection
