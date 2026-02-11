@@ -25,7 +25,7 @@ Full instructions can be found at [VBS Enclaves dev guide](https://learn.microso
 > * Create a test certificate to use for signing the VBS Enclave. Replace "TheDefaultTestEnclaveCertName" with the name you wish to create. eg: <br />
 > ```powershell <br />
 >   New-SelfSignedCertificate -CertStoreLocation Cert:\\CurrentUser\\My -DnsName "TheDefaultTestEnclaveCertName" -KeyUsage DigitalSignature -KeySpec Signature -KeyLength 2048 -KeyAlgorithm RSA -HashAlgorithm SHA256 -TextExtension "2.5.29.37={text}1.3.6.1.5.5.7.3.3,1.3.6.1.4.1.311.76.57.1.15,1.3.6.1.4.1.311.97.814040577.346743379.4783502.105532346 
-```
+>```
 
 ## Solution structure
 This sample will create a Host app, a DLL project and include a solution level file as follows:
