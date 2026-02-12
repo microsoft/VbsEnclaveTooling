@@ -6,10 +6,11 @@ features that interact with a VBS enclave easier. To learn more about VBS enclav
 [here](https://learn.microsoft.com/windows/win32/trusted-execution/vbs-enclaves).
 
 #### Language support for CodeGenerator and SDK
-| Language          | Supported |
-|-------------------|-----------|
-| C++ (20 or later) |    ✅     |
-| Rust              |    ✅     |
+|             | HostApp | Enclave |
+|-------------|---------|---------|
+| C++ 20      | ✅      | ✅     |
+| C++ 17      | ✅      | ❌     |
+| Rust 1.88+  | ✅      | ✅     |
 
 #### Operating System Support
 
@@ -17,17 +18,18 @@ features that interact with a VBS enclave easier. To learn more about VBS enclav
 |---------------------|-----------------------|
 | Windows 11 24H2     | `26100.3916 or later` |
 
-Developers will need to make sure they have `Windows SDK version 26100.7175` or later installed on their system or
+Developers will need to make sure they have `Windows SDK version 26100.7463` or later installed on their system or
 integrated into their Visual Studio projects for user binding API support.
 
 The Windows SDK can be installed in one of the following ways:
-1. via installing the `Windows 11 SDK (10.0.26100.0)` individual component in the `Visual Studio v17.14` installer
+1. via installing the `Windows 11 SDK (10.0.26100.0)` individual component in the `Visual Studio` installer
 1. via using the `Windows 11 SDK (10.0.26100.0)` installer through the [Windows SDK installer website](https://developer.microsoft.com/windows/downloads/windows-sdk/)
 1. via adding the [Microsoft.Windows.SDK.CPP](https://www.nuget.org/packages/Microsoft.Windows.SDK.CPP/) 
 packages to your Visual Studio project via Nuget.
 
 > [!Important]
-> The VBS Enclave SDK automatically includes Microsoft.Windows.SDK.CPP version 10.0.26100.7175 as a dependency, providing access to the latest user binding APIs without additional configuration.
+> The VBS Enclave SDK automatically includes Microsoft.Windows.SDK.CPP version 10.0.26100.7463
+> as a dependency, providing access to the latest user binding APIs without additional configuration.
 
 ##### Repository
 
