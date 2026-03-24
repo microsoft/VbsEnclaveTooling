@@ -217,6 +217,30 @@ winrt::hstring GetAlgorithm(uintptr_t ecdhAlgorithm)
     THROW_HR(E_INVALIDARG);
 }
 
+// Helper function to convert KeyCredentialStatus to appropriate HRESULT
+HRESULT KeyCredentialStatusToHResult(KeyCredentialStatus status)
+{
+    switch (status)
+    {
+        case KeyCredentialStatus::Success:
+            return S_OK;
+        case KeyCredentialStatus::UnknownError:
+            return E_FAIL;
+        case KeyCredentialStatus::NotFound:
+            return HRESULT_FROM_WIN32(ERROR_NOT_FOUND);
+        case KeyCredentialStatus::UserCanceled:
+            return HRESULT_FROM_WIN32(ERROR_CANCELLED);
+        case KeyCredentialStatus::UserPrefersPassword:
+            return HRESULT_FROM_WIN32(ERROR_BAD_CONFIGURATION);
+        case KeyCredentialStatus::CredentialAlreadyExists:
+            return HRESULT_FROM_WIN32(ERROR_ALREADY_EXISTS);
+        case KeyCredentialStatus::SecurityDeviceLocked:
+            return HRESULT_FROM_WIN32(ERROR_ACCOUNT_LOCKED_OUT);
+        default:
+            return E_UNEXPECTED;
+    }
+}
+
 // Helper function to convert veil_abi::Types::keyCredentialCacheConfig to KeyCredentialCacheConfiguration
 KeyCredentialCacheConfiguration ConvertCacheConfig(const veil_abi::Types::keyCredentialCacheConfig& cacheConfig)
 {
@@ -292,7 +316,7 @@ veil_abi::Types::credentialAndSessionInfo veil_abi::Untrusted::Implementation::u
     auto status = credentialResult.Status();
     if (status != KeyCredentialStatus::Success)
     {        
-        THROW_HR(static_cast<HRESULT>(status));
+        THROW_HR(KeyCredentialStatusToHResult(status));
     }
 
     veil::vtl0::implementation::debug::internal::debug_wprint(L"DEBUG: Transferring credential and session ownership to VTL1");
@@ -326,7 +350,7 @@ veil_abi::Types::credentialAndSessionInfo veil_abi::Untrusted::Implementation::u
     auto status = credentialResult.Status();
     if (status != KeyCredentialStatus::Success)
     {
-        THROW_HR(static_cast<HRESULT>(status));
+        THROW_HR(KeyCredentialStatusToHResult(status));
     }
 
     veil::vtl0::implementation::debug::internal::debug_wprint(L"DEBUG: Transferring credential and session ownership to VTL1");
