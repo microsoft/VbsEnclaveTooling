@@ -29,7 +29,11 @@ use windows::{
     Security::Cryptography::CryptographicBuffer,
     Storage::Streams::IBuffer,
     Win32::{
-        Foundation::{CloseHandle, E_FAIL, E_INVALIDARG, HANDLE, HLOCAL, LocalFree},
+        Foundation::{
+            CloseHandle, E_FAIL, E_INVALIDARG, E_UNEXPECTED, ERROR_ACCOUNT_LOCKED_OUT,
+            ERROR_ALREADY_EXISTS, ERROR_BAD_CONFIGURATION, ERROR_CANCELLED, ERROR_NOT_FOUND,
+            HANDLE, HLOCAL, LocalFree,
+        },
         Security::Authorization::ConvertSidToStringSidW,
         Security::{GetTokenInformation, PSID, TOKEN_QUERY, TOKEN_USER, TokenUser},
         System::Threading::{GetCurrentProcess, OpenProcessToken},
@@ -117,6 +121,32 @@ fn kcm_buffer_to_vec(buffer: &KcmIBuffer) -> windows_core::Result<Vec<u8>> {
 fn vec_to_kcm_buffer(data: &[u8]) -> windows_core::Result<KcmIBuffer> {
     let windows_buffer = vec_to_buffer(data)?;
     windows_buffer.cast()
+}
+
+/// Convert KeyCredentialStatus to an AbiError with a proper failure HRESULT.
+///
+/// KeyCredentialStatus enum values (0..6) are not valid failure HRESULTs — they have
+/// the high bit clear, so Windows considers them success codes. Passing them raw through
+/// `AbiError::Hresult(status.0)` causes downstream `hr < 0` / `FAILED()` checks to
+/// misinterpret the error as success.
+///
+/// Uses `AbiError::Win32Error` which internally applies `HRESULT::from_win32()` to
+/// produce proper failure HRESULTs.
+fn key_credential_status_to_abi_error(status: KeyCredentialStatus) -> AbiError {
+    match status {
+        KeyCredentialStatus::Success => AbiError::Hresult(0), // S_OK
+        KeyCredentialStatus::UnknownError => AbiError::Hresult(E_FAIL.0),
+        KeyCredentialStatus::NotFound => AbiError::Win32Error(ERROR_NOT_FOUND.0),
+        KeyCredentialStatus::UserCanceled => AbiError::Win32Error(ERROR_CANCELLED.0),
+        KeyCredentialStatus::UserPrefersPassword => AbiError::Win32Error(ERROR_BAD_CONFIGURATION.0),
+        KeyCredentialStatus::CredentialAlreadyExists => {
+            AbiError::Win32Error(ERROR_ALREADY_EXISTS.0)
+        }
+        KeyCredentialStatus::SecurityDeviceLocked => {
+            AbiError::Win32Error(ERROR_ACCOUNT_LOCKED_OUT.0)
+        }
+        _ => AbiError::Hresult(E_UNEXPECTED.0),
+    }
 }
 
 /// Get the algorithm name string from the ECDH algorithm handle
@@ -308,7 +338,7 @@ pub fn userboundkey_establish_session_for_create(
         .Status()
         .map_err(|e| AbiError::Hresult(e.code().0))?;
     if status != KeyCredentialStatus::Success {
-        return Err(AbiError::Hresult(status.0));
+        return Err(key_credential_status_to_abi_error(status));
     }
 
     // Get credential and convert to raw pointer
@@ -369,7 +399,7 @@ pub fn userboundkey_establish_session_for_load(
         .Status()
         .map_err(|e| AbiError::Hresult(e.code().0))?;
     if status != KeyCredentialStatus::Success {
-        return Err(AbiError::Hresult(status.0));
+        return Err(key_credential_status_to_abi_error(status));
     }
 
     // Get credential and convert to raw pointer
