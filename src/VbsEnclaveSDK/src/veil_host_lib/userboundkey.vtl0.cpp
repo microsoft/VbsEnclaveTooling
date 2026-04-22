@@ -36,6 +36,14 @@
 using namespace winrt::Windows::Security::Credentials;
 using namespace veil::vtl0::implementation::debug;
 
+// Safe wrapper for e.what() — returns fallback when what() is nullptr
+// (common when exceptions cross VTL boundaries)
+static const char* safe_what(const std::exception& e) noexcept
+{
+    const char* msg = e.what();
+    return msg ? msg : "unknown exception";
+}
+
 namespace veil::vtl0::userboundkey::implementation
 {
 // RAII wrapper that stores both the session handle and enclave pointer
@@ -87,7 +95,8 @@ class unique_sessionhandle
             catch (const std::exception& e)
             {
                 std::wstring errorMsg = L"ERROR: Exception during VTL0 session cleanup: ";
-                errorMsg += std::wstring(e.what(), e.what() + strlen(e.what()));
+                const char* what_msg = safe_what(e);
+                errorMsg += std::wstring(what_msg, what_msg + strlen(what_msg));
                 veil::vtl0::implementation::debug::internal::debug_wprint(errorMsg);
             }
             catch (...)
@@ -169,7 +178,8 @@ CreateChallengeCallback(std::shared_ptr<veil::vtl0::userboundkey::implementation
         catch (const std::exception& e) 
         {
             std::wstring errorMsg = L"DEBUG: Exception in " + callbackType + L" callback: ";
-            errorMsg += std::wstring(e.what(), e.what() + strlen(e.what()));
+            const char* what_msg = safe_what(e);
+            errorMsg += std::wstring(what_msg, what_msg + strlen(what_msg));
             veil::vtl0::implementation::debug::internal::debug_wprint(errorMsg);
             throw;
         }
@@ -401,7 +411,8 @@ std::vector<uint8_t> veil_abi::Untrusted::Implementation::userboundkey_get_autho
     catch (const std::exception& e)
     {
         std::wstring errorMsg = L"DEBUG: Exception in userboundkey_get_authorization_context_from_credential: ";
-        errorMsg += std::wstring(e.what(), e.what() + strlen(e.what()));
+        const char* what_msg = safe_what(e);
+        errorMsg += std::wstring(what_msg, what_msg + strlen(what_msg));
         veil::vtl0::implementation::debug::internal::debug_wprint(errorMsg);
         throw;
     }
@@ -447,7 +458,8 @@ std::vector<uint8_t> veil_abi::Untrusted::Implementation::userboundkey_get_secre
     catch (const std::exception& e)
     {
         std::wstring errorMsg = L"DEBUG: Exception in userboundkey_get_secret_from_credential: ";
-        errorMsg += std::wstring(e.what(), e.what() + strlen(e.what()));
+        const char* what_msg = safe_what(e);
+        errorMsg += std::wstring(what_msg, what_msg + strlen(what_msg));
         veil::vtl0::implementation::debug::internal::debug_wprint(errorMsg);
         throw;
     }
@@ -493,7 +505,8 @@ void veil_abi::Untrusted::Implementation::userboundkey_delete_credential(uintptr
     catch (const std::exception& e)
     {
         std::wstring errorMsg = L"DEBUG: Exception in userboundkey_delete_credential: ";
-        errorMsg += std::wstring(e.what(), e.what() + strlen(e.what()));
+        const char* what_msg = safe_what(e);
+        errorMsg += std::wstring(what_msg, what_msg + strlen(what_msg));
         veil::vtl0::implementation::debug::internal::debug_wprint(errorMsg);
     }
     catch (...)
