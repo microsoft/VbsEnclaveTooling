@@ -13,6 +13,14 @@
 
 namespace veil::vtl1::userboundkey
 {
+// Safe wrapper for e.what() — returns fallback when what() is nullptr
+// (common when exceptions cross VTL boundaries)
+static const char* safe_what(const std::exception& e) noexcept
+{
+    const char* msg = e.what();
+    return msg ? msg : "unknown exception";
+}
+
 using unique_sessionhandle = wil::unique_any<USER_BOUND_KEY_SESSION_HANDLE, decltype(&::CloseUserBoundKeySession), ::CloseUserBoundKeySession>;
 
 // RAII wrapper for credentials using WIL
@@ -480,7 +488,7 @@ wil::secure_vector<uint8_t> create_user_bound_key(
     catch (const std::exception& e)
     {
         // Convert exception message to wide string for debug printing
-        std::string error_msg = e.what();
+        std::string error_msg = safe_what(e);
         std::wstring werror_msg(error_msg.begin(), error_msg.end());
         veil::vtl1::vtl0_functions::internal::debug_print((L"ERROR: create_user_bound_key - Exception caught: " + werror_msg).c_str());
         throw; // Re-throw the exception
@@ -676,7 +684,7 @@ std::vector<uint8_t> load_user_bound_key(
     catch (const std::exception& e)
     {
         // Convert exception message to wide string for debug printing
-        std::string error_msg = e.what();
+        std::string error_msg = safe_what(e);
         std::wstring werror_msg(error_msg.begin(), error_msg.end());
         veil::vtl1::vtl0_functions::internal::debug_print((L"ERROR: load_user_bound_key - Exception caught: " + werror_msg).c_str());
         throw; // Re-throw the exception
@@ -719,7 +727,7 @@ std::vector<uint8_t> reseal_user_bound_key(
     catch (const std::exception& e)
     {
         // Convert exception message to wide string for debug printing
-        std::string error_msg = e.what();
+        std::string error_msg = safe_what(e);
         std::wstring werror_msg(error_msg.begin(), error_msg.end());
         veil::vtl1::vtl0_functions::internal::debug_print((L"ERROR: reseal_user_bound_key - Exception caught: " + werror_msg).c_str());
         throw; // Re-throw the exception
