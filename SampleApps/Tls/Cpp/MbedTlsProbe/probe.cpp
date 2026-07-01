@@ -1,7 +1,7 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
-#include "tls_enclave_mbedtls_config.h"
+#include "TlsMbedTlsConfig.h"
 
 #include <mbedtls/ctr_drbg.h>
 #include <mbedtls/entropy.h>
