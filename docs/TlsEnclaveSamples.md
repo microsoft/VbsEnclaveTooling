@@ -128,11 +128,13 @@ Each phase branch is stacked on the previous phase branch.
 | P0 | `tls-samples/p0-threat-model` | `main` | This threat model, scenario contract, staging plan, and security assertions. |
 | P1 | `tls-samples/p1-test-server` | P0 | Shared TLS 1.3 test server, certificate generation, and deterministic payloads. |
 | P2 | `tls-samples/p2-transport-edl` | P1 | Shared EDL transport contract and generated binding integration points. |
-| P3 | `tls-samples/p3-cpp-server-auth` | P2 | C++ mbedTLS server-auth TLS sample. |
-| P4 | `tls-samples/p4-rust-server-auth` | P3 | Rust rustls server-auth TLS sample. |
-| P5 | `tls-samples/p5-mutual-auth` | P4 | C++ and Rust mutual-auth TLS profiles. |
-| P6 | `tls-samples/p6-embedded-attestation` | P5 | C++ and Rust server-auth TLS with embedded enclave attestation. |
-| P7 | `tls-samples/p7-verification-docs` | P6 | Cross-profile protocol verification, negative tests, and final documentation. |
+| P3 | `tls-samples/p3-mbedtls-feasibility` | P2 | mbedTLS C++ enclave feasibility study and integration recommendation. |
+| P4 | `tls-samples/p4-cpp-server-auth` | P3 | C++ mbedTLS server-auth TLS sample. |
+| P5 | `tls-samples/p5-rustls-feasibility` | P4 | rustls enclave feasibility study, including BCrypt-backed provider assessment. |
+| P6 | `tls-samples/p6-rust-server-auth` | P5 | Rust rustls server-auth TLS sample. |
+| P7 | `tls-samples/p7-mutual-auth` | P6 | C++ and Rust mutual-auth TLS profiles. |
+| P8 | `tls-samples/p8-embedded-attestation` | P7 | C++ and Rust server-auth TLS with embedded enclave attestation. |
+| P9 | `tls-samples/p9-verification-docs` | P8 | Cross-profile protocol verification, negative tests, and final documentation. |
 
 Although some language-specific work could be developed independently, the staged branch stack keeps each phase reviewable as an incremental story.
 
