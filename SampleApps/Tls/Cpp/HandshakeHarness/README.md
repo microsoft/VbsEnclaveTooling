@@ -33,6 +33,13 @@ The `TlsEnclave` and `TlsHost` projects build the same driver behind the generat
 
 The signing certificate must be trusted by the machine for `LoadEnclaveImageW` to accept the enclave DLL.
 
+To add or remove the current-user trust entry for the sample cert:
+
+```powershell
+..\TlsEnclave\Add-TrustedCert.ps1
+..\TlsEnclave\Remove-TrustedCert.ps1
+```
+
 In another shell:
 
 ```powershell
