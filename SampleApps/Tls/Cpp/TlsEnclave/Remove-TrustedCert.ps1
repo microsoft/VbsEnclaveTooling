@@ -8,28 +8,43 @@ $ErrorActionPreference = "Stop"
 
 $subject = "CN=$CertName"
 
-$trustedCertificates = @(Get-ChildItem Cert:\CurrentUser\Root |
-    Where-Object { $_.Subject -eq $subject })
+function Remove-CertificatesFromStore {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$StoreName,
 
-foreach ($cert in $trustedCertificates) {
-    Remove-Item -Path ("Cert:\CurrentUser\Root\{0}" -f $cert.Thumbprint) -Force
-    Write-Host "Removed trusted root certificate $($cert.Thumbprint)."
+        [Parameter(Mandatory = $true)]
+        [string]$Subject
+    )
+
+    $store = [System.Security.Cryptography.X509Certificates.X509Store]::new(
+        $StoreName,
+        [System.Security.Cryptography.X509Certificates.StoreLocation]::CurrentUser)
+    $store.Open([System.Security.Cryptography.X509Certificates.OpenFlags]::ReadWrite)
+    try {
+        $matches = @($store.Certificates | Where-Object { $_.Subject -eq $Subject })
+        foreach ($cert in $matches) {
+            $thumbprint = $cert.Thumbprint
+            $store.Remove($cert)
+            Write-Host "Removed certificate $thumbprint from Cert:\CurrentUser\$StoreName."
+        }
+
+        return $matches.Count
+    } finally {
+        $store.Close()
+    }
 }
 
-if ($trustedCertificates.Count -eq 0) {
+$trustedCount = Remove-CertificatesFromStore -StoreName "Root" -Subject $subject
+
+if ($trustedCount -eq 0) {
     Write-Host "No trusted root certificate found for $subject."
 }
 
 if ($RemoveSigningCertificate) {
-    $signingCertificates = @(Get-ChildItem Cert:\CurrentUser\My |
-        Where-Object { $_.Subject -eq $subject })
+    $signingCount = Remove-CertificatesFromStore -StoreName "My" -Subject $subject
 
-    foreach ($cert in $signingCertificates) {
-        Remove-Item -Path ("Cert:\CurrentUser\My\{0}" -f $cert.Thumbprint) -Force
-        Write-Host "Removed signing certificate $($cert.Thumbprint)."
-    }
-
-    if ($signingCertificates.Count -eq 0) {
+    if ($signingCount -eq 0) {
         Write-Host "No signing certificate found for $subject."
     }
 }
