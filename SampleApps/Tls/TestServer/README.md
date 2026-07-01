@@ -1,0 +1,46 @@
+# TLS sample test server
+
+This utility provides the deterministic local endpoint used by the TLS enclave samples.
+
+The server is TLS 1.3-only by default and serves a fixed secret payload at `/secret-config`. The enclave samples should consume that payload inside VTL1 and return only derived results to VTL0.
+
+## Generate test certificates
+
+```powershell
+.\generate-test-certs.ps1
+```
+
+This creates:
+
+- `test-certs\server-cert.pem`
+- `test-certs\server-key.pem`
+- `test-certs\server.pfx`
+- `test-certs\client-cert.pem`
+- `test-certs\client-key.pem`
+- `test-certs\client.pfx`
+
+The first sample uses the server certificate for server-auth TLS. The client certificate files are generated now so the later mutual-auth profile can use the same test-server layout.
+
+## Run
+
+```powershell
+.\Start-TestServer.ps1 -Address 127.0.0.1 -Port 8443
+```
+
+By default this opens the server in a new PowerShell window. Close that window, or stop its PID, to stop the server.
+
+Then request:
+
+```text
+GET /secret-config HTTP/1.1
+Host: localhost
+Connection: close
+```
+
+The server logs the negotiated TLS version and cipher suite for protocol verification.
+
+## Test
+
+```powershell
+.\Test-TestServer.ps1
+```
