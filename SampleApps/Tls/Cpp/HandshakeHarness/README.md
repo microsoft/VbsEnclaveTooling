@@ -21,6 +21,18 @@ Generate certificates and start the test server:
 
 The server starts in a new PowerShell window.
 
+## Real enclave host
+
+The `TlsEnclave` and `TlsHost` projects build the same driver behind the generated VTL0/VTL1 bindings.
+
+```powershell
+..\TlsEnclave\Build-TlsEnclave.ps1 -Configuration Debug -Platform x64
+..\TlsHost\Build-TlsHost.ps1 -Configuration Debug -Platform x64
+..\TlsEnclave\Sign-TlsEnclave.ps1 -Configuration Debug -Platform x64 -CertName TlsSampleEnclaveCert
+```
+
+The signing certificate must be trusted by the machine for `LoadEnclaveImageW` to accept the enclave DLL.
+
 In another shell:
 
 ```powershell

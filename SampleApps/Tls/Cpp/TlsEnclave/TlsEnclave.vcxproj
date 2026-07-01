@@ -1,0 +1,114 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|x64">
+      <Configuration>Debug</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <VCProjectVersion>17.0</VCProjectVersion>
+    <Keyword>Win32Proj</Keyword>
+    <ProjectGuid>{4382d3e4-8a0c-4128-a005-343441dce4b1}</ProjectGuid>
+    <RootNamespace>TlsEnclave</RootNamespace>
+    <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
+    <ProjectName>TlsEnclave</ProjectName>
+    <TlsSamplePlatformToolset Condition="'$(TlsSamplePlatformToolset)'==''">v145</TlsSamplePlatformToolset>
+    <MbedTlsRoot Condition="'$(MbedTlsRoot)'==''">$(ProjectDir)..\..\external\mbedtls</MbedTlsRoot>
+    <CppDepsRoot Condition="'$(CppDepsRoot)'==''">$(ProjectDir)..\..\external</CppDepsRoot>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Label="Configuration" Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>$(TlsSamplePlatformToolset)</PlatformToolset>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <PropertyGroup>
+    <OutDir>$(ProjectDir)bin\$(Platform)\$(Configuration)\</OutDir>
+    <IntDir>$(ProjectDir)obj\$(Platform)\$(Configuration)\</IntDir>
+    <TargetName>TlsEnclave</TargetName>
+    <LinkIncremental>false</LinkIncremental>
+    <UseGeneratedModuleDefinitionFile>false</UseGeneratedModuleDefinitionFile>
+    <UseEnclave>true</UseEnclave>
+    <GenerateDesktopDeployRecipeFile>false</GenerateDesktopDeployRecipeFile>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Platform)'=='x64'">
+    <ExecutablePath>$(VCToolsInstallDir)bin\Hostx64\x64;$(ExecutablePath)</ExecutablePath>
+  </PropertyGroup>
+  <PropertyGroup>
+    <VC_LibraryPath_Enclave>$(VC_LibraryPath_VC_x64_Desktop)\enclave</VC_LibraryPath_Enclave>
+    <WindowsSDK_LibraryPath_Enclave>$(WindowsSDK_LibraryPath)\..\ucrt_enclave\$(Platform)</WindowsSDK_LibraryPath_Enclave>
+    <VBS_Enclave_Dependencies>
+      vertdll.lib;
+      bcrypt.lib;
+      $(VC_LibraryPath_Enclave)\libcmt.lib;
+      $(VC_LibraryPath_Enclave)\libvcruntime.lib;
+      $(WindowsSDK_LibraryPath_Enclave)\ucrt.lib;
+    </VBS_Enclave_Dependencies>
+  </PropertyGroup>
+  <ItemDefinitionGroup>
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <SDLCheck>true</SDLCheck>
+      <ConformanceMode>true</ConformanceMode>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
+      <BasicRuntimeChecks>Default</BasicRuntimeChecks>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+      <LanguageStandard>stdcpp20</LanguageStandard>
+      <LanguageStandard_C>stdc17</LanguageStandard_C>
+      <AdditionalIncludeDirectories>
+        $(ProjectDir)..\Common;
+        $(ProjectDir)..\Generated\Enclave;
+        $(ProjectDir)..\..\..\..\src\ToolingSharedLibrary\Includes;
+        $(ProjectDir)..\..\..\..\Common\veil_enclave_wil_inc;
+        $(ProjectDir)..\..\..\..\Common\veil_enclave_cpp_support_lib;
+        $(CppDepsRoot)\wil\include;
+        $(CppDepsRoot)\flatbuffers\include;
+        $(MbedTlsRoot)\include;
+        %(AdditionalIncludeDirectories)
+      </AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>
+        WIN32_LEAN_AND_MEAN;
+        NOMINMAX;
+        MBEDTLS_CONFIG_FILE=&quot;TlsMbedTlsConfig.h&quot;;
+        %(PreprocessorDefinitions)
+      </PreprocessorDefinitions>
+    </ClCompile>
+    <Link>
+      <SubSystem>Windows</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <EnableUAC>false</EnableUAC>
+      <AdditionalDependencies>$(VBS_Enclave_Dependencies)</AdditionalDependencies>
+      <AdditionalOptions>/INTEGRITYCHECK /ENCLAVE /GUARD:MIXED</AdditionalOptions>
+      <ModuleDefinitionFile>TlsEnclave.def</ModuleDefinitionFile>
+      <IgnoreAllDefaultLibraries>true</IgnoreAllDefaultLibraries>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <ClCompile Include="dllmain.cpp" />
+    <ClCompile Include="tls_enclave.cpp" />
+    <ClCompile Include="..\Common\TlsMbedTlsDriver.cpp" />
+    <ClCompile Include="..\..\..\..\Common\veil_enclave_cpp_support_lib\atomic_wait_compat.cpp" />
+    <ClCompile Include="..\..\..\..\Common\veil_enclave_cpp_support_lib\excptptr_compat.cpp" />
+    <ClCompile Include="..\..\..\..\Common\veil_enclave_cpp_support_lib\shims.cpp" />
+    <ClCompile Include="..\..\..\..\Common\veil_enclave_cpp_support_lib\syserror_compat.cpp" />
+    <ClCompile Include="..\..\..\..\Common\veil_enclave_cpp_support_lib\xtime_compat.cpp" />
+    <ClCompile Include="$(MbedTlsRoot)\library\*.c" Exclude="$(MbedTlsRoot)\library\net_sockets.c;$(MbedTlsRoot)\library\timing.c;$(MbedTlsRoot)\library\psa_its_file.c" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\Common\TlsMbedTlsConfig.h" />
+    <ClInclude Include="..\Common\TlsMbedTlsDriver.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="TlsEnclave.def" />
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <Target Name="EnsureTlsDependencies" BeforeTargets="PrepareForBuild">
+    <Error Condition="!Exists('$(MbedTlsRoot)\include\mbedtls\version.h')" Text="mbedTLS source was not found. Run ..\..\Fetch-CppDeps.ps1 first." />
+    <Error Condition="!Exists('$(CppDepsRoot)\wil\include\wil\result_macros.h')" Text="WIL headers were not found. Run ..\..\Fetch-CppDeps.ps1 first." />
+    <Error Condition="!Exists('$(CppDepsRoot)\flatbuffers\include\flatbuffers\flatbuffers.h')" Text="FlatBuffers headers were not found. Run ..\..\Fetch-CppDeps.ps1 first." />
+  </Target>
+</Project>

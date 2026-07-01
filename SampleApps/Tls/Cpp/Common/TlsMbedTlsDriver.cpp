@@ -4,9 +4,8 @@
 #include "TlsMbedTlsDriver.h"
 
 #include <algorithm>
-#include <charconv>
+#include <cstdio>
 #include <cstring>
-#include <sstream>
 
 #include <mbedtls/ctr_drbg.h>
 #include <mbedtls/entropy.h>
@@ -132,31 +131,66 @@ namespace tls_sample
 
         std::string MakeRequest(const TlsRequest& request)
         {
-            std::ostringstream builder;
-            builder << "GET " << request.httpPath << " HTTP/1.1\r\n"
-                    << "Host: " << request.serverName << "\r\n"
-                    << "Connection: close\r\n\r\n";
-            return builder.str();
+            std::string requestText;
+            requestText.reserve(request.httpPath.size() + request.serverName.size() + 64);
+            requestText.append("GET ");
+            requestText.append(request.httpPath);
+            requestText.append(" HTTP/1.1\r\nHost: ");
+            requestText.append(request.serverName);
+            requestText.append("\r\nConnection: close\r\n\r\n");
+            return requestText;
+        }
+
+        const char* FindSubstring(const std::string& haystack, const char* needle)
+        {
+            const auto needleLength = std::strlen(needle);
+            if (needleLength == 0 || haystack.size() < needleLength)
+            {
+                return nullptr;
+            }
+
+            const char* begin = haystack.data();
+            const char* last = begin + haystack.size() - needleLength;
+            for (const char* current = begin; current <= last; ++current)
+            {
+                if (std::memcmp(current, needle, needleLength) == 0)
+                {
+                    return current;
+                }
+            }
+            return nullptr;
         }
 
         bool ExtractMultiplier(const std::string& response, uint32_t& multiplier)
         {
-            const std::string marker = "\"multiplier\":";
-            const auto markerOffset = response.find(marker);
-            if (markerOffset == std::string::npos)
+            constexpr const char* marker = "\"multiplier\":";
+            const char* begin = FindSubstring(response, marker);
+            if (!begin)
             {
                 return false;
             }
 
-            const char* begin = response.data() + markerOffset + marker.size();
+            begin += std::strlen(marker);
             const char* end = response.data() + response.size();
             while (begin != end && (*begin == ' ' || *begin == '\t'))
             {
                 ++begin;
             }
 
-            auto [ptr, ec] = std::from_chars(begin, end, multiplier);
-            return ec == std::errc{} && ptr != begin;
+            uint32_t value = 0;
+            const char* current = begin;
+            for (; current != end && *current >= '0' && *current <= '9'; ++current)
+            {
+                value = (value * 10) + static_cast<uint32_t>(*current - '0');
+            }
+
+            if (current == begin)
+            {
+                return false;
+            }
+
+            multiplier = value;
+            return true;
         }
 
         TlsSampleStatus MapHandshakeError(int error)
@@ -172,9 +206,13 @@ namespace tls_sample
         {
             std::array<char, 256> buffer{};
             mbedtls_strerror(error, buffer.data(), buffer.size());
-            std::ostringstream message;
-            message << "mbedTLS error " << error << ": " << buffer.data();
-            return message.str();
+            std::array<char, 32> errorCode{};
+            std::snprintf(errorCode.data(), errorCode.size(), "%d", error);
+            std::string message("mbedTLS error ");
+            message.append(errorCode.data());
+            message.append(": ");
+            message.append(buffer.data());
+            return message;
         }
 
         void SetProtocolDiagnostics(TlsResult& result, mbedtls_ssl_context& ssl)
@@ -182,9 +220,10 @@ namespace tls_sample
             result.tlsVersion = static_cast<uint32_t>(mbedtls_ssl_get_version_number(&ssl));
             result.cipherSuite = static_cast<uint16_t>(mbedtls_ssl_get_ciphersuite_id_from_ssl(&ssl));
 
-            std::ostringstream diagnostics;
-            diagnostics << mbedtls_ssl_get_version(&ssl) << ", " << mbedtls_ssl_get_ciphersuite(&ssl) << ", server-auth-ok";
-            result.diagnostics = diagnostics.str();
+            result.diagnostics = mbedtls_ssl_get_version(&ssl);
+            result.diagnostics.append(", ");
+            result.diagnostics.append(mbedtls_ssl_get_ciphersuite(&ssl));
+            result.diagnostics.append(", server-auth-ok");
         }
     }
 
