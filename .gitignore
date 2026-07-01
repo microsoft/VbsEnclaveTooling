@@ -442,6 +442,7 @@ LocalSettings.gdn.json
 
 target/
 SampleApps/Tls/TestServer/test-certs/
+SampleApps/Tls/external/
 *.lock
 obj
 bin
