@@ -9,23 +9,15 @@
       <Configuration>Release</Configuration>
       <Platform>x64</Platform>
     </ProjectConfiguration>
-    <ProjectConfiguration Include="Debug|ARM64">
-      <Configuration>Debug</Configuration>
-      <Platform>ARM64</Platform>
-    </ProjectConfiguration>
-    <ProjectConfiguration Include="Release|ARM64">
-      <Configuration>Release</Configuration>
-      <Platform>ARM64</Platform>
-    </ProjectConfiguration>
   </ItemGroup>
 
   <PropertyGroup Label="Globals">
     <VCProjectVersion>17.0</VCProjectVersion>
     <Keyword>Win32Proj</Keyword>
-    <ProjectGuid>{0f0a4ec2-502b-4358-aed6-0f7051562db2}</ProjectGuid>
-    <RootNamespace>MbedTlsProbe</RootNamespace>
+    <ProjectGuid>{6a3a4ac2-2d8d-4d84-8454-91ec2d4f9fd5}</ProjectGuid>
+    <RootNamespace>HandshakeHarness</RootNamespace>
     <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
-    <ProjectName>MbedTlsProbe</ProjectName>
+    <ProjectName>HandshakeHarness</ProjectName>
     <TlsSamplePlatformToolset Condition="'$(TlsSamplePlatformToolset)'==''">v145</TlsSamplePlatformToolset>
     <MbedTlsRoot Condition="'$(MbedTlsRoot)'==''">$(ProjectDir)..\..\external\mbedtls</MbedTlsRoot>
   </PropertyGroup>
@@ -33,26 +25,13 @@
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
 
   <PropertyGroup Label="Configuration" Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
     <PlatformToolset>$(TlsSamplePlatformToolset)</PlatformToolset>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Label="Configuration" Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <ConfigurationType>DynamicLibrary</ConfigurationType>
-    <UseDebugLibraries>false</UseDebugLibraries>
-    <PlatformToolset>$(TlsSamplePlatformToolset)</PlatformToolset>
-    <WholeProgramOptimization>true</WholeProgramOptimization>
-    <CharacterSet>Unicode</CharacterSet>
-  </PropertyGroup>
-  <PropertyGroup Label="Configuration" Condition="'$(Configuration)|$(Platform)'=='Debug|ARM64'">
-    <ConfigurationType>DynamicLibrary</ConfigurationType>
-    <UseDebugLibraries>true</UseDebugLibraries>
-    <PlatformToolset>$(TlsSamplePlatformToolset)</PlatformToolset>
-    <CharacterSet>Unicode</CharacterSet>
-  </PropertyGroup>
-  <PropertyGroup Label="Configuration" Condition="'$(Configuration)|$(Platform)'=='Release|ARM64'">
-    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
     <PlatformToolset>$(TlsSamplePlatformToolset)</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
@@ -64,31 +43,12 @@
   <PropertyGroup>
     <OutDir>$(ProjectDir)bin\$(Platform)\$(Configuration)\</OutDir>
     <IntDir>$(ProjectDir)obj\$(Platform)\$(Configuration)\</IntDir>
-    <TargetName>MbedTlsProbe</TargetName>
-    <LinkIncremental>false</LinkIncremental>
-    <UseGeneratedModuleDefinitionFile>false</UseGeneratedModuleDefinitionFile>
-    <UseEnclave>true</UseEnclave>
+    <TargetName>HandshakeHarness</TargetName>
     <GenerateDesktopDeployRecipeFile>false</GenerateDesktopDeployRecipeFile>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Platform)'=='x64'">
     <ExecutablePath>$(VCToolsInstallDir)bin\Hostx64\x64;$(ExecutablePath)</ExecutablePath>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Platform)'=='ARM64'">
-    <ExecutablePath>$(VCToolsInstallDir)bin\Hostx64\arm64;$(ExecutablePath)</ExecutablePath>
-  </PropertyGroup>
-
-  <PropertyGroup>
-    <VC_LibraryPath_Enclave Condition="'$(Platform)'=='x64'">$(VC_LibraryPath_VC_x64_Desktop)\enclave</VC_LibraryPath_Enclave>
-    <VC_LibraryPath_Enclave Condition="'$(Platform)'=='ARM64'">$(VC_LibraryPath_VC_arm64_Desktop)\enclave</VC_LibraryPath_Enclave>
-    <WindowsSDK_LibraryPath_Enclave>$(WindowsSDK_LibraryPath)\..\ucrt_enclave\$(Platform)</WindowsSDK_LibraryPath_Enclave>
-    <VBS_Enclave_Dependencies>
-      vertdll.lib;
-      bcrypt.lib;
-      $(VC_LibraryPath_Enclave)\libcmt.lib;
-      $(VC_LibraryPath_Enclave)\libvcruntime.lib;
-      $(WindowsSDK_LibraryPath_Enclave)\ucrt.lib;
-    </VBS_Enclave_Dependencies>
   </PropertyGroup>
 
   <ItemDefinitionGroup>
@@ -102,7 +62,7 @@
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
       <LanguageStandard>stdcpp20</LanguageStandard>
       <LanguageStandard_C>stdc17</LanguageStandard_C>
-      <AdditionalIncludeDirectories>$(ProjectDir);$(ProjectDir)..\Common;$(MbedTlsRoot)\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)..\Common;$(MbedTlsRoot)\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>
         WIN32_LEAN_AND_MEAN;
         NOMINMAX;
@@ -111,33 +71,26 @@
       </PreprocessorDefinitions>
     </ClCompile>
     <Link>
-      <SubSystem>Windows</SubSystem>
+      <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <EnableUAC>false</EnableUAC>
-      <AdditionalDependencies>$(VBS_Enclave_Dependencies)</AdditionalDependencies>
-      <AdditionalOptions>/INTEGRITYCHECK /ENCLAVE /GUARD:MIXED</AdditionalOptions>
-      <ModuleDefinitionFile>MbedTlsProbe.def</ModuleDefinitionFile>
-      <IgnoreAllDefaultLibraries>true</IgnoreAllDefaultLibraries>
+      <AdditionalDependencies>bcrypt.lib;ws2_32.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
 
   <ItemGroup>
-    <ClCompile Include="dllmain.cpp" />
-    <ClCompile Include="probe.cpp" />
+    <ClCompile Include="main.cpp" />
+    <ClCompile Include="..\Common\TlsMbedTlsDriver.cpp" />
     <ClCompile Include="$(MbedTlsRoot)\library\*.c" Exclude="$(MbedTlsRoot)\library\net_sockets.c;$(MbedTlsRoot)\library\timing.c;$(MbedTlsRoot)\library\psa_its_file.c" />
   </ItemGroup>
 
   <ItemGroup>
     <ClInclude Include="..\Common\TlsMbedTlsConfig.h" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <None Include="MbedTlsProbe.def" />
+    <ClInclude Include="..\Common\TlsMbedTlsDriver.h" />
   </ItemGroup>
 
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
 
   <Target Name="EnsureMbedTlsSource" BeforeTargets="PrepareForBuild">
-    <Error Condition="!Exists('$(MbedTlsRoot)\include\mbedtls\version.h')" Text="mbedTLS source was not found at $(MbedTlsRoot). Run Build-MbedTlsProbe.ps1 or Fetch-MbedTls.ps1 first." />
+    <Error Condition="!Exists('$(MbedTlsRoot)\include\mbedtls\version.h')" Text="mbedTLS source was not found at $(MbedTlsRoot). Run Build-HandshakeHarness.ps1 or Fetch-MbedTls.ps1 first." />
   </Target>
 </Project>
