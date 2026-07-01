@@ -1,0 +1,104 @@
+// Copyright (c) Microsoft Corporation.
+// Licensed under the MIT License.
+
+enclave
+{
+    enum TlsSampleStatus
+    {
+        TlsSampleStatus_Ok = 0,
+        TlsSampleStatus_WouldBlock = 1,
+        TlsSampleStatus_Closed = 2,
+        TlsSampleStatus_Truncated = 3,
+        TlsSampleStatus_ValidationFailed = 4,
+        TlsSampleStatus_TransportFailed = 5,
+        TlsSampleStatus_ProtocolFailed = 6,
+        TlsSampleStatus_AccessDenied = 7,
+    };
+
+    enum TlsSampleProfile
+    {
+        TlsSampleProfile_ServerAuth = 0,
+        TlsSampleProfile_MutualAuth = 1,
+        TlsSampleProfile_EmbeddedAttestation = 2,
+    };
+
+    enum HostIoStatus
+    {
+        HostIoStatus_Ok = 0,
+        HostIoStatus_WouldBlock = 1,
+        HostIoStatus_Closed = 2,
+        HostIoStatus_Failed = 3,
+    };
+
+    struct TlsSampleRequest
+    {
+        TlsSampleProfile profile;
+        string server_name;
+        uint16_t server_port;
+        string http_path;
+        uint32_t input_value;
+        uint32_t max_response_bytes;
+        vector<uint8_t> pinned_server_certificate_sha256;
+    };
+
+    struct TlsSampleResult
+    {
+        TlsSampleStatus status;
+        uint32_t output_value;
+        string decision;
+        string diagnostics;
+        uint32_t tls_version;
+        uint16_t cipher_suite;
+    };
+
+    struct HostTcpConnectResult
+    {
+        HostIoStatus status;
+        uint64_t transport_handle;
+        uint32_t host_error;
+    };
+
+    struct HostTcpRecvResult
+    {
+        HostIoStatus status;
+        vector<uint8_t> bytes;
+        uint32_t host_error;
+    };
+
+    struct HostIoResult
+    {
+        HostIoStatus status;
+        uint32_t bytes_transferred;
+        uint32_t host_error;
+    };
+
+    trusted
+    {
+        HRESULT TlsSample_RunScenario(
+            TlsSampleRequest request,
+            [out] TlsSampleResult result
+        );
+    };
+
+    untrusted
+    {
+        HostTcpConnectResult TlsSample_HostTcpConnect(
+            string server_name,
+            uint16_t server_port
+        );
+
+        HostTcpRecvResult TlsSample_HostTcpRecv(
+            uint64_t transport_handle,
+            uint32_t max_bytes
+        );
+
+        HostIoResult TlsSample_HostTcpSend(
+            uint64_t transport_handle,
+            vector<uint8_t> bytes
+        );
+
+        HostIoResult TlsSample_HostTcpClose(
+            uint64_t transport_handle
+        );
+    };
+};
