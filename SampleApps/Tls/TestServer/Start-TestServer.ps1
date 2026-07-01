@@ -6,11 +6,26 @@ param(
     [switch]$RequireClientCertificate,
     [string]$ClientCertificatePath = (Join-Path $PSScriptRoot "test-certs\client-cert.pem"),
     [int]$MaxConnections = 0,
-    [switch]$RunInCurrentProcess
+    [switch]$RunInCurrentProcess,
+    [switch]$StopExisting
 )
 
 Set-StrictMode -Version Latest
 $ErrorActionPreference = "Stop"
+
+$existingListeners = Get-NetTCPConnection -LocalPort $Port -State Listen -ErrorAction SilentlyContinue
+if ($existingListeners) {
+    $listenerPids = @($existingListeners | Select-Object -ExpandProperty OwningProcess -Unique)
+    if (-not $StopExisting) {
+        throw "Port $Port is already in use by process id(s): $($listenerPids -join ', '). Stop them or rerun with -StopExisting."
+    }
+
+    foreach ($listenerPid in $listenerPids) {
+        if ($listenerPid -ne $PID) {
+            Stop-Process -Id $listenerPid
+        }
+    }
+}
 
 if (-not $RunInCurrentProcess) {
     $arguments = @(
@@ -27,6 +42,9 @@ if (-not $RunInCurrentProcess) {
     )
     if ($RequireClientCertificate) {
         $arguments += "-RequireClientCertificate"
+    }
+    if ($StopExisting) {
+        $arguments += "-StopExisting"
     }
 
     $process = Start-Process -FilePath (Get-Process -Id $PID).Path -ArgumentList $arguments -WorkingDirectory (Get-Location) -PassThru
@@ -159,6 +177,7 @@ function Get-ServerCertificate {
     $fullKeyPath = [System.IO.Path]::GetFullPath($KeyPath)
 
     if ([System.IO.Path]::GetExtension($fullPath).Equals(".pem", [System.StringComparison]::OrdinalIgnoreCase)) {
+        Write-Host "server_cert_path=$fullPath"
         $pemCertificate = [System.Security.Cryptography.X509Certificates.X509Certificate2]::CreateFromPemFile($fullPath, $fullKeyPath)
         try {
             $pfxBytes = $pemCertificate.Export([System.Security.Cryptography.X509Certificates.X509ContentType]::Pkcs12)
@@ -178,6 +197,7 @@ function Get-ServerCertificate {
         return Get-ServerCertificate -Path $siblingPem -KeyPath $siblingKey
     }
 
+    Write-Host "server_cert_path=$fullPath"
     return [System.Security.Cryptography.X509Certificates.X509Certificate2]::new($fullPath)
 }
 
