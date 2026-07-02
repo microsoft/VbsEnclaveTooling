@@ -1,7 +1,8 @@
 param(
     [string]$Configuration = "Debug",
     [string]$Platform = "x64",
-    [string]$CertName = "TlsSampleEnclaveCert"
+    [string]$CertName = "TlsSampleEnclaveCert",
+    [string]$CertThumbprint = ""
 )
 
 Set-StrictMode -Version Latest
@@ -28,7 +29,15 @@ if ($LASTEXITCODE -ne 0) {
     exit $LASTEXITCODE
 }
 
-& $signTool sign /ph /fd SHA256 /n $CertName $dll
+$signArgs = @("sign", "/ph", "/fd", "SHA256")
+if ($CertThumbprint) {
+    $signArgs += @("/sha1", $CertThumbprint, "/s", "My")
+} else {
+    $signArgs += @("/n", $CertName)
+}
+$signArgs += $dll
+
+& $signTool @signArgs
 if ($LASTEXITCODE -ne 0 -and $LASTEXITCODE -ne 2) {
     exit $LASTEXITCODE
 }
