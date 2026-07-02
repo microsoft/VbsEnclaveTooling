@@ -18,4 +18,4 @@ cargo tree --manifest-path .\SampleApps\Tls\Rust\RustlsFeasibility\Cargo.toml -i
 cargo tree --manifest-path .\SampleApps\Tls\Rust\RustlsFeasibility\Cargo.toml -i getrandom
 ```
 
-The crate also contains a `bcrypt_provider` skeleton that compiles the public rustls provider trait surface without enabling built-in crypto providers. The skeleton currently includes real BCrypt-backed RNG, SHA-384, HMAC-SHA384, AES-256-GCM, and P-256/P-384 ECDH pieces; certificate verification remains future work.
+The crate also contains a `bcrypt_provider` skeleton that compiles the public rustls provider trait surface without enabling built-in crypto providers. The skeleton currently includes real BCrypt-backed RNG, SHA-256/SHA-384, HMAC-SHA256/HMAC-SHA384, AES-256-GCM, P-256/P-384 ECDH, and pinned leaf-certificate hash verification. TLS 1.3 handshake signature verification is still a placeholder.

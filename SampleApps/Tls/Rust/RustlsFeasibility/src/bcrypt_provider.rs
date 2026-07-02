@@ -9,6 +9,9 @@ use alloc::vec;
 use alloc::vec::Vec;
 use core::fmt;
 
+use rustls::client::danger::{
+    HandshakeSignatureValid, ServerCertVerified, ServerCertVerifier,
+};
 use rustls::crypto::cipher::{
     make_tls13_aad, AeadKey, InboundOpaqueMessage, InboundPlainMessage, Iv, MessageDecrypter,
     MessageEncrypter, Nonce, OutboundOpaqueMessage, OutboundPlainMessage, PrefixedPayload,
@@ -21,11 +24,11 @@ use rustls::crypto::{
     ActiveKeyExchange, CryptoProvider, GetRandomFailed, KeyProvider, SecureRandom, SharedSecret,
     SupportedKxGroup, WebPkiSupportedAlgorithms,
 };
-use rustls::pki_types::PrivateKeyDer;
+use rustls::pki_types::{CertificateDer, PrivateKeyDer, ServerName, UnixTime};
 use rustls::sign::SigningKey;
 use rustls::{
-    CipherSuite, CipherSuiteCommon, ConnectionTrafficSecrets, ContentType, Error, NamedGroup,
-    ProtocolVersion,
+    CipherSuite, CipherSuiteCommon, ConnectionTrafficSecrets, ContentType, DigitallySignedStruct,
+    Error, NamedGroup, ProtocolVersion, SignatureScheme,
     SupportedCipherSuite, Tls13CipherSuite,
 };
 use windows_enclave::bcrypt::{
@@ -35,13 +38,16 @@ use windows_enclave::bcrypt::{
     BCryptHashData, BCryptImportKeyPair, BCryptSecretAgreement, BCRYPT_AES_GCM_ALG_HANDLE,
     BCRYPT_AUTHENTICATED_CIPHER_MODE_INFO, BCRYPT_ECDH_P256_ALG_HANDLE,
     BCRYPT_ECDH_P384_ALG_HANDLE, BCRYPT_HASH_HANDLE, BCRYPT_HMAC_SHA384_ALG_HANDLE,
-    BCRYPT_KEY_HANDLE, BCRYPT_SECRET_HANDLE, BCRYPT_SHA384_ALG_HANDLE,
+    BCRYPT_HMAC_SHA256_ALG_HANDLE, BCRYPT_KEY_HANDLE, BCRYPT_SECRET_HANDLE,
+    BCRYPT_SHA256_ALG_HANDLE, BCRYPT_SHA384_ALG_HANDLE,
     BCRYPT_USE_SYSTEM_PREFERRED_RNG,
 };
 
 pub static SECURE_RANDOM: BcryptSecureRandom = BcryptSecureRandom;
 pub static KEY_PROVIDER: BcryptKeyProvider = BcryptKeyProvider;
+pub static SHA256: BcryptHash = BcryptHash::sha256();
 pub static SHA384: BcryptHash = BcryptHash::sha384();
+pub static HMAC_SHA256: BcryptHmac = BcryptHmac::sha256();
 pub static HMAC_SHA384: BcryptHmac = BcryptHmac::sha384();
 pub static AES_256_GCM: BcryptAesGcm = BcryptAesGcm;
 pub static P256: BcryptKxGroup = BcryptKxGroup::p256();
@@ -152,7 +158,9 @@ pub struct BcryptHash {
 
 #[derive(Clone, Copy, Debug)]
 enum BcryptAlgorithm {
+    Sha256,
     Sha384,
+    HmacSha256,
     HmacSha384,
     EcdhP256,
     EcdhP384,
@@ -161,7 +169,9 @@ enum BcryptAlgorithm {
 impl BcryptAlgorithm {
     fn handle(self) -> BCRYPT_KEY_HANDLE {
         match self {
+            Self::Sha256 => BCRYPT_SHA256_ALG_HANDLE,
             Self::Sha384 => BCRYPT_SHA384_ALG_HANDLE,
+            Self::HmacSha256 => BCRYPT_HMAC_SHA256_ALG_HANDLE,
             Self::HmacSha384 => BCRYPT_HMAC_SHA384_ALG_HANDLE,
             Self::EcdhP256 => BCRYPT_ECDH_P256_ALG_HANDLE,
             Self::EcdhP384 => BCRYPT_ECDH_P384_ALG_HANDLE,
@@ -170,6 +180,14 @@ impl BcryptAlgorithm {
 }
 
 impl BcryptHash {
+    pub const fn sha256() -> Self {
+        Self {
+            algorithm: rustls::crypto::hash::HashAlgorithm::SHA256,
+            bcrypt_algorithm: BcryptAlgorithm::Sha256,
+            output_len: 32,
+        }
+    }
+
     pub const fn sha384() -> Self {
         Self {
             algorithm: rustls::crypto::hash::HashAlgorithm::SHA384,
@@ -255,6 +273,13 @@ pub struct BcryptHmac {
 }
 
 impl BcryptHmac {
+    pub const fn sha256() -> Self {
+        Self {
+            bcrypt_algorithm: BcryptAlgorithm::HmacSha256,
+            tag_len: 32,
+        }
+    }
+
     pub const fn sha384() -> Self {
         Self {
             bcrypt_algorithm: BcryptAlgorithm::HmacSha384,
@@ -762,5 +787,67 @@ impl fmt::Debug for BcryptHmac {
 impl fmt::Debug for BcryptAesGcm {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct("BcryptAesGcm").finish()
+    }
+}
+
+#[derive(Clone)]
+pub struct PinnedServerVerifier {
+    pinned_leaf_sha256: [u8; 32],
+}
+
+impl PinnedServerVerifier {
+    pub const fn new(pinned_leaf_sha256: [u8; 32]) -> Self {
+        Self { pinned_leaf_sha256 }
+    }
+}
+
+impl fmt::Debug for PinnedServerVerifier {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("PinnedServerVerifier").finish()
+    }
+}
+
+impl ServerCertVerifier for PinnedServerVerifier {
+    fn verify_server_cert(
+        &self,
+        end_entity: &CertificateDer<'_>,
+        _intermediates: &[CertificateDer<'_>],
+        _server_name: &ServerName<'_>,
+        _ocsp_response: &[u8],
+        _now: UnixTime,
+    ) -> Result<ServerCertVerified, Error> {
+        let actual = SHA256.hash(end_entity.as_ref());
+        if actual.as_ref() == self.pinned_leaf_sha256 {
+            Ok(ServerCertVerified::assertion())
+        } else {
+            Err(Error::General("server certificate pin mismatch".into()))
+        }
+    }
+
+    fn verify_tls12_signature(
+        &self,
+        _message: &[u8],
+        _cert: &CertificateDer<'_>,
+        _dss: &DigitallySignedStruct,
+    ) -> Result<HandshakeSignatureValid, Error> {
+        Err(Error::General("TLS 1.2 is not supported".into()))
+    }
+
+    fn verify_tls13_signature(
+        &self,
+        _message: &[u8],
+        _cert: &CertificateDer<'_>,
+        _dss: &DigitallySignedStruct,
+    ) -> Result<HandshakeSignatureValid, Error> {
+        Ok(HandshakeSignatureValid::assertion())
+    }
+
+    fn supported_verify_schemes(&self) -> Vec<SignatureScheme> {
+        Vec::from([
+            SignatureScheme::RSA_PSS_SHA256,
+            SignatureScheme::RSA_PKCS1_SHA256,
+            SignatureScheme::ECDSA_NISTP256_SHA256,
+            SignatureScheme::ECDSA_NISTP384_SHA384,
+        ])
     }
 }
