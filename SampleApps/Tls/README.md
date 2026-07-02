@@ -10,5 +10,10 @@ The staged implementation plan and security model are documented in [`..\..\docs
 |---|---|
 | `TlsTransport.edl` | Shared transport and scenario contract used by the C++ and Rust samples. |
 | `TestServer` | Local TLS 1.3 test server and certificate generator. |
+| `Cpp\Common` | Shared C++ mbedTLS driver and enclave-oriented mbedTLS configuration. |
+| `Cpp\HandshakeHarness` | Host-mode harness for exercising the C++ mbedTLS driver before loading an enclave. |
+| `Cpp\TlsEnclave` | VBS enclave DLL that runs the mbedTLS TLS 1.3 client behind generated EDL callbacks. |
+| `Cpp\TlsHost` | Host application that loads `TlsEnclave.dll`, registers VTL0 TCP callbacks, and calls into VTL1. |
+| `Cpp\Generated` | Checked-in C++ bindings generated from `TlsTransport.edl`. |
 
-The C++ and Rust enclave samples will be added in later branches. They should import or copy the shared EDL contract rather than inventing separate transport callback shapes.
+The C++ server-auth TLS sample is implemented. Rust, mutual-auth, and embedded-attestation samples will be added in later branches. They should reuse the shared EDL contract rather than inventing separate transport callback shapes.
