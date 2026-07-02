@@ -14,6 +14,17 @@ rustls = { version = "0.23", default-features = false }
 
 The crate references `rustls::ClientConfig`, `rustls::RootCertStore`, and `rustls::crypto::CryptoProvider` without enabling rustls `std`, `ring`, or `aws-lc-rs` features.
 
+The second P5 increment adds a non-functional BCrypt provider skeleton. It constructs a `CryptoProvider` and implements the public rustls trait surface needed for a future provider:
+
+- `SecureRandom`
+- `KeyProvider`
+- `Hash` and hash context
+- `Hmac` and HMAC key
+- `Tls13AeadAlgorithm`, `MessageEncrypter`, and `MessageDecrypter`
+- P-256/P-384 `SupportedKxGroup` and `ActiveKeyExchange`
+
+The skeleton compiles, but cryptographic operations intentionally return placeholder values or unsupported errors.
+
 ## Dependency graph
 
 The active dependency graph for the compile spike is:
@@ -65,6 +76,6 @@ cargo tree --manifest-path .\SampleApps\Tls\Rust\RustlsFeasibility\Cargo.toml -i
 
 ## Remaining feasibility work
 
-- Compile a non-functional BCrypt `CryptoProvider` skeleton that names every required rustls trait implementation.
 - Prove that the provider skeleton links into a Rust VTL1 enclave DLL.
+- Replace skeleton implementations with BCrypt-backed implementations one primitive at a time.
 - Decide whether P-256 only is sufficient for the local test server or whether P-384 should be implemented in the first Rust sample.

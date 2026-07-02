@@ -6,6 +6,8 @@ extern crate alloc;
 
 use alloc::sync::Arc;
 
+pub mod bcrypt_provider;
+
 /// Compile-only check that rustls can be referenced from a no_std + alloc crate
 /// without selecting a built-in crypto provider.
 pub fn make_empty_root_store() -> Arc<rustls::RootCertStore> {
@@ -20,4 +22,8 @@ pub fn provider_cipher_suite_count(provider: &rustls::crypto::CryptoProvider) ->
 
 pub fn client_config_size() -> usize {
     core::mem::size_of::<rustls::ClientConfig>()
+}
+
+pub fn bcrypt_provider_cipher_suite_count() -> usize {
+    bcrypt_provider::provider_skeleton().cipher_suites.len()
 }

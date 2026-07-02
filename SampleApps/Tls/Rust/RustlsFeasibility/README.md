@@ -17,3 +17,5 @@ cargo tree --manifest-path .\SampleApps\Tls\Rust\RustlsFeasibility\Cargo.toml -e
 cargo tree --manifest-path .\SampleApps\Tls\Rust\RustlsFeasibility\Cargo.toml -i ring
 cargo tree --manifest-path .\SampleApps\Tls\Rust\RustlsFeasibility\Cargo.toml -i getrandom
 ```
+
+The crate also contains a non-functional `bcrypt_provider` skeleton that compiles the public rustls provider trait surface without enabling built-in crypto providers.
