@@ -6,3 +6,4 @@ publish = false
 
 [dependencies]
 rustls = { version = "0.23", default-features = false }
+windows-enclave = { path = "../../../../rust/sdk/crates/libs/windows-enclave" }
