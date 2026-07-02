@@ -127,18 +127,39 @@ Each phase branch is stacked on the previous phase branch.
 
 | Phase | Branch | Base | Contents |
 |---|---|---|---|
-| P0 | `tls-samples/p0-threat-model` | `main` | This threat model, scenario contract, staging plan, and security assertions. |
-| P1 | `tls-samples/p1-test-server` | P0 | Shared TLS 1.3 test server, certificate generation, and deterministic payloads. |
-| P2 | `tls-samples/p2-transport-edl` | P1 | Shared EDL transport contract and generated binding integration points. |
-| P3 | `tls-samples/p3-mbedtls-feasibility` | P2 | mbedTLS C++ enclave feasibility study and integration recommendation. |
-| P4 | `tls-samples/p4-cpp-server-auth` | P3 | C++ mbedTLS server-auth TLS sample. |
-| P5 | `tls-samples/p5-rustls-feasibility` | P4 | rustls enclave feasibility study, including BCrypt-backed provider assessment. |
-| P6 | `tls-samples/p6-rust-server-auth` | P5 | Rust rustls server-auth TLS sample. |
-| P7 | `tls-samples/p7-mutual-auth` | P6 | C++ and Rust mutual-auth TLS profiles. |
-| P8 | `tls-samples/p8-embedded-attestation` | P7 | C++ and Rust server-auth TLS with embedded enclave attestation. |
-| P9 | `tls-samples/p9-verification-docs` | P8 | Cross-profile protocol verification, negative tests, and final documentation. |
+| P0 | `user/gudge/tls-samples/p0-threat-model` | `main` | This threat model, scenario contract, staging plan, and security assertions. |
+| P1 | `user/gudge/tls-samples/p1-test-server` | P0 | Shared TLS 1.3 test server, certificate generation, and deterministic payloads. |
+| P2 | `user/gudge/tls-samples/p2-transport-edl` | P1 | Shared EDL transport contract and generated binding integration points. |
+| P3 | `user/gudge/tls-samples/p3-mbedtls-feasibility` | P2 | mbedTLS C++ enclave feasibility study and integration recommendation. |
+| P4 | `user/gudge/tls-samples/p4-cpp-server-auth` | P3 | C++ mbedTLS server-auth TLS sample. |
+| P5 | `user/gudge/tls-samples/p5-rustls-feasibility` | P4 | rustls enclave feasibility study, including BCrypt-backed provider assessment. |
+| P6 | `user/gudge/tls-samples/p6-rust-server-auth` | P5 | Rust rustls server-auth TLS sample. |
+| P7 | `user/gudge/tls-samples/p7-mutual-auth` | P6 | C++ and Rust mutual-auth TLS profiles. |
+| P8 | `user/gudge/tls-samples/p8-embedded-attestation` | P7 | C++ and Rust server-auth TLS with embedded enclave attestation. |
+| P9 | `user/gudge/tls-samples/p9-verification-docs` | P8 | Cross-profile protocol verification, negative tests, and final documentation. |
 
 Although some language-specific work could be developed independently, the staged branch stack keeps each phase reviewable as an incremental story.
+
+## Current status
+
+P4 has demonstrated the C++ server-auth path end-to-end on a VM configured to load VBS enclaves:
+
+- `TlsHost.exe` loads `TlsEnclave.dll`.
+- VTL0 registers the generated TCP callbacks from `TlsTransport.edl`.
+- VTL1 runs the mbedTLS TLS 1.3 client handshake.
+- VTL0 only performs TCP connect, send, receive, and close callbacks.
+- VTL1 pins the test server certificate SHA-256 hash, fetches `/secret-config`, consumes the payload, and returns only the derived result.
+
+The validated result is:
+
+```text
+status=0
+decision=Allow
+output_value=1406
+diagnostics=TLSv1.3, TLS1-3-AES-256-GCM-SHA384, server-auth-ok
+tls_version=0x304
+cipher_suite=0x1302
+```
 
 ## Required tests and verification
 

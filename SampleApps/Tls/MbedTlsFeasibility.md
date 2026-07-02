@@ -8,7 +8,7 @@ The goal is to determine whether mbedTLS can be used by a VTL1 C++ enclave sampl
 
 ## Spike result
 
-Result: **feasible enough to proceed to a C++ server-auth spike, but not yet proven in a VTL1 enclave link**.
+Result: **feasible**. The follow-on P4 work now builds mbedTLS into a VBS enclave DLL and drives a TLS 1.3 server-auth handshake from VTL1 through VTL0 TCP callbacks.
 
 The spike used mbedTLS `v3.6.3` from a temporary clone and built the library sources with Visual Studio Build Tools in host mode. A custom config based on `include\mbedtls\mbedtls_config.h` removed host I/O and trusted-time assumptions:
 
@@ -26,7 +26,7 @@ With those switches, the mbedTLS library C sources compiled with `cl` as C17 and
 
 The expected `bcrypt.lib` dependency is compatible with the existing enclave sample projects, which already link BCrypt for enclave crypto support.
 
-This does not prove that mbedTLS links as part of a VBS enclave DLL. The next branch must build the same source/configuration with the enclave project settings: `IgnoreAllDefaultLibraries`, `/ENCLAVE`, `/INTEGRITYCHECK`, `/GUARD:MIXED`, static CRT, `vertdll.lib`, BCrypt, and the enclave UCRT libraries.
+The follow-on `TlsEnclave` project proves that mbedTLS links as part of a VBS enclave DLL with `IgnoreAllDefaultLibraries`, `/ENCLAVE`, `/INTEGRITYCHECK`, `/GUARD:MIXED`, static CRT, `vertdll.lib`, BCrypt, and the enclave UCRT libraries.
 
 ## Host API check
 
@@ -75,14 +75,11 @@ Avoid using an unconfigured prebuilt mbedTLS package for the enclave sample. The
 
 ## Open work for the C++ server-auth sample
 
-- Prove the mbedTLS source can be built by MSBuild as part of the sample solution with enclave CRT and linker settings.
-- Drive at least a partial TLS 1.3 handshake against the local test server inside the enclave sample.
-- Decide whether source acquisition is a documented prerequisite, a script-generated external directory, or a submodule.
-- Restrict the final config to TLS 1.3 and the cipher suites needed by the local test server.
-- Implement certificate pinning against the server certificate or SPKI without depending on host-supplied time.
-- Implement non-blocking BIO callbacks over the VTL0 transport EDL.
+- Add negative tests for wrong server certificate/pin and TLS 1.2-only server rejection.
+- Add fragmentation and would-block transport tests.
+- Consider reducing mbedTLS features and buffer sizes for enclave footprint.
+- Decide whether the committed sample should keep checked-in generated C++ bindings or switch back to build-time codegen once package restore is reliable.
 - Add a negative test showing the sample fails when the pinned server identity does not match.
-- Tune TLS buffer sizes for enclave memory usage.
 - Document a single-thread-per-connection contract unless mbedTLS threading callbacks are configured.
 
 ## Reproduction notes
