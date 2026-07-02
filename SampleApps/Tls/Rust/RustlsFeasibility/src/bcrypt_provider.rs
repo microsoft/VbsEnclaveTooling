@@ -35,11 +35,13 @@ use windows_enclave::bcrypt::{
     BCryptCreateHash, BCryptDeriveKey, BCryptDestroyHash, BCryptDestroyKey, BCryptDestroySecret,
     BCryptDecrypt, BCryptEncrypt, BCryptExportKey, BCryptFinalizeKeyPair, BCryptFinishHash,
     BCryptGenRandom, BCryptGenerateKeyPair, BCryptGenerateSymmetricKey, BCryptHash,
-    BCryptHashData, BCryptImportKeyPair, BCryptSecretAgreement, BCRYPT_AES_GCM_ALG_HANDLE,
-    BCRYPT_AUTHENTICATED_CIPHER_MODE_INFO, BCRYPT_ECDH_P256_ALG_HANDLE,
-    BCRYPT_ECDH_P384_ALG_HANDLE, BCRYPT_HASH_HANDLE, BCRYPT_HMAC_SHA384_ALG_HANDLE,
+    BCryptHashData, BCryptImportKeyPair, BCryptSecretAgreement, BCryptVerifySignature,
+    BCRYPT_AES_GCM_ALG_HANDLE, BCRYPT_AUTHENTICATED_CIPHER_MODE_INFO,
+    BCRYPT_ECDH_P256_ALG_HANDLE, BCRYPT_ECDH_P384_ALG_HANDLE, BCRYPT_HASH_HANDLE,
+    BCRYPT_HMAC_SHA384_ALG_HANDLE,
     BCRYPT_HMAC_SHA256_ALG_HANDLE, BCRYPT_KEY_HANDLE, BCRYPT_SECRET_HANDLE,
-    BCRYPT_SHA256_ALG_HANDLE, BCRYPT_SHA384_ALG_HANDLE,
+    BCRYPT_PAD_PKCS1, BCRYPT_PAD_PSS, BCRYPT_RSA_ALG_HANDLE, BCRYPT_SHA256_ALG_HANDLE,
+    BCRYPT_SHA384_ALG_HANDLE,
     BCRYPT_USE_SYSTEM_PREFERRED_RNG,
 };
 
@@ -82,6 +84,43 @@ const BCRYPT_KDF_RAW_SECRET: [u16; 9] = [
     b'E' as u16,
     0,
 ];
+const BCRYPT_RSAPUBLIC_MAGIC: u32 = 0x3141_5352;
+const BCRYPT_RSAPUBLIC_BLOB: [u16; 14] = [
+    b'R' as u16,
+    b'S' as u16,
+    b'A' as u16,
+    b'P' as u16,
+    b'U' as u16,
+    b'B' as u16,
+    b'L' as u16,
+    b'I' as u16,
+    b'C' as u16,
+    b'B' as u16,
+    b'L' as u16,
+    b'O' as u16,
+    b'B' as u16,
+    0,
+];
+const BCRYPT_SHA256_ALGORITHM: [u16; 7] = [
+    b'S' as u16,
+    b'H' as u16,
+    b'A' as u16,
+    b'2' as u16,
+    b'5' as u16,
+    b'6' as u16,
+    0,
+];
+
+#[repr(C)]
+struct BcryptPkcs1PaddingInfo {
+    psz_alg_id: *const u16,
+}
+
+#[repr(C)]
+struct BcryptPssPaddingInfo {
+    psz_alg_id: *const u16,
+    cb_salt: u32,
+}
 
 pub static TLS13_AES_256_GCM_SHA384: SupportedCipherSuite =
     SupportedCipherSuite::Tls13(&TLS13_AES_256_GCM_SHA384_INNER);
@@ -835,10 +874,11 @@ impl ServerCertVerifier for PinnedServerVerifier {
 
     fn verify_tls13_signature(
         &self,
-        _message: &[u8],
-        _cert: &CertificateDer<'_>,
-        _dss: &DigitallySignedStruct,
+        message: &[u8],
+        cert: &CertificateDer<'_>,
+        dss: &DigitallySignedStruct,
     ) -> Result<HandshakeSignatureValid, Error> {
+        verify_rsa_sha256_signature(message, cert.as_ref(), dss)?;
         Ok(HandshakeSignatureValid::assertion())
     }
 
@@ -846,8 +886,200 @@ impl ServerCertVerifier for PinnedServerVerifier {
         Vec::from([
             SignatureScheme::RSA_PSS_SHA256,
             SignatureScheme::RSA_PKCS1_SHA256,
-            SignatureScheme::ECDSA_NISTP256_SHA256,
-            SignatureScheme::ECDSA_NISTP384_SHA384,
         ])
+    }
+}
+
+fn verify_rsa_sha256_signature(
+    message: &[u8],
+    cert_der: &[u8],
+    dss: &DigitallySignedStruct,
+) -> Result<(), Error> {
+    let (modulus, exponent) = rsa_public_key_from_certificate(cert_der)?;
+    let rsa_key = import_rsa_public_key(modulus, exponent)?;
+    let digest = SHA256.hash(message);
+
+    match dss.scheme {
+        SignatureScheme::RSA_PSS_SHA256 => {
+            let padding = BcryptPssPaddingInfo {
+                psz_alg_id: BCRYPT_SHA256_ALGORITHM.as_ptr(),
+                cb_salt: 32,
+            };
+            let status = unsafe {
+                BCryptVerifySignature(
+                    rsa_key.0,
+                    &padding as *const _ as *const core::ffi::c_void,
+                    digest.as_ref().as_ptr(),
+                    digest.as_ref().len() as u32,
+                    dss.signature().as_ptr(),
+                    dss.signature().len() as u32,
+                    BCRYPT_PAD_PSS,
+                )
+            };
+            if status < 0 {
+                return Err(Error::General("BCrypt RSA-PSS verify failed".into()));
+            }
+            Ok(())
+        }
+        SignatureScheme::RSA_PKCS1_SHA256 => {
+            let padding = BcryptPkcs1PaddingInfo {
+                psz_alg_id: BCRYPT_SHA256_ALGORITHM.as_ptr(),
+            };
+            let status = unsafe {
+                BCryptVerifySignature(
+                    rsa_key.0,
+                    &padding as *const _ as *const core::ffi::c_void,
+                    digest.as_ref().as_ptr(),
+                    digest.as_ref().len() as u32,
+                    dss.signature().as_ptr(),
+                    dss.signature().len() as u32,
+                    BCRYPT_PAD_PKCS1,
+                )
+            };
+            if status < 0 {
+                return Err(Error::General("BCrypt RSA-PKCS1 verify failed".into()));
+            }
+            Ok(())
+        }
+        _ => Err(Error::General("unsupported TLS 1.3 signature scheme".into())),
+    }
+}
+
+fn import_rsa_public_key(modulus: &[u8], exponent: &[u8]) -> Result<BcryptKeyHandle, Error> {
+    let modulus = trim_leading_zero(modulus);
+    let exponent = trim_leading_zero(exponent);
+    let bit_len = (modulus.len() * 8) as u32;
+
+    let mut blob = Vec::with_capacity(24 + exponent.len() + modulus.len());
+    blob.extend_from_slice(&BCRYPT_RSAPUBLIC_MAGIC.to_le_bytes());
+    blob.extend_from_slice(&bit_len.to_le_bytes());
+    blob.extend_from_slice(&(exponent.len() as u32).to_le_bytes());
+    blob.extend_from_slice(&(modulus.len() as u32).to_le_bytes());
+    blob.extend_from_slice(&0u32.to_le_bytes());
+    blob.extend_from_slice(&0u32.to_le_bytes());
+    blob.extend_from_slice(exponent);
+    blob.extend_from_slice(modulus);
+
+    let mut key: BCRYPT_KEY_HANDLE = core::ptr::null_mut();
+    let status = unsafe {
+        BCryptImportKeyPair(
+            BCRYPT_RSA_ALG_HANDLE,
+            core::ptr::null_mut(),
+            BCRYPT_RSAPUBLIC_BLOB.as_ptr(),
+            &mut key,
+            blob.as_ptr(),
+            blob.len() as u32,
+            0,
+        )
+    };
+    if status < 0 {
+        return Err(Error::General("BCrypt RSA public key import failed".into()));
+    }
+    Ok(BcryptKeyHandle(key))
+}
+
+fn trim_leading_zero(mut value: &[u8]) -> &[u8] {
+    while value.len() > 1 && value[0] == 0 {
+        value = &value[1..];
+    }
+    value
+}
+
+fn rsa_public_key_from_certificate(cert: &[u8]) -> Result<(&[u8], &[u8]), Error> {
+    let mut reader = DerReader::new(cert);
+    let certificate = reader.read_tlv(0x30)?;
+    let mut certificate_reader = DerReader::new(certificate);
+    let tbs = certificate_reader.read_tlv(0x30)?;
+    let mut tbs_reader = DerReader::new(tbs);
+
+    if tbs_reader.peek_tag() == Some(0xa0) {
+        tbs_reader.read_tlv(0xa0)?;
+    }
+
+    tbs_reader.read_tlv(0x02)?; // serial
+    tbs_reader.read_tlv(0x30)?; // signature algorithm
+    tbs_reader.read_tlv(0x30)?; // issuer
+    tbs_reader.read_tlv(0x30)?; // validity
+    tbs_reader.read_tlv(0x30)?; // subject
+    let spki = tbs_reader.read_tlv(0x30)?;
+    let mut spki_reader = DerReader::new(spki);
+    spki_reader.read_tlv(0x30)?; // algorithm
+    let bit_string = spki_reader.read_tlv(0x03)?;
+    if bit_string.is_empty() || bit_string[0] != 0 {
+        return Err(Error::General("invalid RSA SPKI bit string".into()));
+    }
+
+    let mut rsa_reader = DerReader::new(&bit_string[1..]);
+    let rsa_public_key = rsa_reader.read_tlv(0x30)?;
+    let mut rsa_public_key_reader = DerReader::new(rsa_public_key);
+    let modulus = rsa_public_key_reader.read_tlv(0x02)?;
+    let exponent = rsa_public_key_reader.read_tlv(0x02)?;
+    Ok((modulus, exponent))
+}
+
+struct DerReader<'a> {
+    input: &'a [u8],
+    offset: usize,
+}
+
+impl<'a> DerReader<'a> {
+    fn new(input: &'a [u8]) -> Self {
+        Self { input, offset: 0 }
+    }
+
+    fn peek_tag(&self) -> Option<u8> {
+        self.input.get(self.offset).copied()
+    }
+
+    fn read_tlv(&mut self, expected_tag: u8) -> Result<&'a [u8], Error> {
+        let tag = *self
+            .input
+            .get(self.offset)
+            .ok_or_else(|| Error::General("truncated DER tag".into()))?;
+        if tag != expected_tag {
+            return Err(Error::General("unexpected DER tag".into()));
+        }
+        self.offset += 1;
+
+        let length = self.read_len()?;
+        let end = self
+            .offset
+            .checked_add(length)
+            .ok_or_else(|| Error::General("DER length overflow".into()))?;
+        if end > self.input.len() {
+            return Err(Error::General("truncated DER value".into()));
+        }
+
+        let value = &self.input[self.offset..end];
+        self.offset = end;
+        Ok(value)
+    }
+
+    fn read_len(&mut self) -> Result<usize, Error> {
+        let first = *self
+            .input
+            .get(self.offset)
+            .ok_or_else(|| Error::General("truncated DER length".into()))?;
+        self.offset += 1;
+
+        if first & 0x80 == 0 {
+            return Ok(first as usize);
+        }
+
+        let count = (first & 0x7f) as usize;
+        if count == 0 || count > core::mem::size_of::<usize>() {
+            return Err(Error::General("unsupported DER length".into()));
+        }
+
+        let mut length = 0usize;
+        for _ in 0..count {
+            let byte = *self
+                .input
+                .get(self.offset)
+                .ok_or_else(|| Error::General("truncated DER long length".into()))?;
+            self.offset += 1;
+            length = (length << 8) | byte as usize;
+        }
+        Ok(length)
     }
 }

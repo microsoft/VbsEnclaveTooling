@@ -23,9 +23,9 @@ The second P5 increment adds a BCrypt provider skeleton. It constructs a `Crypto
 - `Tls13AeadAlgorithm`, `MessageEncrypter`, and `MessageDecrypter`
 - P-256/P-384 `SupportedKxGroup` and `ActiveKeyExchange`
 
-The skeleton now includes real BCrypt-backed implementations for randomness, SHA-256/SHA-384 hashing, HMAC-SHA256/HMAC-SHA384, AES-256-GCM record protection, and P-256/P-384 ECDH key exchange. It also includes a pinned leaf-certificate verifier that hashes the server certificate DER with SHA-256.
+The skeleton now includes real BCrypt-backed implementations for randomness, SHA-256/SHA-384 hashing, HMAC-SHA256/HMAC-SHA384, AES-256-GCM record protection, and P-256/P-384 ECDH key exchange. It also includes a pinned leaf-certificate verifier that hashes the server certificate DER with SHA-256 and verifies TLS 1.3 RSA/SHA-256 handshake signatures with BCrypt.
 
-TLS 1.3 handshake signature verification is still a placeholder assertion and must be replaced with BCrypt RSA/ECDSA verification before the Rust sample can make the same security claim as the C++ sample.
+ECDSA handshake signature verification remains future work. The local .NET test server currently uses an RSA certificate, so RSA-PSS-SHA256 and RSA-PKCS1-SHA256 are enough for the first Rust server-auth path.
 
 ## Dependency graph
 
@@ -79,6 +79,6 @@ cargo tree --manifest-path .\SampleApps\Tls\Rust\RustlsFeasibility\Cargo.toml -i
 ## Remaining feasibility work
 
 - Prove that the provider links into a Rust VTL1 enclave DLL.
-- Replace the temporary TLS 1.3 handshake signature assertion with BCrypt RSA/ECDSA verification.
+- Add BCrypt ECDSA handshake signature verification for ECDSA server certificates.
 - Confirm the local test server negotiates P-256/P-384, not X25519.
 - Decide whether P-256 only is sufficient for the local test server or whether P-384 should be implemented in the first Rust sample.
