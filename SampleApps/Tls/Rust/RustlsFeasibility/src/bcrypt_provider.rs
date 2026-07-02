@@ -34,8 +34,8 @@ use rustls::{
 use windows_enclave::bcrypt::{
     BCryptCreateHash, BCryptDeriveKey, BCryptDestroyHash, BCryptDestroyKey, BCryptDestroySecret,
     BCryptDecrypt, BCryptEncrypt, BCryptExportKey, BCryptFinalizeKeyPair, BCryptFinishHash,
-    BCryptGenRandom, BCryptGenerateKeyPair, BCryptGenerateSymmetricKey, BCryptHash,
-    BCryptHashData, BCryptImportKeyPair, BCryptSecretAgreement, BCryptVerifySignature,
+    BCryptGenRandom, BCryptGenerateKeyPair, BCryptGenerateSymmetricKey, BCryptHashData,
+    BCryptImportKeyPair, BCryptSecretAgreement, BCryptVerifySignature,
     BCRYPT_AES_GCM_ALG_HANDLE, BCRYPT_AUTHENTICATED_CIPHER_MODE_INFO,
     BCRYPT_ECDH_P256_ALG_HANDLE, BCRYPT_ECDH_P384_ALG_HANDLE, BCRYPT_HASH_HANDLE,
     BCRYPT_HMAC_SHA384_ALG_HANDLE,
@@ -246,18 +246,42 @@ impl Hash for BcryptHash {
     }
 
     fn hash(&self, data: &[u8]) -> HashOutput {
+        let mut hash: BCRYPT_HASH_HANDLE = core::ptr::null_mut();
         let mut output = [0u8; 64];
-        let status = unsafe {
-            BCryptHash(
+        let mut status = unsafe {
+            BCryptCreateHash(
                 self.bcrypt_algorithm.handle(),
+                &mut hash,
+                core::ptr::null_mut(),
+                0,
                 core::ptr::null(),
                 0,
-                data.as_ptr(),
-                data.len() as u32,
-                output.as_mut_ptr(),
-                self.output_len as u32,
+                0,
             )
         };
+        if status >= 0 {
+            status = unsafe {
+                BCryptHashData(
+                    hash,
+                    data.as_ptr(),
+                    data.len() as u32,
+                    0,
+                )
+            };
+        }
+        if status >= 0 {
+            status = unsafe {
+                BCryptFinishHash(
+                    hash,
+                    output.as_mut_ptr(),
+                    self.output_len as u32,
+                    0,
+                )
+            };
+        }
+        unsafe {
+            BCryptDestroyHash(hash);
+        }
         if status < 0 {
             return HashOutput::new(&[]);
         }
@@ -541,9 +565,12 @@ impl MessageDecrypter for BcryptAesGcmDecrypter {
             return Err(Error::DecryptError);
         }
         let ciphertext_len = msg.payload.len() - 16;
+        let aad = make_tls13_aad(msg.payload.len());
         let (ciphertext, tag) = msg.payload.split_at_mut(ciphertext_len);
         let nonce = Nonce::new(&self.iv, seq).0;
-        let auth_info = BCRYPT_AUTHENTICATED_CIPHER_MODE_INFO::for_decrypt(&nonce, tag);
+        let mut auth_info = BCRYPT_AUTHENTICATED_CIPHER_MODE_INFO::for_decrypt(&nonce, tag);
+        auth_info.pbAuthData = aad.as_ptr() as *mut u8;
+        auth_info.cbAuthData = aad.len() as u32;
         let mut plaintext = vec![0u8; ciphertext_len];
         let mut written = 0u32;
         let status = unsafe {
@@ -696,6 +723,11 @@ impl ActiveKeyExchange for BcryptActiveKeyExchange {
             return Err(Error::General("BCryptDeriveKey failed".into()));
         }
         secret_bytes.resize(secret_size as usize, 0);
+        if secret_bytes.len() < self.coordinate_size {
+            let mut padded = vec![0u8; self.coordinate_size - secret_bytes.len()];
+            padded.extend_from_slice(&secret_bytes);
+            secret_bytes = padded;
+        }
         Ok(SharedSecret::from(secret_bytes))
     }
 
@@ -786,7 +818,9 @@ fn import_tls_key_share(
     let mut blob = Vec::with_capacity(8 + coordinate_size * 2);
     blob.extend_from_slice(&public_magic.to_le_bytes());
     blob.extend_from_slice(&(coordinate_size as u32).to_le_bytes());
-    blob.extend_from_slice(&peer_pub_key[1..]);
+    let (x, y) = peer_pub_key[1..].split_at(coordinate_size);
+    blob.extend_from_slice(x);
+    blob.extend_from_slice(y);
 
     let mut key: BCRYPT_KEY_HANDLE = core::ptr::null_mut();
     let status = unsafe {

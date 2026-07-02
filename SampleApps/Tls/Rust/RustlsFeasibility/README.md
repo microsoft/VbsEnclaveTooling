@@ -19,3 +19,5 @@ cargo tree --manifest-path .\SampleApps\Tls\Rust\RustlsFeasibility\Cargo.toml -i
 ```
 
 The crate also contains a `bcrypt_provider` skeleton that compiles the public rustls provider trait surface without enabling built-in crypto providers. The skeleton currently includes real BCrypt-backed RNG, SHA-256/SHA-384, HMAC-SHA256/HMAC-SHA384, AES-256-GCM, P-256/P-384 ECDH, pinned leaf-certificate hash verification, and TLS 1.3 RSA/SHA-256 handshake signature verification.
+
+The sibling `..\RustlsHostHarness` crate builds a std host-mode harness for exercising this provider against the local test server before moving it into a VTL1 Rust enclave.

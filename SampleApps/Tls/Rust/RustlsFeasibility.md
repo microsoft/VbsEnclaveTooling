@@ -27,6 +27,8 @@ The skeleton now includes real BCrypt-backed implementations for randomness, SHA
 
 ECDSA handshake signature verification remains future work. The local .NET test server currently uses an RSA certificate, so RSA-PSS-SHA256 and RSA-PKCS1-SHA256 are enough for the first Rust server-auth path.
 
+`SampleApps\Tls\Rust\RustlsHostHarness` builds a std host-mode harness around the same provider and the existing test server. The harness currently reaches the test server but fails during TLS record decryption, so the remaining runtime issue is in the rustls/BCrypt key schedule, ECDH secret formatting, or record-protection interop rather than in dependency selection.
+
 ## Dependency graph
 
 The active dependency graph for the compile spike is:
@@ -80,5 +82,6 @@ cargo tree --manifest-path .\SampleApps\Tls\Rust\RustlsFeasibility\Cargo.toml -i
 
 - Prove that the provider links into a Rust VTL1 enclave DLL.
 - Add BCrypt ECDSA handshake signature verification for ECDSA server certificates.
-- Confirm the local test server negotiates P-256/P-384, not X25519.
+- Fix the Rust host harness `DecryptError` against the .NET TLS test server.
+- Once the host harness completes the handshake, move the same provider/driver into a Rust VTL1 enclave.
 - Decide whether P-256 only is sufficient for the local test server or whether P-384 should be implemented in the first Rust sample.
