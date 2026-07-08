@@ -1,20 +1,22 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
+//
+// Enclave host: loads the TLS enclave, registers the transport callbacks, then
+// selects a scenario by id and drives the enclave's TLS state machine to
+// completion. The host supplies only transport (sockets); the enclave owns the
+// server identity policy (target, SNI, HTTP path, certificate pin, limits).
 
 #include <windows.h>
-#include <bcrypt.h>
-#include <wincrypt.h>
 #include <winsock2.h>
 #include <ws2tcpip.h>
 
 #include <array>
+#include <chrono>
 #include <filesystem>
-#include <fstream>
 #include <iostream>
 #include <map>
-#include <memory>
 #include <string>
-#include <vector>
+#include <thread>
 
 #include <wil/resource.h>
 #include <wil/result_macros.h>
@@ -26,49 +28,6 @@ namespace
 {
     std::map<uint64_t, SOCKET> g_sockets;
     uint64_t g_nextHandle = 1;
-
-    std::vector<uint8_t> ReadFileBytes(const std::filesystem::path& path)
-    {
-        std::ifstream file(path, std::ios::binary);
-        THROW_HR_IF_MSG(HRESULT_FROM_WIN32(ERROR_FILE_NOT_FOUND), !file, "Could not open %ls", path.c_str());
-        return {std::istreambuf_iterator<char>(file), std::istreambuf_iterator<char>()};
-    }
-
-    std::vector<uint8_t> DecodePemCertificate(const std::vector<uint8_t>& pem)
-    {
-        DWORD decodedSize = 0;
-        THROW_IF_WIN32_BOOL_FALSE(CryptStringToBinaryA(
-            reinterpret_cast<LPCSTR>(pem.data()),
-            static_cast<DWORD>(pem.size()),
-            CRYPT_STRING_BASE64HEADER,
-            nullptr,
-            &decodedSize,
-            nullptr,
-            nullptr));
-
-        std::vector<uint8_t> der(decodedSize);
-        THROW_IF_WIN32_BOOL_FALSE(CryptStringToBinaryA(
-            reinterpret_cast<LPCSTR>(pem.data()),
-            static_cast<DWORD>(pem.size()),
-            CRYPT_STRING_BASE64HEADER,
-            der.data(),
-            &decodedSize,
-            nullptr,
-            nullptr));
-        der.resize(decodedSize);
-        return der;
-    }
-
-    std::vector<uint8_t> Sha256(const std::vector<uint8_t>& bytes)
-    {
-        wil::unique_bcrypt_hash hash;
-        THROW_IF_NTSTATUS_FAILED(BCryptCreateHash(BCRYPT_SHA256_ALG_HANDLE, &hash, nullptr, 0, nullptr, 0, 0));
-        THROW_IF_NTSTATUS_FAILED(BCryptHashData(hash.get(), const_cast<PUCHAR>(bytes.data()), static_cast<ULONG>(bytes.size()), 0));
-
-        std::vector<uint8_t> digest(32);
-        THROW_IF_NTSTATUS_FAILED(BCryptFinishHash(hash.get(), digest.data(), static_cast<ULONG>(digest.size()), 0));
-        return digest;
-    }
 
     wil::unique_any<void*, decltype(&DeleteEnclave), DeleteEnclave> CreateAndLoadEnclave(const std::filesystem::path& enclavePath)
     {
@@ -111,10 +70,11 @@ TlsSample::Types::HostTcpConnectResult TlsSample::Untrusted::Implementation::Tls
 
     addrinfo* addresses{};
     const auto port = std::to_string(server_port);
-    if (getaddrinfo(server_name.c_str(), port.c_str(), &hints, &addresses) != 0)
+    const int gaiResult = getaddrinfo(server_name.c_str(), port.c_str(), &hints, &addresses);
+    if (gaiResult != 0)
     {
         result.status = TlsSample::Types::HostIoStatus::HostIoStatus_Failed;
-        result.host_error = WSAGetLastError();
+        result.host_error = static_cast<uint32_t>(gaiResult);
         return result;
     }
 
@@ -141,6 +101,11 @@ TlsSample::Types::HostTcpConnectResult TlsSample::Untrusted::Implementation::Tls
         result.host_error = WSAGetLastError();
         return result;
     }
+
+    // Non-blocking so the enclave's DriveConnection sees WouldBlock and retains
+    // control instead of blocking inside a host recv/send.
+    u_long nonBlocking = 1;
+    ioctlsocket(socketHandle, FIONBIO, &nonBlocking);
 
     result.transport_handle = g_nextHandle++;
     g_sockets.emplace(result.transport_handle, socketHandle);
@@ -170,8 +135,17 @@ TlsSample::Types::HostTcpRecvResult TlsSample::Untrusted::Implementation::TlsSam
     }
 
     result.bytes.clear();
-    result.status = received == 0 ? TlsSample::Types::HostIoStatus::HostIoStatus_Closed : TlsSample::Types::HostIoStatus::HostIoStatus_Failed;
-    result.host_error = received == 0 ? 0 : WSAGetLastError();
+    if (received == 0)
+    {
+        result.status = TlsSample::Types::HostIoStatus::HostIoStatus_Closed;
+        return result;
+    }
+
+    const int error = WSAGetLastError();
+    result.status = (error == WSAEWOULDBLOCK)
+        ? TlsSample::Types::HostIoStatus::HostIoStatus_WouldBlock
+        : TlsSample::Types::HostIoStatus::HostIoStatus_Failed;
+    result.host_error = static_cast<uint32_t>(error);
     return result;
 }
 
@@ -195,8 +169,11 @@ TlsSample::Types::HostIoResult TlsSample::Untrusted::Implementation::TlsSample_H
         return result;
     }
 
-    result.status = TlsSample::Types::HostIoStatus::HostIoStatus_Failed;
-    result.host_error = WSAGetLastError();
+    const int error = WSAGetLastError();
+    result.status = (error == WSAEWOULDBLOCK)
+        ? TlsSample::Types::HostIoStatus::HostIoStatus_WouldBlock
+        : TlsSample::Types::HostIoStatus::HostIoStatus_Failed;
+    result.host_error = static_cast<uint32_t>(error);
     return result;
 }
 
@@ -214,40 +191,78 @@ TlsSample::Types::HostIoResult TlsSample::Untrusted::Implementation::TlsSample_H
 int main(int argc, char** argv)
 try
 {
+    using namespace TlsSample::Types;
+
     const std::filesystem::path enclavePath = argc > 1 ? argv[1] : "TlsEnclave.dll";
-    const std::filesystem::path certPath = argc > 2 ? argv[2] : "..\\..\\TestServer\\test-certs\\server-cert.pem";
-    const uint16_t port = argc > 3 ? static_cast<uint16_t>(std::stoi(argv[3])) : 9781;
+    const uint32_t scenarioId = argc > 2 ? static_cast<uint32_t>(std::stoul(argv[2])) : 0;
+    const uint32_t input = argc > 3 ? static_cast<uint32_t>(std::stoul(argv[3])) : 38;
 
     WSADATA wsaData{};
-    const int wsaStartupResult = WSAStartup(MAKEWORD(2, 2), &wsaData);
-    THROW_IF_WIN32_ERROR(wsaStartupResult);
+    THROW_IF_WIN32_ERROR(WSAStartup(MAKEWORD(2, 2), &wsaData));
     auto cleanupWsa = wil::scope_exit([] { WSACleanup(); });
 
     auto enclave = CreateAndLoadEnclave(enclavePath);
     auto enclaveInterface = TlsSample::Trusted::Stubs::TlsSampleHost(enclave.get());
-    const HRESULT registerCallbacksResult = enclaveInterface.RegisterVtl0Callbacks();
-    THROW_IF_FAILED(registerCallbacksResult);
+    THROW_IF_FAILED(enclaveInterface.RegisterVtl0Callbacks());
 
-    TlsSample::Types::TlsSampleRequest request;
-    request.profile = TlsSample::Types::TlsSampleProfile::TlsSampleProfile_ServerAuth;
-    request.server_name = "localhost";
-    request.server_port = port;
-    request.http_path = "/secret-config";
-    request.input_value = 38;
-    request.max_response_bytes = 16 * 1024;
-    request.pinned_server_certificate_sha256 = Sha256(DecodePemCertificate(ReadFileBytes(certPath)));
+    // The enclave owns the policy; the host can display it but not change it.
+    TlsSampleScenarioMetadata metadata{};
+    THROW_IF_FAILED(enclaveInterface.TlsSample_GetScenarioMetadata(scenarioId, metadata));
+    if (metadata.status != TlsSampleStatus::TlsSampleStatus_Ok)
+    {
+        std::cerr << "unknown scenario " << scenarioId << "\n";
+        return 1;
+    }
+    std::cout << "scenario_id=" << metadata.scenario_id << "\n";
+    std::cout << "connect=" << metadata.connect_host << ":" << metadata.connect_port << "\n";
+    std::cout << "tls_server_name=" << metadata.tls_server_name << "\n";
+    std::cout << "http_path=" << metadata.http_path << "\n";
 
-    TlsSample::Types::TlsSampleResult result;
-    const HRESULT runScenarioResult = enclaveInterface.TlsSample_RunScenario(request, result);
-    THROW_IF_FAILED(runScenarioResult);
+    TlsSampleRequest request{};
+    request.scenario_id = scenarioId;
+    request.input_value = input;
+
+    StartScenarioResult started{};
+    THROW_IF_FAILED(enclaveInterface.TlsSample_StartScenario(request, started));
+    if (started.status != TlsSampleStatus::TlsSampleStatus_Ok)
+    {
+        std::cerr << "start failed status=" << static_cast<uint32_t>(started.status) << "\n";
+        return 1;
+    }
+
+    // Blocking-for-demo loop: drive the enclave until it completes or fails.
+    const auto deadline = std::chrono::steady_clock::now() + std::chrono::seconds(30);
+    DriveConnectionResult drive{};
+    for (;;)
+    {
+        THROW_IF_FAILED(enclaveInterface.TlsSample_DriveConnection(started.session_handle, drive));
+        if (drive.progress == TlsSampleProgress::TlsSampleProgress_Completed ||
+            drive.progress == TlsSampleProgress::TlsSampleProgress_Failed)
+        {
+            break;
+        }
+        if (std::chrono::steady_clock::now() > deadline)
+        {
+            break;
+        }
+        if (drive.progress == TlsSampleProgress::TlsSampleProgress_WouldBlock)
+        {
+            std::this_thread::sleep_for(std::chrono::milliseconds(1));
+        }
+    }
+
+    TlsSampleResult result{};
+    THROW_IF_FAILED(enclaveInterface.TlsSample_GetDerivedResult(started.session_handle, result));
+    THROW_IF_FAILED(enclaveInterface.TlsSample_CloseScenario(started.session_handle));
 
     std::cout << "status=" << static_cast<uint32_t>(result.status) << "\n";
-    std::cout << "decision=" << result.decision << "\n";
+    std::cout << "decision=" << (result.decision == TlsSampleDecision::TlsSampleDecision_Allow ? "Allow" : "Deny") << "\n";
     std::cout << "output_value=" << result.output_value << "\n";
-    std::cout << "diagnostics=" << result.diagnostics << "\n";
-    std::cout << "tls_version=0x" << std::hex << result.tls_version << "\n";
-    std::cout << "cipher_suite=0x" << std::hex << result.cipher_suite << "\n";
-    return result.status == TlsSample::Types::TlsSampleStatus::TlsSampleStatus_Ok ? 0 : 1;
+    std::cout << "failure_reason=" << static_cast<uint32_t>(result.failure_reason) << "\n";
+    std::cout << "tls_version=0x" << std::hex << result.tls_version << std::dec << "\n";
+    std::cout << "cipher_suite=0x" << std::hex << result.cipher_suite << std::dec << "\n";
+
+    return result.status == TlsSampleStatus::TlsSampleStatus_Ok ? 0 : 1;
 }
 catch (...)
 {

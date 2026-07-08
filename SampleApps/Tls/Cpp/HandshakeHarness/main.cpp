@@ -1,11 +1,18 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
+//
+// Host-mode harness: exercises the same TlsSession state machine the enclave
+// uses, but in a normal process so the server-auth flow can be tested without
+// building and signing an enclave. It provides the non-blocking transport
+// callbacks and runs the "drive to completion" loop a real host would run.
 
 #include "TlsMbedTlsDriver.h"
 
 #include <winsock2.h>
 #include <ws2tcpip.h>
 
+#include <array>
+#include <chrono>
 #include <fstream>
 #include <iomanip>
 #include <iostream>
@@ -14,6 +21,7 @@
 #include <filesystem>
 #include <sstream>
 #include <string>
+#include <thread>
 
 namespace
 {
@@ -55,10 +63,11 @@ namespace
 
         addrinfo* addresses{};
         const auto port = std::to_string(serverPort);
-        if (getaddrinfo(serverName.c_str(), port.c_str(), &hints, &addresses) != 0)
+        const int gaiResult = getaddrinfo(serverName.c_str(), port.c_str(), &hints, &addresses);
+        if (gaiResult != 0)
         {
             result.status = tls_sample::HostIoStatus::Failed;
-            result.hostError = WSAGetLastError();
+            result.hostError = static_cast<uint32_t>(gaiResult);
             return result;
         }
 
@@ -86,6 +95,11 @@ namespace
             return result;
         }
 
+        // Non-blocking so the enclave's DriveConnection sees WouldBlock and keeps
+        // control instead of being trapped inside a blocking recv/send.
+        u_long nonBlocking = 1;
+        ioctlsocket(socketHandle, FIONBIO, &nonBlocking);
+
         result.transportHandle = context.nextHandle++;
         context.sockets.emplace(result.transportHandle, socketHandle);
         result.status = tls_sample::HostIoStatus::Ok;
@@ -111,9 +125,17 @@ namespace
             result.status = tls_sample::HostIoStatus::Ok;
             return result;
         }
+
         result.bytes.clear();
-        result.status = received == 0 ? tls_sample::HostIoStatus::Closed : tls_sample::HostIoStatus::Failed;
-        result.hostError = received == 0 ? 0 : WSAGetLastError();
+        if (received == 0)
+        {
+            result.status = tls_sample::HostIoStatus::Closed;
+            return result;
+        }
+
+        const int error = WSAGetLastError();
+        result.status = (error == WSAEWOULDBLOCK) ? tls_sample::HostIoStatus::WouldBlock : tls_sample::HostIoStatus::Failed;
+        result.hostError = static_cast<uint32_t>(error);
         return result;
     }
 
@@ -135,8 +157,10 @@ namespace
             result.bytesTransferred = static_cast<uint32_t>(sent);
             return result;
         }
-        result.status = tls_sample::HostIoStatus::Failed;
-        result.hostError = WSAGetLastError();
+
+        const int error = WSAGetLastError();
+        result.status = (error == WSAEWOULDBLOCK) ? tls_sample::HostIoStatus::WouldBlock : tls_sample::HostIoStatus::Failed;
+        result.hostError = static_cast<uint32_t>(error);
         return result;
     }
 
@@ -163,6 +187,30 @@ namespace
         }
         return fallback;
     }
+
+    // The blocking-for-demo loop a host runs: drive the session, yielding briefly
+    // when the transport would block, until the session completes or fails.
+    tls_sample::TlsSampleProgress RunToCompletion(tls_sample::TlsSession& session)
+    {
+        const auto deadline = std::chrono::steady_clock::now() + std::chrono::seconds(30);
+        for (;;)
+        {
+            const auto progress = session.Drive();
+            if (progress == tls_sample::TlsSampleProgress::Completed ||
+                progress == tls_sample::TlsSampleProgress::Failed)
+            {
+                return progress;
+            }
+            if (std::chrono::steady_clock::now() > deadline)
+            {
+                return tls_sample::TlsSampleProgress::Failed;
+            }
+            if (progress == tls_sample::TlsSampleProgress::WouldBlock)
+            {
+                std::this_thread::sleep_for(std::chrono::milliseconds(1));
+            }
+        }
+    }
 }
 
 int main(int argc, char** argv)
@@ -175,27 +223,21 @@ int main(int argc, char** argv)
 
     const auto certPath = GetArg(argc, argv, "--cert", "..\\..\\TestServer\\test-certs\\server-cert.pem");
     const auto serverName = GetArg(argc, argv, "--server", "localhost");
+    const auto connectHost = GetArg(argc, argv, "--connect", "127.0.0.1");
     const auto path = GetArg(argc, argv, "--path", "/secret-config");
-    const auto port = static_cast<uint16_t>(std::stoi(GetArg(argc, argv, "--port", "8443")));
+    const auto port = static_cast<uint16_t>(std::stoi(GetArg(argc, argv, "--port", "9781")));
     const auto input = static_cast<uint32_t>(std::stoul(GetArg(argc, argv, "--input", "38")));
+    const bool expectReject = GetArg(argc, argv, "--expect-reject", "0") == "1";
 
-    SocketContext socketContext;
-    tls_sample::TransportCallbacks callbacks{
-        &socketContext,
-        Connect,
-        Recv,
-        Send,
-        Close,
-    };
-
-    tls_sample::TlsRequest request;
-    request.serverName = serverName;
-    request.serverPort = port;
-    request.httpPath = path;
-    request.inputValue = input;
+    tls_sample::ScenarioPolicy policy;
+    policy.scenarioId = 0;
+    policy.connectHost = connectHost;
+    policy.connectPort = port;
+    policy.tlsServerName = serverName;
+    policy.httpPath = path;
     try
     {
-        request.pinnedServerCertificateSha256 = tls_sample::ComputeCertificateSha256(ReadFileBytes(certPath));
+        policy.pinnedCertificateSha256 = tls_sample::ComputeCertificateSha256(ReadFileBytes(certPath));
     }
     catch (const std::exception& error)
     {
@@ -204,7 +246,7 @@ int main(int argc, char** argv)
         return 3;
     }
 
-    if (tls_sample::IsEmptySha256(request.pinnedServerCertificateSha256))
+    if (tls_sample::IsEmptySha256(policy.pinnedCertificateSha256))
     {
         std::cerr << "could not parse certificate file: " << certPath << "\n";
         WSACleanup();
@@ -212,22 +254,34 @@ int main(int argc, char** argv)
     }
 
     std::cout << "cert_path=" << std::filesystem::absolute(certPath).string() << "\n";
-    std::cout << "pinned_cert_sha256=" << HexDigest(request.pinnedServerCertificateSha256) << "\n";
+    std::cout << "pinned_cert_sha256=" << HexDigest(policy.pinnedCertificateSha256) << "\n";
+    std::cout << "expect_reject=" << (expectReject ? "1" : "0") << "\n";
 
-    const auto result = tls_sample::RunServerAuthScenario(request, callbacks);
+    SocketContext socketContext;
+    tls_sample::TransportCallbacks callbacks{&socketContext, Connect, Recv, Send, Close};
+
+    tls_sample::TlsSession session(policy, input, callbacks);
+    RunToCompletion(session);
+    const auto& result = session.Result();
     WSACleanup();
 
     std::cout << "status=" << static_cast<uint32_t>(result.status) << "\n";
-    std::cout << "decision=" << result.decision << "\n";
+    std::cout << "decision=" << (result.decision == tls_sample::TlsSampleDecision::Allow ? "Allow" : "Deny") << "\n";
     std::cout << "output_value=" << result.outputValue << "\n";
-    std::cout << "diagnostics=" << result.diagnostics << "\n";
-    std::cout << "tls_version=0x" << std::hex << result.tlsVersion << "\n";
-    std::cout << "cipher_suite=0x" << std::hex << result.cipherSuite << "\n";
+    std::cout << "failure_reason=" << static_cast<uint32_t>(result.failureReason) << "\n";
+    std::cout << "tls_version=0x" << std::hex << result.tlsVersion << std::dec << "\n";
+    std::cout << "cipher_suite=0x" << std::hex << result.cipherSuite << std::dec << "\n";
 
+    // Negative test: a mismatched pin / untrusted server must be rejected.
+    if (expectReject)
+    {
+        return (result.status == tls_sample::TlsSampleStatus::ValidationFailed) ? 0 : 1;
+    }
+
+    // Positive test: successful server-auth with the expected derived output.
     if (result.status != tls_sample::TlsSampleStatus::Ok ||
         result.outputValue != input * 37 ||
-        result.decision.find("sample-server-only-value") != std::string::npos ||
-        result.diagnostics.find("sample-server-only-value") != std::string::npos)
+        result.decision != tls_sample::TlsSampleDecision::Allow)
     {
         return 1;
     }

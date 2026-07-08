@@ -1,5 +1,9 @@
 LIBRARY
 
 EXPORTS
-    TlsSample_RunScenario_0_Generated_Stub
+    TlsSample_GetScenarioMetadata_0_Generated_Stub
+    TlsSample_StartScenario_1_Generated_Stub
+    TlsSample_DriveConnection_2_Generated_Stub
+    TlsSample_GetDerivedResult_3_Generated_Stub
+    TlsSample_CloseScenario_4_Generated_Stub
     __AbiRegisterVtl0Callbacks_TlsSample__
