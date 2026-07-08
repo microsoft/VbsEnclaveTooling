@@ -80,7 +80,7 @@ Avoid using an unconfigured prebuilt mbedTLS package for the enclave sample. The
 - Consider reducing mbedTLS features and buffer sizes for enclave footprint.
 - Decide whether the committed sample should keep checked-in generated C++ bindings or switch back to build-time codegen once package restore is reliable.
 - Add a negative test showing the sample fails when the pinned server identity does not match.
-- Document a single-thread-per-connection contract unless mbedTLS threading callbacks are configured.
+- Document a single-thread-per-connection contract unless mbedTLS threading callbacks are configured. Note that `MBEDTLS_PSA_CRYPTO_C` keeps process-global state (the RNG and key slots), so a single-thread-*per-connection* rule is not sufficient on its own when several connections run concurrently: either enforce a single active session at a time, initialise/free PSA once for the enclave lifetime (reference-counted), or enable `MBEDTLS_THREADING_C` with enclave-backed mutex callbacks. The C++ sample reference-counts PSA init/free and serialises its enclave session table.
 
 ## Reproduction notes
 

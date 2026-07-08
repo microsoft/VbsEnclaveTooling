@@ -108,7 +108,7 @@ trusted VTL0 -> VTL1:
   StartScenario(...)
   DriveConnection(...)
   GetDerivedResult(...)
-  Close(...)
+  CloseScenario(...)
 
 untrusted VTL1 -> VTL0:
   HostTcpConnect(...)
@@ -156,7 +156,6 @@ The validated result is:
 status=0
 decision=Allow
 output_value=1406
-diagnostics=TLSv1.3, TLS1-3-AES-256-GCM-SHA384, server-auth-ok
 tls_version=0x304
 cipher_suite=0x1302
 ```
