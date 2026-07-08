@@ -11,7 +11,15 @@ namespace TlsSample
     {
         using namespace TlsSample::Types;
         
-        HRESULT TlsSample_RunScenario(_In_ const TlsSampleRequest& request, _Out_  TlsSampleResult& result);
+        HRESULT TlsSample_GetScenarioMetadata(_In_  std::uint32_t scenario_id, _Out_  TlsSampleScenarioMetadata& metadata);
+
+        HRESULT TlsSample_StartScenario(_In_ const TlsSampleRequest& request, _Out_  StartScenarioResult& result);
+
+        HRESULT TlsSample_DriveConnection(_In_  std::uint64_t session_handle, _Out_  DriveConnectionResult& result);
+
+        HRESULT TlsSample_GetDerivedResult(_In_  std::uint64_t session_handle, _Out_  TlsSampleResult& result);
+
+        HRESULT TlsSample_CloseScenario(_In_  std::uint64_t session_handle);
 
     };
 }

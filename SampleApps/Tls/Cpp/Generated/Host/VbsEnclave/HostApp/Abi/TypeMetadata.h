@@ -10,25 +10,61 @@ namespace VbsEnclaveABI::Shared::Converters
     template <>
     struct StructMetadata<TlsSample::Types::TlsSampleRequest>
     {
-        static constexpr auto members = std::make_tuple(&TlsSample::Types::TlsSampleRequest::profile,&TlsSample::Types::TlsSampleRequest::server_name,&TlsSample::Types::TlsSampleRequest::server_port,&TlsSample::Types::TlsSampleRequest::http_path,&TlsSample::Types::TlsSampleRequest::input_value,&TlsSample::Types::TlsSampleRequest::max_response_bytes,&TlsSample::Types::TlsSampleRequest::pinned_server_certificate_sha256);
+        static constexpr auto members = std::make_tuple(&TlsSample::Types::TlsSampleRequest::scenario_id,&TlsSample::Types::TlsSampleRequest::input_value);
     };
 
     template <>
     struct StructMetadata<TlsSample::FlatbufferTypes::TlsSampleRequestT>
     {
-        static constexpr auto members = std::make_tuple(&TlsSample::FlatbufferTypes::TlsSampleRequestT::profile,&TlsSample::FlatbufferTypes::TlsSampleRequestT::server_name,&TlsSample::FlatbufferTypes::TlsSampleRequestT::server_port,&TlsSample::FlatbufferTypes::TlsSampleRequestT::http_path,&TlsSample::FlatbufferTypes::TlsSampleRequestT::input_value,&TlsSample::FlatbufferTypes::TlsSampleRequestT::max_response_bytes,&TlsSample::FlatbufferTypes::TlsSampleRequestT::pinned_server_certificate_sha256);
+        static constexpr auto members = std::make_tuple(&TlsSample::FlatbufferTypes::TlsSampleRequestT::scenario_id,&TlsSample::FlatbufferTypes::TlsSampleRequestT::input_value);
+    };
+
+    template <>
+    struct StructMetadata<TlsSample::Types::TlsSampleScenarioMetadata>
+    {
+        static constexpr auto members = std::make_tuple(&TlsSample::Types::TlsSampleScenarioMetadata::status,&TlsSample::Types::TlsSampleScenarioMetadata::scenario_id,&TlsSample::Types::TlsSampleScenarioMetadata::profile,&TlsSample::Types::TlsSampleScenarioMetadata::connect_host,&TlsSample::Types::TlsSampleScenarioMetadata::connect_port,&TlsSample::Types::TlsSampleScenarioMetadata::tls_server_name,&TlsSample::Types::TlsSampleScenarioMetadata::http_path,&TlsSample::Types::TlsSampleScenarioMetadata::max_response_bytes,&TlsSample::Types::TlsSampleScenarioMetadata::pinned_certificate_sha256);
+    };
+
+    template <>
+    struct StructMetadata<TlsSample::FlatbufferTypes::TlsSampleScenarioMetadataT>
+    {
+        static constexpr auto members = std::make_tuple(&TlsSample::FlatbufferTypes::TlsSampleScenarioMetadataT::status,&TlsSample::FlatbufferTypes::TlsSampleScenarioMetadataT::scenario_id,&TlsSample::FlatbufferTypes::TlsSampleScenarioMetadataT::profile,&TlsSample::FlatbufferTypes::TlsSampleScenarioMetadataT::connect_host,&TlsSample::FlatbufferTypes::TlsSampleScenarioMetadataT::connect_port,&TlsSample::FlatbufferTypes::TlsSampleScenarioMetadataT::tls_server_name,&TlsSample::FlatbufferTypes::TlsSampleScenarioMetadataT::http_path,&TlsSample::FlatbufferTypes::TlsSampleScenarioMetadataT::max_response_bytes,&TlsSample::FlatbufferTypes::TlsSampleScenarioMetadataT::pinned_certificate_sha256);
+    };
+
+    template <>
+    struct StructMetadata<TlsSample::Types::StartScenarioResult>
+    {
+        static constexpr auto members = std::make_tuple(&TlsSample::Types::StartScenarioResult::status,&TlsSample::Types::StartScenarioResult::session_handle);
+    };
+
+    template <>
+    struct StructMetadata<TlsSample::FlatbufferTypes::StartScenarioResultT>
+    {
+        static constexpr auto members = std::make_tuple(&TlsSample::FlatbufferTypes::StartScenarioResultT::status,&TlsSample::FlatbufferTypes::StartScenarioResultT::session_handle);
+    };
+
+    template <>
+    struct StructMetadata<TlsSample::Types::DriveConnectionResult>
+    {
+        static constexpr auto members = std::make_tuple(&TlsSample::Types::DriveConnectionResult::progress,&TlsSample::Types::DriveConnectionResult::status);
+    };
+
+    template <>
+    struct StructMetadata<TlsSample::FlatbufferTypes::DriveConnectionResultT>
+    {
+        static constexpr auto members = std::make_tuple(&TlsSample::FlatbufferTypes::DriveConnectionResultT::progress,&TlsSample::FlatbufferTypes::DriveConnectionResultT::status);
     };
 
     template <>
     struct StructMetadata<TlsSample::Types::TlsSampleResult>
     {
-        static constexpr auto members = std::make_tuple(&TlsSample::Types::TlsSampleResult::status,&TlsSample::Types::TlsSampleResult::output_value,&TlsSample::Types::TlsSampleResult::decision,&TlsSample::Types::TlsSampleResult::diagnostics,&TlsSample::Types::TlsSampleResult::tls_version,&TlsSample::Types::TlsSampleResult::cipher_suite);
+        static constexpr auto members = std::make_tuple(&TlsSample::Types::TlsSampleResult::status,&TlsSample::Types::TlsSampleResult::decision,&TlsSample::Types::TlsSampleResult::output_value,&TlsSample::Types::TlsSampleResult::tls_version,&TlsSample::Types::TlsSampleResult::cipher_suite,&TlsSample::Types::TlsSampleResult::failure_reason);
     };
 
     template <>
     struct StructMetadata<TlsSample::FlatbufferTypes::TlsSampleResultT>
     {
-        static constexpr auto members = std::make_tuple(&TlsSample::FlatbufferTypes::TlsSampleResultT::status,&TlsSample::FlatbufferTypes::TlsSampleResultT::output_value,&TlsSample::FlatbufferTypes::TlsSampleResultT::decision,&TlsSample::FlatbufferTypes::TlsSampleResultT::diagnostics,&TlsSample::FlatbufferTypes::TlsSampleResultT::tls_version,&TlsSample::FlatbufferTypes::TlsSampleResultT::cipher_suite);
+        static constexpr auto members = std::make_tuple(&TlsSample::FlatbufferTypes::TlsSampleResultT::status,&TlsSample::FlatbufferTypes::TlsSampleResultT::decision,&TlsSample::FlatbufferTypes::TlsSampleResultT::output_value,&TlsSample::FlatbufferTypes::TlsSampleResultT::tls_version,&TlsSample::FlatbufferTypes::TlsSampleResultT::cipher_suite,&TlsSample::FlatbufferTypes::TlsSampleResultT::failure_reason);
     };
 
     template <>
@@ -68,63 +104,111 @@ namespace VbsEnclaveABI::Shared::Converters
     };
 
     template <>
-    struct StructMetadata<TlsSample::Abi::Types::TlsSample_RunScenario_0_Args>
+    struct StructMetadata<TlsSample::Abi::Types::TlsSample_GetScenarioMetadata_0_Args>
     {
-        static constexpr auto members = std::make_tuple(&TlsSample::Abi::Types::TlsSample_RunScenario_0_Args::m_request,&TlsSample::Abi::Types::TlsSample_RunScenario_0_Args::m_result,&TlsSample::Abi::Types::TlsSample_RunScenario_0_Args::m__return_value_);
+        static constexpr auto members = std::make_tuple(&TlsSample::Abi::Types::TlsSample_GetScenarioMetadata_0_Args::m_scenario_id,&TlsSample::Abi::Types::TlsSample_GetScenarioMetadata_0_Args::m_metadata,&TlsSample::Abi::Types::TlsSample_GetScenarioMetadata_0_Args::m__return_value_);
     };
 
     template <>
-    struct StructMetadata<TlsSample::FlatbufferTypes::TlsSample_RunScenario_0_ArgsT>
+    struct StructMetadata<TlsSample::FlatbufferTypes::TlsSample_GetScenarioMetadata_0_ArgsT>
     {
-        static constexpr auto members = std::make_tuple(&TlsSample::FlatbufferTypes::TlsSample_RunScenario_0_ArgsT::m_request,&TlsSample::FlatbufferTypes::TlsSample_RunScenario_0_ArgsT::m_result,&TlsSample::FlatbufferTypes::TlsSample_RunScenario_0_ArgsT::m__return_value_);
+        static constexpr auto members = std::make_tuple(&TlsSample::FlatbufferTypes::TlsSample_GetScenarioMetadata_0_ArgsT::m_scenario_id,&TlsSample::FlatbufferTypes::TlsSample_GetScenarioMetadata_0_ArgsT::m_metadata,&TlsSample::FlatbufferTypes::TlsSample_GetScenarioMetadata_0_ArgsT::m__return_value_);
     };
 
     template <>
-    struct StructMetadata<TlsSample::Abi::Types::TlsSample_HostTcpConnect_1_Args>
+    struct StructMetadata<TlsSample::Abi::Types::TlsSample_StartScenario_1_Args>
     {
-        static constexpr auto members = std::make_tuple(&TlsSample::Abi::Types::TlsSample_HostTcpConnect_1_Args::m_server_name,&TlsSample::Abi::Types::TlsSample_HostTcpConnect_1_Args::m_server_port,&TlsSample::Abi::Types::TlsSample_HostTcpConnect_1_Args::m__return_value_);
+        static constexpr auto members = std::make_tuple(&TlsSample::Abi::Types::TlsSample_StartScenario_1_Args::m_request,&TlsSample::Abi::Types::TlsSample_StartScenario_1_Args::m_result,&TlsSample::Abi::Types::TlsSample_StartScenario_1_Args::m__return_value_);
     };
 
     template <>
-    struct StructMetadata<TlsSample::FlatbufferTypes::TlsSample_HostTcpConnect_1_ArgsT>
+    struct StructMetadata<TlsSample::FlatbufferTypes::TlsSample_StartScenario_1_ArgsT>
     {
-        static constexpr auto members = std::make_tuple(&TlsSample::FlatbufferTypes::TlsSample_HostTcpConnect_1_ArgsT::m_server_name,&TlsSample::FlatbufferTypes::TlsSample_HostTcpConnect_1_ArgsT::m_server_port,&TlsSample::FlatbufferTypes::TlsSample_HostTcpConnect_1_ArgsT::m__return_value_);
+        static constexpr auto members = std::make_tuple(&TlsSample::FlatbufferTypes::TlsSample_StartScenario_1_ArgsT::m_request,&TlsSample::FlatbufferTypes::TlsSample_StartScenario_1_ArgsT::m_result,&TlsSample::FlatbufferTypes::TlsSample_StartScenario_1_ArgsT::m__return_value_);
     };
 
     template <>
-    struct StructMetadata<TlsSample::Abi::Types::TlsSample_HostTcpRecv_2_Args>
+    struct StructMetadata<TlsSample::Abi::Types::TlsSample_DriveConnection_2_Args>
     {
-        static constexpr auto members = std::make_tuple(&TlsSample::Abi::Types::TlsSample_HostTcpRecv_2_Args::m_transport_handle,&TlsSample::Abi::Types::TlsSample_HostTcpRecv_2_Args::m_max_bytes,&TlsSample::Abi::Types::TlsSample_HostTcpRecv_2_Args::m__return_value_);
+        static constexpr auto members = std::make_tuple(&TlsSample::Abi::Types::TlsSample_DriveConnection_2_Args::m_session_handle,&TlsSample::Abi::Types::TlsSample_DriveConnection_2_Args::m_result,&TlsSample::Abi::Types::TlsSample_DriveConnection_2_Args::m__return_value_);
     };
 
     template <>
-    struct StructMetadata<TlsSample::FlatbufferTypes::TlsSample_HostTcpRecv_2_ArgsT>
+    struct StructMetadata<TlsSample::FlatbufferTypes::TlsSample_DriveConnection_2_ArgsT>
     {
-        static constexpr auto members = std::make_tuple(&TlsSample::FlatbufferTypes::TlsSample_HostTcpRecv_2_ArgsT::m_transport_handle,&TlsSample::FlatbufferTypes::TlsSample_HostTcpRecv_2_ArgsT::m_max_bytes,&TlsSample::FlatbufferTypes::TlsSample_HostTcpRecv_2_ArgsT::m__return_value_);
+        static constexpr auto members = std::make_tuple(&TlsSample::FlatbufferTypes::TlsSample_DriveConnection_2_ArgsT::m_session_handle,&TlsSample::FlatbufferTypes::TlsSample_DriveConnection_2_ArgsT::m_result,&TlsSample::FlatbufferTypes::TlsSample_DriveConnection_2_ArgsT::m__return_value_);
     };
 
     template <>
-    struct StructMetadata<TlsSample::Abi::Types::TlsSample_HostTcpSend_3_Args>
+    struct StructMetadata<TlsSample::Abi::Types::TlsSample_GetDerivedResult_3_Args>
     {
-        static constexpr auto members = std::make_tuple(&TlsSample::Abi::Types::TlsSample_HostTcpSend_3_Args::m_transport_handle,&TlsSample::Abi::Types::TlsSample_HostTcpSend_3_Args::m_bytes,&TlsSample::Abi::Types::TlsSample_HostTcpSend_3_Args::m__return_value_);
+        static constexpr auto members = std::make_tuple(&TlsSample::Abi::Types::TlsSample_GetDerivedResult_3_Args::m_session_handle,&TlsSample::Abi::Types::TlsSample_GetDerivedResult_3_Args::m_result,&TlsSample::Abi::Types::TlsSample_GetDerivedResult_3_Args::m__return_value_);
     };
 
     template <>
-    struct StructMetadata<TlsSample::FlatbufferTypes::TlsSample_HostTcpSend_3_ArgsT>
+    struct StructMetadata<TlsSample::FlatbufferTypes::TlsSample_GetDerivedResult_3_ArgsT>
     {
-        static constexpr auto members = std::make_tuple(&TlsSample::FlatbufferTypes::TlsSample_HostTcpSend_3_ArgsT::m_transport_handle,&TlsSample::FlatbufferTypes::TlsSample_HostTcpSend_3_ArgsT::m_bytes,&TlsSample::FlatbufferTypes::TlsSample_HostTcpSend_3_ArgsT::m__return_value_);
+        static constexpr auto members = std::make_tuple(&TlsSample::FlatbufferTypes::TlsSample_GetDerivedResult_3_ArgsT::m_session_handle,&TlsSample::FlatbufferTypes::TlsSample_GetDerivedResult_3_ArgsT::m_result,&TlsSample::FlatbufferTypes::TlsSample_GetDerivedResult_3_ArgsT::m__return_value_);
     };
 
     template <>
-    struct StructMetadata<TlsSample::Abi::Types::TlsSample_HostTcpClose_4_Args>
+    struct StructMetadata<TlsSample::Abi::Types::TlsSample_CloseScenario_4_Args>
     {
-        static constexpr auto members = std::make_tuple(&TlsSample::Abi::Types::TlsSample_HostTcpClose_4_Args::m_transport_handle,&TlsSample::Abi::Types::TlsSample_HostTcpClose_4_Args::m__return_value_);
+        static constexpr auto members = std::make_tuple(&TlsSample::Abi::Types::TlsSample_CloseScenario_4_Args::m_session_handle,&TlsSample::Abi::Types::TlsSample_CloseScenario_4_Args::m__return_value_);
     };
 
     template <>
-    struct StructMetadata<TlsSample::FlatbufferTypes::TlsSample_HostTcpClose_4_ArgsT>
+    struct StructMetadata<TlsSample::FlatbufferTypes::TlsSample_CloseScenario_4_ArgsT>
     {
-        static constexpr auto members = std::make_tuple(&TlsSample::FlatbufferTypes::TlsSample_HostTcpClose_4_ArgsT::m_transport_handle,&TlsSample::FlatbufferTypes::TlsSample_HostTcpClose_4_ArgsT::m__return_value_);
+        static constexpr auto members = std::make_tuple(&TlsSample::FlatbufferTypes::TlsSample_CloseScenario_4_ArgsT::m_session_handle,&TlsSample::FlatbufferTypes::TlsSample_CloseScenario_4_ArgsT::m__return_value_);
+    };
+
+    template <>
+    struct StructMetadata<TlsSample::Abi::Types::TlsSample_HostTcpConnect_5_Args>
+    {
+        static constexpr auto members = std::make_tuple(&TlsSample::Abi::Types::TlsSample_HostTcpConnect_5_Args::m_server_name,&TlsSample::Abi::Types::TlsSample_HostTcpConnect_5_Args::m_server_port,&TlsSample::Abi::Types::TlsSample_HostTcpConnect_5_Args::m__return_value_);
+    };
+
+    template <>
+    struct StructMetadata<TlsSample::FlatbufferTypes::TlsSample_HostTcpConnect_5_ArgsT>
+    {
+        static constexpr auto members = std::make_tuple(&TlsSample::FlatbufferTypes::TlsSample_HostTcpConnect_5_ArgsT::m_server_name,&TlsSample::FlatbufferTypes::TlsSample_HostTcpConnect_5_ArgsT::m_server_port,&TlsSample::FlatbufferTypes::TlsSample_HostTcpConnect_5_ArgsT::m__return_value_);
+    };
+
+    template <>
+    struct StructMetadata<TlsSample::Abi::Types::TlsSample_HostTcpRecv_6_Args>
+    {
+        static constexpr auto members = std::make_tuple(&TlsSample::Abi::Types::TlsSample_HostTcpRecv_6_Args::m_transport_handle,&TlsSample::Abi::Types::TlsSample_HostTcpRecv_6_Args::m_max_bytes,&TlsSample::Abi::Types::TlsSample_HostTcpRecv_6_Args::m__return_value_);
+    };
+
+    template <>
+    struct StructMetadata<TlsSample::FlatbufferTypes::TlsSample_HostTcpRecv_6_ArgsT>
+    {
+        static constexpr auto members = std::make_tuple(&TlsSample::FlatbufferTypes::TlsSample_HostTcpRecv_6_ArgsT::m_transport_handle,&TlsSample::FlatbufferTypes::TlsSample_HostTcpRecv_6_ArgsT::m_max_bytes,&TlsSample::FlatbufferTypes::TlsSample_HostTcpRecv_6_ArgsT::m__return_value_);
+    };
+
+    template <>
+    struct StructMetadata<TlsSample::Abi::Types::TlsSample_HostTcpSend_7_Args>
+    {
+        static constexpr auto members = std::make_tuple(&TlsSample::Abi::Types::TlsSample_HostTcpSend_7_Args::m_transport_handle,&TlsSample::Abi::Types::TlsSample_HostTcpSend_7_Args::m_bytes,&TlsSample::Abi::Types::TlsSample_HostTcpSend_7_Args::m__return_value_);
+    };
+
+    template <>
+    struct StructMetadata<TlsSample::FlatbufferTypes::TlsSample_HostTcpSend_7_ArgsT>
+    {
+        static constexpr auto members = std::make_tuple(&TlsSample::FlatbufferTypes::TlsSample_HostTcpSend_7_ArgsT::m_transport_handle,&TlsSample::FlatbufferTypes::TlsSample_HostTcpSend_7_ArgsT::m_bytes,&TlsSample::FlatbufferTypes::TlsSample_HostTcpSend_7_ArgsT::m__return_value_);
+    };
+
+    template <>
+    struct StructMetadata<TlsSample::Abi::Types::TlsSample_HostTcpClose_8_Args>
+    {
+        static constexpr auto members = std::make_tuple(&TlsSample::Abi::Types::TlsSample_HostTcpClose_8_Args::m_transport_handle,&TlsSample::Abi::Types::TlsSample_HostTcpClose_8_Args::m__return_value_);
+    };
+
+    template <>
+    struct StructMetadata<TlsSample::FlatbufferTypes::TlsSample_HostTcpClose_8_ArgsT>
+    {
+        static constexpr auto members = std::make_tuple(&TlsSample::FlatbufferTypes::TlsSample_HostTcpClose_8_ArgsT::m_transport_handle,&TlsSample::FlatbufferTypes::TlsSample_HostTcpClose_8_ArgsT::m__return_value_);
     };
 
     template <>

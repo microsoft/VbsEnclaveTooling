@@ -6,9 +6,29 @@
 #include <VbsEnclave\Enclave\Abi\Definitions.h>
 
 
-extern "C" __declspec(dllexport) void* TlsSample_RunScenario_0_Generated_Stub(void* function_context) 
+extern "C" __declspec(dllexport) void* TlsSample_GetScenarioMetadata_0_Generated_Stub(void* function_context) 
 {
-    return TlsSample::Abi::Definitions::TlsSample_RunScenario_0_Generated_Stub(function_context);
+    return TlsSample::Abi::Definitions::TlsSample_GetScenarioMetadata_0_Generated_Stub(function_context);
+}
+
+extern "C" __declspec(dllexport) void* TlsSample_StartScenario_1_Generated_Stub(void* function_context) 
+{
+    return TlsSample::Abi::Definitions::TlsSample_StartScenario_1_Generated_Stub(function_context);
+}
+
+extern "C" __declspec(dllexport) void* TlsSample_DriveConnection_2_Generated_Stub(void* function_context) 
+{
+    return TlsSample::Abi::Definitions::TlsSample_DriveConnection_2_Generated_Stub(function_context);
+}
+
+extern "C" __declspec(dllexport) void* TlsSample_GetDerivedResult_3_Generated_Stub(void* function_context) 
+{
+    return TlsSample::Abi::Definitions::TlsSample_GetDerivedResult_3_Generated_Stub(function_context);
+}
+
+extern "C" __declspec(dllexport) void* TlsSample_CloseScenario_4_Generated_Stub(void* function_context) 
+{
+    return TlsSample::Abi::Definitions::TlsSample_CloseScenario_4_Generated_Stub(function_context);
 }
 
 extern "C" __declspec(dllexport) void* __AbiRegisterVtl0Callbacks_TlsSample__(void* function_context) 

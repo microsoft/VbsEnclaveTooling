@@ -5,21 +5,38 @@ include "EdlTypes.fbs";
 
 namespace TlsSample.FlatbufferTypes;
 
+enum TlsSampleAbiVersion : uint32 {
+    TlsSampleAbiVersion_Current = 1,
+}
+
 enum TlsSampleStatus : uint32 {
     TlsSampleStatus_Ok = 0,
-    TlsSampleStatus_WouldBlock = 1,
-    TlsSampleStatus_Closed = 2,
-    TlsSampleStatus_Truncated = 3,
-    TlsSampleStatus_ValidationFailed = 4,
-    TlsSampleStatus_TransportFailed = 5,
-    TlsSampleStatus_ProtocolFailed = 6,
-    TlsSampleStatus_AccessDenied = 7,
+    TlsSampleStatus_Closed = 1,
+    TlsSampleStatus_Truncated = 2,
+    TlsSampleStatus_ValidationFailed = 3,
+    TlsSampleStatus_TransportFailed = 4,
+    TlsSampleStatus_ProtocolFailed = 5,
+    TlsSampleStatus_AccessDenied = 6,
+    TlsSampleStatus_BudgetExceeded = 7,
+    TlsSampleStatus_InvalidHandle = 8,
+    TlsSampleStatus_InvalidState = 9,
+    TlsSampleStatus_UnknownScenario = 10,
+}
+
+enum TlsSampleProgress : uint32 {
+    TlsSampleProgress_Working = 0,
+    TlsSampleProgress_WouldBlock = 1,
+    TlsSampleProgress_Completed = 2,
+    TlsSampleProgress_Failed = 3,
+}
+
+enum TlsSampleDecision : uint32 {
+    TlsSampleDecision_Deny = 0,
+    TlsSampleDecision_Allow = 1,
 }
 
 enum TlsSampleProfile : uint32 {
     TlsSampleProfile_ServerAuth = 0,
-    TlsSampleProfile_MutualAuth = 1,
-    TlsSampleProfile_EmbeddedAttestation = 2,
 }
 
 enum HostIoStatus : uint32 {
@@ -30,22 +47,39 @@ enum HostIoStatus : uint32 {
 }
 
 table TlsSampleRequest {
-    profile : TlsSampleProfile = TlsSampleProfile_ServerAuth;
-    server_name : string (required);
-    server_port : uint16;
-    http_path : string (required);
+    scenario_id : uint32;
     input_value : uint32;
+ }
+
+table TlsSampleScenarioMetadata {
+    status : TlsSampleStatus = TlsSampleStatus_Ok;
+    scenario_id : uint32;
+    profile : TlsSampleProfile = TlsSampleProfile_ServerAuth;
+    connect_host : string (required);
+    connect_port : uint16;
+    tls_server_name : string (required);
+    http_path : string (required);
     max_response_bytes : uint32;
-    pinned_server_certificate_sha256 : [uint8] (required);
+    pinned_certificate_sha256 : [uint8] (required);
+ }
+
+table StartScenarioResult {
+    status : TlsSampleStatus = TlsSampleStatus_Ok;
+    session_handle : uint64;
+ }
+
+table DriveConnectionResult {
+    progress : TlsSampleProgress = TlsSampleProgress_Working;
+    status : TlsSampleStatus = TlsSampleStatus_Ok;
  }
 
 table TlsSampleResult {
     status : TlsSampleStatus = TlsSampleStatus_Ok;
+    decision : TlsSampleDecision = TlsSampleDecision_Deny;
     output_value : uint32;
-    decision : string (required);
-    diagnostics : string (required);
     tls_version : uint32;
     cipher_suite : uint16;
+    failure_reason : TlsSampleStatus = TlsSampleStatus_Ok;
  }
 
 table HostTcpConnectResult {
@@ -66,31 +100,54 @@ table HostIoResult {
     host_error : uint32;
  }
 
-table TlsSample_RunScenario_0_Args {
+table TlsSample_GetScenarioMetadata_0_Args {
+    m_scenario_id : uint32;
+    m_metadata : TlsSampleScenarioMetadata ;
+    m__return_value_ : int32;
+ }
+
+table TlsSample_StartScenario_1_Args {
     m_request : TlsSampleRequest (required);
+    m_result : StartScenarioResult ;
+    m__return_value_ : int32;
+ }
+
+table TlsSample_DriveConnection_2_Args {
+    m_session_handle : uint64;
+    m_result : DriveConnectionResult ;
+    m__return_value_ : int32;
+ }
+
+table TlsSample_GetDerivedResult_3_Args {
+    m_session_handle : uint64;
     m_result : TlsSampleResult ;
     m__return_value_ : int32;
  }
 
-table TlsSample_HostTcpConnect_1_Args {
+table TlsSample_CloseScenario_4_Args {
+    m_session_handle : uint64;
+    m__return_value_ : int32;
+ }
+
+table TlsSample_HostTcpConnect_5_Args {
     m_server_name : string (required);
     m_server_port : uint16;
     m__return_value_ : HostTcpConnectResult ;
  }
 
-table TlsSample_HostTcpRecv_2_Args {
+table TlsSample_HostTcpRecv_6_Args {
     m_transport_handle : uint64;
     m_max_bytes : uint32;
     m__return_value_ : HostTcpRecvResult ;
  }
 
-table TlsSample_HostTcpSend_3_Args {
+table TlsSample_HostTcpSend_7_Args {
     m_transport_handle : uint64;
     m_bytes : [uint8] (required);
     m__return_value_ : HostIoResult ;
  }
 
-table TlsSample_HostTcpClose_4_Args {
+table TlsSample_HostTcpClose_8_Args {
     m_transport_handle : uint64;
     m__return_value_ : HostIoResult ;
  }

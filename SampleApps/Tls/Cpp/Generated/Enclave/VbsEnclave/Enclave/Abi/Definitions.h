@@ -22,13 +22,81 @@ namespace TlsSample
     namespace Abi::Definitions
     {
         
-        static inline void* TlsSample_RunScenario_0_Generated_Stub(void* function_context)
+        static inline void* TlsSample_GetScenarioMetadata_0_Generated_Stub(void* function_context)
         try
         {
-            using AbiTypeT = TlsSample::Abi::Types::TlsSample_RunScenario_0_Args;
-            using FlatBufferT = FlatbufferTypes::TlsSample_RunScenario_0_ArgsT;
+            using AbiTypeT = TlsSample::Abi::Types::TlsSample_GetScenarioMetadata_0_Args;
+            using FlatBufferT = FlatbufferTypes::TlsSample_GetScenarioMetadata_0_ArgsT;
             Abi::Runtime::EnforceMemoryRestriction();
-            HRESULT hr = VbsEnclaveABI::Enclave::CallVtl1ExportFromVtl1<AbiTypeT, FlatBufferT>(Trusted::Implementation::TlsSample_RunScenario, function_context);
+            HRESULT hr = VbsEnclaveABI::Enclave::CallVtl1ExportFromVtl1<AbiTypeT, FlatBufferT>(Trusted::Implementation::TlsSample_GetScenarioMetadata, function_context);
+            LOG_IF_FAILED(hr);
+            return ABI_HRESULT_TO_PVOID(hr);
+        }
+        catch (...)
+        {
+            HRESULT hr = wil::ResultFromCaughtException();
+            LOG_IF_FAILED(hr);
+            return ABI_HRESULT_TO_PVOID(hr);
+        }
+
+        static inline void* TlsSample_StartScenario_1_Generated_Stub(void* function_context)
+        try
+        {
+            using AbiTypeT = TlsSample::Abi::Types::TlsSample_StartScenario_1_Args;
+            using FlatBufferT = FlatbufferTypes::TlsSample_StartScenario_1_ArgsT;
+            Abi::Runtime::EnforceMemoryRestriction();
+            HRESULT hr = VbsEnclaveABI::Enclave::CallVtl1ExportFromVtl1<AbiTypeT, FlatBufferT>(Trusted::Implementation::TlsSample_StartScenario, function_context);
+            LOG_IF_FAILED(hr);
+            return ABI_HRESULT_TO_PVOID(hr);
+        }
+        catch (...)
+        {
+            HRESULT hr = wil::ResultFromCaughtException();
+            LOG_IF_FAILED(hr);
+            return ABI_HRESULT_TO_PVOID(hr);
+        }
+
+        static inline void* TlsSample_DriveConnection_2_Generated_Stub(void* function_context)
+        try
+        {
+            using AbiTypeT = TlsSample::Abi::Types::TlsSample_DriveConnection_2_Args;
+            using FlatBufferT = FlatbufferTypes::TlsSample_DriveConnection_2_ArgsT;
+            Abi::Runtime::EnforceMemoryRestriction();
+            HRESULT hr = VbsEnclaveABI::Enclave::CallVtl1ExportFromVtl1<AbiTypeT, FlatBufferT>(Trusted::Implementation::TlsSample_DriveConnection, function_context);
+            LOG_IF_FAILED(hr);
+            return ABI_HRESULT_TO_PVOID(hr);
+        }
+        catch (...)
+        {
+            HRESULT hr = wil::ResultFromCaughtException();
+            LOG_IF_FAILED(hr);
+            return ABI_HRESULT_TO_PVOID(hr);
+        }
+
+        static inline void* TlsSample_GetDerivedResult_3_Generated_Stub(void* function_context)
+        try
+        {
+            using AbiTypeT = TlsSample::Abi::Types::TlsSample_GetDerivedResult_3_Args;
+            using FlatBufferT = FlatbufferTypes::TlsSample_GetDerivedResult_3_ArgsT;
+            Abi::Runtime::EnforceMemoryRestriction();
+            HRESULT hr = VbsEnclaveABI::Enclave::CallVtl1ExportFromVtl1<AbiTypeT, FlatBufferT>(Trusted::Implementation::TlsSample_GetDerivedResult, function_context);
+            LOG_IF_FAILED(hr);
+            return ABI_HRESULT_TO_PVOID(hr);
+        }
+        catch (...)
+        {
+            HRESULT hr = wil::ResultFromCaughtException();
+            LOG_IF_FAILED(hr);
+            return ABI_HRESULT_TO_PVOID(hr);
+        }
+
+        static inline void* TlsSample_CloseScenario_4_Generated_Stub(void* function_context)
+        try
+        {
+            using AbiTypeT = TlsSample::Abi::Types::TlsSample_CloseScenario_4_Args;
+            using FlatBufferT = FlatbufferTypes::TlsSample_CloseScenario_4_ArgsT;
+            Abi::Runtime::EnforceMemoryRestriction();
+            HRESULT hr = VbsEnclaveABI::Enclave::CallVtl1ExportFromVtl1<AbiTypeT, FlatBufferT>(Trusted::Implementation::TlsSample_CloseScenario, function_context);
             LOG_IF_FAILED(hr);
             return ABI_HRESULT_TO_PVOID(hr);
         }

@@ -4,6 +4,10 @@
 
 // This file should be included in the developer's enclave project to ensure
 // the enclave export symbols are properly exposed by the enclave DLL.
-#pragma comment(linker, "/include:TlsSample_RunScenario_0_Generated_Stub")
+#pragma comment(linker, "/include:TlsSample_GetScenarioMetadata_0_Generated_Stub")
+#pragma comment(linker, "/include:TlsSample_StartScenario_1_Generated_Stub")
+#pragma comment(linker, "/include:TlsSample_DriveConnection_2_Generated_Stub")
+#pragma comment(linker, "/include:TlsSample_GetDerivedResult_3_Generated_Stub")
+#pragma comment(linker, "/include:TlsSample_CloseScenario_4_Generated_Stub")
 #pragma comment(linker, "/include:__AbiRegisterVtl0Callbacks_TlsSample__")
 

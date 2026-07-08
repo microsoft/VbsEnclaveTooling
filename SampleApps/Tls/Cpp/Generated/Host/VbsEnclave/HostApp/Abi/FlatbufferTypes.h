@@ -32,6 +32,18 @@ struct TlsSampleRequest;
 struct TlsSampleRequestBuilder;
 struct TlsSampleRequestT;
 
+struct TlsSampleScenarioMetadata;
+struct TlsSampleScenarioMetadataBuilder;
+struct TlsSampleScenarioMetadataT;
+
+struct StartScenarioResult;
+struct StartScenarioResultBuilder;
+struct StartScenarioResultT;
+
+struct DriveConnectionResult;
+struct DriveConnectionResultBuilder;
+struct DriveConnectionResultT;
+
 struct TlsSampleResult;
 struct TlsSampleResultBuilder;
 struct TlsSampleResultT;
@@ -48,107 +60,219 @@ struct HostIoResult;
 struct HostIoResultBuilder;
 struct HostIoResultT;
 
-struct TlsSample_RunScenario_0_Args;
-struct TlsSample_RunScenario_0_ArgsBuilder;
-struct TlsSample_RunScenario_0_ArgsT;
+struct TlsSample_GetScenarioMetadata_0_Args;
+struct TlsSample_GetScenarioMetadata_0_ArgsBuilder;
+struct TlsSample_GetScenarioMetadata_0_ArgsT;
 
-struct TlsSample_HostTcpConnect_1_Args;
-struct TlsSample_HostTcpConnect_1_ArgsBuilder;
-struct TlsSample_HostTcpConnect_1_ArgsT;
+struct TlsSample_StartScenario_1_Args;
+struct TlsSample_StartScenario_1_ArgsBuilder;
+struct TlsSample_StartScenario_1_ArgsT;
 
-struct TlsSample_HostTcpRecv_2_Args;
-struct TlsSample_HostTcpRecv_2_ArgsBuilder;
-struct TlsSample_HostTcpRecv_2_ArgsT;
+struct TlsSample_DriveConnection_2_Args;
+struct TlsSample_DriveConnection_2_ArgsBuilder;
+struct TlsSample_DriveConnection_2_ArgsT;
 
-struct TlsSample_HostTcpSend_3_Args;
-struct TlsSample_HostTcpSend_3_ArgsBuilder;
-struct TlsSample_HostTcpSend_3_ArgsT;
+struct TlsSample_GetDerivedResult_3_Args;
+struct TlsSample_GetDerivedResult_3_ArgsBuilder;
+struct TlsSample_GetDerivedResult_3_ArgsT;
 
-struct TlsSample_HostTcpClose_4_Args;
-struct TlsSample_HostTcpClose_4_ArgsBuilder;
-struct TlsSample_HostTcpClose_4_ArgsT;
+struct TlsSample_CloseScenario_4_Args;
+struct TlsSample_CloseScenario_4_ArgsBuilder;
+struct TlsSample_CloseScenario_4_ArgsT;
+
+struct TlsSample_HostTcpConnect_5_Args;
+struct TlsSample_HostTcpConnect_5_ArgsBuilder;
+struct TlsSample_HostTcpConnect_5_ArgsT;
+
+struct TlsSample_HostTcpRecv_6_Args;
+struct TlsSample_HostTcpRecv_6_ArgsBuilder;
+struct TlsSample_HostTcpRecv_6_ArgsT;
+
+struct TlsSample_HostTcpSend_7_Args;
+struct TlsSample_HostTcpSend_7_ArgsBuilder;
+struct TlsSample_HostTcpSend_7_ArgsT;
+
+struct TlsSample_HostTcpClose_8_Args;
+struct TlsSample_HostTcpClose_8_ArgsBuilder;
+struct TlsSample_HostTcpClose_8_ArgsT;
 
 struct AbiRegisterVtl0Callbacks_args;
 struct AbiRegisterVtl0Callbacks_argsBuilder;
 struct AbiRegisterVtl0Callbacks_argsT;
 
-enum class TlsSampleStatus : uint32_t {
-  TlsSampleStatus_Ok = 0,
-  TlsSampleStatus_WouldBlock = 1,
-  TlsSampleStatus_Closed = 2,
-  TlsSampleStatus_Truncated = 3,
-  TlsSampleStatus_ValidationFailed = 4,
-  TlsSampleStatus_TransportFailed = 5,
-  TlsSampleStatus_ProtocolFailed = 6,
-  TlsSampleStatus_AccessDenied = 7,
-  MIN = TlsSampleStatus_Ok,
-  MAX = TlsSampleStatus_AccessDenied
+enum class TlsSampleAbiVersion : uint32_t {
+  TlsSampleAbiVersion_Current = 1,
+  MIN = TlsSampleAbiVersion_Current,
+  MAX = TlsSampleAbiVersion_Current
 };
 
-inline const TlsSampleStatus (&EnumValuesTlsSampleStatus())[8] {
+inline const TlsSampleAbiVersion (&EnumValuesTlsSampleAbiVersion())[1] {
+  static const TlsSampleAbiVersion values[] = {
+    TlsSampleAbiVersion::TlsSampleAbiVersion_Current
+  };
+  return values;
+}
+
+inline const char * const *EnumNamesTlsSampleAbiVersion() {
+  static const char * const names[2] = {
+    "TlsSampleAbiVersion_Current",
+    nullptr
+  };
+  return names;
+}
+
+inline const char *EnumNameTlsSampleAbiVersion(TlsSampleAbiVersion e) {
+  if (::flatbuffers::IsOutRange(e, TlsSampleAbiVersion::TlsSampleAbiVersion_Current, TlsSampleAbiVersion::TlsSampleAbiVersion_Current)) return "";
+  const size_t index = static_cast<size_t>(e) - static_cast<size_t>(TlsSampleAbiVersion::TlsSampleAbiVersion_Current);
+  return EnumNamesTlsSampleAbiVersion()[index];
+}
+
+enum class TlsSampleStatus : uint32_t {
+  TlsSampleStatus_Ok = 0,
+  TlsSampleStatus_Closed = 1,
+  TlsSampleStatus_Truncated = 2,
+  TlsSampleStatus_ValidationFailed = 3,
+  TlsSampleStatus_TransportFailed = 4,
+  TlsSampleStatus_ProtocolFailed = 5,
+  TlsSampleStatus_AccessDenied = 6,
+  TlsSampleStatus_BudgetExceeded = 7,
+  TlsSampleStatus_InvalidHandle = 8,
+  TlsSampleStatus_InvalidState = 9,
+  TlsSampleStatus_UnknownScenario = 10,
+  MIN = TlsSampleStatus_Ok,
+  MAX = TlsSampleStatus_UnknownScenario
+};
+
+inline const TlsSampleStatus (&EnumValuesTlsSampleStatus())[11] {
   static const TlsSampleStatus values[] = {
     TlsSampleStatus::TlsSampleStatus_Ok,
-    TlsSampleStatus::TlsSampleStatus_WouldBlock,
     TlsSampleStatus::TlsSampleStatus_Closed,
     TlsSampleStatus::TlsSampleStatus_Truncated,
     TlsSampleStatus::TlsSampleStatus_ValidationFailed,
     TlsSampleStatus::TlsSampleStatus_TransportFailed,
     TlsSampleStatus::TlsSampleStatus_ProtocolFailed,
-    TlsSampleStatus::TlsSampleStatus_AccessDenied
+    TlsSampleStatus::TlsSampleStatus_AccessDenied,
+    TlsSampleStatus::TlsSampleStatus_BudgetExceeded,
+    TlsSampleStatus::TlsSampleStatus_InvalidHandle,
+    TlsSampleStatus::TlsSampleStatus_InvalidState,
+    TlsSampleStatus::TlsSampleStatus_UnknownScenario
   };
   return values;
 }
 
 inline const char * const *EnumNamesTlsSampleStatus() {
-  static const char * const names[9] = {
+  static const char * const names[12] = {
     "TlsSampleStatus_Ok",
-    "TlsSampleStatus_WouldBlock",
     "TlsSampleStatus_Closed",
     "TlsSampleStatus_Truncated",
     "TlsSampleStatus_ValidationFailed",
     "TlsSampleStatus_TransportFailed",
     "TlsSampleStatus_ProtocolFailed",
     "TlsSampleStatus_AccessDenied",
+    "TlsSampleStatus_BudgetExceeded",
+    "TlsSampleStatus_InvalidHandle",
+    "TlsSampleStatus_InvalidState",
+    "TlsSampleStatus_UnknownScenario",
     nullptr
   };
   return names;
 }
 
 inline const char *EnumNameTlsSampleStatus(TlsSampleStatus e) {
-  if (::flatbuffers::IsOutRange(e, TlsSampleStatus::TlsSampleStatus_Ok, TlsSampleStatus::TlsSampleStatus_AccessDenied)) return "";
+  if (::flatbuffers::IsOutRange(e, TlsSampleStatus::TlsSampleStatus_Ok, TlsSampleStatus::TlsSampleStatus_UnknownScenario)) return "";
   const size_t index = static_cast<size_t>(e);
   return EnumNamesTlsSampleStatus()[index];
 }
 
-enum class TlsSampleProfile : uint32_t {
-  TlsSampleProfile_ServerAuth = 0,
-  TlsSampleProfile_MutualAuth = 1,
-  TlsSampleProfile_EmbeddedAttestation = 2,
-  MIN = TlsSampleProfile_ServerAuth,
-  MAX = TlsSampleProfile_EmbeddedAttestation
+enum class TlsSampleProgress : uint32_t {
+  TlsSampleProgress_Working = 0,
+  TlsSampleProgress_WouldBlock = 1,
+  TlsSampleProgress_Completed = 2,
+  TlsSampleProgress_Failed = 3,
+  MIN = TlsSampleProgress_Working,
+  MAX = TlsSampleProgress_Failed
 };
 
-inline const TlsSampleProfile (&EnumValuesTlsSampleProfile())[3] {
+inline const TlsSampleProgress (&EnumValuesTlsSampleProgress())[4] {
+  static const TlsSampleProgress values[] = {
+    TlsSampleProgress::TlsSampleProgress_Working,
+    TlsSampleProgress::TlsSampleProgress_WouldBlock,
+    TlsSampleProgress::TlsSampleProgress_Completed,
+    TlsSampleProgress::TlsSampleProgress_Failed
+  };
+  return values;
+}
+
+inline const char * const *EnumNamesTlsSampleProgress() {
+  static const char * const names[5] = {
+    "TlsSampleProgress_Working",
+    "TlsSampleProgress_WouldBlock",
+    "TlsSampleProgress_Completed",
+    "TlsSampleProgress_Failed",
+    nullptr
+  };
+  return names;
+}
+
+inline const char *EnumNameTlsSampleProgress(TlsSampleProgress e) {
+  if (::flatbuffers::IsOutRange(e, TlsSampleProgress::TlsSampleProgress_Working, TlsSampleProgress::TlsSampleProgress_Failed)) return "";
+  const size_t index = static_cast<size_t>(e);
+  return EnumNamesTlsSampleProgress()[index];
+}
+
+enum class TlsSampleDecision : uint32_t {
+  TlsSampleDecision_Deny = 0,
+  TlsSampleDecision_Allow = 1,
+  MIN = TlsSampleDecision_Deny,
+  MAX = TlsSampleDecision_Allow
+};
+
+inline const TlsSampleDecision (&EnumValuesTlsSampleDecision())[2] {
+  static const TlsSampleDecision values[] = {
+    TlsSampleDecision::TlsSampleDecision_Deny,
+    TlsSampleDecision::TlsSampleDecision_Allow
+  };
+  return values;
+}
+
+inline const char * const *EnumNamesTlsSampleDecision() {
+  static const char * const names[3] = {
+    "TlsSampleDecision_Deny",
+    "TlsSampleDecision_Allow",
+    nullptr
+  };
+  return names;
+}
+
+inline const char *EnumNameTlsSampleDecision(TlsSampleDecision e) {
+  if (::flatbuffers::IsOutRange(e, TlsSampleDecision::TlsSampleDecision_Deny, TlsSampleDecision::TlsSampleDecision_Allow)) return "";
+  const size_t index = static_cast<size_t>(e);
+  return EnumNamesTlsSampleDecision()[index];
+}
+
+enum class TlsSampleProfile : uint32_t {
+  TlsSampleProfile_ServerAuth = 0,
+  MIN = TlsSampleProfile_ServerAuth,
+  MAX = TlsSampleProfile_ServerAuth
+};
+
+inline const TlsSampleProfile (&EnumValuesTlsSampleProfile())[1] {
   static const TlsSampleProfile values[] = {
-    TlsSampleProfile::TlsSampleProfile_ServerAuth,
-    TlsSampleProfile::TlsSampleProfile_MutualAuth,
-    TlsSampleProfile::TlsSampleProfile_EmbeddedAttestation
+    TlsSampleProfile::TlsSampleProfile_ServerAuth
   };
   return values;
 }
 
 inline const char * const *EnumNamesTlsSampleProfile() {
-  static const char * const names[4] = {
+  static const char * const names[2] = {
     "TlsSampleProfile_ServerAuth",
-    "TlsSampleProfile_MutualAuth",
-    "TlsSampleProfile_EmbeddedAttestation",
     nullptr
   };
   return names;
 }
 
 inline const char *EnumNameTlsSampleProfile(TlsSampleProfile e) {
-  if (::flatbuffers::IsOutRange(e, TlsSampleProfile::TlsSampleProfile_ServerAuth, TlsSampleProfile::TlsSampleProfile_EmbeddedAttestation)) return "";
+  if (::flatbuffers::IsOutRange(e, TlsSampleProfile::TlsSampleProfile_ServerAuth, TlsSampleProfile::TlsSampleProfile_ServerAuth)) return "";
   const size_t index = static_cast<size_t>(e);
   return EnumNamesTlsSampleProfile()[index];
 }
@@ -315,13 +439,8 @@ namespace FlatbufferTypes {
 
 struct TlsSampleRequestT : public ::flatbuffers::NativeTable {
   typedef TlsSampleRequest TableType;
-  TlsSample::FlatbufferTypes::TlsSampleProfile profile = TlsSample::FlatbufferTypes::TlsSampleProfile::TlsSampleProfile_ServerAuth;
-  std::string server_name{};
-  uint16_t server_port = 0;
-  std::string http_path{};
+  uint32_t scenario_id = 0;
   uint32_t input_value = 0;
-  uint32_t max_response_bytes = 0;
-  std::vector<uint8_t> pinned_server_certificate_sha256{};
 };
 
 struct TlsSampleRequest FLATBUFFERS_FINAL_CLASS : private ::flatbuffers::Table {
@@ -329,47 +448,19 @@ struct TlsSampleRequest FLATBUFFERS_FINAL_CLASS : private ::flatbuffers::Table {
   typedef TlsSampleRequestBuilder Builder;
   struct Traits;
   enum FlatBuffersVTableOffset FLATBUFFERS_VTABLE_UNDERLYING_TYPE {
-    VT_PROFILE = 4,
-    VT_SERVER_NAME = 6,
-    VT_SERVER_PORT = 8,
-    VT_HTTP_PATH = 10,
-    VT_INPUT_VALUE = 12,
-    VT_MAX_RESPONSE_BYTES = 14,
-    VT_PINNED_SERVER_CERTIFICATE_SHA256 = 16
+    VT_SCENARIO_ID = 4,
+    VT_INPUT_VALUE = 6
   };
-  TlsSample::FlatbufferTypes::TlsSampleProfile profile() const {
-    return static_cast<TlsSample::FlatbufferTypes::TlsSampleProfile>(GetField<uint32_t>(VT_PROFILE, 0));
-  }
-  const ::flatbuffers::String *server_name() const {
-    return GetPointer<const ::flatbuffers::String *>(VT_SERVER_NAME);
-  }
-  uint16_t server_port() const {
-    return GetField<uint16_t>(VT_SERVER_PORT, 0);
-  }
-  const ::flatbuffers::String *http_path() const {
-    return GetPointer<const ::flatbuffers::String *>(VT_HTTP_PATH);
+  uint32_t scenario_id() const {
+    return GetField<uint32_t>(VT_SCENARIO_ID, 0);
   }
   uint32_t input_value() const {
     return GetField<uint32_t>(VT_INPUT_VALUE, 0);
   }
-  uint32_t max_response_bytes() const {
-    return GetField<uint32_t>(VT_MAX_RESPONSE_BYTES, 0);
-  }
-  const ::flatbuffers::Vector<uint8_t> *pinned_server_certificate_sha256() const {
-    return GetPointer<const ::flatbuffers::Vector<uint8_t> *>(VT_PINNED_SERVER_CERTIFICATE_SHA256);
-  }
   bool Verify(::flatbuffers::Verifier &verifier) const {
     return VerifyTableStart(verifier) &&
-           VerifyField<uint32_t>(verifier, VT_PROFILE, 4) &&
-           VerifyOffsetRequired(verifier, VT_SERVER_NAME) &&
-           verifier.VerifyString(server_name()) &&
-           VerifyField<uint16_t>(verifier, VT_SERVER_PORT, 2) &&
-           VerifyOffsetRequired(verifier, VT_HTTP_PATH) &&
-           verifier.VerifyString(http_path()) &&
+           VerifyField<uint32_t>(verifier, VT_SCENARIO_ID, 4) &&
            VerifyField<uint32_t>(verifier, VT_INPUT_VALUE, 4) &&
-           VerifyField<uint32_t>(verifier, VT_MAX_RESPONSE_BYTES, 4) &&
-           VerifyOffsetRequired(verifier, VT_PINNED_SERVER_CERTIFICATE_SHA256) &&
-           verifier.VerifyVector(pinned_server_certificate_sha256()) &&
            verifier.EndTable();
   }
   TlsSampleRequestT *UnPack(const ::flatbuffers::resolver_function_t *_resolver = nullptr) const;
@@ -381,26 +472,11 @@ struct TlsSampleRequestBuilder {
   typedef TlsSampleRequest Table;
   ::flatbuffers::FlatBufferBuilder &fbb_;
   ::flatbuffers::uoffset_t start_;
-  void add_profile(TlsSample::FlatbufferTypes::TlsSampleProfile profile) {
-    fbb_.AddElement<uint32_t>(TlsSampleRequest::VT_PROFILE, static_cast<uint32_t>(profile), 0);
-  }
-  void add_server_name(::flatbuffers::Offset<::flatbuffers::String> server_name) {
-    fbb_.AddOffset(TlsSampleRequest::VT_SERVER_NAME, server_name);
-  }
-  void add_server_port(uint16_t server_port) {
-    fbb_.AddElement<uint16_t>(TlsSampleRequest::VT_SERVER_PORT, server_port, 0);
-  }
-  void add_http_path(::flatbuffers::Offset<::flatbuffers::String> http_path) {
-    fbb_.AddOffset(TlsSampleRequest::VT_HTTP_PATH, http_path);
+  void add_scenario_id(uint32_t scenario_id) {
+    fbb_.AddElement<uint32_t>(TlsSampleRequest::VT_SCENARIO_ID, scenario_id, 0);
   }
   void add_input_value(uint32_t input_value) {
     fbb_.AddElement<uint32_t>(TlsSampleRequest::VT_INPUT_VALUE, input_value, 0);
-  }
-  void add_max_response_bytes(uint32_t max_response_bytes) {
-    fbb_.AddElement<uint32_t>(TlsSampleRequest::VT_MAX_RESPONSE_BYTES, max_response_bytes, 0);
-  }
-  void add_pinned_server_certificate_sha256(::flatbuffers::Offset<::flatbuffers::Vector<uint8_t>> pinned_server_certificate_sha256) {
-    fbb_.AddOffset(TlsSampleRequest::VT_PINNED_SERVER_CERTIFICATE_SHA256, pinned_server_certificate_sha256);
   }
   explicit TlsSampleRequestBuilder(::flatbuffers::FlatBufferBuilder &_fbb)
         : fbb_(_fbb) {
@@ -409,30 +485,17 @@ struct TlsSampleRequestBuilder {
   ::flatbuffers::Offset<TlsSampleRequest> Finish() {
     const auto end = fbb_.EndTable(start_);
     auto o = ::flatbuffers::Offset<TlsSampleRequest>(end);
-    fbb_.Required(o, TlsSampleRequest::VT_SERVER_NAME);
-    fbb_.Required(o, TlsSampleRequest::VT_HTTP_PATH);
-    fbb_.Required(o, TlsSampleRequest::VT_PINNED_SERVER_CERTIFICATE_SHA256);
     return o;
   }
 };
 
 inline ::flatbuffers::Offset<TlsSampleRequest> CreateTlsSampleRequest(
     ::flatbuffers::FlatBufferBuilder &_fbb,
-    TlsSample::FlatbufferTypes::TlsSampleProfile profile = TlsSample::FlatbufferTypes::TlsSampleProfile::TlsSampleProfile_ServerAuth,
-    ::flatbuffers::Offset<::flatbuffers::String> server_name = 0,
-    uint16_t server_port = 0,
-    ::flatbuffers::Offset<::flatbuffers::String> http_path = 0,
-    uint32_t input_value = 0,
-    uint32_t max_response_bytes = 0,
-    ::flatbuffers::Offset<::flatbuffers::Vector<uint8_t>> pinned_server_certificate_sha256 = 0) {
+    uint32_t scenario_id = 0,
+    uint32_t input_value = 0) {
   TlsSampleRequestBuilder builder_(_fbb);
-  builder_.add_pinned_server_certificate_sha256(pinned_server_certificate_sha256);
-  builder_.add_max_response_bytes(max_response_bytes);
   builder_.add_input_value(input_value);
-  builder_.add_http_path(http_path);
-  builder_.add_server_name(server_name);
-  builder_.add_profile(profile);
-  builder_.add_server_port(server_port);
+  builder_.add_scenario_id(scenario_id);
   return builder_.Finish();
 }
 
@@ -441,39 +504,336 @@ struct TlsSampleRequest::Traits {
   static auto constexpr Create = CreateTlsSampleRequest;
 };
 
-inline ::flatbuffers::Offset<TlsSampleRequest> CreateTlsSampleRequestDirect(
+::flatbuffers::Offset<TlsSampleRequest> CreateTlsSampleRequest(::flatbuffers::FlatBufferBuilder &_fbb, const TlsSampleRequestT *_o, const ::flatbuffers::rehasher_function_t *_rehasher = nullptr);
+
+struct TlsSampleScenarioMetadataT : public ::flatbuffers::NativeTable {
+  typedef TlsSampleScenarioMetadata TableType;
+  TlsSample::FlatbufferTypes::TlsSampleStatus status = TlsSample::FlatbufferTypes::TlsSampleStatus::TlsSampleStatus_Ok;
+  uint32_t scenario_id = 0;
+  TlsSample::FlatbufferTypes::TlsSampleProfile profile = TlsSample::FlatbufferTypes::TlsSampleProfile::TlsSampleProfile_ServerAuth;
+  std::string connect_host{};
+  uint16_t connect_port = 0;
+  std::string tls_server_name{};
+  std::string http_path{};
+  uint32_t max_response_bytes = 0;
+  std::vector<uint8_t> pinned_certificate_sha256{};
+};
+
+struct TlsSampleScenarioMetadata FLATBUFFERS_FINAL_CLASS : private ::flatbuffers::Table {
+  typedef TlsSampleScenarioMetadataT NativeTableType;
+  typedef TlsSampleScenarioMetadataBuilder Builder;
+  struct Traits;
+  enum FlatBuffersVTableOffset FLATBUFFERS_VTABLE_UNDERLYING_TYPE {
+    VT_STATUS = 4,
+    VT_SCENARIO_ID = 6,
+    VT_PROFILE = 8,
+    VT_CONNECT_HOST = 10,
+    VT_CONNECT_PORT = 12,
+    VT_TLS_SERVER_NAME = 14,
+    VT_HTTP_PATH = 16,
+    VT_MAX_RESPONSE_BYTES = 18,
+    VT_PINNED_CERTIFICATE_SHA256 = 20
+  };
+  TlsSample::FlatbufferTypes::TlsSampleStatus status() const {
+    return static_cast<TlsSample::FlatbufferTypes::TlsSampleStatus>(GetField<uint32_t>(VT_STATUS, 0));
+  }
+  uint32_t scenario_id() const {
+    return GetField<uint32_t>(VT_SCENARIO_ID, 0);
+  }
+  TlsSample::FlatbufferTypes::TlsSampleProfile profile() const {
+    return static_cast<TlsSample::FlatbufferTypes::TlsSampleProfile>(GetField<uint32_t>(VT_PROFILE, 0));
+  }
+  const ::flatbuffers::String *connect_host() const {
+    return GetPointer<const ::flatbuffers::String *>(VT_CONNECT_HOST);
+  }
+  uint16_t connect_port() const {
+    return GetField<uint16_t>(VT_CONNECT_PORT, 0);
+  }
+  const ::flatbuffers::String *tls_server_name() const {
+    return GetPointer<const ::flatbuffers::String *>(VT_TLS_SERVER_NAME);
+  }
+  const ::flatbuffers::String *http_path() const {
+    return GetPointer<const ::flatbuffers::String *>(VT_HTTP_PATH);
+  }
+  uint32_t max_response_bytes() const {
+    return GetField<uint32_t>(VT_MAX_RESPONSE_BYTES, 0);
+  }
+  const ::flatbuffers::Vector<uint8_t> *pinned_certificate_sha256() const {
+    return GetPointer<const ::flatbuffers::Vector<uint8_t> *>(VT_PINNED_CERTIFICATE_SHA256);
+  }
+  bool Verify(::flatbuffers::Verifier &verifier) const {
+    return VerifyTableStart(verifier) &&
+           VerifyField<uint32_t>(verifier, VT_STATUS, 4) &&
+           VerifyField<uint32_t>(verifier, VT_SCENARIO_ID, 4) &&
+           VerifyField<uint32_t>(verifier, VT_PROFILE, 4) &&
+           VerifyOffsetRequired(verifier, VT_CONNECT_HOST) &&
+           verifier.VerifyString(connect_host()) &&
+           VerifyField<uint16_t>(verifier, VT_CONNECT_PORT, 2) &&
+           VerifyOffsetRequired(verifier, VT_TLS_SERVER_NAME) &&
+           verifier.VerifyString(tls_server_name()) &&
+           VerifyOffsetRequired(verifier, VT_HTTP_PATH) &&
+           verifier.VerifyString(http_path()) &&
+           VerifyField<uint32_t>(verifier, VT_MAX_RESPONSE_BYTES, 4) &&
+           VerifyOffsetRequired(verifier, VT_PINNED_CERTIFICATE_SHA256) &&
+           verifier.VerifyVector(pinned_certificate_sha256()) &&
+           verifier.EndTable();
+  }
+  TlsSampleScenarioMetadataT *UnPack(const ::flatbuffers::resolver_function_t *_resolver = nullptr) const;
+  void UnPackTo(TlsSampleScenarioMetadataT *_o, const ::flatbuffers::resolver_function_t *_resolver = nullptr) const;
+  static ::flatbuffers::Offset<TlsSampleScenarioMetadata> Pack(::flatbuffers::FlatBufferBuilder &_fbb, const TlsSampleScenarioMetadataT* _o, const ::flatbuffers::rehasher_function_t *_rehasher = nullptr);
+};
+
+struct TlsSampleScenarioMetadataBuilder {
+  typedef TlsSampleScenarioMetadata Table;
+  ::flatbuffers::FlatBufferBuilder &fbb_;
+  ::flatbuffers::uoffset_t start_;
+  void add_status(TlsSample::FlatbufferTypes::TlsSampleStatus status) {
+    fbb_.AddElement<uint32_t>(TlsSampleScenarioMetadata::VT_STATUS, static_cast<uint32_t>(status), 0);
+  }
+  void add_scenario_id(uint32_t scenario_id) {
+    fbb_.AddElement<uint32_t>(TlsSampleScenarioMetadata::VT_SCENARIO_ID, scenario_id, 0);
+  }
+  void add_profile(TlsSample::FlatbufferTypes::TlsSampleProfile profile) {
+    fbb_.AddElement<uint32_t>(TlsSampleScenarioMetadata::VT_PROFILE, static_cast<uint32_t>(profile), 0);
+  }
+  void add_connect_host(::flatbuffers::Offset<::flatbuffers::String> connect_host) {
+    fbb_.AddOffset(TlsSampleScenarioMetadata::VT_CONNECT_HOST, connect_host);
+  }
+  void add_connect_port(uint16_t connect_port) {
+    fbb_.AddElement<uint16_t>(TlsSampleScenarioMetadata::VT_CONNECT_PORT, connect_port, 0);
+  }
+  void add_tls_server_name(::flatbuffers::Offset<::flatbuffers::String> tls_server_name) {
+    fbb_.AddOffset(TlsSampleScenarioMetadata::VT_TLS_SERVER_NAME, tls_server_name);
+  }
+  void add_http_path(::flatbuffers::Offset<::flatbuffers::String> http_path) {
+    fbb_.AddOffset(TlsSampleScenarioMetadata::VT_HTTP_PATH, http_path);
+  }
+  void add_max_response_bytes(uint32_t max_response_bytes) {
+    fbb_.AddElement<uint32_t>(TlsSampleScenarioMetadata::VT_MAX_RESPONSE_BYTES, max_response_bytes, 0);
+  }
+  void add_pinned_certificate_sha256(::flatbuffers::Offset<::flatbuffers::Vector<uint8_t>> pinned_certificate_sha256) {
+    fbb_.AddOffset(TlsSampleScenarioMetadata::VT_PINNED_CERTIFICATE_SHA256, pinned_certificate_sha256);
+  }
+  explicit TlsSampleScenarioMetadataBuilder(::flatbuffers::FlatBufferBuilder &_fbb)
+        : fbb_(_fbb) {
+    start_ = fbb_.StartTable();
+  }
+  ::flatbuffers::Offset<TlsSampleScenarioMetadata> Finish() {
+    const auto end = fbb_.EndTable(start_);
+    auto o = ::flatbuffers::Offset<TlsSampleScenarioMetadata>(end);
+    fbb_.Required(o, TlsSampleScenarioMetadata::VT_CONNECT_HOST);
+    fbb_.Required(o, TlsSampleScenarioMetadata::VT_TLS_SERVER_NAME);
+    fbb_.Required(o, TlsSampleScenarioMetadata::VT_HTTP_PATH);
+    fbb_.Required(o, TlsSampleScenarioMetadata::VT_PINNED_CERTIFICATE_SHA256);
+    return o;
+  }
+};
+
+inline ::flatbuffers::Offset<TlsSampleScenarioMetadata> CreateTlsSampleScenarioMetadata(
     ::flatbuffers::FlatBufferBuilder &_fbb,
+    TlsSample::FlatbufferTypes::TlsSampleStatus status = TlsSample::FlatbufferTypes::TlsSampleStatus::TlsSampleStatus_Ok,
+    uint32_t scenario_id = 0,
     TlsSample::FlatbufferTypes::TlsSampleProfile profile = TlsSample::FlatbufferTypes::TlsSampleProfile::TlsSampleProfile_ServerAuth,
-    const char *server_name = nullptr,
-    uint16_t server_port = 0,
-    const char *http_path = nullptr,
-    uint32_t input_value = 0,
+    ::flatbuffers::Offset<::flatbuffers::String> connect_host = 0,
+    uint16_t connect_port = 0,
+    ::flatbuffers::Offset<::flatbuffers::String> tls_server_name = 0,
+    ::flatbuffers::Offset<::flatbuffers::String> http_path = 0,
     uint32_t max_response_bytes = 0,
-    const std::vector<uint8_t> *pinned_server_certificate_sha256 = nullptr) {
-  auto server_name__ = server_name ? _fbb.CreateString(server_name) : 0;
-  auto http_path__ = http_path ? _fbb.CreateString(http_path) : 0;
-  auto pinned_server_certificate_sha256__ = pinned_server_certificate_sha256 ? _fbb.CreateVector<uint8_t>(*pinned_server_certificate_sha256) : 0;
-  return TlsSample::FlatbufferTypes::CreateTlsSampleRequest(
-      _fbb,
-      profile,
-      server_name__,
-      server_port,
-      http_path__,
-      input_value,
-      max_response_bytes,
-      pinned_server_certificate_sha256__);
+    ::flatbuffers::Offset<::flatbuffers::Vector<uint8_t>> pinned_certificate_sha256 = 0) {
+  TlsSampleScenarioMetadataBuilder builder_(_fbb);
+  builder_.add_pinned_certificate_sha256(pinned_certificate_sha256);
+  builder_.add_max_response_bytes(max_response_bytes);
+  builder_.add_http_path(http_path);
+  builder_.add_tls_server_name(tls_server_name);
+  builder_.add_connect_host(connect_host);
+  builder_.add_profile(profile);
+  builder_.add_scenario_id(scenario_id);
+  builder_.add_status(status);
+  builder_.add_connect_port(connect_port);
+  return builder_.Finish();
 }
 
-::flatbuffers::Offset<TlsSampleRequest> CreateTlsSampleRequest(::flatbuffers::FlatBufferBuilder &_fbb, const TlsSampleRequestT *_o, const ::flatbuffers::rehasher_function_t *_rehasher = nullptr);
+struct TlsSampleScenarioMetadata::Traits {
+  using type = TlsSampleScenarioMetadata;
+  static auto constexpr Create = CreateTlsSampleScenarioMetadata;
+};
+
+inline ::flatbuffers::Offset<TlsSampleScenarioMetadata> CreateTlsSampleScenarioMetadataDirect(
+    ::flatbuffers::FlatBufferBuilder &_fbb,
+    TlsSample::FlatbufferTypes::TlsSampleStatus status = TlsSample::FlatbufferTypes::TlsSampleStatus::TlsSampleStatus_Ok,
+    uint32_t scenario_id = 0,
+    TlsSample::FlatbufferTypes::TlsSampleProfile profile = TlsSample::FlatbufferTypes::TlsSampleProfile::TlsSampleProfile_ServerAuth,
+    const char *connect_host = nullptr,
+    uint16_t connect_port = 0,
+    const char *tls_server_name = nullptr,
+    const char *http_path = nullptr,
+    uint32_t max_response_bytes = 0,
+    const std::vector<uint8_t> *pinned_certificate_sha256 = nullptr) {
+  auto connect_host__ = connect_host ? _fbb.CreateString(connect_host) : 0;
+  auto tls_server_name__ = tls_server_name ? _fbb.CreateString(tls_server_name) : 0;
+  auto http_path__ = http_path ? _fbb.CreateString(http_path) : 0;
+  auto pinned_certificate_sha256__ = pinned_certificate_sha256 ? _fbb.CreateVector<uint8_t>(*pinned_certificate_sha256) : 0;
+  return TlsSample::FlatbufferTypes::CreateTlsSampleScenarioMetadata(
+      _fbb,
+      status,
+      scenario_id,
+      profile,
+      connect_host__,
+      connect_port,
+      tls_server_name__,
+      http_path__,
+      max_response_bytes,
+      pinned_certificate_sha256__);
+}
+
+::flatbuffers::Offset<TlsSampleScenarioMetadata> CreateTlsSampleScenarioMetadata(::flatbuffers::FlatBufferBuilder &_fbb, const TlsSampleScenarioMetadataT *_o, const ::flatbuffers::rehasher_function_t *_rehasher = nullptr);
+
+struct StartScenarioResultT : public ::flatbuffers::NativeTable {
+  typedef StartScenarioResult TableType;
+  TlsSample::FlatbufferTypes::TlsSampleStatus status = TlsSample::FlatbufferTypes::TlsSampleStatus::TlsSampleStatus_Ok;
+  uint64_t session_handle = 0;
+};
+
+struct StartScenarioResult FLATBUFFERS_FINAL_CLASS : private ::flatbuffers::Table {
+  typedef StartScenarioResultT NativeTableType;
+  typedef StartScenarioResultBuilder Builder;
+  struct Traits;
+  enum FlatBuffersVTableOffset FLATBUFFERS_VTABLE_UNDERLYING_TYPE {
+    VT_STATUS = 4,
+    VT_SESSION_HANDLE = 6
+  };
+  TlsSample::FlatbufferTypes::TlsSampleStatus status() const {
+    return static_cast<TlsSample::FlatbufferTypes::TlsSampleStatus>(GetField<uint32_t>(VT_STATUS, 0));
+  }
+  uint64_t session_handle() const {
+    return GetField<uint64_t>(VT_SESSION_HANDLE, 0);
+  }
+  bool Verify(::flatbuffers::Verifier &verifier) const {
+    return VerifyTableStart(verifier) &&
+           VerifyField<uint32_t>(verifier, VT_STATUS, 4) &&
+           VerifyField<uint64_t>(verifier, VT_SESSION_HANDLE, 8) &&
+           verifier.EndTable();
+  }
+  StartScenarioResultT *UnPack(const ::flatbuffers::resolver_function_t *_resolver = nullptr) const;
+  void UnPackTo(StartScenarioResultT *_o, const ::flatbuffers::resolver_function_t *_resolver = nullptr) const;
+  static ::flatbuffers::Offset<StartScenarioResult> Pack(::flatbuffers::FlatBufferBuilder &_fbb, const StartScenarioResultT* _o, const ::flatbuffers::rehasher_function_t *_rehasher = nullptr);
+};
+
+struct StartScenarioResultBuilder {
+  typedef StartScenarioResult Table;
+  ::flatbuffers::FlatBufferBuilder &fbb_;
+  ::flatbuffers::uoffset_t start_;
+  void add_status(TlsSample::FlatbufferTypes::TlsSampleStatus status) {
+    fbb_.AddElement<uint32_t>(StartScenarioResult::VT_STATUS, static_cast<uint32_t>(status), 0);
+  }
+  void add_session_handle(uint64_t session_handle) {
+    fbb_.AddElement<uint64_t>(StartScenarioResult::VT_SESSION_HANDLE, session_handle, 0);
+  }
+  explicit StartScenarioResultBuilder(::flatbuffers::FlatBufferBuilder &_fbb)
+        : fbb_(_fbb) {
+    start_ = fbb_.StartTable();
+  }
+  ::flatbuffers::Offset<StartScenarioResult> Finish() {
+    const auto end = fbb_.EndTable(start_);
+    auto o = ::flatbuffers::Offset<StartScenarioResult>(end);
+    return o;
+  }
+};
+
+inline ::flatbuffers::Offset<StartScenarioResult> CreateStartScenarioResult(
+    ::flatbuffers::FlatBufferBuilder &_fbb,
+    TlsSample::FlatbufferTypes::TlsSampleStatus status = TlsSample::FlatbufferTypes::TlsSampleStatus::TlsSampleStatus_Ok,
+    uint64_t session_handle = 0) {
+  StartScenarioResultBuilder builder_(_fbb);
+  builder_.add_session_handle(session_handle);
+  builder_.add_status(status);
+  return builder_.Finish();
+}
+
+struct StartScenarioResult::Traits {
+  using type = StartScenarioResult;
+  static auto constexpr Create = CreateStartScenarioResult;
+};
+
+::flatbuffers::Offset<StartScenarioResult> CreateStartScenarioResult(::flatbuffers::FlatBufferBuilder &_fbb, const StartScenarioResultT *_o, const ::flatbuffers::rehasher_function_t *_rehasher = nullptr);
+
+struct DriveConnectionResultT : public ::flatbuffers::NativeTable {
+  typedef DriveConnectionResult TableType;
+  TlsSample::FlatbufferTypes::TlsSampleProgress progress = TlsSample::FlatbufferTypes::TlsSampleProgress::TlsSampleProgress_Working;
+  TlsSample::FlatbufferTypes::TlsSampleStatus status = TlsSample::FlatbufferTypes::TlsSampleStatus::TlsSampleStatus_Ok;
+};
+
+struct DriveConnectionResult FLATBUFFERS_FINAL_CLASS : private ::flatbuffers::Table {
+  typedef DriveConnectionResultT NativeTableType;
+  typedef DriveConnectionResultBuilder Builder;
+  struct Traits;
+  enum FlatBuffersVTableOffset FLATBUFFERS_VTABLE_UNDERLYING_TYPE {
+    VT_PROGRESS = 4,
+    VT_STATUS = 6
+  };
+  TlsSample::FlatbufferTypes::TlsSampleProgress progress() const {
+    return static_cast<TlsSample::FlatbufferTypes::TlsSampleProgress>(GetField<uint32_t>(VT_PROGRESS, 0));
+  }
+  TlsSample::FlatbufferTypes::TlsSampleStatus status() const {
+    return static_cast<TlsSample::FlatbufferTypes::TlsSampleStatus>(GetField<uint32_t>(VT_STATUS, 0));
+  }
+  bool Verify(::flatbuffers::Verifier &verifier) const {
+    return VerifyTableStart(verifier) &&
+           VerifyField<uint32_t>(verifier, VT_PROGRESS, 4) &&
+           VerifyField<uint32_t>(verifier, VT_STATUS, 4) &&
+           verifier.EndTable();
+  }
+  DriveConnectionResultT *UnPack(const ::flatbuffers::resolver_function_t *_resolver = nullptr) const;
+  void UnPackTo(DriveConnectionResultT *_o, const ::flatbuffers::resolver_function_t *_resolver = nullptr) const;
+  static ::flatbuffers::Offset<DriveConnectionResult> Pack(::flatbuffers::FlatBufferBuilder &_fbb, const DriveConnectionResultT* _o, const ::flatbuffers::rehasher_function_t *_rehasher = nullptr);
+};
+
+struct DriveConnectionResultBuilder {
+  typedef DriveConnectionResult Table;
+  ::flatbuffers::FlatBufferBuilder &fbb_;
+  ::flatbuffers::uoffset_t start_;
+  void add_progress(TlsSample::FlatbufferTypes::TlsSampleProgress progress) {
+    fbb_.AddElement<uint32_t>(DriveConnectionResult::VT_PROGRESS, static_cast<uint32_t>(progress), 0);
+  }
+  void add_status(TlsSample::FlatbufferTypes::TlsSampleStatus status) {
+    fbb_.AddElement<uint32_t>(DriveConnectionResult::VT_STATUS, static_cast<uint32_t>(status), 0);
+  }
+  explicit DriveConnectionResultBuilder(::flatbuffers::FlatBufferBuilder &_fbb)
+        : fbb_(_fbb) {
+    start_ = fbb_.StartTable();
+  }
+  ::flatbuffers::Offset<DriveConnectionResult> Finish() {
+    const auto end = fbb_.EndTable(start_);
+    auto o = ::flatbuffers::Offset<DriveConnectionResult>(end);
+    return o;
+  }
+};
+
+inline ::flatbuffers::Offset<DriveConnectionResult> CreateDriveConnectionResult(
+    ::flatbuffers::FlatBufferBuilder &_fbb,
+    TlsSample::FlatbufferTypes::TlsSampleProgress progress = TlsSample::FlatbufferTypes::TlsSampleProgress::TlsSampleProgress_Working,
+    TlsSample::FlatbufferTypes::TlsSampleStatus status = TlsSample::FlatbufferTypes::TlsSampleStatus::TlsSampleStatus_Ok) {
+  DriveConnectionResultBuilder builder_(_fbb);
+  builder_.add_status(status);
+  builder_.add_progress(progress);
+  return builder_.Finish();
+}
+
+struct DriveConnectionResult::Traits {
+  using type = DriveConnectionResult;
+  static auto constexpr Create = CreateDriveConnectionResult;
+};
+
+::flatbuffers::Offset<DriveConnectionResult> CreateDriveConnectionResult(::flatbuffers::FlatBufferBuilder &_fbb, const DriveConnectionResultT *_o, const ::flatbuffers::rehasher_function_t *_rehasher = nullptr);
 
 struct TlsSampleResultT : public ::flatbuffers::NativeTable {
   typedef TlsSampleResult TableType;
   TlsSample::FlatbufferTypes::TlsSampleStatus status = TlsSample::FlatbufferTypes::TlsSampleStatus::TlsSampleStatus_Ok;
+  TlsSample::FlatbufferTypes::TlsSampleDecision decision = TlsSample::FlatbufferTypes::TlsSampleDecision::TlsSampleDecision_Deny;
   uint32_t output_value = 0;
-  std::string decision{};
-  std::string diagnostics{};
   uint32_t tls_version = 0;
   uint16_t cipher_suite = 0;
+  TlsSample::FlatbufferTypes::TlsSampleStatus failure_reason = TlsSample::FlatbufferTypes::TlsSampleStatus::TlsSampleStatus_Ok;
 };
 
 struct TlsSampleResult FLATBUFFERS_FINAL_CLASS : private ::flatbuffers::Table {
@@ -482,23 +842,20 @@ struct TlsSampleResult FLATBUFFERS_FINAL_CLASS : private ::flatbuffers::Table {
   struct Traits;
   enum FlatBuffersVTableOffset FLATBUFFERS_VTABLE_UNDERLYING_TYPE {
     VT_STATUS = 4,
-    VT_OUTPUT_VALUE = 6,
-    VT_DECISION = 8,
-    VT_DIAGNOSTICS = 10,
-    VT_TLS_VERSION = 12,
-    VT_CIPHER_SUITE = 14
+    VT_DECISION = 6,
+    VT_OUTPUT_VALUE = 8,
+    VT_TLS_VERSION = 10,
+    VT_CIPHER_SUITE = 12,
+    VT_FAILURE_REASON = 14
   };
   TlsSample::FlatbufferTypes::TlsSampleStatus status() const {
     return static_cast<TlsSample::FlatbufferTypes::TlsSampleStatus>(GetField<uint32_t>(VT_STATUS, 0));
   }
+  TlsSample::FlatbufferTypes::TlsSampleDecision decision() const {
+    return static_cast<TlsSample::FlatbufferTypes::TlsSampleDecision>(GetField<uint32_t>(VT_DECISION, 0));
+  }
   uint32_t output_value() const {
     return GetField<uint32_t>(VT_OUTPUT_VALUE, 0);
-  }
-  const ::flatbuffers::String *decision() const {
-    return GetPointer<const ::flatbuffers::String *>(VT_DECISION);
-  }
-  const ::flatbuffers::String *diagnostics() const {
-    return GetPointer<const ::flatbuffers::String *>(VT_DIAGNOSTICS);
   }
   uint32_t tls_version() const {
     return GetField<uint32_t>(VT_TLS_VERSION, 0);
@@ -506,16 +863,17 @@ struct TlsSampleResult FLATBUFFERS_FINAL_CLASS : private ::flatbuffers::Table {
   uint16_t cipher_suite() const {
     return GetField<uint16_t>(VT_CIPHER_SUITE, 0);
   }
+  TlsSample::FlatbufferTypes::TlsSampleStatus failure_reason() const {
+    return static_cast<TlsSample::FlatbufferTypes::TlsSampleStatus>(GetField<uint32_t>(VT_FAILURE_REASON, 0));
+  }
   bool Verify(::flatbuffers::Verifier &verifier) const {
     return VerifyTableStart(verifier) &&
            VerifyField<uint32_t>(verifier, VT_STATUS, 4) &&
+           VerifyField<uint32_t>(verifier, VT_DECISION, 4) &&
            VerifyField<uint32_t>(verifier, VT_OUTPUT_VALUE, 4) &&
-           VerifyOffsetRequired(verifier, VT_DECISION) &&
-           verifier.VerifyString(decision()) &&
-           VerifyOffsetRequired(verifier, VT_DIAGNOSTICS) &&
-           verifier.VerifyString(diagnostics()) &&
            VerifyField<uint32_t>(verifier, VT_TLS_VERSION, 4) &&
            VerifyField<uint16_t>(verifier, VT_CIPHER_SUITE, 2) &&
+           VerifyField<uint32_t>(verifier, VT_FAILURE_REASON, 4) &&
            verifier.EndTable();
   }
   TlsSampleResultT *UnPack(const ::flatbuffers::resolver_function_t *_resolver = nullptr) const;
@@ -530,20 +888,20 @@ struct TlsSampleResultBuilder {
   void add_status(TlsSample::FlatbufferTypes::TlsSampleStatus status) {
     fbb_.AddElement<uint32_t>(TlsSampleResult::VT_STATUS, static_cast<uint32_t>(status), 0);
   }
+  void add_decision(TlsSample::FlatbufferTypes::TlsSampleDecision decision) {
+    fbb_.AddElement<uint32_t>(TlsSampleResult::VT_DECISION, static_cast<uint32_t>(decision), 0);
+  }
   void add_output_value(uint32_t output_value) {
     fbb_.AddElement<uint32_t>(TlsSampleResult::VT_OUTPUT_VALUE, output_value, 0);
-  }
-  void add_decision(::flatbuffers::Offset<::flatbuffers::String> decision) {
-    fbb_.AddOffset(TlsSampleResult::VT_DECISION, decision);
-  }
-  void add_diagnostics(::flatbuffers::Offset<::flatbuffers::String> diagnostics) {
-    fbb_.AddOffset(TlsSampleResult::VT_DIAGNOSTICS, diagnostics);
   }
   void add_tls_version(uint32_t tls_version) {
     fbb_.AddElement<uint32_t>(TlsSampleResult::VT_TLS_VERSION, tls_version, 0);
   }
   void add_cipher_suite(uint16_t cipher_suite) {
     fbb_.AddElement<uint16_t>(TlsSampleResult::VT_CIPHER_SUITE, cipher_suite, 0);
+  }
+  void add_failure_reason(TlsSample::FlatbufferTypes::TlsSampleStatus failure_reason) {
+    fbb_.AddElement<uint32_t>(TlsSampleResult::VT_FAILURE_REASON, static_cast<uint32_t>(failure_reason), 0);
   }
   explicit TlsSampleResultBuilder(::flatbuffers::FlatBufferBuilder &_fbb)
         : fbb_(_fbb) {
@@ -552,8 +910,6 @@ struct TlsSampleResultBuilder {
   ::flatbuffers::Offset<TlsSampleResult> Finish() {
     const auto end = fbb_.EndTable(start_);
     auto o = ::flatbuffers::Offset<TlsSampleResult>(end);
-    fbb_.Required(o, TlsSampleResult::VT_DECISION);
-    fbb_.Required(o, TlsSampleResult::VT_DIAGNOSTICS);
     return o;
   }
 };
@@ -561,16 +917,16 @@ struct TlsSampleResultBuilder {
 inline ::flatbuffers::Offset<TlsSampleResult> CreateTlsSampleResult(
     ::flatbuffers::FlatBufferBuilder &_fbb,
     TlsSample::FlatbufferTypes::TlsSampleStatus status = TlsSample::FlatbufferTypes::TlsSampleStatus::TlsSampleStatus_Ok,
+    TlsSample::FlatbufferTypes::TlsSampleDecision decision = TlsSample::FlatbufferTypes::TlsSampleDecision::TlsSampleDecision_Deny,
     uint32_t output_value = 0,
-    ::flatbuffers::Offset<::flatbuffers::String> decision = 0,
-    ::flatbuffers::Offset<::flatbuffers::String> diagnostics = 0,
     uint32_t tls_version = 0,
-    uint16_t cipher_suite = 0) {
+    uint16_t cipher_suite = 0,
+    TlsSample::FlatbufferTypes::TlsSampleStatus failure_reason = TlsSample::FlatbufferTypes::TlsSampleStatus::TlsSampleStatus_Ok) {
   TlsSampleResultBuilder builder_(_fbb);
+  builder_.add_failure_reason(failure_reason);
   builder_.add_tls_version(tls_version);
-  builder_.add_diagnostics(diagnostics);
-  builder_.add_decision(decision);
   builder_.add_output_value(output_value);
+  builder_.add_decision(decision);
   builder_.add_status(status);
   builder_.add_cipher_suite(cipher_suite);
   return builder_.Finish();
@@ -580,26 +936,6 @@ struct TlsSampleResult::Traits {
   using type = TlsSampleResult;
   static auto constexpr Create = CreateTlsSampleResult;
 };
-
-inline ::flatbuffers::Offset<TlsSampleResult> CreateTlsSampleResultDirect(
-    ::flatbuffers::FlatBufferBuilder &_fbb,
-    TlsSample::FlatbufferTypes::TlsSampleStatus status = TlsSample::FlatbufferTypes::TlsSampleStatus::TlsSampleStatus_Ok,
-    uint32_t output_value = 0,
-    const char *decision = nullptr,
-    const char *diagnostics = nullptr,
-    uint32_t tls_version = 0,
-    uint16_t cipher_suite = 0) {
-  auto decision__ = decision ? _fbb.CreateString(decision) : 0;
-  auto diagnostics__ = diagnostics ? _fbb.CreateString(diagnostics) : 0;
-  return TlsSample::FlatbufferTypes::CreateTlsSampleResult(
-      _fbb,
-      status,
-      output_value,
-      decision__,
-      diagnostics__,
-      tls_version,
-      cipher_suite);
-}
 
 ::flatbuffers::Offset<TlsSampleResult> CreateTlsSampleResult(::flatbuffers::FlatBufferBuilder &_fbb, const TlsSampleResultT *_o, const ::flatbuffers::rehasher_function_t *_rehasher = nullptr);
 
@@ -858,20 +1194,105 @@ struct HostIoResult::Traits {
 
 ::flatbuffers::Offset<HostIoResult> CreateHostIoResult(::flatbuffers::FlatBufferBuilder &_fbb, const HostIoResultT *_o, const ::flatbuffers::rehasher_function_t *_rehasher = nullptr);
 
-struct TlsSample_RunScenario_0_ArgsT : public ::flatbuffers::NativeTable {
-  typedef TlsSample_RunScenario_0_Args TableType;
-  std::unique_ptr<TlsSample::FlatbufferTypes::TlsSampleRequestT> m_request{};
-  std::unique_ptr<TlsSample::FlatbufferTypes::TlsSampleResultT> m_result{};
+struct TlsSample_GetScenarioMetadata_0_ArgsT : public ::flatbuffers::NativeTable {
+  typedef TlsSample_GetScenarioMetadata_0_Args TableType;
+  uint32_t m_scenario_id = 0;
+  std::unique_ptr<TlsSample::FlatbufferTypes::TlsSampleScenarioMetadataT> m_metadata{};
   int32_t m__return_value_ = 0;
-  TlsSample_RunScenario_0_ArgsT() = default;
-  TlsSample_RunScenario_0_ArgsT(const TlsSample_RunScenario_0_ArgsT &o);
-  TlsSample_RunScenario_0_ArgsT(TlsSample_RunScenario_0_ArgsT&&) FLATBUFFERS_NOEXCEPT = default;
-  TlsSample_RunScenario_0_ArgsT &operator=(TlsSample_RunScenario_0_ArgsT o) FLATBUFFERS_NOEXCEPT;
+  TlsSample_GetScenarioMetadata_0_ArgsT() = default;
+  TlsSample_GetScenarioMetadata_0_ArgsT(const TlsSample_GetScenarioMetadata_0_ArgsT &o);
+  TlsSample_GetScenarioMetadata_0_ArgsT(TlsSample_GetScenarioMetadata_0_ArgsT&&) FLATBUFFERS_NOEXCEPT = default;
+  TlsSample_GetScenarioMetadata_0_ArgsT &operator=(TlsSample_GetScenarioMetadata_0_ArgsT o) FLATBUFFERS_NOEXCEPT;
 };
 
-struct TlsSample_RunScenario_0_Args FLATBUFFERS_FINAL_CLASS : private ::flatbuffers::Table {
-  typedef TlsSample_RunScenario_0_ArgsT NativeTableType;
-  typedef TlsSample_RunScenario_0_ArgsBuilder Builder;
+struct TlsSample_GetScenarioMetadata_0_Args FLATBUFFERS_FINAL_CLASS : private ::flatbuffers::Table {
+  typedef TlsSample_GetScenarioMetadata_0_ArgsT NativeTableType;
+  typedef TlsSample_GetScenarioMetadata_0_ArgsBuilder Builder;
+  struct Traits;
+  enum FlatBuffersVTableOffset FLATBUFFERS_VTABLE_UNDERLYING_TYPE {
+    VT_M_SCENARIO_ID = 4,
+    VT_M_METADATA = 6,
+    VT_M__RETURN_VALUE_ = 8
+  };
+  uint32_t m_scenario_id() const {
+    return GetField<uint32_t>(VT_M_SCENARIO_ID, 0);
+  }
+  const TlsSample::FlatbufferTypes::TlsSampleScenarioMetadata *m_metadata() const {
+    return GetPointer<const TlsSample::FlatbufferTypes::TlsSampleScenarioMetadata *>(VT_M_METADATA);
+  }
+  int32_t m__return_value_() const {
+    return GetField<int32_t>(VT_M__RETURN_VALUE_, 0);
+  }
+  bool Verify(::flatbuffers::Verifier &verifier) const {
+    return VerifyTableStart(verifier) &&
+           VerifyField<uint32_t>(verifier, VT_M_SCENARIO_ID, 4) &&
+           VerifyOffset(verifier, VT_M_METADATA) &&
+           verifier.VerifyTable(m_metadata()) &&
+           VerifyField<int32_t>(verifier, VT_M__RETURN_VALUE_, 4) &&
+           verifier.EndTable();
+  }
+  TlsSample_GetScenarioMetadata_0_ArgsT *UnPack(const ::flatbuffers::resolver_function_t *_resolver = nullptr) const;
+  void UnPackTo(TlsSample_GetScenarioMetadata_0_ArgsT *_o, const ::flatbuffers::resolver_function_t *_resolver = nullptr) const;
+  static ::flatbuffers::Offset<TlsSample_GetScenarioMetadata_0_Args> Pack(::flatbuffers::FlatBufferBuilder &_fbb, const TlsSample_GetScenarioMetadata_0_ArgsT* _o, const ::flatbuffers::rehasher_function_t *_rehasher = nullptr);
+};
+
+struct TlsSample_GetScenarioMetadata_0_ArgsBuilder {
+  typedef TlsSample_GetScenarioMetadata_0_Args Table;
+  ::flatbuffers::FlatBufferBuilder &fbb_;
+  ::flatbuffers::uoffset_t start_;
+  void add_m_scenario_id(uint32_t m_scenario_id) {
+    fbb_.AddElement<uint32_t>(TlsSample_GetScenarioMetadata_0_Args::VT_M_SCENARIO_ID, m_scenario_id, 0);
+  }
+  void add_m_metadata(::flatbuffers::Offset<TlsSample::FlatbufferTypes::TlsSampleScenarioMetadata> m_metadata) {
+    fbb_.AddOffset(TlsSample_GetScenarioMetadata_0_Args::VT_M_METADATA, m_metadata);
+  }
+  void add_m__return_value_(int32_t m__return_value_) {
+    fbb_.AddElement<int32_t>(TlsSample_GetScenarioMetadata_0_Args::VT_M__RETURN_VALUE_, m__return_value_, 0);
+  }
+  explicit TlsSample_GetScenarioMetadata_0_ArgsBuilder(::flatbuffers::FlatBufferBuilder &_fbb)
+        : fbb_(_fbb) {
+    start_ = fbb_.StartTable();
+  }
+  ::flatbuffers::Offset<TlsSample_GetScenarioMetadata_0_Args> Finish() {
+    const auto end = fbb_.EndTable(start_);
+    auto o = ::flatbuffers::Offset<TlsSample_GetScenarioMetadata_0_Args>(end);
+    return o;
+  }
+};
+
+inline ::flatbuffers::Offset<TlsSample_GetScenarioMetadata_0_Args> CreateTlsSample_GetScenarioMetadata_0_Args(
+    ::flatbuffers::FlatBufferBuilder &_fbb,
+    uint32_t m_scenario_id = 0,
+    ::flatbuffers::Offset<TlsSample::FlatbufferTypes::TlsSampleScenarioMetadata> m_metadata = 0,
+    int32_t m__return_value_ = 0) {
+  TlsSample_GetScenarioMetadata_0_ArgsBuilder builder_(_fbb);
+  builder_.add_m__return_value_(m__return_value_);
+  builder_.add_m_metadata(m_metadata);
+  builder_.add_m_scenario_id(m_scenario_id);
+  return builder_.Finish();
+}
+
+struct TlsSample_GetScenarioMetadata_0_Args::Traits {
+  using type = TlsSample_GetScenarioMetadata_0_Args;
+  static auto constexpr Create = CreateTlsSample_GetScenarioMetadata_0_Args;
+};
+
+::flatbuffers::Offset<TlsSample_GetScenarioMetadata_0_Args> CreateTlsSample_GetScenarioMetadata_0_Args(::flatbuffers::FlatBufferBuilder &_fbb, const TlsSample_GetScenarioMetadata_0_ArgsT *_o, const ::flatbuffers::rehasher_function_t *_rehasher = nullptr);
+
+struct TlsSample_StartScenario_1_ArgsT : public ::flatbuffers::NativeTable {
+  typedef TlsSample_StartScenario_1_Args TableType;
+  std::unique_ptr<TlsSample::FlatbufferTypes::TlsSampleRequestT> m_request{};
+  std::unique_ptr<TlsSample::FlatbufferTypes::StartScenarioResultT> m_result{};
+  int32_t m__return_value_ = 0;
+  TlsSample_StartScenario_1_ArgsT() = default;
+  TlsSample_StartScenario_1_ArgsT(const TlsSample_StartScenario_1_ArgsT &o);
+  TlsSample_StartScenario_1_ArgsT(TlsSample_StartScenario_1_ArgsT&&) FLATBUFFERS_NOEXCEPT = default;
+  TlsSample_StartScenario_1_ArgsT &operator=(TlsSample_StartScenario_1_ArgsT o) FLATBUFFERS_NOEXCEPT;
+};
+
+struct TlsSample_StartScenario_1_Args FLATBUFFERS_FINAL_CLASS : private ::flatbuffers::Table {
+  typedef TlsSample_StartScenario_1_ArgsT NativeTableType;
+  typedef TlsSample_StartScenario_1_ArgsBuilder Builder;
   struct Traits;
   enum FlatBuffersVTableOffset FLATBUFFERS_VTABLE_UNDERLYING_TYPE {
     VT_M_REQUEST = 4,
@@ -881,8 +1302,8 @@ struct TlsSample_RunScenario_0_Args FLATBUFFERS_FINAL_CLASS : private ::flatbuff
   const TlsSample::FlatbufferTypes::TlsSampleRequest *m_request() const {
     return GetPointer<const TlsSample::FlatbufferTypes::TlsSampleRequest *>(VT_M_REQUEST);
   }
-  const TlsSample::FlatbufferTypes::TlsSampleResult *m_result() const {
-    return GetPointer<const TlsSample::FlatbufferTypes::TlsSampleResult *>(VT_M_RESULT);
+  const TlsSample::FlatbufferTypes::StartScenarioResult *m_result() const {
+    return GetPointer<const TlsSample::FlatbufferTypes::StartScenarioResult *>(VT_M_RESULT);
   }
   int32_t m__return_value_() const {
     return GetField<int32_t>(VT_M__RETURN_VALUE_, 0);
@@ -896,69 +1317,308 @@ struct TlsSample_RunScenario_0_Args FLATBUFFERS_FINAL_CLASS : private ::flatbuff
            VerifyField<int32_t>(verifier, VT_M__RETURN_VALUE_, 4) &&
            verifier.EndTable();
   }
-  TlsSample_RunScenario_0_ArgsT *UnPack(const ::flatbuffers::resolver_function_t *_resolver = nullptr) const;
-  void UnPackTo(TlsSample_RunScenario_0_ArgsT *_o, const ::flatbuffers::resolver_function_t *_resolver = nullptr) const;
-  static ::flatbuffers::Offset<TlsSample_RunScenario_0_Args> Pack(::flatbuffers::FlatBufferBuilder &_fbb, const TlsSample_RunScenario_0_ArgsT* _o, const ::flatbuffers::rehasher_function_t *_rehasher = nullptr);
+  TlsSample_StartScenario_1_ArgsT *UnPack(const ::flatbuffers::resolver_function_t *_resolver = nullptr) const;
+  void UnPackTo(TlsSample_StartScenario_1_ArgsT *_o, const ::flatbuffers::resolver_function_t *_resolver = nullptr) const;
+  static ::flatbuffers::Offset<TlsSample_StartScenario_1_Args> Pack(::flatbuffers::FlatBufferBuilder &_fbb, const TlsSample_StartScenario_1_ArgsT* _o, const ::flatbuffers::rehasher_function_t *_rehasher = nullptr);
 };
 
-struct TlsSample_RunScenario_0_ArgsBuilder {
-  typedef TlsSample_RunScenario_0_Args Table;
+struct TlsSample_StartScenario_1_ArgsBuilder {
+  typedef TlsSample_StartScenario_1_Args Table;
   ::flatbuffers::FlatBufferBuilder &fbb_;
   ::flatbuffers::uoffset_t start_;
   void add_m_request(::flatbuffers::Offset<TlsSample::FlatbufferTypes::TlsSampleRequest> m_request) {
-    fbb_.AddOffset(TlsSample_RunScenario_0_Args::VT_M_REQUEST, m_request);
+    fbb_.AddOffset(TlsSample_StartScenario_1_Args::VT_M_REQUEST, m_request);
   }
-  void add_m_result(::flatbuffers::Offset<TlsSample::FlatbufferTypes::TlsSampleResult> m_result) {
-    fbb_.AddOffset(TlsSample_RunScenario_0_Args::VT_M_RESULT, m_result);
+  void add_m_result(::flatbuffers::Offset<TlsSample::FlatbufferTypes::StartScenarioResult> m_result) {
+    fbb_.AddOffset(TlsSample_StartScenario_1_Args::VT_M_RESULT, m_result);
   }
   void add_m__return_value_(int32_t m__return_value_) {
-    fbb_.AddElement<int32_t>(TlsSample_RunScenario_0_Args::VT_M__RETURN_VALUE_, m__return_value_, 0);
+    fbb_.AddElement<int32_t>(TlsSample_StartScenario_1_Args::VT_M__RETURN_VALUE_, m__return_value_, 0);
   }
-  explicit TlsSample_RunScenario_0_ArgsBuilder(::flatbuffers::FlatBufferBuilder &_fbb)
+  explicit TlsSample_StartScenario_1_ArgsBuilder(::flatbuffers::FlatBufferBuilder &_fbb)
         : fbb_(_fbb) {
     start_ = fbb_.StartTable();
   }
-  ::flatbuffers::Offset<TlsSample_RunScenario_0_Args> Finish() {
+  ::flatbuffers::Offset<TlsSample_StartScenario_1_Args> Finish() {
     const auto end = fbb_.EndTable(start_);
-    auto o = ::flatbuffers::Offset<TlsSample_RunScenario_0_Args>(end);
-    fbb_.Required(o, TlsSample_RunScenario_0_Args::VT_M_REQUEST);
+    auto o = ::flatbuffers::Offset<TlsSample_StartScenario_1_Args>(end);
+    fbb_.Required(o, TlsSample_StartScenario_1_Args::VT_M_REQUEST);
     return o;
   }
 };
 
-inline ::flatbuffers::Offset<TlsSample_RunScenario_0_Args> CreateTlsSample_RunScenario_0_Args(
+inline ::flatbuffers::Offset<TlsSample_StartScenario_1_Args> CreateTlsSample_StartScenario_1_Args(
     ::flatbuffers::FlatBufferBuilder &_fbb,
     ::flatbuffers::Offset<TlsSample::FlatbufferTypes::TlsSampleRequest> m_request = 0,
-    ::flatbuffers::Offset<TlsSample::FlatbufferTypes::TlsSampleResult> m_result = 0,
+    ::flatbuffers::Offset<TlsSample::FlatbufferTypes::StartScenarioResult> m_result = 0,
     int32_t m__return_value_ = 0) {
-  TlsSample_RunScenario_0_ArgsBuilder builder_(_fbb);
+  TlsSample_StartScenario_1_ArgsBuilder builder_(_fbb);
   builder_.add_m__return_value_(m__return_value_);
   builder_.add_m_result(m_result);
   builder_.add_m_request(m_request);
   return builder_.Finish();
 }
 
-struct TlsSample_RunScenario_0_Args::Traits {
-  using type = TlsSample_RunScenario_0_Args;
-  static auto constexpr Create = CreateTlsSample_RunScenario_0_Args;
+struct TlsSample_StartScenario_1_Args::Traits {
+  using type = TlsSample_StartScenario_1_Args;
+  static auto constexpr Create = CreateTlsSample_StartScenario_1_Args;
 };
 
-::flatbuffers::Offset<TlsSample_RunScenario_0_Args> CreateTlsSample_RunScenario_0_Args(::flatbuffers::FlatBufferBuilder &_fbb, const TlsSample_RunScenario_0_ArgsT *_o, const ::flatbuffers::rehasher_function_t *_rehasher = nullptr);
+::flatbuffers::Offset<TlsSample_StartScenario_1_Args> CreateTlsSample_StartScenario_1_Args(::flatbuffers::FlatBufferBuilder &_fbb, const TlsSample_StartScenario_1_ArgsT *_o, const ::flatbuffers::rehasher_function_t *_rehasher = nullptr);
 
-struct TlsSample_HostTcpConnect_1_ArgsT : public ::flatbuffers::NativeTable {
-  typedef TlsSample_HostTcpConnect_1_Args TableType;
+struct TlsSample_DriveConnection_2_ArgsT : public ::flatbuffers::NativeTable {
+  typedef TlsSample_DriveConnection_2_Args TableType;
+  uint64_t m_session_handle = 0;
+  std::unique_ptr<TlsSample::FlatbufferTypes::DriveConnectionResultT> m_result{};
+  int32_t m__return_value_ = 0;
+  TlsSample_DriveConnection_2_ArgsT() = default;
+  TlsSample_DriveConnection_2_ArgsT(const TlsSample_DriveConnection_2_ArgsT &o);
+  TlsSample_DriveConnection_2_ArgsT(TlsSample_DriveConnection_2_ArgsT&&) FLATBUFFERS_NOEXCEPT = default;
+  TlsSample_DriveConnection_2_ArgsT &operator=(TlsSample_DriveConnection_2_ArgsT o) FLATBUFFERS_NOEXCEPT;
+};
+
+struct TlsSample_DriveConnection_2_Args FLATBUFFERS_FINAL_CLASS : private ::flatbuffers::Table {
+  typedef TlsSample_DriveConnection_2_ArgsT NativeTableType;
+  typedef TlsSample_DriveConnection_2_ArgsBuilder Builder;
+  struct Traits;
+  enum FlatBuffersVTableOffset FLATBUFFERS_VTABLE_UNDERLYING_TYPE {
+    VT_M_SESSION_HANDLE = 4,
+    VT_M_RESULT = 6,
+    VT_M__RETURN_VALUE_ = 8
+  };
+  uint64_t m_session_handle() const {
+    return GetField<uint64_t>(VT_M_SESSION_HANDLE, 0);
+  }
+  const TlsSample::FlatbufferTypes::DriveConnectionResult *m_result() const {
+    return GetPointer<const TlsSample::FlatbufferTypes::DriveConnectionResult *>(VT_M_RESULT);
+  }
+  int32_t m__return_value_() const {
+    return GetField<int32_t>(VT_M__RETURN_VALUE_, 0);
+  }
+  bool Verify(::flatbuffers::Verifier &verifier) const {
+    return VerifyTableStart(verifier) &&
+           VerifyField<uint64_t>(verifier, VT_M_SESSION_HANDLE, 8) &&
+           VerifyOffset(verifier, VT_M_RESULT) &&
+           verifier.VerifyTable(m_result()) &&
+           VerifyField<int32_t>(verifier, VT_M__RETURN_VALUE_, 4) &&
+           verifier.EndTable();
+  }
+  TlsSample_DriveConnection_2_ArgsT *UnPack(const ::flatbuffers::resolver_function_t *_resolver = nullptr) const;
+  void UnPackTo(TlsSample_DriveConnection_2_ArgsT *_o, const ::flatbuffers::resolver_function_t *_resolver = nullptr) const;
+  static ::flatbuffers::Offset<TlsSample_DriveConnection_2_Args> Pack(::flatbuffers::FlatBufferBuilder &_fbb, const TlsSample_DriveConnection_2_ArgsT* _o, const ::flatbuffers::rehasher_function_t *_rehasher = nullptr);
+};
+
+struct TlsSample_DriveConnection_2_ArgsBuilder {
+  typedef TlsSample_DriveConnection_2_Args Table;
+  ::flatbuffers::FlatBufferBuilder &fbb_;
+  ::flatbuffers::uoffset_t start_;
+  void add_m_session_handle(uint64_t m_session_handle) {
+    fbb_.AddElement<uint64_t>(TlsSample_DriveConnection_2_Args::VT_M_SESSION_HANDLE, m_session_handle, 0);
+  }
+  void add_m_result(::flatbuffers::Offset<TlsSample::FlatbufferTypes::DriveConnectionResult> m_result) {
+    fbb_.AddOffset(TlsSample_DriveConnection_2_Args::VT_M_RESULT, m_result);
+  }
+  void add_m__return_value_(int32_t m__return_value_) {
+    fbb_.AddElement<int32_t>(TlsSample_DriveConnection_2_Args::VT_M__RETURN_VALUE_, m__return_value_, 0);
+  }
+  explicit TlsSample_DriveConnection_2_ArgsBuilder(::flatbuffers::FlatBufferBuilder &_fbb)
+        : fbb_(_fbb) {
+    start_ = fbb_.StartTable();
+  }
+  ::flatbuffers::Offset<TlsSample_DriveConnection_2_Args> Finish() {
+    const auto end = fbb_.EndTable(start_);
+    auto o = ::flatbuffers::Offset<TlsSample_DriveConnection_2_Args>(end);
+    return o;
+  }
+};
+
+inline ::flatbuffers::Offset<TlsSample_DriveConnection_2_Args> CreateTlsSample_DriveConnection_2_Args(
+    ::flatbuffers::FlatBufferBuilder &_fbb,
+    uint64_t m_session_handle = 0,
+    ::flatbuffers::Offset<TlsSample::FlatbufferTypes::DriveConnectionResult> m_result = 0,
+    int32_t m__return_value_ = 0) {
+  TlsSample_DriveConnection_2_ArgsBuilder builder_(_fbb);
+  builder_.add_m_session_handle(m_session_handle);
+  builder_.add_m__return_value_(m__return_value_);
+  builder_.add_m_result(m_result);
+  return builder_.Finish();
+}
+
+struct TlsSample_DriveConnection_2_Args::Traits {
+  using type = TlsSample_DriveConnection_2_Args;
+  static auto constexpr Create = CreateTlsSample_DriveConnection_2_Args;
+};
+
+::flatbuffers::Offset<TlsSample_DriveConnection_2_Args> CreateTlsSample_DriveConnection_2_Args(::flatbuffers::FlatBufferBuilder &_fbb, const TlsSample_DriveConnection_2_ArgsT *_o, const ::flatbuffers::rehasher_function_t *_rehasher = nullptr);
+
+struct TlsSample_GetDerivedResult_3_ArgsT : public ::flatbuffers::NativeTable {
+  typedef TlsSample_GetDerivedResult_3_Args TableType;
+  uint64_t m_session_handle = 0;
+  std::unique_ptr<TlsSample::FlatbufferTypes::TlsSampleResultT> m_result{};
+  int32_t m__return_value_ = 0;
+  TlsSample_GetDerivedResult_3_ArgsT() = default;
+  TlsSample_GetDerivedResult_3_ArgsT(const TlsSample_GetDerivedResult_3_ArgsT &o);
+  TlsSample_GetDerivedResult_3_ArgsT(TlsSample_GetDerivedResult_3_ArgsT&&) FLATBUFFERS_NOEXCEPT = default;
+  TlsSample_GetDerivedResult_3_ArgsT &operator=(TlsSample_GetDerivedResult_3_ArgsT o) FLATBUFFERS_NOEXCEPT;
+};
+
+struct TlsSample_GetDerivedResult_3_Args FLATBUFFERS_FINAL_CLASS : private ::flatbuffers::Table {
+  typedef TlsSample_GetDerivedResult_3_ArgsT NativeTableType;
+  typedef TlsSample_GetDerivedResult_3_ArgsBuilder Builder;
+  struct Traits;
+  enum FlatBuffersVTableOffset FLATBUFFERS_VTABLE_UNDERLYING_TYPE {
+    VT_M_SESSION_HANDLE = 4,
+    VT_M_RESULT = 6,
+    VT_M__RETURN_VALUE_ = 8
+  };
+  uint64_t m_session_handle() const {
+    return GetField<uint64_t>(VT_M_SESSION_HANDLE, 0);
+  }
+  const TlsSample::FlatbufferTypes::TlsSampleResult *m_result() const {
+    return GetPointer<const TlsSample::FlatbufferTypes::TlsSampleResult *>(VT_M_RESULT);
+  }
+  int32_t m__return_value_() const {
+    return GetField<int32_t>(VT_M__RETURN_VALUE_, 0);
+  }
+  bool Verify(::flatbuffers::Verifier &verifier) const {
+    return VerifyTableStart(verifier) &&
+           VerifyField<uint64_t>(verifier, VT_M_SESSION_HANDLE, 8) &&
+           VerifyOffset(verifier, VT_M_RESULT) &&
+           verifier.VerifyTable(m_result()) &&
+           VerifyField<int32_t>(verifier, VT_M__RETURN_VALUE_, 4) &&
+           verifier.EndTable();
+  }
+  TlsSample_GetDerivedResult_3_ArgsT *UnPack(const ::flatbuffers::resolver_function_t *_resolver = nullptr) const;
+  void UnPackTo(TlsSample_GetDerivedResult_3_ArgsT *_o, const ::flatbuffers::resolver_function_t *_resolver = nullptr) const;
+  static ::flatbuffers::Offset<TlsSample_GetDerivedResult_3_Args> Pack(::flatbuffers::FlatBufferBuilder &_fbb, const TlsSample_GetDerivedResult_3_ArgsT* _o, const ::flatbuffers::rehasher_function_t *_rehasher = nullptr);
+};
+
+struct TlsSample_GetDerivedResult_3_ArgsBuilder {
+  typedef TlsSample_GetDerivedResult_3_Args Table;
+  ::flatbuffers::FlatBufferBuilder &fbb_;
+  ::flatbuffers::uoffset_t start_;
+  void add_m_session_handle(uint64_t m_session_handle) {
+    fbb_.AddElement<uint64_t>(TlsSample_GetDerivedResult_3_Args::VT_M_SESSION_HANDLE, m_session_handle, 0);
+  }
+  void add_m_result(::flatbuffers::Offset<TlsSample::FlatbufferTypes::TlsSampleResult> m_result) {
+    fbb_.AddOffset(TlsSample_GetDerivedResult_3_Args::VT_M_RESULT, m_result);
+  }
+  void add_m__return_value_(int32_t m__return_value_) {
+    fbb_.AddElement<int32_t>(TlsSample_GetDerivedResult_3_Args::VT_M__RETURN_VALUE_, m__return_value_, 0);
+  }
+  explicit TlsSample_GetDerivedResult_3_ArgsBuilder(::flatbuffers::FlatBufferBuilder &_fbb)
+        : fbb_(_fbb) {
+    start_ = fbb_.StartTable();
+  }
+  ::flatbuffers::Offset<TlsSample_GetDerivedResult_3_Args> Finish() {
+    const auto end = fbb_.EndTable(start_);
+    auto o = ::flatbuffers::Offset<TlsSample_GetDerivedResult_3_Args>(end);
+    return o;
+  }
+};
+
+inline ::flatbuffers::Offset<TlsSample_GetDerivedResult_3_Args> CreateTlsSample_GetDerivedResult_3_Args(
+    ::flatbuffers::FlatBufferBuilder &_fbb,
+    uint64_t m_session_handle = 0,
+    ::flatbuffers::Offset<TlsSample::FlatbufferTypes::TlsSampleResult> m_result = 0,
+    int32_t m__return_value_ = 0) {
+  TlsSample_GetDerivedResult_3_ArgsBuilder builder_(_fbb);
+  builder_.add_m_session_handle(m_session_handle);
+  builder_.add_m__return_value_(m__return_value_);
+  builder_.add_m_result(m_result);
+  return builder_.Finish();
+}
+
+struct TlsSample_GetDerivedResult_3_Args::Traits {
+  using type = TlsSample_GetDerivedResult_3_Args;
+  static auto constexpr Create = CreateTlsSample_GetDerivedResult_3_Args;
+};
+
+::flatbuffers::Offset<TlsSample_GetDerivedResult_3_Args> CreateTlsSample_GetDerivedResult_3_Args(::flatbuffers::FlatBufferBuilder &_fbb, const TlsSample_GetDerivedResult_3_ArgsT *_o, const ::flatbuffers::rehasher_function_t *_rehasher = nullptr);
+
+struct TlsSample_CloseScenario_4_ArgsT : public ::flatbuffers::NativeTable {
+  typedef TlsSample_CloseScenario_4_Args TableType;
+  uint64_t m_session_handle = 0;
+  int32_t m__return_value_ = 0;
+};
+
+struct TlsSample_CloseScenario_4_Args FLATBUFFERS_FINAL_CLASS : private ::flatbuffers::Table {
+  typedef TlsSample_CloseScenario_4_ArgsT NativeTableType;
+  typedef TlsSample_CloseScenario_4_ArgsBuilder Builder;
+  struct Traits;
+  enum FlatBuffersVTableOffset FLATBUFFERS_VTABLE_UNDERLYING_TYPE {
+    VT_M_SESSION_HANDLE = 4,
+    VT_M__RETURN_VALUE_ = 6
+  };
+  uint64_t m_session_handle() const {
+    return GetField<uint64_t>(VT_M_SESSION_HANDLE, 0);
+  }
+  int32_t m__return_value_() const {
+    return GetField<int32_t>(VT_M__RETURN_VALUE_, 0);
+  }
+  bool Verify(::flatbuffers::Verifier &verifier) const {
+    return VerifyTableStart(verifier) &&
+           VerifyField<uint64_t>(verifier, VT_M_SESSION_HANDLE, 8) &&
+           VerifyField<int32_t>(verifier, VT_M__RETURN_VALUE_, 4) &&
+           verifier.EndTable();
+  }
+  TlsSample_CloseScenario_4_ArgsT *UnPack(const ::flatbuffers::resolver_function_t *_resolver = nullptr) const;
+  void UnPackTo(TlsSample_CloseScenario_4_ArgsT *_o, const ::flatbuffers::resolver_function_t *_resolver = nullptr) const;
+  static ::flatbuffers::Offset<TlsSample_CloseScenario_4_Args> Pack(::flatbuffers::FlatBufferBuilder &_fbb, const TlsSample_CloseScenario_4_ArgsT* _o, const ::flatbuffers::rehasher_function_t *_rehasher = nullptr);
+};
+
+struct TlsSample_CloseScenario_4_ArgsBuilder {
+  typedef TlsSample_CloseScenario_4_Args Table;
+  ::flatbuffers::FlatBufferBuilder &fbb_;
+  ::flatbuffers::uoffset_t start_;
+  void add_m_session_handle(uint64_t m_session_handle) {
+    fbb_.AddElement<uint64_t>(TlsSample_CloseScenario_4_Args::VT_M_SESSION_HANDLE, m_session_handle, 0);
+  }
+  void add_m__return_value_(int32_t m__return_value_) {
+    fbb_.AddElement<int32_t>(TlsSample_CloseScenario_4_Args::VT_M__RETURN_VALUE_, m__return_value_, 0);
+  }
+  explicit TlsSample_CloseScenario_4_ArgsBuilder(::flatbuffers::FlatBufferBuilder &_fbb)
+        : fbb_(_fbb) {
+    start_ = fbb_.StartTable();
+  }
+  ::flatbuffers::Offset<TlsSample_CloseScenario_4_Args> Finish() {
+    const auto end = fbb_.EndTable(start_);
+    auto o = ::flatbuffers::Offset<TlsSample_CloseScenario_4_Args>(end);
+    return o;
+  }
+};
+
+inline ::flatbuffers::Offset<TlsSample_CloseScenario_4_Args> CreateTlsSample_CloseScenario_4_Args(
+    ::flatbuffers::FlatBufferBuilder &_fbb,
+    uint64_t m_session_handle = 0,
+    int32_t m__return_value_ = 0) {
+  TlsSample_CloseScenario_4_ArgsBuilder builder_(_fbb);
+  builder_.add_m_session_handle(m_session_handle);
+  builder_.add_m__return_value_(m__return_value_);
+  return builder_.Finish();
+}
+
+struct TlsSample_CloseScenario_4_Args::Traits {
+  using type = TlsSample_CloseScenario_4_Args;
+  static auto constexpr Create = CreateTlsSample_CloseScenario_4_Args;
+};
+
+::flatbuffers::Offset<TlsSample_CloseScenario_4_Args> CreateTlsSample_CloseScenario_4_Args(::flatbuffers::FlatBufferBuilder &_fbb, const TlsSample_CloseScenario_4_ArgsT *_o, const ::flatbuffers::rehasher_function_t *_rehasher = nullptr);
+
+struct TlsSample_HostTcpConnect_5_ArgsT : public ::flatbuffers::NativeTable {
+  typedef TlsSample_HostTcpConnect_5_Args TableType;
   std::string m_server_name{};
   uint16_t m_server_port = 0;
   std::unique_ptr<TlsSample::FlatbufferTypes::HostTcpConnectResultT> m__return_value_{};
-  TlsSample_HostTcpConnect_1_ArgsT() = default;
-  TlsSample_HostTcpConnect_1_ArgsT(const TlsSample_HostTcpConnect_1_ArgsT &o);
-  TlsSample_HostTcpConnect_1_ArgsT(TlsSample_HostTcpConnect_1_ArgsT&&) FLATBUFFERS_NOEXCEPT = default;
-  TlsSample_HostTcpConnect_1_ArgsT &operator=(TlsSample_HostTcpConnect_1_ArgsT o) FLATBUFFERS_NOEXCEPT;
+  TlsSample_HostTcpConnect_5_ArgsT() = default;
+  TlsSample_HostTcpConnect_5_ArgsT(const TlsSample_HostTcpConnect_5_ArgsT &o);
+  TlsSample_HostTcpConnect_5_ArgsT(TlsSample_HostTcpConnect_5_ArgsT&&) FLATBUFFERS_NOEXCEPT = default;
+  TlsSample_HostTcpConnect_5_ArgsT &operator=(TlsSample_HostTcpConnect_5_ArgsT o) FLATBUFFERS_NOEXCEPT;
 };
 
-struct TlsSample_HostTcpConnect_1_Args FLATBUFFERS_FINAL_CLASS : private ::flatbuffers::Table {
-  typedef TlsSample_HostTcpConnect_1_ArgsT NativeTableType;
-  typedef TlsSample_HostTcpConnect_1_ArgsBuilder Builder;
+struct TlsSample_HostTcpConnect_5_Args FLATBUFFERS_FINAL_CLASS : private ::flatbuffers::Table {
+  typedef TlsSample_HostTcpConnect_5_ArgsT NativeTableType;
+  typedef TlsSample_HostTcpConnect_5_ArgsBuilder Builder;
   struct Traits;
   enum FlatBuffersVTableOffset FLATBUFFERS_VTABLE_UNDERLYING_TYPE {
     VT_M_SERVER_NAME = 4,
@@ -983,82 +1643,82 @@ struct TlsSample_HostTcpConnect_1_Args FLATBUFFERS_FINAL_CLASS : private ::flatb
            verifier.VerifyTable(m__return_value_()) &&
            verifier.EndTable();
   }
-  TlsSample_HostTcpConnect_1_ArgsT *UnPack(const ::flatbuffers::resolver_function_t *_resolver = nullptr) const;
-  void UnPackTo(TlsSample_HostTcpConnect_1_ArgsT *_o, const ::flatbuffers::resolver_function_t *_resolver = nullptr) const;
-  static ::flatbuffers::Offset<TlsSample_HostTcpConnect_1_Args> Pack(::flatbuffers::FlatBufferBuilder &_fbb, const TlsSample_HostTcpConnect_1_ArgsT* _o, const ::flatbuffers::rehasher_function_t *_rehasher = nullptr);
+  TlsSample_HostTcpConnect_5_ArgsT *UnPack(const ::flatbuffers::resolver_function_t *_resolver = nullptr) const;
+  void UnPackTo(TlsSample_HostTcpConnect_5_ArgsT *_o, const ::flatbuffers::resolver_function_t *_resolver = nullptr) const;
+  static ::flatbuffers::Offset<TlsSample_HostTcpConnect_5_Args> Pack(::flatbuffers::FlatBufferBuilder &_fbb, const TlsSample_HostTcpConnect_5_ArgsT* _o, const ::flatbuffers::rehasher_function_t *_rehasher = nullptr);
 };
 
-struct TlsSample_HostTcpConnect_1_ArgsBuilder {
-  typedef TlsSample_HostTcpConnect_1_Args Table;
+struct TlsSample_HostTcpConnect_5_ArgsBuilder {
+  typedef TlsSample_HostTcpConnect_5_Args Table;
   ::flatbuffers::FlatBufferBuilder &fbb_;
   ::flatbuffers::uoffset_t start_;
   void add_m_server_name(::flatbuffers::Offset<::flatbuffers::String> m_server_name) {
-    fbb_.AddOffset(TlsSample_HostTcpConnect_1_Args::VT_M_SERVER_NAME, m_server_name);
+    fbb_.AddOffset(TlsSample_HostTcpConnect_5_Args::VT_M_SERVER_NAME, m_server_name);
   }
   void add_m_server_port(uint16_t m_server_port) {
-    fbb_.AddElement<uint16_t>(TlsSample_HostTcpConnect_1_Args::VT_M_SERVER_PORT, m_server_port, 0);
+    fbb_.AddElement<uint16_t>(TlsSample_HostTcpConnect_5_Args::VT_M_SERVER_PORT, m_server_port, 0);
   }
   void add_m__return_value_(::flatbuffers::Offset<TlsSample::FlatbufferTypes::HostTcpConnectResult> m__return_value_) {
-    fbb_.AddOffset(TlsSample_HostTcpConnect_1_Args::VT_M__RETURN_VALUE_, m__return_value_);
+    fbb_.AddOffset(TlsSample_HostTcpConnect_5_Args::VT_M__RETURN_VALUE_, m__return_value_);
   }
-  explicit TlsSample_HostTcpConnect_1_ArgsBuilder(::flatbuffers::FlatBufferBuilder &_fbb)
+  explicit TlsSample_HostTcpConnect_5_ArgsBuilder(::flatbuffers::FlatBufferBuilder &_fbb)
         : fbb_(_fbb) {
     start_ = fbb_.StartTable();
   }
-  ::flatbuffers::Offset<TlsSample_HostTcpConnect_1_Args> Finish() {
+  ::flatbuffers::Offset<TlsSample_HostTcpConnect_5_Args> Finish() {
     const auto end = fbb_.EndTable(start_);
-    auto o = ::flatbuffers::Offset<TlsSample_HostTcpConnect_1_Args>(end);
-    fbb_.Required(o, TlsSample_HostTcpConnect_1_Args::VT_M_SERVER_NAME);
+    auto o = ::flatbuffers::Offset<TlsSample_HostTcpConnect_5_Args>(end);
+    fbb_.Required(o, TlsSample_HostTcpConnect_5_Args::VT_M_SERVER_NAME);
     return o;
   }
 };
 
-inline ::flatbuffers::Offset<TlsSample_HostTcpConnect_1_Args> CreateTlsSample_HostTcpConnect_1_Args(
+inline ::flatbuffers::Offset<TlsSample_HostTcpConnect_5_Args> CreateTlsSample_HostTcpConnect_5_Args(
     ::flatbuffers::FlatBufferBuilder &_fbb,
     ::flatbuffers::Offset<::flatbuffers::String> m_server_name = 0,
     uint16_t m_server_port = 0,
     ::flatbuffers::Offset<TlsSample::FlatbufferTypes::HostTcpConnectResult> m__return_value_ = 0) {
-  TlsSample_HostTcpConnect_1_ArgsBuilder builder_(_fbb);
+  TlsSample_HostTcpConnect_5_ArgsBuilder builder_(_fbb);
   builder_.add_m__return_value_(m__return_value_);
   builder_.add_m_server_name(m_server_name);
   builder_.add_m_server_port(m_server_port);
   return builder_.Finish();
 }
 
-struct TlsSample_HostTcpConnect_1_Args::Traits {
-  using type = TlsSample_HostTcpConnect_1_Args;
-  static auto constexpr Create = CreateTlsSample_HostTcpConnect_1_Args;
+struct TlsSample_HostTcpConnect_5_Args::Traits {
+  using type = TlsSample_HostTcpConnect_5_Args;
+  static auto constexpr Create = CreateTlsSample_HostTcpConnect_5_Args;
 };
 
-inline ::flatbuffers::Offset<TlsSample_HostTcpConnect_1_Args> CreateTlsSample_HostTcpConnect_1_ArgsDirect(
+inline ::flatbuffers::Offset<TlsSample_HostTcpConnect_5_Args> CreateTlsSample_HostTcpConnect_5_ArgsDirect(
     ::flatbuffers::FlatBufferBuilder &_fbb,
     const char *m_server_name = nullptr,
     uint16_t m_server_port = 0,
     ::flatbuffers::Offset<TlsSample::FlatbufferTypes::HostTcpConnectResult> m__return_value_ = 0) {
   auto m_server_name__ = m_server_name ? _fbb.CreateString(m_server_name) : 0;
-  return TlsSample::FlatbufferTypes::CreateTlsSample_HostTcpConnect_1_Args(
+  return TlsSample::FlatbufferTypes::CreateTlsSample_HostTcpConnect_5_Args(
       _fbb,
       m_server_name__,
       m_server_port,
       m__return_value_);
 }
 
-::flatbuffers::Offset<TlsSample_HostTcpConnect_1_Args> CreateTlsSample_HostTcpConnect_1_Args(::flatbuffers::FlatBufferBuilder &_fbb, const TlsSample_HostTcpConnect_1_ArgsT *_o, const ::flatbuffers::rehasher_function_t *_rehasher = nullptr);
+::flatbuffers::Offset<TlsSample_HostTcpConnect_5_Args> CreateTlsSample_HostTcpConnect_5_Args(::flatbuffers::FlatBufferBuilder &_fbb, const TlsSample_HostTcpConnect_5_ArgsT *_o, const ::flatbuffers::rehasher_function_t *_rehasher = nullptr);
 
-struct TlsSample_HostTcpRecv_2_ArgsT : public ::flatbuffers::NativeTable {
-  typedef TlsSample_HostTcpRecv_2_Args TableType;
+struct TlsSample_HostTcpRecv_6_ArgsT : public ::flatbuffers::NativeTable {
+  typedef TlsSample_HostTcpRecv_6_Args TableType;
   uint64_t m_transport_handle = 0;
   uint32_t m_max_bytes = 0;
   std::unique_ptr<TlsSample::FlatbufferTypes::HostTcpRecvResultT> m__return_value_{};
-  TlsSample_HostTcpRecv_2_ArgsT() = default;
-  TlsSample_HostTcpRecv_2_ArgsT(const TlsSample_HostTcpRecv_2_ArgsT &o);
-  TlsSample_HostTcpRecv_2_ArgsT(TlsSample_HostTcpRecv_2_ArgsT&&) FLATBUFFERS_NOEXCEPT = default;
-  TlsSample_HostTcpRecv_2_ArgsT &operator=(TlsSample_HostTcpRecv_2_ArgsT o) FLATBUFFERS_NOEXCEPT;
+  TlsSample_HostTcpRecv_6_ArgsT() = default;
+  TlsSample_HostTcpRecv_6_ArgsT(const TlsSample_HostTcpRecv_6_ArgsT &o);
+  TlsSample_HostTcpRecv_6_ArgsT(TlsSample_HostTcpRecv_6_ArgsT&&) FLATBUFFERS_NOEXCEPT = default;
+  TlsSample_HostTcpRecv_6_ArgsT &operator=(TlsSample_HostTcpRecv_6_ArgsT o) FLATBUFFERS_NOEXCEPT;
 };
 
-struct TlsSample_HostTcpRecv_2_Args FLATBUFFERS_FINAL_CLASS : private ::flatbuffers::Table {
-  typedef TlsSample_HostTcpRecv_2_ArgsT NativeTableType;
-  typedef TlsSample_HostTcpRecv_2_ArgsBuilder Builder;
+struct TlsSample_HostTcpRecv_6_Args FLATBUFFERS_FINAL_CLASS : private ::flatbuffers::Table {
+  typedef TlsSample_HostTcpRecv_6_ArgsT NativeTableType;
+  typedef TlsSample_HostTcpRecv_6_ArgsBuilder Builder;
   struct Traits;
   enum FlatBuffersVTableOffset FLATBUFFERS_VTABLE_UNDERLYING_TYPE {
     VT_M_TRANSPORT_HANDLE = 4,
@@ -1082,68 +1742,68 @@ struct TlsSample_HostTcpRecv_2_Args FLATBUFFERS_FINAL_CLASS : private ::flatbuff
            verifier.VerifyTable(m__return_value_()) &&
            verifier.EndTable();
   }
-  TlsSample_HostTcpRecv_2_ArgsT *UnPack(const ::flatbuffers::resolver_function_t *_resolver = nullptr) const;
-  void UnPackTo(TlsSample_HostTcpRecv_2_ArgsT *_o, const ::flatbuffers::resolver_function_t *_resolver = nullptr) const;
-  static ::flatbuffers::Offset<TlsSample_HostTcpRecv_2_Args> Pack(::flatbuffers::FlatBufferBuilder &_fbb, const TlsSample_HostTcpRecv_2_ArgsT* _o, const ::flatbuffers::rehasher_function_t *_rehasher = nullptr);
+  TlsSample_HostTcpRecv_6_ArgsT *UnPack(const ::flatbuffers::resolver_function_t *_resolver = nullptr) const;
+  void UnPackTo(TlsSample_HostTcpRecv_6_ArgsT *_o, const ::flatbuffers::resolver_function_t *_resolver = nullptr) const;
+  static ::flatbuffers::Offset<TlsSample_HostTcpRecv_6_Args> Pack(::flatbuffers::FlatBufferBuilder &_fbb, const TlsSample_HostTcpRecv_6_ArgsT* _o, const ::flatbuffers::rehasher_function_t *_rehasher = nullptr);
 };
 
-struct TlsSample_HostTcpRecv_2_ArgsBuilder {
-  typedef TlsSample_HostTcpRecv_2_Args Table;
+struct TlsSample_HostTcpRecv_6_ArgsBuilder {
+  typedef TlsSample_HostTcpRecv_6_Args Table;
   ::flatbuffers::FlatBufferBuilder &fbb_;
   ::flatbuffers::uoffset_t start_;
   void add_m_transport_handle(uint64_t m_transport_handle) {
-    fbb_.AddElement<uint64_t>(TlsSample_HostTcpRecv_2_Args::VT_M_TRANSPORT_HANDLE, m_transport_handle, 0);
+    fbb_.AddElement<uint64_t>(TlsSample_HostTcpRecv_6_Args::VT_M_TRANSPORT_HANDLE, m_transport_handle, 0);
   }
   void add_m_max_bytes(uint32_t m_max_bytes) {
-    fbb_.AddElement<uint32_t>(TlsSample_HostTcpRecv_2_Args::VT_M_MAX_BYTES, m_max_bytes, 0);
+    fbb_.AddElement<uint32_t>(TlsSample_HostTcpRecv_6_Args::VT_M_MAX_BYTES, m_max_bytes, 0);
   }
   void add_m__return_value_(::flatbuffers::Offset<TlsSample::FlatbufferTypes::HostTcpRecvResult> m__return_value_) {
-    fbb_.AddOffset(TlsSample_HostTcpRecv_2_Args::VT_M__RETURN_VALUE_, m__return_value_);
+    fbb_.AddOffset(TlsSample_HostTcpRecv_6_Args::VT_M__RETURN_VALUE_, m__return_value_);
   }
-  explicit TlsSample_HostTcpRecv_2_ArgsBuilder(::flatbuffers::FlatBufferBuilder &_fbb)
+  explicit TlsSample_HostTcpRecv_6_ArgsBuilder(::flatbuffers::FlatBufferBuilder &_fbb)
         : fbb_(_fbb) {
     start_ = fbb_.StartTable();
   }
-  ::flatbuffers::Offset<TlsSample_HostTcpRecv_2_Args> Finish() {
+  ::flatbuffers::Offset<TlsSample_HostTcpRecv_6_Args> Finish() {
     const auto end = fbb_.EndTable(start_);
-    auto o = ::flatbuffers::Offset<TlsSample_HostTcpRecv_2_Args>(end);
+    auto o = ::flatbuffers::Offset<TlsSample_HostTcpRecv_6_Args>(end);
     return o;
   }
 };
 
-inline ::flatbuffers::Offset<TlsSample_HostTcpRecv_2_Args> CreateTlsSample_HostTcpRecv_2_Args(
+inline ::flatbuffers::Offset<TlsSample_HostTcpRecv_6_Args> CreateTlsSample_HostTcpRecv_6_Args(
     ::flatbuffers::FlatBufferBuilder &_fbb,
     uint64_t m_transport_handle = 0,
     uint32_t m_max_bytes = 0,
     ::flatbuffers::Offset<TlsSample::FlatbufferTypes::HostTcpRecvResult> m__return_value_ = 0) {
-  TlsSample_HostTcpRecv_2_ArgsBuilder builder_(_fbb);
+  TlsSample_HostTcpRecv_6_ArgsBuilder builder_(_fbb);
   builder_.add_m_transport_handle(m_transport_handle);
   builder_.add_m__return_value_(m__return_value_);
   builder_.add_m_max_bytes(m_max_bytes);
   return builder_.Finish();
 }
 
-struct TlsSample_HostTcpRecv_2_Args::Traits {
-  using type = TlsSample_HostTcpRecv_2_Args;
-  static auto constexpr Create = CreateTlsSample_HostTcpRecv_2_Args;
+struct TlsSample_HostTcpRecv_6_Args::Traits {
+  using type = TlsSample_HostTcpRecv_6_Args;
+  static auto constexpr Create = CreateTlsSample_HostTcpRecv_6_Args;
 };
 
-::flatbuffers::Offset<TlsSample_HostTcpRecv_2_Args> CreateTlsSample_HostTcpRecv_2_Args(::flatbuffers::FlatBufferBuilder &_fbb, const TlsSample_HostTcpRecv_2_ArgsT *_o, const ::flatbuffers::rehasher_function_t *_rehasher = nullptr);
+::flatbuffers::Offset<TlsSample_HostTcpRecv_6_Args> CreateTlsSample_HostTcpRecv_6_Args(::flatbuffers::FlatBufferBuilder &_fbb, const TlsSample_HostTcpRecv_6_ArgsT *_o, const ::flatbuffers::rehasher_function_t *_rehasher = nullptr);
 
-struct TlsSample_HostTcpSend_3_ArgsT : public ::flatbuffers::NativeTable {
-  typedef TlsSample_HostTcpSend_3_Args TableType;
+struct TlsSample_HostTcpSend_7_ArgsT : public ::flatbuffers::NativeTable {
+  typedef TlsSample_HostTcpSend_7_Args TableType;
   uint64_t m_transport_handle = 0;
   std::vector<uint8_t> m_bytes{};
   std::unique_ptr<TlsSample::FlatbufferTypes::HostIoResultT> m__return_value_{};
-  TlsSample_HostTcpSend_3_ArgsT() = default;
-  TlsSample_HostTcpSend_3_ArgsT(const TlsSample_HostTcpSend_3_ArgsT &o);
-  TlsSample_HostTcpSend_3_ArgsT(TlsSample_HostTcpSend_3_ArgsT&&) FLATBUFFERS_NOEXCEPT = default;
-  TlsSample_HostTcpSend_3_ArgsT &operator=(TlsSample_HostTcpSend_3_ArgsT o) FLATBUFFERS_NOEXCEPT;
+  TlsSample_HostTcpSend_7_ArgsT() = default;
+  TlsSample_HostTcpSend_7_ArgsT(const TlsSample_HostTcpSend_7_ArgsT &o);
+  TlsSample_HostTcpSend_7_ArgsT(TlsSample_HostTcpSend_7_ArgsT&&) FLATBUFFERS_NOEXCEPT = default;
+  TlsSample_HostTcpSend_7_ArgsT &operator=(TlsSample_HostTcpSend_7_ArgsT o) FLATBUFFERS_NOEXCEPT;
 };
 
-struct TlsSample_HostTcpSend_3_Args FLATBUFFERS_FINAL_CLASS : private ::flatbuffers::Table {
-  typedef TlsSample_HostTcpSend_3_ArgsT NativeTableType;
-  typedef TlsSample_HostTcpSend_3_ArgsBuilder Builder;
+struct TlsSample_HostTcpSend_7_Args FLATBUFFERS_FINAL_CLASS : private ::flatbuffers::Table {
+  typedef TlsSample_HostTcpSend_7_ArgsT NativeTableType;
+  typedef TlsSample_HostTcpSend_7_ArgsBuilder Builder;
   struct Traits;
   enum FlatBuffersVTableOffset FLATBUFFERS_VTABLE_UNDERLYING_TYPE {
     VT_M_TRANSPORT_HANDLE = 4,
@@ -1168,81 +1828,81 @@ struct TlsSample_HostTcpSend_3_Args FLATBUFFERS_FINAL_CLASS : private ::flatbuff
            verifier.VerifyTable(m__return_value_()) &&
            verifier.EndTable();
   }
-  TlsSample_HostTcpSend_3_ArgsT *UnPack(const ::flatbuffers::resolver_function_t *_resolver = nullptr) const;
-  void UnPackTo(TlsSample_HostTcpSend_3_ArgsT *_o, const ::flatbuffers::resolver_function_t *_resolver = nullptr) const;
-  static ::flatbuffers::Offset<TlsSample_HostTcpSend_3_Args> Pack(::flatbuffers::FlatBufferBuilder &_fbb, const TlsSample_HostTcpSend_3_ArgsT* _o, const ::flatbuffers::rehasher_function_t *_rehasher = nullptr);
+  TlsSample_HostTcpSend_7_ArgsT *UnPack(const ::flatbuffers::resolver_function_t *_resolver = nullptr) const;
+  void UnPackTo(TlsSample_HostTcpSend_7_ArgsT *_o, const ::flatbuffers::resolver_function_t *_resolver = nullptr) const;
+  static ::flatbuffers::Offset<TlsSample_HostTcpSend_7_Args> Pack(::flatbuffers::FlatBufferBuilder &_fbb, const TlsSample_HostTcpSend_7_ArgsT* _o, const ::flatbuffers::rehasher_function_t *_rehasher = nullptr);
 };
 
-struct TlsSample_HostTcpSend_3_ArgsBuilder {
-  typedef TlsSample_HostTcpSend_3_Args Table;
+struct TlsSample_HostTcpSend_7_ArgsBuilder {
+  typedef TlsSample_HostTcpSend_7_Args Table;
   ::flatbuffers::FlatBufferBuilder &fbb_;
   ::flatbuffers::uoffset_t start_;
   void add_m_transport_handle(uint64_t m_transport_handle) {
-    fbb_.AddElement<uint64_t>(TlsSample_HostTcpSend_3_Args::VT_M_TRANSPORT_HANDLE, m_transport_handle, 0);
+    fbb_.AddElement<uint64_t>(TlsSample_HostTcpSend_7_Args::VT_M_TRANSPORT_HANDLE, m_transport_handle, 0);
   }
   void add_m_bytes(::flatbuffers::Offset<::flatbuffers::Vector<uint8_t>> m_bytes) {
-    fbb_.AddOffset(TlsSample_HostTcpSend_3_Args::VT_M_BYTES, m_bytes);
+    fbb_.AddOffset(TlsSample_HostTcpSend_7_Args::VT_M_BYTES, m_bytes);
   }
   void add_m__return_value_(::flatbuffers::Offset<TlsSample::FlatbufferTypes::HostIoResult> m__return_value_) {
-    fbb_.AddOffset(TlsSample_HostTcpSend_3_Args::VT_M__RETURN_VALUE_, m__return_value_);
+    fbb_.AddOffset(TlsSample_HostTcpSend_7_Args::VT_M__RETURN_VALUE_, m__return_value_);
   }
-  explicit TlsSample_HostTcpSend_3_ArgsBuilder(::flatbuffers::FlatBufferBuilder &_fbb)
+  explicit TlsSample_HostTcpSend_7_ArgsBuilder(::flatbuffers::FlatBufferBuilder &_fbb)
         : fbb_(_fbb) {
     start_ = fbb_.StartTable();
   }
-  ::flatbuffers::Offset<TlsSample_HostTcpSend_3_Args> Finish() {
+  ::flatbuffers::Offset<TlsSample_HostTcpSend_7_Args> Finish() {
     const auto end = fbb_.EndTable(start_);
-    auto o = ::flatbuffers::Offset<TlsSample_HostTcpSend_3_Args>(end);
-    fbb_.Required(o, TlsSample_HostTcpSend_3_Args::VT_M_BYTES);
+    auto o = ::flatbuffers::Offset<TlsSample_HostTcpSend_7_Args>(end);
+    fbb_.Required(o, TlsSample_HostTcpSend_7_Args::VT_M_BYTES);
     return o;
   }
 };
 
-inline ::flatbuffers::Offset<TlsSample_HostTcpSend_3_Args> CreateTlsSample_HostTcpSend_3_Args(
+inline ::flatbuffers::Offset<TlsSample_HostTcpSend_7_Args> CreateTlsSample_HostTcpSend_7_Args(
     ::flatbuffers::FlatBufferBuilder &_fbb,
     uint64_t m_transport_handle = 0,
     ::flatbuffers::Offset<::flatbuffers::Vector<uint8_t>> m_bytes = 0,
     ::flatbuffers::Offset<TlsSample::FlatbufferTypes::HostIoResult> m__return_value_ = 0) {
-  TlsSample_HostTcpSend_3_ArgsBuilder builder_(_fbb);
+  TlsSample_HostTcpSend_7_ArgsBuilder builder_(_fbb);
   builder_.add_m_transport_handle(m_transport_handle);
   builder_.add_m__return_value_(m__return_value_);
   builder_.add_m_bytes(m_bytes);
   return builder_.Finish();
 }
 
-struct TlsSample_HostTcpSend_3_Args::Traits {
-  using type = TlsSample_HostTcpSend_3_Args;
-  static auto constexpr Create = CreateTlsSample_HostTcpSend_3_Args;
+struct TlsSample_HostTcpSend_7_Args::Traits {
+  using type = TlsSample_HostTcpSend_7_Args;
+  static auto constexpr Create = CreateTlsSample_HostTcpSend_7_Args;
 };
 
-inline ::flatbuffers::Offset<TlsSample_HostTcpSend_3_Args> CreateTlsSample_HostTcpSend_3_ArgsDirect(
+inline ::flatbuffers::Offset<TlsSample_HostTcpSend_7_Args> CreateTlsSample_HostTcpSend_7_ArgsDirect(
     ::flatbuffers::FlatBufferBuilder &_fbb,
     uint64_t m_transport_handle = 0,
     const std::vector<uint8_t> *m_bytes = nullptr,
     ::flatbuffers::Offset<TlsSample::FlatbufferTypes::HostIoResult> m__return_value_ = 0) {
   auto m_bytes__ = m_bytes ? _fbb.CreateVector<uint8_t>(*m_bytes) : 0;
-  return TlsSample::FlatbufferTypes::CreateTlsSample_HostTcpSend_3_Args(
+  return TlsSample::FlatbufferTypes::CreateTlsSample_HostTcpSend_7_Args(
       _fbb,
       m_transport_handle,
       m_bytes__,
       m__return_value_);
 }
 
-::flatbuffers::Offset<TlsSample_HostTcpSend_3_Args> CreateTlsSample_HostTcpSend_3_Args(::flatbuffers::FlatBufferBuilder &_fbb, const TlsSample_HostTcpSend_3_ArgsT *_o, const ::flatbuffers::rehasher_function_t *_rehasher = nullptr);
+::flatbuffers::Offset<TlsSample_HostTcpSend_7_Args> CreateTlsSample_HostTcpSend_7_Args(::flatbuffers::FlatBufferBuilder &_fbb, const TlsSample_HostTcpSend_7_ArgsT *_o, const ::flatbuffers::rehasher_function_t *_rehasher = nullptr);
 
-struct TlsSample_HostTcpClose_4_ArgsT : public ::flatbuffers::NativeTable {
-  typedef TlsSample_HostTcpClose_4_Args TableType;
+struct TlsSample_HostTcpClose_8_ArgsT : public ::flatbuffers::NativeTable {
+  typedef TlsSample_HostTcpClose_8_Args TableType;
   uint64_t m_transport_handle = 0;
   std::unique_ptr<TlsSample::FlatbufferTypes::HostIoResultT> m__return_value_{};
-  TlsSample_HostTcpClose_4_ArgsT() = default;
-  TlsSample_HostTcpClose_4_ArgsT(const TlsSample_HostTcpClose_4_ArgsT &o);
-  TlsSample_HostTcpClose_4_ArgsT(TlsSample_HostTcpClose_4_ArgsT&&) FLATBUFFERS_NOEXCEPT = default;
-  TlsSample_HostTcpClose_4_ArgsT &operator=(TlsSample_HostTcpClose_4_ArgsT o) FLATBUFFERS_NOEXCEPT;
+  TlsSample_HostTcpClose_8_ArgsT() = default;
+  TlsSample_HostTcpClose_8_ArgsT(const TlsSample_HostTcpClose_8_ArgsT &o);
+  TlsSample_HostTcpClose_8_ArgsT(TlsSample_HostTcpClose_8_ArgsT&&) FLATBUFFERS_NOEXCEPT = default;
+  TlsSample_HostTcpClose_8_ArgsT &operator=(TlsSample_HostTcpClose_8_ArgsT o) FLATBUFFERS_NOEXCEPT;
 };
 
-struct TlsSample_HostTcpClose_4_Args FLATBUFFERS_FINAL_CLASS : private ::flatbuffers::Table {
-  typedef TlsSample_HostTcpClose_4_ArgsT NativeTableType;
-  typedef TlsSample_HostTcpClose_4_ArgsBuilder Builder;
+struct TlsSample_HostTcpClose_8_Args FLATBUFFERS_FINAL_CLASS : private ::flatbuffers::Table {
+  typedef TlsSample_HostTcpClose_8_ArgsT NativeTableType;
+  typedef TlsSample_HostTcpClose_8_ArgsBuilder Builder;
   struct Traits;
   enum FlatBuffersVTableOffset FLATBUFFERS_VTABLE_UNDERLYING_TYPE {
     VT_M_TRANSPORT_HANDLE = 4,
@@ -1261,48 +1921,48 @@ struct TlsSample_HostTcpClose_4_Args FLATBUFFERS_FINAL_CLASS : private ::flatbuf
            verifier.VerifyTable(m__return_value_()) &&
            verifier.EndTable();
   }
-  TlsSample_HostTcpClose_4_ArgsT *UnPack(const ::flatbuffers::resolver_function_t *_resolver = nullptr) const;
-  void UnPackTo(TlsSample_HostTcpClose_4_ArgsT *_o, const ::flatbuffers::resolver_function_t *_resolver = nullptr) const;
-  static ::flatbuffers::Offset<TlsSample_HostTcpClose_4_Args> Pack(::flatbuffers::FlatBufferBuilder &_fbb, const TlsSample_HostTcpClose_4_ArgsT* _o, const ::flatbuffers::rehasher_function_t *_rehasher = nullptr);
+  TlsSample_HostTcpClose_8_ArgsT *UnPack(const ::flatbuffers::resolver_function_t *_resolver = nullptr) const;
+  void UnPackTo(TlsSample_HostTcpClose_8_ArgsT *_o, const ::flatbuffers::resolver_function_t *_resolver = nullptr) const;
+  static ::flatbuffers::Offset<TlsSample_HostTcpClose_8_Args> Pack(::flatbuffers::FlatBufferBuilder &_fbb, const TlsSample_HostTcpClose_8_ArgsT* _o, const ::flatbuffers::rehasher_function_t *_rehasher = nullptr);
 };
 
-struct TlsSample_HostTcpClose_4_ArgsBuilder {
-  typedef TlsSample_HostTcpClose_4_Args Table;
+struct TlsSample_HostTcpClose_8_ArgsBuilder {
+  typedef TlsSample_HostTcpClose_8_Args Table;
   ::flatbuffers::FlatBufferBuilder &fbb_;
   ::flatbuffers::uoffset_t start_;
   void add_m_transport_handle(uint64_t m_transport_handle) {
-    fbb_.AddElement<uint64_t>(TlsSample_HostTcpClose_4_Args::VT_M_TRANSPORT_HANDLE, m_transport_handle, 0);
+    fbb_.AddElement<uint64_t>(TlsSample_HostTcpClose_8_Args::VT_M_TRANSPORT_HANDLE, m_transport_handle, 0);
   }
   void add_m__return_value_(::flatbuffers::Offset<TlsSample::FlatbufferTypes::HostIoResult> m__return_value_) {
-    fbb_.AddOffset(TlsSample_HostTcpClose_4_Args::VT_M__RETURN_VALUE_, m__return_value_);
+    fbb_.AddOffset(TlsSample_HostTcpClose_8_Args::VT_M__RETURN_VALUE_, m__return_value_);
   }
-  explicit TlsSample_HostTcpClose_4_ArgsBuilder(::flatbuffers::FlatBufferBuilder &_fbb)
+  explicit TlsSample_HostTcpClose_8_ArgsBuilder(::flatbuffers::FlatBufferBuilder &_fbb)
         : fbb_(_fbb) {
     start_ = fbb_.StartTable();
   }
-  ::flatbuffers::Offset<TlsSample_HostTcpClose_4_Args> Finish() {
+  ::flatbuffers::Offset<TlsSample_HostTcpClose_8_Args> Finish() {
     const auto end = fbb_.EndTable(start_);
-    auto o = ::flatbuffers::Offset<TlsSample_HostTcpClose_4_Args>(end);
+    auto o = ::flatbuffers::Offset<TlsSample_HostTcpClose_8_Args>(end);
     return o;
   }
 };
 
-inline ::flatbuffers::Offset<TlsSample_HostTcpClose_4_Args> CreateTlsSample_HostTcpClose_4_Args(
+inline ::flatbuffers::Offset<TlsSample_HostTcpClose_8_Args> CreateTlsSample_HostTcpClose_8_Args(
     ::flatbuffers::FlatBufferBuilder &_fbb,
     uint64_t m_transport_handle = 0,
     ::flatbuffers::Offset<TlsSample::FlatbufferTypes::HostIoResult> m__return_value_ = 0) {
-  TlsSample_HostTcpClose_4_ArgsBuilder builder_(_fbb);
+  TlsSample_HostTcpClose_8_ArgsBuilder builder_(_fbb);
   builder_.add_m_transport_handle(m_transport_handle);
   builder_.add_m__return_value_(m__return_value_);
   return builder_.Finish();
 }
 
-struct TlsSample_HostTcpClose_4_Args::Traits {
-  using type = TlsSample_HostTcpClose_4_Args;
-  static auto constexpr Create = CreateTlsSample_HostTcpClose_4_Args;
+struct TlsSample_HostTcpClose_8_Args::Traits {
+  using type = TlsSample_HostTcpClose_8_Args;
+  static auto constexpr Create = CreateTlsSample_HostTcpClose_8_Args;
 };
 
-::flatbuffers::Offset<TlsSample_HostTcpClose_4_Args> CreateTlsSample_HostTcpClose_4_Args(::flatbuffers::FlatBufferBuilder &_fbb, const TlsSample_HostTcpClose_4_ArgsT *_o, const ::flatbuffers::rehasher_function_t *_rehasher = nullptr);
+::flatbuffers::Offset<TlsSample_HostTcpClose_8_Args> CreateTlsSample_HostTcpClose_8_Args(::flatbuffers::FlatBufferBuilder &_fbb, const TlsSample_HostTcpClose_8_ArgsT *_o, const ::flatbuffers::rehasher_function_t *_rehasher = nullptr);
 
 struct AbiRegisterVtl0Callbacks_argsT : public ::flatbuffers::NativeTable {
   typedef AbiRegisterVtl0Callbacks_args TableType;
@@ -1471,13 +2131,8 @@ inline TlsSampleRequestT *TlsSampleRequest::UnPack(const ::flatbuffers::resolver
 inline void TlsSampleRequest::UnPackTo(TlsSampleRequestT *_o, const ::flatbuffers::resolver_function_t *_resolver) const {
   (void)_o;
   (void)_resolver;
-  { auto _e = profile(); _o->profile = _e; }
-  { auto _e = server_name(); if (_e) _o->server_name = _e->str(); }
-  { auto _e = server_port(); _o->server_port = _e; }
-  { auto _e = http_path(); if (_e) _o->http_path = _e->str(); }
+  { auto _e = scenario_id(); _o->scenario_id = _e; }
   { auto _e = input_value(); _o->input_value = _e; }
-  { auto _e = max_response_bytes(); _o->max_response_bytes = _e; }
-  { auto _e = pinned_server_certificate_sha256(); if (_e) { _o->pinned_server_certificate_sha256.resize(_e->size()); std::copy(_e->begin(), _e->end(), _o->pinned_server_certificate_sha256.begin()); } }
 }
 
 inline ::flatbuffers::Offset<TlsSampleRequest> TlsSampleRequest::Pack(::flatbuffers::FlatBufferBuilder &_fbb, const TlsSampleRequestT* _o, const ::flatbuffers::rehasher_function_t *_rehasher) {
@@ -1488,22 +2143,120 @@ inline ::flatbuffers::Offset<TlsSampleRequest> CreateTlsSampleRequest(::flatbuff
   (void)_rehasher;
   (void)_o;
   struct _VectorArgs { ::flatbuffers::FlatBufferBuilder *__fbb; const TlsSampleRequestT* __o; const ::flatbuffers::rehasher_function_t *__rehasher; } _va = { &_fbb, _o, _rehasher}; (void)_va;
-  auto _profile = _o->profile;
-  auto _server_name = _fbb.CreateString(_o->server_name);
-  auto _server_port = _o->server_port;
-  auto _http_path = _fbb.CreateString(_o->http_path);
+  auto _scenario_id = _o->scenario_id;
   auto _input_value = _o->input_value;
-  auto _max_response_bytes = _o->max_response_bytes;
-  auto _pinned_server_certificate_sha256 = _fbb.CreateVector(_o->pinned_server_certificate_sha256);
   return TlsSample::FlatbufferTypes::CreateTlsSampleRequest(
       _fbb,
+      _scenario_id,
+      _input_value);
+}
+
+inline TlsSampleScenarioMetadataT *TlsSampleScenarioMetadata::UnPack(const ::flatbuffers::resolver_function_t *_resolver) const {
+  auto _o = std::make_unique<TlsSampleScenarioMetadataT>();
+  UnPackTo(_o.get(), _resolver);
+  return _o.release();
+}
+
+inline void TlsSampleScenarioMetadata::UnPackTo(TlsSampleScenarioMetadataT *_o, const ::flatbuffers::resolver_function_t *_resolver) const {
+  (void)_o;
+  (void)_resolver;
+  { auto _e = status(); _o->status = _e; }
+  { auto _e = scenario_id(); _o->scenario_id = _e; }
+  { auto _e = profile(); _o->profile = _e; }
+  { auto _e = connect_host(); if (_e) _o->connect_host = _e->str(); }
+  { auto _e = connect_port(); _o->connect_port = _e; }
+  { auto _e = tls_server_name(); if (_e) _o->tls_server_name = _e->str(); }
+  { auto _e = http_path(); if (_e) _o->http_path = _e->str(); }
+  { auto _e = max_response_bytes(); _o->max_response_bytes = _e; }
+  { auto _e = pinned_certificate_sha256(); if (_e) { _o->pinned_certificate_sha256.resize(_e->size()); std::copy(_e->begin(), _e->end(), _o->pinned_certificate_sha256.begin()); } }
+}
+
+inline ::flatbuffers::Offset<TlsSampleScenarioMetadata> TlsSampleScenarioMetadata::Pack(::flatbuffers::FlatBufferBuilder &_fbb, const TlsSampleScenarioMetadataT* _o, const ::flatbuffers::rehasher_function_t *_rehasher) {
+  return CreateTlsSampleScenarioMetadata(_fbb, _o, _rehasher);
+}
+
+inline ::flatbuffers::Offset<TlsSampleScenarioMetadata> CreateTlsSampleScenarioMetadata(::flatbuffers::FlatBufferBuilder &_fbb, const TlsSampleScenarioMetadataT *_o, const ::flatbuffers::rehasher_function_t *_rehasher) {
+  (void)_rehasher;
+  (void)_o;
+  struct _VectorArgs { ::flatbuffers::FlatBufferBuilder *__fbb; const TlsSampleScenarioMetadataT* __o; const ::flatbuffers::rehasher_function_t *__rehasher; } _va = { &_fbb, _o, _rehasher}; (void)_va;
+  auto _status = _o->status;
+  auto _scenario_id = _o->scenario_id;
+  auto _profile = _o->profile;
+  auto _connect_host = _fbb.CreateString(_o->connect_host);
+  auto _connect_port = _o->connect_port;
+  auto _tls_server_name = _fbb.CreateString(_o->tls_server_name);
+  auto _http_path = _fbb.CreateString(_o->http_path);
+  auto _max_response_bytes = _o->max_response_bytes;
+  auto _pinned_certificate_sha256 = _fbb.CreateVector(_o->pinned_certificate_sha256);
+  return TlsSample::FlatbufferTypes::CreateTlsSampleScenarioMetadata(
+      _fbb,
+      _status,
+      _scenario_id,
       _profile,
-      _server_name,
-      _server_port,
+      _connect_host,
+      _connect_port,
+      _tls_server_name,
       _http_path,
-      _input_value,
       _max_response_bytes,
-      _pinned_server_certificate_sha256);
+      _pinned_certificate_sha256);
+}
+
+inline StartScenarioResultT *StartScenarioResult::UnPack(const ::flatbuffers::resolver_function_t *_resolver) const {
+  auto _o = std::make_unique<StartScenarioResultT>();
+  UnPackTo(_o.get(), _resolver);
+  return _o.release();
+}
+
+inline void StartScenarioResult::UnPackTo(StartScenarioResultT *_o, const ::flatbuffers::resolver_function_t *_resolver) const {
+  (void)_o;
+  (void)_resolver;
+  { auto _e = status(); _o->status = _e; }
+  { auto _e = session_handle(); _o->session_handle = _e; }
+}
+
+inline ::flatbuffers::Offset<StartScenarioResult> StartScenarioResult::Pack(::flatbuffers::FlatBufferBuilder &_fbb, const StartScenarioResultT* _o, const ::flatbuffers::rehasher_function_t *_rehasher) {
+  return CreateStartScenarioResult(_fbb, _o, _rehasher);
+}
+
+inline ::flatbuffers::Offset<StartScenarioResult> CreateStartScenarioResult(::flatbuffers::FlatBufferBuilder &_fbb, const StartScenarioResultT *_o, const ::flatbuffers::rehasher_function_t *_rehasher) {
+  (void)_rehasher;
+  (void)_o;
+  struct _VectorArgs { ::flatbuffers::FlatBufferBuilder *__fbb; const StartScenarioResultT* __o; const ::flatbuffers::rehasher_function_t *__rehasher; } _va = { &_fbb, _o, _rehasher}; (void)_va;
+  auto _status = _o->status;
+  auto _session_handle = _o->session_handle;
+  return TlsSample::FlatbufferTypes::CreateStartScenarioResult(
+      _fbb,
+      _status,
+      _session_handle);
+}
+
+inline DriveConnectionResultT *DriveConnectionResult::UnPack(const ::flatbuffers::resolver_function_t *_resolver) const {
+  auto _o = std::make_unique<DriveConnectionResultT>();
+  UnPackTo(_o.get(), _resolver);
+  return _o.release();
+}
+
+inline void DriveConnectionResult::UnPackTo(DriveConnectionResultT *_o, const ::flatbuffers::resolver_function_t *_resolver) const {
+  (void)_o;
+  (void)_resolver;
+  { auto _e = progress(); _o->progress = _e; }
+  { auto _e = status(); _o->status = _e; }
+}
+
+inline ::flatbuffers::Offset<DriveConnectionResult> DriveConnectionResult::Pack(::flatbuffers::FlatBufferBuilder &_fbb, const DriveConnectionResultT* _o, const ::flatbuffers::rehasher_function_t *_rehasher) {
+  return CreateDriveConnectionResult(_fbb, _o, _rehasher);
+}
+
+inline ::flatbuffers::Offset<DriveConnectionResult> CreateDriveConnectionResult(::flatbuffers::FlatBufferBuilder &_fbb, const DriveConnectionResultT *_o, const ::flatbuffers::rehasher_function_t *_rehasher) {
+  (void)_rehasher;
+  (void)_o;
+  struct _VectorArgs { ::flatbuffers::FlatBufferBuilder *__fbb; const DriveConnectionResultT* __o; const ::flatbuffers::rehasher_function_t *__rehasher; } _va = { &_fbb, _o, _rehasher}; (void)_va;
+  auto _progress = _o->progress;
+  auto _status = _o->status;
+  return TlsSample::FlatbufferTypes::CreateDriveConnectionResult(
+      _fbb,
+      _progress,
+      _status);
 }
 
 inline TlsSampleResultT *TlsSampleResult::UnPack(const ::flatbuffers::resolver_function_t *_resolver) const {
@@ -1516,11 +2269,11 @@ inline void TlsSampleResult::UnPackTo(TlsSampleResultT *_o, const ::flatbuffers:
   (void)_o;
   (void)_resolver;
   { auto _e = status(); _o->status = _e; }
+  { auto _e = decision(); _o->decision = _e; }
   { auto _e = output_value(); _o->output_value = _e; }
-  { auto _e = decision(); if (_e) _o->decision = _e->str(); }
-  { auto _e = diagnostics(); if (_e) _o->diagnostics = _e->str(); }
   { auto _e = tls_version(); _o->tls_version = _e; }
   { auto _e = cipher_suite(); _o->cipher_suite = _e; }
+  { auto _e = failure_reason(); _o->failure_reason = _e; }
 }
 
 inline ::flatbuffers::Offset<TlsSampleResult> TlsSampleResult::Pack(::flatbuffers::FlatBufferBuilder &_fbb, const TlsSampleResultT* _o, const ::flatbuffers::rehasher_function_t *_rehasher) {
@@ -1532,19 +2285,19 @@ inline ::flatbuffers::Offset<TlsSampleResult> CreateTlsSampleResult(::flatbuffer
   (void)_o;
   struct _VectorArgs { ::flatbuffers::FlatBufferBuilder *__fbb; const TlsSampleResultT* __o; const ::flatbuffers::rehasher_function_t *__rehasher; } _va = { &_fbb, _o, _rehasher}; (void)_va;
   auto _status = _o->status;
+  auto _decision = _o->decision;
   auto _output_value = _o->output_value;
-  auto _decision = _fbb.CreateString(_o->decision);
-  auto _diagnostics = _fbb.CreateString(_o->diagnostics);
   auto _tls_version = _o->tls_version;
   auto _cipher_suite = _o->cipher_suite;
+  auto _failure_reason = _o->failure_reason;
   return TlsSample::FlatbufferTypes::CreateTlsSampleResult(
       _fbb,
       _status,
-      _output_value,
       _decision,
-      _diagnostics,
+      _output_value,
       _tls_version,
-      _cipher_suite);
+      _cipher_suite,
+      _failure_reason);
 }
 
 inline HostTcpConnectResultT *HostTcpConnectResult::UnPack(const ::flatbuffers::resolver_function_t *_resolver) const {
@@ -1643,71 +2396,235 @@ inline ::flatbuffers::Offset<HostIoResult> CreateHostIoResult(::flatbuffers::Fla
       _host_error);
 }
 
-inline TlsSample_RunScenario_0_ArgsT::TlsSample_RunScenario_0_ArgsT(const TlsSample_RunScenario_0_ArgsT &o)
-      : m_request((o.m_request) ? new TlsSample::FlatbufferTypes::TlsSampleRequestT(*o.m_request) : nullptr),
-        m_result((o.m_result) ? new TlsSample::FlatbufferTypes::TlsSampleResultT(*o.m_result) : nullptr),
+inline TlsSample_GetScenarioMetadata_0_ArgsT::TlsSample_GetScenarioMetadata_0_ArgsT(const TlsSample_GetScenarioMetadata_0_ArgsT &o)
+      : m_scenario_id(o.m_scenario_id),
+        m_metadata((o.m_metadata) ? new TlsSample::FlatbufferTypes::TlsSampleScenarioMetadataT(*o.m_metadata) : nullptr),
         m__return_value_(o.m__return_value_) {
 }
 
-inline TlsSample_RunScenario_0_ArgsT &TlsSample_RunScenario_0_ArgsT::operator=(TlsSample_RunScenario_0_ArgsT o) FLATBUFFERS_NOEXCEPT {
+inline TlsSample_GetScenarioMetadata_0_ArgsT &TlsSample_GetScenarioMetadata_0_ArgsT::operator=(TlsSample_GetScenarioMetadata_0_ArgsT o) FLATBUFFERS_NOEXCEPT {
+  std::swap(m_scenario_id, o.m_scenario_id);
+  std::swap(m_metadata, o.m_metadata);
+  std::swap(m__return_value_, o.m__return_value_);
+  return *this;
+}
+
+inline TlsSample_GetScenarioMetadata_0_ArgsT *TlsSample_GetScenarioMetadata_0_Args::UnPack(const ::flatbuffers::resolver_function_t *_resolver) const {
+  auto _o = std::make_unique<TlsSample_GetScenarioMetadata_0_ArgsT>();
+  UnPackTo(_o.get(), _resolver);
+  return _o.release();
+}
+
+inline void TlsSample_GetScenarioMetadata_0_Args::UnPackTo(TlsSample_GetScenarioMetadata_0_ArgsT *_o, const ::flatbuffers::resolver_function_t *_resolver) const {
+  (void)_o;
+  (void)_resolver;
+  { auto _e = m_scenario_id(); _o->m_scenario_id = _e; }
+  { auto _e = m_metadata(); if (_e) { if(_o->m_metadata) { _e->UnPackTo(_o->m_metadata.get(), _resolver); } else { _o->m_metadata = std::unique_ptr<TlsSample::FlatbufferTypes::TlsSampleScenarioMetadataT>(_e->UnPack(_resolver)); } } else if (_o->m_metadata) { _o->m_metadata.reset(); } }
+  { auto _e = m__return_value_(); _o->m__return_value_ = _e; }
+}
+
+inline ::flatbuffers::Offset<TlsSample_GetScenarioMetadata_0_Args> TlsSample_GetScenarioMetadata_0_Args::Pack(::flatbuffers::FlatBufferBuilder &_fbb, const TlsSample_GetScenarioMetadata_0_ArgsT* _o, const ::flatbuffers::rehasher_function_t *_rehasher) {
+  return CreateTlsSample_GetScenarioMetadata_0_Args(_fbb, _o, _rehasher);
+}
+
+inline ::flatbuffers::Offset<TlsSample_GetScenarioMetadata_0_Args> CreateTlsSample_GetScenarioMetadata_0_Args(::flatbuffers::FlatBufferBuilder &_fbb, const TlsSample_GetScenarioMetadata_0_ArgsT *_o, const ::flatbuffers::rehasher_function_t *_rehasher) {
+  (void)_rehasher;
+  (void)_o;
+  struct _VectorArgs { ::flatbuffers::FlatBufferBuilder *__fbb; const TlsSample_GetScenarioMetadata_0_ArgsT* __o; const ::flatbuffers::rehasher_function_t *__rehasher; } _va = { &_fbb, _o, _rehasher}; (void)_va;
+  auto _m_scenario_id = _o->m_scenario_id;
+  auto _m_metadata = _o->m_metadata ? CreateTlsSampleScenarioMetadata(_fbb, _o->m_metadata.get(), _rehasher) : 0;
+  auto _m__return_value_ = _o->m__return_value_;
+  return TlsSample::FlatbufferTypes::CreateTlsSample_GetScenarioMetadata_0_Args(
+      _fbb,
+      _m_scenario_id,
+      _m_metadata,
+      _m__return_value_);
+}
+
+inline TlsSample_StartScenario_1_ArgsT::TlsSample_StartScenario_1_ArgsT(const TlsSample_StartScenario_1_ArgsT &o)
+      : m_request((o.m_request) ? new TlsSample::FlatbufferTypes::TlsSampleRequestT(*o.m_request) : nullptr),
+        m_result((o.m_result) ? new TlsSample::FlatbufferTypes::StartScenarioResultT(*o.m_result) : nullptr),
+        m__return_value_(o.m__return_value_) {
+}
+
+inline TlsSample_StartScenario_1_ArgsT &TlsSample_StartScenario_1_ArgsT::operator=(TlsSample_StartScenario_1_ArgsT o) FLATBUFFERS_NOEXCEPT {
   std::swap(m_request, o.m_request);
   std::swap(m_result, o.m_result);
   std::swap(m__return_value_, o.m__return_value_);
   return *this;
 }
 
-inline TlsSample_RunScenario_0_ArgsT *TlsSample_RunScenario_0_Args::UnPack(const ::flatbuffers::resolver_function_t *_resolver) const {
-  auto _o = std::make_unique<TlsSample_RunScenario_0_ArgsT>();
+inline TlsSample_StartScenario_1_ArgsT *TlsSample_StartScenario_1_Args::UnPack(const ::flatbuffers::resolver_function_t *_resolver) const {
+  auto _o = std::make_unique<TlsSample_StartScenario_1_ArgsT>();
   UnPackTo(_o.get(), _resolver);
   return _o.release();
 }
 
-inline void TlsSample_RunScenario_0_Args::UnPackTo(TlsSample_RunScenario_0_ArgsT *_o, const ::flatbuffers::resolver_function_t *_resolver) const {
+inline void TlsSample_StartScenario_1_Args::UnPackTo(TlsSample_StartScenario_1_ArgsT *_o, const ::flatbuffers::resolver_function_t *_resolver) const {
   (void)_o;
   (void)_resolver;
   { auto _e = m_request(); if (_e) { if(_o->m_request) { _e->UnPackTo(_o->m_request.get(), _resolver); } else { _o->m_request = std::unique_ptr<TlsSample::FlatbufferTypes::TlsSampleRequestT>(_e->UnPack(_resolver)); } } else if (_o->m_request) { _o->m_request.reset(); } }
-  { auto _e = m_result(); if (_e) { if(_o->m_result) { _e->UnPackTo(_o->m_result.get(), _resolver); } else { _o->m_result = std::unique_ptr<TlsSample::FlatbufferTypes::TlsSampleResultT>(_e->UnPack(_resolver)); } } else if (_o->m_result) { _o->m_result.reset(); } }
+  { auto _e = m_result(); if (_e) { if(_o->m_result) { _e->UnPackTo(_o->m_result.get(), _resolver); } else { _o->m_result = std::unique_ptr<TlsSample::FlatbufferTypes::StartScenarioResultT>(_e->UnPack(_resolver)); } } else if (_o->m_result) { _o->m_result.reset(); } }
   { auto _e = m__return_value_(); _o->m__return_value_ = _e; }
 }
 
-inline ::flatbuffers::Offset<TlsSample_RunScenario_0_Args> TlsSample_RunScenario_0_Args::Pack(::flatbuffers::FlatBufferBuilder &_fbb, const TlsSample_RunScenario_0_ArgsT* _o, const ::flatbuffers::rehasher_function_t *_rehasher) {
-  return CreateTlsSample_RunScenario_0_Args(_fbb, _o, _rehasher);
+inline ::flatbuffers::Offset<TlsSample_StartScenario_1_Args> TlsSample_StartScenario_1_Args::Pack(::flatbuffers::FlatBufferBuilder &_fbb, const TlsSample_StartScenario_1_ArgsT* _o, const ::flatbuffers::rehasher_function_t *_rehasher) {
+  return CreateTlsSample_StartScenario_1_Args(_fbb, _o, _rehasher);
 }
 
-inline ::flatbuffers::Offset<TlsSample_RunScenario_0_Args> CreateTlsSample_RunScenario_0_Args(::flatbuffers::FlatBufferBuilder &_fbb, const TlsSample_RunScenario_0_ArgsT *_o, const ::flatbuffers::rehasher_function_t *_rehasher) {
+inline ::flatbuffers::Offset<TlsSample_StartScenario_1_Args> CreateTlsSample_StartScenario_1_Args(::flatbuffers::FlatBufferBuilder &_fbb, const TlsSample_StartScenario_1_ArgsT *_o, const ::flatbuffers::rehasher_function_t *_rehasher) {
   (void)_rehasher;
   (void)_o;
-  struct _VectorArgs { ::flatbuffers::FlatBufferBuilder *__fbb; const TlsSample_RunScenario_0_ArgsT* __o; const ::flatbuffers::rehasher_function_t *__rehasher; } _va = { &_fbb, _o, _rehasher}; (void)_va;
+  struct _VectorArgs { ::flatbuffers::FlatBufferBuilder *__fbb; const TlsSample_StartScenario_1_ArgsT* __o; const ::flatbuffers::rehasher_function_t *__rehasher; } _va = { &_fbb, _o, _rehasher}; (void)_va;
   auto _m_request = _o->m_request ? CreateTlsSampleRequest(_fbb, _o->m_request.get(), _rehasher) : 0;
-  auto _m_result = _o->m_result ? CreateTlsSampleResult(_fbb, _o->m_result.get(), _rehasher) : 0;
+  auto _m_result = _o->m_result ? CreateStartScenarioResult(_fbb, _o->m_result.get(), _rehasher) : 0;
   auto _m__return_value_ = _o->m__return_value_;
-  return TlsSample::FlatbufferTypes::CreateTlsSample_RunScenario_0_Args(
+  return TlsSample::FlatbufferTypes::CreateTlsSample_StartScenario_1_Args(
       _fbb,
       _m_request,
       _m_result,
       _m__return_value_);
 }
 
-inline TlsSample_HostTcpConnect_1_ArgsT::TlsSample_HostTcpConnect_1_ArgsT(const TlsSample_HostTcpConnect_1_ArgsT &o)
+inline TlsSample_DriveConnection_2_ArgsT::TlsSample_DriveConnection_2_ArgsT(const TlsSample_DriveConnection_2_ArgsT &o)
+      : m_session_handle(o.m_session_handle),
+        m_result((o.m_result) ? new TlsSample::FlatbufferTypes::DriveConnectionResultT(*o.m_result) : nullptr),
+        m__return_value_(o.m__return_value_) {
+}
+
+inline TlsSample_DriveConnection_2_ArgsT &TlsSample_DriveConnection_2_ArgsT::operator=(TlsSample_DriveConnection_2_ArgsT o) FLATBUFFERS_NOEXCEPT {
+  std::swap(m_session_handle, o.m_session_handle);
+  std::swap(m_result, o.m_result);
+  std::swap(m__return_value_, o.m__return_value_);
+  return *this;
+}
+
+inline TlsSample_DriveConnection_2_ArgsT *TlsSample_DriveConnection_2_Args::UnPack(const ::flatbuffers::resolver_function_t *_resolver) const {
+  auto _o = std::make_unique<TlsSample_DriveConnection_2_ArgsT>();
+  UnPackTo(_o.get(), _resolver);
+  return _o.release();
+}
+
+inline void TlsSample_DriveConnection_2_Args::UnPackTo(TlsSample_DriveConnection_2_ArgsT *_o, const ::flatbuffers::resolver_function_t *_resolver) const {
+  (void)_o;
+  (void)_resolver;
+  { auto _e = m_session_handle(); _o->m_session_handle = _e; }
+  { auto _e = m_result(); if (_e) { if(_o->m_result) { _e->UnPackTo(_o->m_result.get(), _resolver); } else { _o->m_result = std::unique_ptr<TlsSample::FlatbufferTypes::DriveConnectionResultT>(_e->UnPack(_resolver)); } } else if (_o->m_result) { _o->m_result.reset(); } }
+  { auto _e = m__return_value_(); _o->m__return_value_ = _e; }
+}
+
+inline ::flatbuffers::Offset<TlsSample_DriveConnection_2_Args> TlsSample_DriveConnection_2_Args::Pack(::flatbuffers::FlatBufferBuilder &_fbb, const TlsSample_DriveConnection_2_ArgsT* _o, const ::flatbuffers::rehasher_function_t *_rehasher) {
+  return CreateTlsSample_DriveConnection_2_Args(_fbb, _o, _rehasher);
+}
+
+inline ::flatbuffers::Offset<TlsSample_DriveConnection_2_Args> CreateTlsSample_DriveConnection_2_Args(::flatbuffers::FlatBufferBuilder &_fbb, const TlsSample_DriveConnection_2_ArgsT *_o, const ::flatbuffers::rehasher_function_t *_rehasher) {
+  (void)_rehasher;
+  (void)_o;
+  struct _VectorArgs { ::flatbuffers::FlatBufferBuilder *__fbb; const TlsSample_DriveConnection_2_ArgsT* __o; const ::flatbuffers::rehasher_function_t *__rehasher; } _va = { &_fbb, _o, _rehasher}; (void)_va;
+  auto _m_session_handle = _o->m_session_handle;
+  auto _m_result = _o->m_result ? CreateDriveConnectionResult(_fbb, _o->m_result.get(), _rehasher) : 0;
+  auto _m__return_value_ = _o->m__return_value_;
+  return TlsSample::FlatbufferTypes::CreateTlsSample_DriveConnection_2_Args(
+      _fbb,
+      _m_session_handle,
+      _m_result,
+      _m__return_value_);
+}
+
+inline TlsSample_GetDerivedResult_3_ArgsT::TlsSample_GetDerivedResult_3_ArgsT(const TlsSample_GetDerivedResult_3_ArgsT &o)
+      : m_session_handle(o.m_session_handle),
+        m_result((o.m_result) ? new TlsSample::FlatbufferTypes::TlsSampleResultT(*o.m_result) : nullptr),
+        m__return_value_(o.m__return_value_) {
+}
+
+inline TlsSample_GetDerivedResult_3_ArgsT &TlsSample_GetDerivedResult_3_ArgsT::operator=(TlsSample_GetDerivedResult_3_ArgsT o) FLATBUFFERS_NOEXCEPT {
+  std::swap(m_session_handle, o.m_session_handle);
+  std::swap(m_result, o.m_result);
+  std::swap(m__return_value_, o.m__return_value_);
+  return *this;
+}
+
+inline TlsSample_GetDerivedResult_3_ArgsT *TlsSample_GetDerivedResult_3_Args::UnPack(const ::flatbuffers::resolver_function_t *_resolver) const {
+  auto _o = std::make_unique<TlsSample_GetDerivedResult_3_ArgsT>();
+  UnPackTo(_o.get(), _resolver);
+  return _o.release();
+}
+
+inline void TlsSample_GetDerivedResult_3_Args::UnPackTo(TlsSample_GetDerivedResult_3_ArgsT *_o, const ::flatbuffers::resolver_function_t *_resolver) const {
+  (void)_o;
+  (void)_resolver;
+  { auto _e = m_session_handle(); _o->m_session_handle = _e; }
+  { auto _e = m_result(); if (_e) { if(_o->m_result) { _e->UnPackTo(_o->m_result.get(), _resolver); } else { _o->m_result = std::unique_ptr<TlsSample::FlatbufferTypes::TlsSampleResultT>(_e->UnPack(_resolver)); } } else if (_o->m_result) { _o->m_result.reset(); } }
+  { auto _e = m__return_value_(); _o->m__return_value_ = _e; }
+}
+
+inline ::flatbuffers::Offset<TlsSample_GetDerivedResult_3_Args> TlsSample_GetDerivedResult_3_Args::Pack(::flatbuffers::FlatBufferBuilder &_fbb, const TlsSample_GetDerivedResult_3_ArgsT* _o, const ::flatbuffers::rehasher_function_t *_rehasher) {
+  return CreateTlsSample_GetDerivedResult_3_Args(_fbb, _o, _rehasher);
+}
+
+inline ::flatbuffers::Offset<TlsSample_GetDerivedResult_3_Args> CreateTlsSample_GetDerivedResult_3_Args(::flatbuffers::FlatBufferBuilder &_fbb, const TlsSample_GetDerivedResult_3_ArgsT *_o, const ::flatbuffers::rehasher_function_t *_rehasher) {
+  (void)_rehasher;
+  (void)_o;
+  struct _VectorArgs { ::flatbuffers::FlatBufferBuilder *__fbb; const TlsSample_GetDerivedResult_3_ArgsT* __o; const ::flatbuffers::rehasher_function_t *__rehasher; } _va = { &_fbb, _o, _rehasher}; (void)_va;
+  auto _m_session_handle = _o->m_session_handle;
+  auto _m_result = _o->m_result ? CreateTlsSampleResult(_fbb, _o->m_result.get(), _rehasher) : 0;
+  auto _m__return_value_ = _o->m__return_value_;
+  return TlsSample::FlatbufferTypes::CreateTlsSample_GetDerivedResult_3_Args(
+      _fbb,
+      _m_session_handle,
+      _m_result,
+      _m__return_value_);
+}
+
+inline TlsSample_CloseScenario_4_ArgsT *TlsSample_CloseScenario_4_Args::UnPack(const ::flatbuffers::resolver_function_t *_resolver) const {
+  auto _o = std::make_unique<TlsSample_CloseScenario_4_ArgsT>();
+  UnPackTo(_o.get(), _resolver);
+  return _o.release();
+}
+
+inline void TlsSample_CloseScenario_4_Args::UnPackTo(TlsSample_CloseScenario_4_ArgsT *_o, const ::flatbuffers::resolver_function_t *_resolver) const {
+  (void)_o;
+  (void)_resolver;
+  { auto _e = m_session_handle(); _o->m_session_handle = _e; }
+  { auto _e = m__return_value_(); _o->m__return_value_ = _e; }
+}
+
+inline ::flatbuffers::Offset<TlsSample_CloseScenario_4_Args> TlsSample_CloseScenario_4_Args::Pack(::flatbuffers::FlatBufferBuilder &_fbb, const TlsSample_CloseScenario_4_ArgsT* _o, const ::flatbuffers::rehasher_function_t *_rehasher) {
+  return CreateTlsSample_CloseScenario_4_Args(_fbb, _o, _rehasher);
+}
+
+inline ::flatbuffers::Offset<TlsSample_CloseScenario_4_Args> CreateTlsSample_CloseScenario_4_Args(::flatbuffers::FlatBufferBuilder &_fbb, const TlsSample_CloseScenario_4_ArgsT *_o, const ::flatbuffers::rehasher_function_t *_rehasher) {
+  (void)_rehasher;
+  (void)_o;
+  struct _VectorArgs { ::flatbuffers::FlatBufferBuilder *__fbb; const TlsSample_CloseScenario_4_ArgsT* __o; const ::flatbuffers::rehasher_function_t *__rehasher; } _va = { &_fbb, _o, _rehasher}; (void)_va;
+  auto _m_session_handle = _o->m_session_handle;
+  auto _m__return_value_ = _o->m__return_value_;
+  return TlsSample::FlatbufferTypes::CreateTlsSample_CloseScenario_4_Args(
+      _fbb,
+      _m_session_handle,
+      _m__return_value_);
+}
+
+inline TlsSample_HostTcpConnect_5_ArgsT::TlsSample_HostTcpConnect_5_ArgsT(const TlsSample_HostTcpConnect_5_ArgsT &o)
       : m_server_name(o.m_server_name),
         m_server_port(o.m_server_port),
         m__return_value_((o.m__return_value_) ? new TlsSample::FlatbufferTypes::HostTcpConnectResultT(*o.m__return_value_) : nullptr) {
 }
 
-inline TlsSample_HostTcpConnect_1_ArgsT &TlsSample_HostTcpConnect_1_ArgsT::operator=(TlsSample_HostTcpConnect_1_ArgsT o) FLATBUFFERS_NOEXCEPT {
+inline TlsSample_HostTcpConnect_5_ArgsT &TlsSample_HostTcpConnect_5_ArgsT::operator=(TlsSample_HostTcpConnect_5_ArgsT o) FLATBUFFERS_NOEXCEPT {
   std::swap(m_server_name, o.m_server_name);
   std::swap(m_server_port, o.m_server_port);
   std::swap(m__return_value_, o.m__return_value_);
   return *this;
 }
 
-inline TlsSample_HostTcpConnect_1_ArgsT *TlsSample_HostTcpConnect_1_Args::UnPack(const ::flatbuffers::resolver_function_t *_resolver) const {
-  auto _o = std::make_unique<TlsSample_HostTcpConnect_1_ArgsT>();
+inline TlsSample_HostTcpConnect_5_ArgsT *TlsSample_HostTcpConnect_5_Args::UnPack(const ::flatbuffers::resolver_function_t *_resolver) const {
+  auto _o = std::make_unique<TlsSample_HostTcpConnect_5_ArgsT>();
   UnPackTo(_o.get(), _resolver);
   return _o.release();
 }
 
-inline void TlsSample_HostTcpConnect_1_Args::UnPackTo(TlsSample_HostTcpConnect_1_ArgsT *_o, const ::flatbuffers::resolver_function_t *_resolver) const {
+inline void TlsSample_HostTcpConnect_5_Args::UnPackTo(TlsSample_HostTcpConnect_5_ArgsT *_o, const ::flatbuffers::resolver_function_t *_resolver) const {
   (void)_o;
   (void)_resolver;
   { auto _e = m_server_name(); if (_e) _o->m_server_name = _e->str(); }
@@ -1715,44 +2632,44 @@ inline void TlsSample_HostTcpConnect_1_Args::UnPackTo(TlsSample_HostTcpConnect_1
   { auto _e = m__return_value_(); if (_e) { if(_o->m__return_value_) { _e->UnPackTo(_o->m__return_value_.get(), _resolver); } else { _o->m__return_value_ = std::unique_ptr<TlsSample::FlatbufferTypes::HostTcpConnectResultT>(_e->UnPack(_resolver)); } } else if (_o->m__return_value_) { _o->m__return_value_.reset(); } }
 }
 
-inline ::flatbuffers::Offset<TlsSample_HostTcpConnect_1_Args> TlsSample_HostTcpConnect_1_Args::Pack(::flatbuffers::FlatBufferBuilder &_fbb, const TlsSample_HostTcpConnect_1_ArgsT* _o, const ::flatbuffers::rehasher_function_t *_rehasher) {
-  return CreateTlsSample_HostTcpConnect_1_Args(_fbb, _o, _rehasher);
+inline ::flatbuffers::Offset<TlsSample_HostTcpConnect_5_Args> TlsSample_HostTcpConnect_5_Args::Pack(::flatbuffers::FlatBufferBuilder &_fbb, const TlsSample_HostTcpConnect_5_ArgsT* _o, const ::flatbuffers::rehasher_function_t *_rehasher) {
+  return CreateTlsSample_HostTcpConnect_5_Args(_fbb, _o, _rehasher);
 }
 
-inline ::flatbuffers::Offset<TlsSample_HostTcpConnect_1_Args> CreateTlsSample_HostTcpConnect_1_Args(::flatbuffers::FlatBufferBuilder &_fbb, const TlsSample_HostTcpConnect_1_ArgsT *_o, const ::flatbuffers::rehasher_function_t *_rehasher) {
+inline ::flatbuffers::Offset<TlsSample_HostTcpConnect_5_Args> CreateTlsSample_HostTcpConnect_5_Args(::flatbuffers::FlatBufferBuilder &_fbb, const TlsSample_HostTcpConnect_5_ArgsT *_o, const ::flatbuffers::rehasher_function_t *_rehasher) {
   (void)_rehasher;
   (void)_o;
-  struct _VectorArgs { ::flatbuffers::FlatBufferBuilder *__fbb; const TlsSample_HostTcpConnect_1_ArgsT* __o; const ::flatbuffers::rehasher_function_t *__rehasher; } _va = { &_fbb, _o, _rehasher}; (void)_va;
+  struct _VectorArgs { ::flatbuffers::FlatBufferBuilder *__fbb; const TlsSample_HostTcpConnect_5_ArgsT* __o; const ::flatbuffers::rehasher_function_t *__rehasher; } _va = { &_fbb, _o, _rehasher}; (void)_va;
   auto _m_server_name = _fbb.CreateString(_o->m_server_name);
   auto _m_server_port = _o->m_server_port;
   auto _m__return_value_ = _o->m__return_value_ ? CreateHostTcpConnectResult(_fbb, _o->m__return_value_.get(), _rehasher) : 0;
-  return TlsSample::FlatbufferTypes::CreateTlsSample_HostTcpConnect_1_Args(
+  return TlsSample::FlatbufferTypes::CreateTlsSample_HostTcpConnect_5_Args(
       _fbb,
       _m_server_name,
       _m_server_port,
       _m__return_value_);
 }
 
-inline TlsSample_HostTcpRecv_2_ArgsT::TlsSample_HostTcpRecv_2_ArgsT(const TlsSample_HostTcpRecv_2_ArgsT &o)
+inline TlsSample_HostTcpRecv_6_ArgsT::TlsSample_HostTcpRecv_6_ArgsT(const TlsSample_HostTcpRecv_6_ArgsT &o)
       : m_transport_handle(o.m_transport_handle),
         m_max_bytes(o.m_max_bytes),
         m__return_value_((o.m__return_value_) ? new TlsSample::FlatbufferTypes::HostTcpRecvResultT(*o.m__return_value_) : nullptr) {
 }
 
-inline TlsSample_HostTcpRecv_2_ArgsT &TlsSample_HostTcpRecv_2_ArgsT::operator=(TlsSample_HostTcpRecv_2_ArgsT o) FLATBUFFERS_NOEXCEPT {
+inline TlsSample_HostTcpRecv_6_ArgsT &TlsSample_HostTcpRecv_6_ArgsT::operator=(TlsSample_HostTcpRecv_6_ArgsT o) FLATBUFFERS_NOEXCEPT {
   std::swap(m_transport_handle, o.m_transport_handle);
   std::swap(m_max_bytes, o.m_max_bytes);
   std::swap(m__return_value_, o.m__return_value_);
   return *this;
 }
 
-inline TlsSample_HostTcpRecv_2_ArgsT *TlsSample_HostTcpRecv_2_Args::UnPack(const ::flatbuffers::resolver_function_t *_resolver) const {
-  auto _o = std::make_unique<TlsSample_HostTcpRecv_2_ArgsT>();
+inline TlsSample_HostTcpRecv_6_ArgsT *TlsSample_HostTcpRecv_6_Args::UnPack(const ::flatbuffers::resolver_function_t *_resolver) const {
+  auto _o = std::make_unique<TlsSample_HostTcpRecv_6_ArgsT>();
   UnPackTo(_o.get(), _resolver);
   return _o.release();
 }
 
-inline void TlsSample_HostTcpRecv_2_Args::UnPackTo(TlsSample_HostTcpRecv_2_ArgsT *_o, const ::flatbuffers::resolver_function_t *_resolver) const {
+inline void TlsSample_HostTcpRecv_6_Args::UnPackTo(TlsSample_HostTcpRecv_6_ArgsT *_o, const ::flatbuffers::resolver_function_t *_resolver) const {
   (void)_o;
   (void)_resolver;
   { auto _e = m_transport_handle(); _o->m_transport_handle = _e; }
@@ -1760,44 +2677,44 @@ inline void TlsSample_HostTcpRecv_2_Args::UnPackTo(TlsSample_HostTcpRecv_2_ArgsT
   { auto _e = m__return_value_(); if (_e) { if(_o->m__return_value_) { _e->UnPackTo(_o->m__return_value_.get(), _resolver); } else { _o->m__return_value_ = std::unique_ptr<TlsSample::FlatbufferTypes::HostTcpRecvResultT>(_e->UnPack(_resolver)); } } else if (_o->m__return_value_) { _o->m__return_value_.reset(); } }
 }
 
-inline ::flatbuffers::Offset<TlsSample_HostTcpRecv_2_Args> TlsSample_HostTcpRecv_2_Args::Pack(::flatbuffers::FlatBufferBuilder &_fbb, const TlsSample_HostTcpRecv_2_ArgsT* _o, const ::flatbuffers::rehasher_function_t *_rehasher) {
-  return CreateTlsSample_HostTcpRecv_2_Args(_fbb, _o, _rehasher);
+inline ::flatbuffers::Offset<TlsSample_HostTcpRecv_6_Args> TlsSample_HostTcpRecv_6_Args::Pack(::flatbuffers::FlatBufferBuilder &_fbb, const TlsSample_HostTcpRecv_6_ArgsT* _o, const ::flatbuffers::rehasher_function_t *_rehasher) {
+  return CreateTlsSample_HostTcpRecv_6_Args(_fbb, _o, _rehasher);
 }
 
-inline ::flatbuffers::Offset<TlsSample_HostTcpRecv_2_Args> CreateTlsSample_HostTcpRecv_2_Args(::flatbuffers::FlatBufferBuilder &_fbb, const TlsSample_HostTcpRecv_2_ArgsT *_o, const ::flatbuffers::rehasher_function_t *_rehasher) {
+inline ::flatbuffers::Offset<TlsSample_HostTcpRecv_6_Args> CreateTlsSample_HostTcpRecv_6_Args(::flatbuffers::FlatBufferBuilder &_fbb, const TlsSample_HostTcpRecv_6_ArgsT *_o, const ::flatbuffers::rehasher_function_t *_rehasher) {
   (void)_rehasher;
   (void)_o;
-  struct _VectorArgs { ::flatbuffers::FlatBufferBuilder *__fbb; const TlsSample_HostTcpRecv_2_ArgsT* __o; const ::flatbuffers::rehasher_function_t *__rehasher; } _va = { &_fbb, _o, _rehasher}; (void)_va;
+  struct _VectorArgs { ::flatbuffers::FlatBufferBuilder *__fbb; const TlsSample_HostTcpRecv_6_ArgsT* __o; const ::flatbuffers::rehasher_function_t *__rehasher; } _va = { &_fbb, _o, _rehasher}; (void)_va;
   auto _m_transport_handle = _o->m_transport_handle;
   auto _m_max_bytes = _o->m_max_bytes;
   auto _m__return_value_ = _o->m__return_value_ ? CreateHostTcpRecvResult(_fbb, _o->m__return_value_.get(), _rehasher) : 0;
-  return TlsSample::FlatbufferTypes::CreateTlsSample_HostTcpRecv_2_Args(
+  return TlsSample::FlatbufferTypes::CreateTlsSample_HostTcpRecv_6_Args(
       _fbb,
       _m_transport_handle,
       _m_max_bytes,
       _m__return_value_);
 }
 
-inline TlsSample_HostTcpSend_3_ArgsT::TlsSample_HostTcpSend_3_ArgsT(const TlsSample_HostTcpSend_3_ArgsT &o)
+inline TlsSample_HostTcpSend_7_ArgsT::TlsSample_HostTcpSend_7_ArgsT(const TlsSample_HostTcpSend_7_ArgsT &o)
       : m_transport_handle(o.m_transport_handle),
         m_bytes(o.m_bytes),
         m__return_value_((o.m__return_value_) ? new TlsSample::FlatbufferTypes::HostIoResultT(*o.m__return_value_) : nullptr) {
 }
 
-inline TlsSample_HostTcpSend_3_ArgsT &TlsSample_HostTcpSend_3_ArgsT::operator=(TlsSample_HostTcpSend_3_ArgsT o) FLATBUFFERS_NOEXCEPT {
+inline TlsSample_HostTcpSend_7_ArgsT &TlsSample_HostTcpSend_7_ArgsT::operator=(TlsSample_HostTcpSend_7_ArgsT o) FLATBUFFERS_NOEXCEPT {
   std::swap(m_transport_handle, o.m_transport_handle);
   std::swap(m_bytes, o.m_bytes);
   std::swap(m__return_value_, o.m__return_value_);
   return *this;
 }
 
-inline TlsSample_HostTcpSend_3_ArgsT *TlsSample_HostTcpSend_3_Args::UnPack(const ::flatbuffers::resolver_function_t *_resolver) const {
-  auto _o = std::make_unique<TlsSample_HostTcpSend_3_ArgsT>();
+inline TlsSample_HostTcpSend_7_ArgsT *TlsSample_HostTcpSend_7_Args::UnPack(const ::flatbuffers::resolver_function_t *_resolver) const {
+  auto _o = std::make_unique<TlsSample_HostTcpSend_7_ArgsT>();
   UnPackTo(_o.get(), _resolver);
   return _o.release();
 }
 
-inline void TlsSample_HostTcpSend_3_Args::UnPackTo(TlsSample_HostTcpSend_3_ArgsT *_o, const ::flatbuffers::resolver_function_t *_resolver) const {
+inline void TlsSample_HostTcpSend_7_Args::UnPackTo(TlsSample_HostTcpSend_7_ArgsT *_o, const ::flatbuffers::resolver_function_t *_resolver) const {
   (void)_o;
   (void)_resolver;
   { auto _e = m_transport_handle(); _o->m_transport_handle = _e; }
@@ -1805,59 +2722,59 @@ inline void TlsSample_HostTcpSend_3_Args::UnPackTo(TlsSample_HostTcpSend_3_ArgsT
   { auto _e = m__return_value_(); if (_e) { if(_o->m__return_value_) { _e->UnPackTo(_o->m__return_value_.get(), _resolver); } else { _o->m__return_value_ = std::unique_ptr<TlsSample::FlatbufferTypes::HostIoResultT>(_e->UnPack(_resolver)); } } else if (_o->m__return_value_) { _o->m__return_value_.reset(); } }
 }
 
-inline ::flatbuffers::Offset<TlsSample_HostTcpSend_3_Args> TlsSample_HostTcpSend_3_Args::Pack(::flatbuffers::FlatBufferBuilder &_fbb, const TlsSample_HostTcpSend_3_ArgsT* _o, const ::flatbuffers::rehasher_function_t *_rehasher) {
-  return CreateTlsSample_HostTcpSend_3_Args(_fbb, _o, _rehasher);
+inline ::flatbuffers::Offset<TlsSample_HostTcpSend_7_Args> TlsSample_HostTcpSend_7_Args::Pack(::flatbuffers::FlatBufferBuilder &_fbb, const TlsSample_HostTcpSend_7_ArgsT* _o, const ::flatbuffers::rehasher_function_t *_rehasher) {
+  return CreateTlsSample_HostTcpSend_7_Args(_fbb, _o, _rehasher);
 }
 
-inline ::flatbuffers::Offset<TlsSample_HostTcpSend_3_Args> CreateTlsSample_HostTcpSend_3_Args(::flatbuffers::FlatBufferBuilder &_fbb, const TlsSample_HostTcpSend_3_ArgsT *_o, const ::flatbuffers::rehasher_function_t *_rehasher) {
+inline ::flatbuffers::Offset<TlsSample_HostTcpSend_7_Args> CreateTlsSample_HostTcpSend_7_Args(::flatbuffers::FlatBufferBuilder &_fbb, const TlsSample_HostTcpSend_7_ArgsT *_o, const ::flatbuffers::rehasher_function_t *_rehasher) {
   (void)_rehasher;
   (void)_o;
-  struct _VectorArgs { ::flatbuffers::FlatBufferBuilder *__fbb; const TlsSample_HostTcpSend_3_ArgsT* __o; const ::flatbuffers::rehasher_function_t *__rehasher; } _va = { &_fbb, _o, _rehasher}; (void)_va;
+  struct _VectorArgs { ::flatbuffers::FlatBufferBuilder *__fbb; const TlsSample_HostTcpSend_7_ArgsT* __o; const ::flatbuffers::rehasher_function_t *__rehasher; } _va = { &_fbb, _o, _rehasher}; (void)_va;
   auto _m_transport_handle = _o->m_transport_handle;
   auto _m_bytes = _fbb.CreateVector(_o->m_bytes);
   auto _m__return_value_ = _o->m__return_value_ ? CreateHostIoResult(_fbb, _o->m__return_value_.get(), _rehasher) : 0;
-  return TlsSample::FlatbufferTypes::CreateTlsSample_HostTcpSend_3_Args(
+  return TlsSample::FlatbufferTypes::CreateTlsSample_HostTcpSend_7_Args(
       _fbb,
       _m_transport_handle,
       _m_bytes,
       _m__return_value_);
 }
 
-inline TlsSample_HostTcpClose_4_ArgsT::TlsSample_HostTcpClose_4_ArgsT(const TlsSample_HostTcpClose_4_ArgsT &o)
+inline TlsSample_HostTcpClose_8_ArgsT::TlsSample_HostTcpClose_8_ArgsT(const TlsSample_HostTcpClose_8_ArgsT &o)
       : m_transport_handle(o.m_transport_handle),
         m__return_value_((o.m__return_value_) ? new TlsSample::FlatbufferTypes::HostIoResultT(*o.m__return_value_) : nullptr) {
 }
 
-inline TlsSample_HostTcpClose_4_ArgsT &TlsSample_HostTcpClose_4_ArgsT::operator=(TlsSample_HostTcpClose_4_ArgsT o) FLATBUFFERS_NOEXCEPT {
+inline TlsSample_HostTcpClose_8_ArgsT &TlsSample_HostTcpClose_8_ArgsT::operator=(TlsSample_HostTcpClose_8_ArgsT o) FLATBUFFERS_NOEXCEPT {
   std::swap(m_transport_handle, o.m_transport_handle);
   std::swap(m__return_value_, o.m__return_value_);
   return *this;
 }
 
-inline TlsSample_HostTcpClose_4_ArgsT *TlsSample_HostTcpClose_4_Args::UnPack(const ::flatbuffers::resolver_function_t *_resolver) const {
-  auto _o = std::make_unique<TlsSample_HostTcpClose_4_ArgsT>();
+inline TlsSample_HostTcpClose_8_ArgsT *TlsSample_HostTcpClose_8_Args::UnPack(const ::flatbuffers::resolver_function_t *_resolver) const {
+  auto _o = std::make_unique<TlsSample_HostTcpClose_8_ArgsT>();
   UnPackTo(_o.get(), _resolver);
   return _o.release();
 }
 
-inline void TlsSample_HostTcpClose_4_Args::UnPackTo(TlsSample_HostTcpClose_4_ArgsT *_o, const ::flatbuffers::resolver_function_t *_resolver) const {
+inline void TlsSample_HostTcpClose_8_Args::UnPackTo(TlsSample_HostTcpClose_8_ArgsT *_o, const ::flatbuffers::resolver_function_t *_resolver) const {
   (void)_o;
   (void)_resolver;
   { auto _e = m_transport_handle(); _o->m_transport_handle = _e; }
   { auto _e = m__return_value_(); if (_e) { if(_o->m__return_value_) { _e->UnPackTo(_o->m__return_value_.get(), _resolver); } else { _o->m__return_value_ = std::unique_ptr<TlsSample::FlatbufferTypes::HostIoResultT>(_e->UnPack(_resolver)); } } else if (_o->m__return_value_) { _o->m__return_value_.reset(); } }
 }
 
-inline ::flatbuffers::Offset<TlsSample_HostTcpClose_4_Args> TlsSample_HostTcpClose_4_Args::Pack(::flatbuffers::FlatBufferBuilder &_fbb, const TlsSample_HostTcpClose_4_ArgsT* _o, const ::flatbuffers::rehasher_function_t *_rehasher) {
-  return CreateTlsSample_HostTcpClose_4_Args(_fbb, _o, _rehasher);
+inline ::flatbuffers::Offset<TlsSample_HostTcpClose_8_Args> TlsSample_HostTcpClose_8_Args::Pack(::flatbuffers::FlatBufferBuilder &_fbb, const TlsSample_HostTcpClose_8_ArgsT* _o, const ::flatbuffers::rehasher_function_t *_rehasher) {
+  return CreateTlsSample_HostTcpClose_8_Args(_fbb, _o, _rehasher);
 }
 
-inline ::flatbuffers::Offset<TlsSample_HostTcpClose_4_Args> CreateTlsSample_HostTcpClose_4_Args(::flatbuffers::FlatBufferBuilder &_fbb, const TlsSample_HostTcpClose_4_ArgsT *_o, const ::flatbuffers::rehasher_function_t *_rehasher) {
+inline ::flatbuffers::Offset<TlsSample_HostTcpClose_8_Args> CreateTlsSample_HostTcpClose_8_Args(::flatbuffers::FlatBufferBuilder &_fbb, const TlsSample_HostTcpClose_8_ArgsT *_o, const ::flatbuffers::rehasher_function_t *_rehasher) {
   (void)_rehasher;
   (void)_o;
-  struct _VectorArgs { ::flatbuffers::FlatBufferBuilder *__fbb; const TlsSample_HostTcpClose_4_ArgsT* __o; const ::flatbuffers::rehasher_function_t *__rehasher; } _va = { &_fbb, _o, _rehasher}; (void)_va;
+  struct _VectorArgs { ::flatbuffers::FlatBufferBuilder *__fbb; const TlsSample_HostTcpClose_8_ArgsT* __o; const ::flatbuffers::rehasher_function_t *__rehasher; } _va = { &_fbb, _o, _rehasher}; (void)_va;
   auto _m_transport_handle = _o->m_transport_handle;
   auto _m__return_value_ = _o->m__return_value_ ? CreateHostIoResult(_fbb, _o->m__return_value_.get(), _rehasher) : 0;
-  return TlsSample::FlatbufferTypes::CreateTlsSample_HostTcpClose_4_Args(
+  return TlsSample::FlatbufferTypes::CreateTlsSample_HostTcpClose_8_Args(
       _fbb,
       _m_transport_handle,
       _m__return_value_);

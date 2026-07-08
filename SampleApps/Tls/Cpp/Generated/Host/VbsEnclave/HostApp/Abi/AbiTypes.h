@@ -9,35 +9,62 @@ namespace TlsSample::Abi::Types
 {
     using namespace TlsSample::Types;
 
-    struct TlsSample_RunScenario_0_Args
+    struct TlsSample_GetScenarioMetadata_0_Args
+    {
+        std::uint32_t m_scenario_id {};
+        TlsSampleScenarioMetadata m_metadata {};
+        HRESULT m__return_value_ {};
+    };
+
+    struct TlsSample_StartScenario_1_Args
     {
         TlsSampleRequest m_request {};
+        StartScenarioResult m_result {};
+        HRESULT m__return_value_ {};
+    };
+
+    struct TlsSample_DriveConnection_2_Args
+    {
+        std::uint64_t m_session_handle {};
+        DriveConnectionResult m_result {};
+        HRESULT m__return_value_ {};
+    };
+
+    struct TlsSample_GetDerivedResult_3_Args
+    {
+        std::uint64_t m_session_handle {};
         TlsSampleResult m_result {};
         HRESULT m__return_value_ {};
     };
 
-    struct TlsSample_HostTcpConnect_1_Args
+    struct TlsSample_CloseScenario_4_Args
+    {
+        std::uint64_t m_session_handle {};
+        HRESULT m__return_value_ {};
+    };
+
+    struct TlsSample_HostTcpConnect_5_Args
     {
         std::string m_server_name {};
         std::uint16_t m_server_port {};
         HostTcpConnectResult m__return_value_ {};
     };
 
-    struct TlsSample_HostTcpRecv_2_Args
+    struct TlsSample_HostTcpRecv_6_Args
     {
         std::uint64_t m_transport_handle {};
         std::uint32_t m_max_bytes {};
         HostTcpRecvResult m__return_value_ {};
     };
 
-    struct TlsSample_HostTcpSend_3_Args
+    struct TlsSample_HostTcpSend_7_Args
     {
         std::uint64_t m_transport_handle {};
         std::vector<std::uint8_t> m_bytes {};
         HostIoResult m__return_value_ {};
     };
 
-    struct TlsSample_HostTcpClose_4_Args
+    struct TlsSample_HostTcpClose_8_Args
     {
         std::uint64_t m_transport_handle {};
         HostIoResult m__return_value_ {};

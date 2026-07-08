@@ -7,28 +7,51 @@
 namespace TlsSample::Types
 {
     struct TlsSampleRequest;
+    struct TlsSampleScenarioMetadata;
+    struct StartScenarioResult;
+    struct DriveConnectionResult;
     struct TlsSampleResult;
     struct HostTcpConnectResult;
     struct HostTcpRecvResult;
     struct HostIoResult;
 
+    enum class TlsSampleAbiVersion : std::uint32_t
+    {
+        TlsSampleAbiVersion_Current = 1,
+    };
+
     enum class TlsSampleStatus : std::uint32_t
     {
         TlsSampleStatus_Ok = 0,
-        TlsSampleStatus_WouldBlock = 1,
-        TlsSampleStatus_Closed = 2,
-        TlsSampleStatus_Truncated = 3,
-        TlsSampleStatus_ValidationFailed = 4,
-        TlsSampleStatus_TransportFailed = 5,
-        TlsSampleStatus_ProtocolFailed = 6,
-        TlsSampleStatus_AccessDenied = 7,
+        TlsSampleStatus_Closed = 1,
+        TlsSampleStatus_Truncated = 2,
+        TlsSampleStatus_ValidationFailed = 3,
+        TlsSampleStatus_TransportFailed = 4,
+        TlsSampleStatus_ProtocolFailed = 5,
+        TlsSampleStatus_AccessDenied = 6,
+        TlsSampleStatus_BudgetExceeded = 7,
+        TlsSampleStatus_InvalidHandle = 8,
+        TlsSampleStatus_InvalidState = 9,
+        TlsSampleStatus_UnknownScenario = 10,
+    };
+
+    enum class TlsSampleProgress : std::uint32_t
+    {
+        TlsSampleProgress_Working = 0,
+        TlsSampleProgress_WouldBlock = 1,
+        TlsSampleProgress_Completed = 2,
+        TlsSampleProgress_Failed = 3,
+    };
+
+    enum class TlsSampleDecision : std::uint32_t
+    {
+        TlsSampleDecision_Deny = 0,
+        TlsSampleDecision_Allow = 1,
     };
 
     enum class TlsSampleProfile : std::uint32_t
     {
         TlsSampleProfile_ServerAuth = 0,
-        TlsSampleProfile_MutualAuth = 1,
-        TlsSampleProfile_EmbeddedAttestation = 2,
     };
 
     enum class HostIoStatus : std::uint32_t
@@ -41,23 +64,43 @@ namespace TlsSample::Types
 
     struct TlsSampleRequest
     {
-        TlsSampleProfile profile {};
-        std::string server_name {};
-        std::uint16_t server_port {};
-        std::string http_path {};
+        std::uint32_t scenario_id {};
         std::uint32_t input_value {};
+    };
+
+    struct TlsSampleScenarioMetadata
+    {
+        TlsSampleStatus status {};
+        std::uint32_t scenario_id {};
+        TlsSampleProfile profile {};
+        std::string connect_host {};
+        std::uint16_t connect_port {};
+        std::string tls_server_name {};
+        std::string http_path {};
         std::uint32_t max_response_bytes {};
-        std::vector<std::uint8_t> pinned_server_certificate_sha256 {};
+        std::array<std::uint8_t, 32> pinned_certificate_sha256 {};
+    };
+
+    struct StartScenarioResult
+    {
+        TlsSampleStatus status {};
+        std::uint64_t session_handle {};
+    };
+
+    struct DriveConnectionResult
+    {
+        TlsSampleProgress progress {};
+        TlsSampleStatus status {};
     };
 
     struct TlsSampleResult
     {
         TlsSampleStatus status {};
+        TlsSampleDecision decision {};
         std::uint32_t output_value {};
-        std::string decision {};
-        std::string diagnostics {};
         std::uint32_t tls_version {};
         std::uint16_t cipher_suite {};
+        TlsSampleStatus failure_reason {};
     };
 
     struct HostTcpConnectResult

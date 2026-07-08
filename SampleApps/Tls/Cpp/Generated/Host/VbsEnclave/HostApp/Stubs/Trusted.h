@@ -15,12 +15,47 @@ namespace TlsSample::Trusted::Stubs
     {
         TlsSampleHost(LPVOID enclave) : m_enclave(enclave) {}
         
-        HRESULT TlsSample_RunScenario(_In_ const TlsSampleRequest& request, _Out_  TlsSampleResult& result)
+        HRESULT TlsSample_GetScenarioMetadata(_In_  std::uint32_t scenario_id, _Out_  TlsSampleScenarioMetadata& metadata)
         {
-            FlatbufferTypes::TlsSample_RunScenario_0_ArgsT in_flatbufferT {};
+            FlatbufferTypes::TlsSample_GetScenarioMetadata_0_ArgsT in_flatbufferT {};
+            in_flatbufferT.m_scenario_id = VbsEnclaveABI::Shared::Converters::ConvertType<decltype(in_flatbufferT.m_scenario_id)>(scenario_id);
+            auto return_params = VbsEnclaveABI::HostApp::CallVtl1ExportFromVtl0<TlsSample::Abi::Types::TlsSample_GetScenarioMetadata_0_Args>(in_flatbufferT, m_enclave, "TlsSample_GetScenarioMetadata_0_Generated_Stub");
+            VbsEnclaveABI::Shared::Converters::UpdateParameterValue(return_params.m_metadata, metadata);
+            return std::move(return_params.m__return_value_);
+        }
+
+        HRESULT TlsSample_StartScenario(_In_ const TlsSampleRequest& request, _Out_  StartScenarioResult& result)
+        {
+            FlatbufferTypes::TlsSample_StartScenario_1_ArgsT in_flatbufferT {};
             in_flatbufferT.m_request = VbsEnclaveABI::Shared::Converters::ConvertType<decltype(in_flatbufferT.m_request)>(request);
-            auto return_params = VbsEnclaveABI::HostApp::CallVtl1ExportFromVtl0<TlsSample::Abi::Types::TlsSample_RunScenario_0_Args>(in_flatbufferT, m_enclave, "TlsSample_RunScenario_0_Generated_Stub");
+            auto return_params = VbsEnclaveABI::HostApp::CallVtl1ExportFromVtl0<TlsSample::Abi::Types::TlsSample_StartScenario_1_Args>(in_flatbufferT, m_enclave, "TlsSample_StartScenario_1_Generated_Stub");
             VbsEnclaveABI::Shared::Converters::UpdateParameterValue(return_params.m_result, result);
+            return std::move(return_params.m__return_value_);
+        }
+
+        HRESULT TlsSample_DriveConnection(_In_  std::uint64_t session_handle, _Out_  DriveConnectionResult& result)
+        {
+            FlatbufferTypes::TlsSample_DriveConnection_2_ArgsT in_flatbufferT {};
+            in_flatbufferT.m_session_handle = VbsEnclaveABI::Shared::Converters::ConvertType<decltype(in_flatbufferT.m_session_handle)>(session_handle);
+            auto return_params = VbsEnclaveABI::HostApp::CallVtl1ExportFromVtl0<TlsSample::Abi::Types::TlsSample_DriveConnection_2_Args>(in_flatbufferT, m_enclave, "TlsSample_DriveConnection_2_Generated_Stub");
+            VbsEnclaveABI::Shared::Converters::UpdateParameterValue(return_params.m_result, result);
+            return std::move(return_params.m__return_value_);
+        }
+
+        HRESULT TlsSample_GetDerivedResult(_In_  std::uint64_t session_handle, _Out_  TlsSampleResult& result)
+        {
+            FlatbufferTypes::TlsSample_GetDerivedResult_3_ArgsT in_flatbufferT {};
+            in_flatbufferT.m_session_handle = VbsEnclaveABI::Shared::Converters::ConvertType<decltype(in_flatbufferT.m_session_handle)>(session_handle);
+            auto return_params = VbsEnclaveABI::HostApp::CallVtl1ExportFromVtl0<TlsSample::Abi::Types::TlsSample_GetDerivedResult_3_Args>(in_flatbufferT, m_enclave, "TlsSample_GetDerivedResult_3_Generated_Stub");
+            VbsEnclaveABI::Shared::Converters::UpdateParameterValue(return_params.m_result, result);
+            return std::move(return_params.m__return_value_);
+        }
+
+        HRESULT TlsSample_CloseScenario(_In_  std::uint64_t session_handle)
+        {
+            FlatbufferTypes::TlsSample_CloseScenario_4_ArgsT in_flatbufferT {};
+            in_flatbufferT.m_session_handle = VbsEnclaveABI::Shared::Converters::ConvertType<decltype(in_flatbufferT.m_session_handle)>(session_handle);
+            auto return_params = VbsEnclaveABI::HostApp::CallVtl1ExportFromVtl0<TlsSample::Abi::Types::TlsSample_CloseScenario_4_Args>(in_flatbufferT, m_enclave, "TlsSample_CloseScenario_4_Generated_Stub");
             return std::move(return_params.m__return_value_);
         }
 
@@ -50,7 +85,7 @@ namespace TlsSample::Trusted::Stubs
             LPVOID m_enclave{};
             bool m_callbacks_registered{};
             wil::srwlock m_register_callbacks_lock{};
-            std::array<uintptr_t, 6> m_callback_addresses{ reinterpret_cast<uintptr_t>(&VbsEnclaveABI::HostApp::AllocateVtl0MemoryCallback),reinterpret_cast<uintptr_t>(&VbsEnclaveABI::HostApp::DeallocateVtl0MemoryCallback), reinterpret_cast<uintptr_t>(&Abi::Definitions::TlsSample_HostTcpConnect_1_Generated_Stub), reinterpret_cast<uintptr_t>(&Abi::Definitions::TlsSample_HostTcpRecv_2_Generated_Stub), reinterpret_cast<uintptr_t>(&Abi::Definitions::TlsSample_HostTcpSend_3_Generated_Stub), reinterpret_cast<uintptr_t>(&Abi::Definitions::TlsSample_HostTcpClose_4_Generated_Stub) };
-            std::array<std::string, 6> m_callback_names{ "VbsEnclaveABI::HostApp::AllocateVtl0MemoryCallback","VbsEnclaveABI::HostApp::DeallocateVtl0MemoryCallback", "TlsSample::Abi::Definitions::TlsSample_HostTcpConnect_1_Generated_Stub", "TlsSample::Abi::Definitions::TlsSample_HostTcpRecv_2_Generated_Stub", "TlsSample::Abi::Definitions::TlsSample_HostTcpSend_3_Generated_Stub", "TlsSample::Abi::Definitions::TlsSample_HostTcpClose_4_Generated_Stub" };
+            std::array<uintptr_t, 6> m_callback_addresses{ reinterpret_cast<uintptr_t>(&VbsEnclaveABI::HostApp::AllocateVtl0MemoryCallback),reinterpret_cast<uintptr_t>(&VbsEnclaveABI::HostApp::DeallocateVtl0MemoryCallback), reinterpret_cast<uintptr_t>(&Abi::Definitions::TlsSample_HostTcpConnect_5_Generated_Stub), reinterpret_cast<uintptr_t>(&Abi::Definitions::TlsSample_HostTcpRecv_6_Generated_Stub), reinterpret_cast<uintptr_t>(&Abi::Definitions::TlsSample_HostTcpSend_7_Generated_Stub), reinterpret_cast<uintptr_t>(&Abi::Definitions::TlsSample_HostTcpClose_8_Generated_Stub) };
+            std::array<std::string, 6> m_callback_names{ "VbsEnclaveABI::HostApp::AllocateVtl0MemoryCallback","VbsEnclaveABI::HostApp::DeallocateVtl0MemoryCallback", "TlsSample::Abi::Definitions::TlsSample_HostTcpConnect_5_Generated_Stub", "TlsSample::Abi::Definitions::TlsSample_HostTcpRecv_6_Generated_Stub", "TlsSample::Abi::Definitions::TlsSample_HostTcpSend_7_Generated_Stub", "TlsSample::Abi::Definitions::TlsSample_HostTcpClose_8_Generated_Stub" };
     };
 }

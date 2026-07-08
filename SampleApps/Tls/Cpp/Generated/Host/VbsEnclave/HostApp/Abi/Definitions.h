@@ -13,11 +13,11 @@ namespace TlsSample
     namespace Abi::Definitions
     {
         
-        static inline void* TlsSample_HostTcpConnect_1_Generated_Stub(void* function_context)
+        static inline void* TlsSample_HostTcpConnect_5_Generated_Stub(void* function_context)
         try
         {
-            using AbiTypeT = TlsSample::Abi::Types::TlsSample_HostTcpConnect_1_Args;
-            using FlatBufferT = FlatbufferTypes::TlsSample_HostTcpConnect_1_ArgsT;
+            using AbiTypeT = TlsSample::Abi::Types::TlsSample_HostTcpConnect_5_Args;
+            using FlatBufferT = FlatbufferTypes::TlsSample_HostTcpConnect_5_ArgsT;
             
             HRESULT hr = VbsEnclaveABI::HostApp::CallVtl0CallbackImplFromVtl0<AbiTypeT, FlatBufferT>(Untrusted::Implementation::TlsSample_HostTcpConnect, function_context);
             LOG_IF_FAILED(hr);
@@ -30,11 +30,11 @@ namespace TlsSample
             return ABI_HRESULT_TO_PVOID(hr);
         }
 
-        static inline void* TlsSample_HostTcpRecv_2_Generated_Stub(void* function_context)
+        static inline void* TlsSample_HostTcpRecv_6_Generated_Stub(void* function_context)
         try
         {
-            using AbiTypeT = TlsSample::Abi::Types::TlsSample_HostTcpRecv_2_Args;
-            using FlatBufferT = FlatbufferTypes::TlsSample_HostTcpRecv_2_ArgsT;
+            using AbiTypeT = TlsSample::Abi::Types::TlsSample_HostTcpRecv_6_Args;
+            using FlatBufferT = FlatbufferTypes::TlsSample_HostTcpRecv_6_ArgsT;
             
             HRESULT hr = VbsEnclaveABI::HostApp::CallVtl0CallbackImplFromVtl0<AbiTypeT, FlatBufferT>(Untrusted::Implementation::TlsSample_HostTcpRecv, function_context);
             LOG_IF_FAILED(hr);
@@ -47,11 +47,11 @@ namespace TlsSample
             return ABI_HRESULT_TO_PVOID(hr);
         }
 
-        static inline void* TlsSample_HostTcpSend_3_Generated_Stub(void* function_context)
+        static inline void* TlsSample_HostTcpSend_7_Generated_Stub(void* function_context)
         try
         {
-            using AbiTypeT = TlsSample::Abi::Types::TlsSample_HostTcpSend_3_Args;
-            using FlatBufferT = FlatbufferTypes::TlsSample_HostTcpSend_3_ArgsT;
+            using AbiTypeT = TlsSample::Abi::Types::TlsSample_HostTcpSend_7_Args;
+            using FlatBufferT = FlatbufferTypes::TlsSample_HostTcpSend_7_ArgsT;
             
             HRESULT hr = VbsEnclaveABI::HostApp::CallVtl0CallbackImplFromVtl0<AbiTypeT, FlatBufferT>(Untrusted::Implementation::TlsSample_HostTcpSend, function_context);
             LOG_IF_FAILED(hr);
@@ -64,11 +64,11 @@ namespace TlsSample
             return ABI_HRESULT_TO_PVOID(hr);
         }
 
-        static inline void* TlsSample_HostTcpClose_4_Generated_Stub(void* function_context)
+        static inline void* TlsSample_HostTcpClose_8_Generated_Stub(void* function_context)
         try
         {
-            using AbiTypeT = TlsSample::Abi::Types::TlsSample_HostTcpClose_4_Args;
-            using FlatBufferT = FlatbufferTypes::TlsSample_HostTcpClose_4_ArgsT;
+            using AbiTypeT = TlsSample::Abi::Types::TlsSample_HostTcpClose_8_Args;
+            using FlatBufferT = FlatbufferTypes::TlsSample_HostTcpClose_8_ArgsT;
             
             HRESULT hr = VbsEnclaveABI::HostApp::CallVtl0CallbackImplFromVtl0<AbiTypeT, FlatBufferT>(Untrusted::Implementation::TlsSample_HostTcpClose, function_context);
             LOG_IF_FAILED(hr);
