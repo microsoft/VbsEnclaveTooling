@@ -13,15 +13,26 @@ if (-not (Test-Path $dll)) {
     throw "TlsEnclave.dll was not found at $dll. Build the enclave first."
 }
 
-$sdkBin = "C:\Program Files (x86)\Windows Kits\10\bin\10.0.26100.0\x64"
-$veiid = Join-Path $sdkBin "veiid.exe"
-$signTool = Join-Path $sdkBin "signtool.exe"
+# Discover the Windows SDK signing tools for this platform rather than hard-coding
+# a single SDK version, so the sample builds across machines/architectures.
+$arch = if ($Platform -ieq "ARM64") { "arm64" } else { "x64" }
+$sdkBinRoot = Join-Path ${env:ProgramFiles(x86)} "Windows Kits\10\bin"
+$veiid = Get-ChildItem $sdkBinRoot -Directory -ErrorAction SilentlyContinue |
+    Sort-Object Name -Descending |
+    ForEach-Object { Join-Path $_.FullName "$arch\veiid.exe" } |
+    Where-Object { Test-Path $_ } |
+    Select-Object -First 1
+$signTool = Get-ChildItem $sdkBinRoot -Directory -ErrorAction SilentlyContinue |
+    Sort-Object Name -Descending |
+    ForEach-Object { Join-Path $_.FullName "$arch\signtool.exe" } |
+    Where-Object { Test-Path $_ } |
+    Select-Object -First 1
 
-if (-not (Test-Path $veiid)) {
-    throw "veiid.exe was not found at $veiid."
+if (-not $veiid) {
+    throw "veiid.exe was not found under $sdkBinRoot for $arch."
 }
-if (-not (Test-Path $signTool)) {
-    throw "signtool.exe was not found at $signTool."
+if (-not $signTool) {
+    throw "signtool.exe was not found under $sdkBinRoot for $arch."
 }
 
 & $veiid $dll

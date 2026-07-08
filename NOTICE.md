@@ -71,3 +71,32 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ```
+
+## Mbed TLS
+
+The C++ TLS enclave samples (`SampleApps/Tls`) build and statically link Mbed TLS
+to terminate TLS inside the enclave. It is fetched at build time by
+`SampleApps/Tls/Fetch-MbedTls.ps1` and is not redistributed in this repository.
+
+**Source**: [https://github.com/Mbed-TLS/mbedtls](https://github.com/Mbed-TLS/mbedtls)
+
+**License**: Apache-2.0 (see `LICENSE` in the upstream repository).
+
+## Windows Implementation Libraries (WIL)
+
+The C++ TLS enclave samples use WIL headers. They are fetched at build time by
+`SampleApps/Tls/Fetch-CppDeps.ps1` and are not redistributed in this repository.
+
+**Source**: [https://github.com/microsoft/wil](https://github.com/microsoft/wil)
+
+**License**: MIT (see `LICENSE` in the upstream repository).
+
+## FlatBuffers
+
+The generated TLS transport bindings use FlatBuffers for ABI marshalling. It is
+fetched at build time by `SampleApps/Tls/Fetch-CppDeps.ps1` (pinned to an
+immutable commit) and is not redistributed in this repository.
+
+**Source**: [https://github.com/google/flatbuffers](https://github.com/google/flatbuffers)
+
+**License**: Apache-2.0 (see `LICENSE.txt` in the upstream repository).

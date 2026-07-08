@@ -53,5 +53,5 @@ Sync-Checkout `
 
 Sync-Checkout `
     -Repository "https://github.com/google/flatbuffers.git" `
-    -Commit "v24.3.25" `
+    -Commit "334ffbbe337d53d9235a08f071af0ea329dcf14a" `
     -Destination (Join-Path $PSScriptRoot "external\flatbuffers")

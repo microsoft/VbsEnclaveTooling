@@ -2,7 +2,7 @@ param(
     [ValidateSet("Debug", "Release")]
     [string]$Configuration = "Debug",
 
-    [ValidateSet("x64")]
+    [ValidateSet("x64", "ARM64")]
     [string]$Platform = "x64"
 )
 
@@ -10,6 +10,10 @@ Set-StrictMode -Version Latest
 $ErrorActionPreference = "Stop"
 
 & (Join-Path $PSScriptRoot "..\..\Fetch-CppDeps.ps1")
+
+# Pin the current test server certificate into the enclave image before building,
+# so VTL0 can never supply or relax the trust anchor at runtime.
+& (Join-Path $PSScriptRoot "Generate-ScenarioPolicy.ps1")
 
 $programFilesX86 = ${env:ProgramFiles(x86)}
 $vswhere = Join-Path $programFilesX86 "Microsoft Visual Studio\Installer\vswhere.exe"

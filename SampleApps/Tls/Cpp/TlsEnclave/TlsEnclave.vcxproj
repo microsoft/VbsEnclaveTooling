@@ -5,6 +5,10 @@
       <Configuration>Debug</Configuration>
       <Platform>x64</Platform>
     </ProjectConfiguration>
+    <ProjectConfiguration Include="Debug|ARM64">
+      <Configuration>Debug</Configuration>
+      <Platform>ARM64</Platform>
+    </ProjectConfiguration>
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>17.0</VCProjectVersion>
@@ -24,6 +28,12 @@
     <PlatformToolset>$(TlsSamplePlatformToolset)</PlatformToolset>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
+  <PropertyGroup Label="Configuration" Condition="'$(Configuration)|$(Platform)'=='Debug|ARM64'">
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>$(TlsSamplePlatformToolset)</PlatformToolset>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
   <PropertyGroup>
     <OutDir>$(ProjectDir)bin\$(Platform)\$(Configuration)\</OutDir>
@@ -37,8 +47,11 @@
   <PropertyGroup Condition="'$(Platform)'=='x64'">
     <ExecutablePath>$(VCToolsInstallDir)bin\Hostx64\x64;$(ExecutablePath)</ExecutablePath>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(Platform)'=='ARM64'">
+    <ExecutablePath>$(VCToolsInstallDir)bin\Hostarm64\arm64;$(ExecutablePath)</ExecutablePath>
+  </PropertyGroup>
   <PropertyGroup>
-    <VC_LibraryPath_Enclave>$(VC_LibraryPath_VC_x64_Desktop)\enclave</VC_LibraryPath_Enclave>
+    <VC_LibraryPath_Enclave>$(VCToolsInstallDir)lib\$(Platform)\enclave</VC_LibraryPath_Enclave>
     <WindowsSDK_LibraryPath_Enclave>$(WindowsSDK_LibraryPath)\..\ucrt_enclave\$(Platform)</WindowsSDK_LibraryPath_Enclave>
     <VBS_Enclave_Dependencies>
       vertdll.lib;
@@ -101,6 +114,7 @@
   <ItemGroup>
     <ClInclude Include="..\Common\TlsMbedTlsConfig.h" />
     <ClInclude Include="..\Common\TlsMbedTlsDriver.h" />
+    <ClInclude Include="ScenarioPolicy.g.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="TlsEnclave.def" />
