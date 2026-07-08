@@ -3,6 +3,16 @@ $ErrorActionPreference = "Stop"
 
 & (Join-Path $PSScriptRoot "Fetch-MbedTls.ps1")
 
+# git marks pack files read-only, which defeats Remove-Item -Force; clear the
+# attribute first so a partial checkout can be cleaned up for a re-run.
+function Remove-CheckoutDirectory {
+    param([string]$Path)
+    if (-not (Test-Path $Path)) { return }
+    Get-ChildItem -LiteralPath $Path -Recurse -Force -ErrorAction SilentlyContinue |
+        ForEach-Object { $_.Attributes = 'Normal' }
+    Remove-Item -LiteralPath $Path -Recurse -Force -ErrorAction SilentlyContinue
+}
+
 function Sync-Checkout {
     param(
         [Parameter(Mandatory = $true)]
@@ -38,12 +48,12 @@ function Sync-Checkout {
     Write-Host "Fetching $Repository $Commit into $Destination"
     git clone --filter=blob:none --no-checkout $Repository $Destination
     if ($LASTEXITCODE -ne 0) {
-        Remove-Item -Recurse -Force $Destination -ErrorAction SilentlyContinue
+        Remove-CheckoutDirectory $Destination
         throw "git clone of $Repository failed (exit $LASTEXITCODE); removed partial checkout."
     }
     git -C $Destination checkout $Commit
     if ($LASTEXITCODE -ne 0) {
-        Remove-Item -Recurse -Force $Destination -ErrorAction SilentlyContinue
+        Remove-CheckoutDirectory $Destination
         throw "git checkout of $Repository $Commit failed (exit $LASTEXITCODE); removed partial checkout."
     }
 }

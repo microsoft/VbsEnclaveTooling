@@ -5,6 +5,16 @@ param(
 Set-StrictMode -Version Latest
 $ErrorActionPreference = "Stop"
 
+# git marks pack files read-only, which defeats Remove-Item -Force; clear the
+# attribute first so a partial checkout can be cleaned up for a re-run.
+function Remove-CheckoutDirectory {
+    param([string]$Path)
+    if (-not (Test-Path $Path)) { return }
+    Get-ChildItem -LiteralPath $Path -Recurse -Force -ErrorAction SilentlyContinue |
+        ForEach-Object { $_.Attributes = 'Normal' }
+    Remove-Item -LiteralPath $Path -Recurse -Force -ErrorAction SilentlyContinue
+}
+
 $Destination = [System.IO.Path]::GetFullPath($Destination)
 
 $repository = "https://github.com/Mbed-TLS/mbedtls.git"
@@ -30,12 +40,12 @@ New-Item -ItemType Directory -Force -Path $parent | Out-Null
 Write-Host "Fetching mbedTLS $commit into $Destination"
 git clone --filter=blob:none --no-checkout $repository $Destination
 if ($LASTEXITCODE -ne 0) {
-    Remove-Item -Recurse -Force $Destination -ErrorAction SilentlyContinue
+    Remove-CheckoutDirectory $Destination
     throw "git clone of mbedTLS failed (exit $LASTEXITCODE); removed partial checkout."
 }
 
 git -C $Destination checkout $commit
 if ($LASTEXITCODE -ne 0) {
-    Remove-Item -Recurse -Force $Destination -ErrorAction SilentlyContinue
+    Remove-CheckoutDirectory $Destination
     throw "git checkout of mbedTLS $commit failed (exit $LASTEXITCODE); removed partial checkout."
 }

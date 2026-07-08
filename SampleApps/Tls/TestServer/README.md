@@ -33,17 +33,17 @@ The first sample uses the server certificate for server-auth TLS. The client cer
 
 By default this opens the server in a new PowerShell window. Close that window, or stop its PID, to stop the server.
 
-For manual testing, prefer absolute certificate paths so the child PowerShell window cannot resolve paths relative to a different working directory:
+For manual testing, prefer absolute certificate paths so the child PowerShell window cannot resolve paths relative to a different working directory. Run this from the `TestServer` directory:
 
 ```powershell
-$repo = (Get-Location).Path
+$certs = Join-Path (Get-Location).Path "test-certs"
 
 .\Start-TestServer.ps1 `
   -StopExisting `
   -Address 127.0.0.1 `
   -Port 9781 `
-  -CertificatePath "$repo\SampleApps\Tls\TestServer\test-certs\server-cert.pem" `
-  -CertificateKeyPath "$repo\SampleApps\Tls\TestServer\test-certs\server-key.pem"
+  -CertificatePath "$certs\server-cert.pem" `
+  -CertificateKeyPath "$certs\server-key.pem"
 ```
 
 The server prints the certificate path and SHA-256 hash it loaded:

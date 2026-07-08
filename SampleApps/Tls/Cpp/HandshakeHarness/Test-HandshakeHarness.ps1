@@ -62,16 +62,22 @@ function Assert-HarnessResult {
 }
 
 try {
-    # Wait for the server's readiness banner instead of a fixed sleep.
+    # Wait for the server's readiness banner instead of a fixed sleep, and fail
+    # closed if it never appears (or the server exits early).
+    $ready = $false
     $deadline = (Get-Date).AddSeconds(15)
     while ((Get-Date) -lt $deadline) {
         if ((Test-Path $serverOut) -and (Select-String -Path $serverOut -Pattern "listening on" -Quiet)) {
+            $ready = $true
             break
         }
         if ($server.HasExited) {
             throw "server exited early:`n$(Get-Content $serverErr -ErrorAction SilentlyContinue)"
         }
         Start-Sleep -Milliseconds 200
+    }
+    if (-not $ready) {
+        throw "server did not become ready within the timeout."
     }
 
     # Positive: the pinned server certificate is accepted and produces the result.

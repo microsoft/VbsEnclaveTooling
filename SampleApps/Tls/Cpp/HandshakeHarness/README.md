@@ -64,23 +64,21 @@ Remove the current-user trust entry when finished:
 ..\TlsEnclave\Remove-TrustedCert.ps1
 ```
 
-Start the test server (the enclave connects to `127.0.0.1:9781` for scenario 0):
+Start the test server (the enclave connects to `127.0.0.1:9781` for scenario 0). From this `HandshakeHarness` directory:
 
 ```powershell
-$repo = (Get-Location).Path
-
-.\SampleApps\Tls\TestServer\Start-TestServer.ps1 `
+..\..\TestServer\Start-TestServer.ps1 `
   -StopExisting `
   -Address 127.0.0.1 `
   -Port 9781 `
-  -CertificatePath "$repo\SampleApps\Tls\TestServer\test-certs\server.pfx"
+  -CertificatePath ..\..\TestServer\test-certs\server.pfx
 ```
 
-In another shell, run the host with the enclave DLL, the scenario id, and the application input value:
+In another shell (also from `HandshakeHarness`), run the host with the enclave DLL, the scenario id, and the application input value:
 
 ```powershell
-& "$repo\SampleApps\Tls\Cpp\TlsHost\bin\ARM64\Debug\TlsHost.exe" `
-  "$repo\SampleApps\Tls\Cpp\TlsEnclave\bin\ARM64\Debug\TlsEnclave.dll" `
+..\TlsHost\bin\ARM64\Debug\TlsHost.exe `
+  ..\TlsEnclave\bin\ARM64\Debug\TlsEnclave.dll `
   0 `
   38
 ```

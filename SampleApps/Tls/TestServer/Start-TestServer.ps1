@@ -235,6 +235,12 @@ function Invoke-Connection {
     $sslStream = $null
     try {
         $networkStream = $Client.GetStream()
+        # Bound the handshake and header reads BEFORE authenticating, so a client
+        # that connects but never completes the TLS handshake cannot hang this
+        # single-threaded server. ReadTimeout on the SslStream would only apply
+        # after AuthenticateAsServer (which itself blocks reading ClientHello).
+        $networkStream.ReadTimeout = 5000
+        $networkStream.WriteTimeout = 5000
         if ($ExpectedClientThumbprint) {
             $validationCallback = {
                 param($sender, $certificate, $chain, $sslPolicyErrors)
@@ -252,10 +258,6 @@ function Invoke-Connection {
         $options.ApplicationProtocols = [System.Collections.Generic.List[System.Net.Security.SslApplicationProtocol]]::new()
         $options.ApplicationProtocols.Add([System.Net.Security.SslApplicationProtocol]::Http11)
         $sslStream.AuthenticateAsServer($options)
-
-        # Bound the header read so a client that connects but never sends a full
-        # request cannot hang this single-threaded server indefinitely.
-        $sslStream.ReadTimeout = 5000
 
         $request = Read-HttpRequest -Stream $sslStream
         $path = Get-RequestPath -Request $request
