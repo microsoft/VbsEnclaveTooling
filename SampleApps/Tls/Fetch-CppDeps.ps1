@@ -9,7 +9,7 @@ function Remove-CheckoutDirectory {
     param([string]$Path)
     if (-not (Test-Path $Path)) { return }
     Get-ChildItem -LiteralPath $Path -Recurse -Force -ErrorAction SilentlyContinue |
-        ForEach-Object { $_.Attributes = 'Normal' }
+        ForEach-Object { try { $_.Attributes = 'Normal' } catch {} }
     Remove-Item -LiteralPath $Path -Recurse -Force -ErrorAction SilentlyContinue
 }
 

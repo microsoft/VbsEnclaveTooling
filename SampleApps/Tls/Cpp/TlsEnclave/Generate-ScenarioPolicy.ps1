@@ -52,7 +52,7 @@ namespace tls_sample_generated
 "@
 
 $existing = if (Test-Path $OutputPath) { Get-Content -Raw -Encoding utf8 -Path $OutputPath } else { $null }
-if ($existing -eq $content) {
+if ($existing -ceq $content) {
     Write-Host "Scenario policy pin unchanged at $OutputPath"
 } else {
     Set-Content -Path $OutputPath -Value $content -Encoding utf8 -NoNewline

@@ -146,6 +146,34 @@ namespace
         SpinGuard(const SpinGuard&) = delete;
         SpinGuard& operator=(const SpinGuard&) = delete;
     };
+
+    // Clears g_driving and services a close deferred during the drive. The
+    // session is moved out and destructed after the lock is released so its
+    // VTL0 close callback never runs beneath the lock.
+    void FinishDrive() noexcept
+    {
+        std::unique_ptr<tls_sample::TlsSession> expired;
+        {
+            SpinGuard guard;
+            g_driving = false;
+            if (g_closeRequested)
+            {
+                expired = std::move(g_session);
+                g_sessionHandle = 0;
+                g_closeRequested = false;
+            }
+        }
+    }
+
+    // RAII so the singleton gate is released even if TlsSession::Drive() (which
+    // re-enters VTL0 through throwing transport stubs) escapes with an exception.
+    struct DriveGuard
+    {
+        DriveGuard() = default;
+        ~DriveGuard() { FinishDrive(); }
+        DriveGuard(const DriveGuard&) = delete;
+        DriveGuard& operator=(const DriveGuard&) = delete;
+    };
 }
 
 HRESULT TlsSample::Trusted::Implementation::TlsSample_GetScenarioMetadata(
@@ -236,22 +264,11 @@ HRESULT TlsSample::Trusted::Implementation::TlsSample_DriveConnection(
     }
 
     // Drive() re-enters VTL0 via transport callbacks — run it outside the lock.
+    // DriveGuard clears g_driving (and services a deferred close) on every exit,
+    // including if Drive() throws, so the singleton gate can never wedge.
+    DriveGuard driveGuard;
     const auto progress = session->Drive();
     const auto status = session->Result().status;
-
-    std::unique_ptr<tls_sample::TlsSession> expired;
-    {
-        SpinGuard guard;
-        g_driving = false;
-        if (g_closeRequested)
-        {
-            // A close arrived mid-drive; complete it now by moving the session
-            // out so it destructs (and runs its VTL0 close) outside the lock.
-            expired = std::move(g_session);
-            g_sessionHandle = 0;
-            g_closeRequested = false;
-        }
-    }
 
     result.progress = CastEnum<TlsSampleProgress>(progress);
     result.status = CastEnum<TlsSampleStatus>(status);

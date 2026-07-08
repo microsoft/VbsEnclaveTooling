@@ -64,13 +64,14 @@ The sample server should return a payload that materially affects enclave behavi
 }
 ```
 
-The enclave consumes this payload and returns only a bounded, derived result. The C++ server-auth sample returns a typed result — a `decision` enum, a derived `output_value`, and the negotiated (wire-observable) `tls_version` and `cipher_suite` — for example:
+The enclave consumes this payload and returns only a bounded, derived result. The C++ server-auth sample returns a typed result — a `decision` enum, a derived `output_value`, the negotiated (wire-observable) `tls_version` and `cipher_suite`, and a `failure_reason` (the terminal `status` recorded when the handshake or validation did not reach `Allow`; `Ok` on success) — for example:
 
 ```text
 decision = Allow
 output_value = 1406
 tls_version = 0x0304   (TLS 1.3)
 cipher_suite = 0x1302  (TLS_AES_256_GCM_SHA384)
+failure_reason = Ok
 ```
 
 Free-form diagnostic strings are deliberately avoided so the result cannot become a channel for decrypted server content. The payload itself, including sentinel strings used by tests, must never be returned directly to VTL0.
@@ -158,6 +159,7 @@ decision=Allow
 output_value=1406
 tls_version=0x304
 cipher_suite=0x1302
+failure_reason=0
 ```
 
 ## Required tests and verification
