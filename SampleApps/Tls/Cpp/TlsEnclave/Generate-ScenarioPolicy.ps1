@@ -51,5 +51,10 @@ namespace tls_sample_generated
 }
 "@
 
-Set-Content -Path $OutputPath -Value $content -Encoding utf8
-Write-Host "Wrote scenario policy pin to $OutputPath"
+$existing = if (Test-Path $OutputPath) { Get-Content -Raw -Path $OutputPath } else { $null }
+if ($existing -eq $content) {
+    Write-Host "Scenario policy pin unchanged at $OutputPath"
+} else {
+    Set-Content -Path $OutputPath -Value $content -Encoding utf8 -NoNewline
+    Write-Host "Wrote scenario policy pin to $OutputPath"
+}

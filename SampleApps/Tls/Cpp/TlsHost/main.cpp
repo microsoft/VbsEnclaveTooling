@@ -33,7 +33,12 @@ namespace
     {
         std::array<uint8_t, IMAGE_ENCLAVE_LONG_ID_LENGTH> ownerId{};
         ENCLAVE_CREATE_INFO_VBS createInfo{};
+        // The debug flag lets the (untrusted) containing process inspect enclave
+        // memory, so only enable it for debug builds; a release build creates a
+        // production enclave that preserves the VTL0/VTL1 isolation boundary.
+#ifdef _DEBUG
         createInfo.Flags = ENCLAVE_VBS_FLAG_DEBUG;
+#endif
         std::memcpy(createInfo.OwnerID, ownerId.data(), ownerId.size());
 
         void* enclave = CreateEnclave(
@@ -233,16 +238,22 @@ try
     // Blocking-for-demo loop: drive the enclave until it completes or fails.
     const auto deadline = std::chrono::steady_clock::now() + std::chrono::seconds(30);
     DriveConnectionResult drive{};
+    bool completed = false;
     for (;;)
     {
         THROW_IF_FAILED(enclaveInterface.TlsSample_DriveConnection(started.session_handle, drive));
-        if (drive.progress == TlsSampleProgress::TlsSampleProgress_Completed ||
-            drive.progress == TlsSampleProgress::TlsSampleProgress_Failed)
+        if (drive.progress == TlsSampleProgress::TlsSampleProgress_Completed)
+        {
+            completed = true;
+            break;
+        }
+        if (drive.progress == TlsSampleProgress::TlsSampleProgress_Failed)
         {
             break;
         }
         if (std::chrono::steady_clock::now() > deadline)
         {
+            std::cerr << "timed out driving the enclave scenario\n";
             break;
         }
         if (drive.progress == TlsSampleProgress::TlsSampleProgress_WouldBlock)
@@ -262,7 +273,8 @@ try
     std::cout << "tls_version=0x" << std::hex << result.tls_version << std::dec << "\n";
     std::cout << "cipher_suite=0x" << std::hex << result.cipher_suite << std::dec << "\n";
 
-    return result.status == TlsSampleStatus::TlsSampleStatus_Ok ? 0 : 1;
+    // Only a scenario that actually ran to completion and returned Ok is success.
+    return (completed && result.status == TlsSampleStatus::TlsSampleStatus_Ok) ? 0 : 1;
 }
 catch (...)
 {

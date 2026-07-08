@@ -4,6 +4,7 @@
 #include "TlsMbedTlsDriver.h"
 
 #include <algorithm>
+#include <atomic>
 #include <cstring>
 
 #include <mbedtls/ctr_drbg.h>
@@ -19,6 +20,39 @@ namespace tls_sample
     namespace
     {
         constexpr unsigned char Personalization[] = "vbs-enclave-tls-sample";
+
+        // PSA crypto has process-global state, so it must be initialised once and
+        // freed only when no session is using it. Reference-count init/free (guarded
+        // by an enclave-compatible spinlock — no std::mutex in the enclave CRT) so
+        // overlapping sessions cannot tear down PSA under one another.
+        std::atomic_flag g_psaLock = ATOMIC_FLAG_INIT;
+        int g_psaRefCount = 0;
+
+        bool AcquirePsaCrypto()
+        {
+            while (g_psaLock.test_and_set(std::memory_order_acquire)) {}
+            bool ok = true;
+            if (g_psaRefCount == 0)
+            {
+                ok = (psa_crypto_init() == PSA_SUCCESS);
+            }
+            if (ok)
+            {
+                ++g_psaRefCount;
+            }
+            g_psaLock.clear(std::memory_order_release);
+            return ok;
+        }
+
+        void ReleasePsaCrypto()
+        {
+            while (g_psaLock.test_and_set(std::memory_order_acquire)) {}
+            if (g_psaRefCount > 0 && --g_psaRefCount == 0)
+            {
+                mbedtls_psa_crypto_free();
+            }
+            g_psaLock.clear(std::memory_order_release);
+        }
 
         // Bound the work performed by a single Drive() call so control returns to
         // VTL0 regularly, and bound the whole session so a host that dribbles bytes
@@ -174,7 +208,12 @@ namespace tls_sample
             const size_t start = i;
             for (; i < response.size() && response[i] >= '0' && response[i] <= '9'; ++i)
             {
-                value = (value * 10) + static_cast<uint32_t>(response[i] - '0');
+                const uint32_t digit = static_cast<uint32_t>(response[i] - '0');
+                if (value > (UINT32_MAX - digit) / 10)
+                {
+                    return false;  // reject rather than silently wrap
+                }
+                value = (value * 10) + digit;
             }
 
             if (i == start)
@@ -234,7 +273,7 @@ namespace tls_sample
             mbedtls_ssl_free(&ssl);
             if (cryptoReady)
             {
-                mbedtls_psa_crypto_free();
+                ReleasePsaCrypto();
             }
         }
 
@@ -250,7 +289,7 @@ namespace tls_sample
         {
             request = "GET " + policy.httpPath + " HTTP/1.1\r\nHost: " + policy.tlsServerName + "\r\nConnection: close\r\n\r\n";
 
-            if (psa_crypto_init() != PSA_SUCCESS)
+            if (!AcquirePsaCrypto())
             {
                 return false;
             }

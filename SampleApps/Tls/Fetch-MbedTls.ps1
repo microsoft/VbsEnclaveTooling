@@ -29,4 +29,13 @@ New-Item -ItemType Directory -Force -Path $parent | Out-Null
 
 Write-Host "Fetching mbedTLS $commit into $Destination"
 git clone --filter=blob:none --no-checkout $repository $Destination
+if ($LASTEXITCODE -ne 0) {
+    Remove-Item -Recurse -Force $Destination -ErrorAction SilentlyContinue
+    throw "git clone of mbedTLS failed (exit $LASTEXITCODE); removed partial checkout."
+}
+
 git -C $Destination checkout $commit
+if ($LASTEXITCODE -ne 0) {
+    Remove-Item -Recurse -Force $Destination -ErrorAction SilentlyContinue
+    throw "git checkout of mbedTLS $commit failed (exit $LASTEXITCODE); removed partial checkout."
+}

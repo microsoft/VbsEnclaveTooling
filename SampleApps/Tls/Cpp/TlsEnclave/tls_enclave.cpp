@@ -4,6 +4,7 @@
 #include "TlsMbedTlsDriver.h"
 #include "ScenarioPolicy.g.h"
 
+#include <atomic>
 #include <cstring>
 #include <memory>
 #include <unordered_map>
@@ -17,8 +18,17 @@ namespace
 {
     using namespace TlsSample::Types;
 
-    // The driver enums intentionally mirror the EDL enums value-for-value, so
-    // conversion is a checked cast rather than a hand-maintained switch.
+    // The driver enums (tls_sample::*) intentionally mirror the generated EDL
+    // enums value-for-value, so conversion is a direct cast. These static_asserts
+    // fail the build if the EDL is ever reordered out of sync with the driver.
+    static_assert(static_cast<uint32_t>(tls_sample::TlsSampleStatus::Ok) == static_cast<uint32_t>(TlsSampleStatus::TlsSampleStatus_Ok));
+    static_assert(static_cast<uint32_t>(tls_sample::TlsSampleStatus::ValidationFailed) == static_cast<uint32_t>(TlsSampleStatus::TlsSampleStatus_ValidationFailed));
+    static_assert(static_cast<uint32_t>(tls_sample::TlsSampleStatus::UnknownScenario) == static_cast<uint32_t>(TlsSampleStatus::TlsSampleStatus_UnknownScenario));
+    static_assert(static_cast<uint32_t>(tls_sample::TlsSampleStatus::InvalidHandle) == static_cast<uint32_t>(TlsSampleStatus::TlsSampleStatus_InvalidHandle));
+    static_assert(static_cast<uint32_t>(tls_sample::TlsSampleProgress::Completed) == static_cast<uint32_t>(TlsSampleProgress::TlsSampleProgress_Completed));
+    static_assert(static_cast<uint32_t>(tls_sample::TlsSampleProgress::Failed) == static_cast<uint32_t>(TlsSampleProgress::TlsSampleProgress_Failed));
+    static_assert(static_cast<uint32_t>(tls_sample::TlsSampleDecision::Allow) == static_cast<uint32_t>(TlsSampleDecision::TlsSampleDecision_Allow));
+
     template <typename To, typename From>
     To CastEnum(From value)
     {
@@ -91,11 +101,33 @@ namespace
     }
 
     // Session-handle table. Handles are monotonic and never reused, so a stale
-    // handle can never alias a live session. The sample drives one scenario to
-    // completion at a time on a single enclave thread (mirroring the single-
-    // threaded PSA-crypto contract), so no locking is required here.
-    std::unordered_map<uint64_t, std::unique_ptr<tls_sample::TlsSession>> g_sessions;
+    // handle can never alias a live session.
+    //
+    // The untrusted host controls call threading and the enclave is initialised
+    // with more than one thread, so the trusted entrypoints must not assume
+    // single-threaded entry. A small enclave-compatible spinlock (std::atomic_flag
+    // — the enclave CRT has no std::mutex) guards the table and handle counter,
+    // and sessions are held by shared_ptr so DriveConnection can keep its session
+    // alive across the (VTL0-re-entering) Drive() call even if another thread
+    // concurrently closes the same handle.
+    std::unordered_map<uint64_t, std::shared_ptr<tls_sample::TlsSession>> g_sessions;
     uint64_t g_nextSessionHandle = 1;
+    std::atomic_flag g_sessionsLock = ATOMIC_FLAG_INIT;
+
+    struct SpinGuard
+    {
+        SpinGuard() { while (g_sessionsLock.test_and_set(std::memory_order_acquire)) {} }
+        ~SpinGuard() { g_sessionsLock.clear(std::memory_order_release); }
+        SpinGuard(const SpinGuard&) = delete;
+        SpinGuard& operator=(const SpinGuard&) = delete;
+    };
+
+    std::shared_ptr<tls_sample::TlsSession> FindSession(uint64_t handle)
+    {
+        SpinGuard guard;
+        auto it = g_sessions.find(handle);
+        return it == g_sessions.end() ? nullptr : it->second;
+    }
 }
 
 HRESULT TlsSample::Trusted::Implementation::TlsSample_GetScenarioMetadata(
@@ -139,8 +171,9 @@ HRESULT TlsSample::Trusted::Implementation::TlsSample_StartScenario(
         return S_OK;
     }
 
-    auto session = std::make_unique<tls_sample::TlsSession>(*scenario, request.input_value, MakeCallbacks());
+    auto session = std::make_shared<tls_sample::TlsSession>(*scenario, request.input_value, MakeCallbacks());
 
+    SpinGuard guard;
     const uint64_t handle = g_nextSessionHandle++;
     g_sessions.emplace(handle, std::move(session));
     result.status = TlsSampleStatus::TlsSampleStatus_Ok;
@@ -154,16 +187,14 @@ HRESULT TlsSample::Trusted::Implementation::TlsSample_DriveConnection(
 {
     result = {};
 
-    tls_sample::TlsSession* session = nullptr;
+    // Hold a shared_ptr for the duration of Drive() (which re-enters VTL0), so a
+    // concurrent CloseScenario cannot free the session out from under us.
+    auto session = FindSession(session_handle);
+    if (!session)
     {
-        auto it = g_sessions.find(session_handle);
-        if (it == g_sessions.end())
-        {
-            result.progress = TlsSampleProgress::TlsSampleProgress_Failed;
-            result.status = TlsSampleStatus::TlsSampleStatus_InvalidHandle;
-            return S_OK;
-        }
-        session = it->second.get();
+        result.progress = TlsSampleProgress::TlsSampleProgress_Failed;
+        result.status = TlsSampleStatus::TlsSampleStatus_InvalidHandle;
+        return S_OK;
     }
 
     const auto progress = session->Drive();
@@ -178,15 +209,15 @@ HRESULT TlsSample::Trusted::Implementation::TlsSample_GetDerivedResult(
 {
     result = {};
 
-    auto it = g_sessions.find(session_handle);
-    if (it == g_sessions.end())
+    auto session = FindSession(session_handle);
+    if (!session)
     {
         result.status = TlsSampleStatus::TlsSampleStatus_InvalidHandle;
         result.failure_reason = TlsSampleStatus::TlsSampleStatus_InvalidHandle;
         return S_OK;
     }
 
-    const auto& driverResult = it->second->Result();
+    const auto& driverResult = session->Result();
     result.status = CastEnum<TlsSampleStatus>(driverResult.status);
     result.decision = CastEnum<TlsSampleDecision>(driverResult.decision);
     result.output_value = driverResult.outputValue;
@@ -198,6 +229,7 @@ HRESULT TlsSample::Trusted::Implementation::TlsSample_GetDerivedResult(
 
 HRESULT TlsSample::Trusted::Implementation::TlsSample_CloseScenario(_In_ std::uint64_t session_handle)
 {
+    SpinGuard guard;
     g_sessions.erase(session_handle);
     return S_OK;
 }

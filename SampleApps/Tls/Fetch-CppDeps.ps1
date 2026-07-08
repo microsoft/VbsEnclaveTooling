@@ -38,11 +38,13 @@ function Sync-Checkout {
     Write-Host "Fetching $Repository $Commit into $Destination"
     git clone --filter=blob:none --no-checkout $Repository $Destination
     if ($LASTEXITCODE -ne 0) {
-        exit $LASTEXITCODE
+        Remove-Item -Recurse -Force $Destination -ErrorAction SilentlyContinue
+        throw "git clone of $Repository failed (exit $LASTEXITCODE); removed partial checkout."
     }
     git -C $Destination checkout $Commit
     if ($LASTEXITCODE -ne 0) {
-        exit $LASTEXITCODE
+        Remove-Item -Recurse -Force $Destination -ErrorAction SilentlyContinue
+        throw "git checkout of $Repository $Commit failed (exit $LASTEXITCODE); removed partial checkout."
     }
 }
 
