@@ -7,7 +7,6 @@
 #include <atomic>
 #include <cstring>
 #include <memory>
-#include <unordered_map>
 #include <vector>
 
 #include <VbsEnclave\Enclave\Abi\Exports.TlsTransport.cpp>
@@ -21,13 +20,31 @@ namespace
     // The driver enums (tls_sample::*) intentionally mirror the generated EDL
     // enums value-for-value, so conversion is a direct cast. These static_asserts
     // fail the build if the EDL is ever reordered out of sync with the driver.
-    static_assert(static_cast<uint32_t>(tls_sample::TlsSampleStatus::Ok) == static_cast<uint32_t>(TlsSampleStatus::TlsSampleStatus_Ok));
-    static_assert(static_cast<uint32_t>(tls_sample::TlsSampleStatus::ValidationFailed) == static_cast<uint32_t>(TlsSampleStatus::TlsSampleStatus_ValidationFailed));
-    static_assert(static_cast<uint32_t>(tls_sample::TlsSampleStatus::UnknownScenario) == static_cast<uint32_t>(TlsSampleStatus::TlsSampleStatus_UnknownScenario));
-    static_assert(static_cast<uint32_t>(tls_sample::TlsSampleStatus::InvalidHandle) == static_cast<uint32_t>(TlsSampleStatus::TlsSampleStatus_InvalidHandle));
-    static_assert(static_cast<uint32_t>(tls_sample::TlsSampleProgress::Completed) == static_cast<uint32_t>(TlsSampleProgress::TlsSampleProgress_Completed));
-    static_assert(static_cast<uint32_t>(tls_sample::TlsSampleProgress::Failed) == static_cast<uint32_t>(TlsSampleProgress::TlsSampleProgress_Failed));
-    static_assert(static_cast<uint32_t>(tls_sample::TlsSampleDecision::Allow) == static_cast<uint32_t>(TlsSampleDecision::TlsSampleDecision_Allow));
+    // Every value CastEnum relies on is asserted so a mid-enum insertion cannot
+    // silently misalign.
+#define TLS_SAMPLE_ASSERT_ENUM(a, b) static_assert(static_cast<uint32_t>(a) == static_cast<uint32_t>(b))
+    TLS_SAMPLE_ASSERT_ENUM(tls_sample::TlsSampleStatus::Ok, TlsSampleStatus::TlsSampleStatus_Ok);
+    TLS_SAMPLE_ASSERT_ENUM(tls_sample::TlsSampleStatus::Closed, TlsSampleStatus::TlsSampleStatus_Closed);
+    TLS_SAMPLE_ASSERT_ENUM(tls_sample::TlsSampleStatus::Truncated, TlsSampleStatus::TlsSampleStatus_Truncated);
+    TLS_SAMPLE_ASSERT_ENUM(tls_sample::TlsSampleStatus::ValidationFailed, TlsSampleStatus::TlsSampleStatus_ValidationFailed);
+    TLS_SAMPLE_ASSERT_ENUM(tls_sample::TlsSampleStatus::TransportFailed, TlsSampleStatus::TlsSampleStatus_TransportFailed);
+    TLS_SAMPLE_ASSERT_ENUM(tls_sample::TlsSampleStatus::ProtocolFailed, TlsSampleStatus::TlsSampleStatus_ProtocolFailed);
+    TLS_SAMPLE_ASSERT_ENUM(tls_sample::TlsSampleStatus::AccessDenied, TlsSampleStatus::TlsSampleStatus_AccessDenied);
+    TLS_SAMPLE_ASSERT_ENUM(tls_sample::TlsSampleStatus::BudgetExceeded, TlsSampleStatus::TlsSampleStatus_BudgetExceeded);
+    TLS_SAMPLE_ASSERT_ENUM(tls_sample::TlsSampleStatus::InvalidHandle, TlsSampleStatus::TlsSampleStatus_InvalidHandle);
+    TLS_SAMPLE_ASSERT_ENUM(tls_sample::TlsSampleStatus::InvalidState, TlsSampleStatus::TlsSampleStatus_InvalidState);
+    TLS_SAMPLE_ASSERT_ENUM(tls_sample::TlsSampleStatus::UnknownScenario, TlsSampleStatus::TlsSampleStatus_UnknownScenario);
+    TLS_SAMPLE_ASSERT_ENUM(tls_sample::TlsSampleProgress::Working, TlsSampleProgress::TlsSampleProgress_Working);
+    TLS_SAMPLE_ASSERT_ENUM(tls_sample::TlsSampleProgress::WouldBlock, TlsSampleProgress::TlsSampleProgress_WouldBlock);
+    TLS_SAMPLE_ASSERT_ENUM(tls_sample::TlsSampleProgress::Completed, TlsSampleProgress::TlsSampleProgress_Completed);
+    TLS_SAMPLE_ASSERT_ENUM(tls_sample::TlsSampleProgress::Failed, TlsSampleProgress::TlsSampleProgress_Failed);
+    TLS_SAMPLE_ASSERT_ENUM(tls_sample::TlsSampleDecision::Deny, TlsSampleDecision::TlsSampleDecision_Deny);
+    TLS_SAMPLE_ASSERT_ENUM(tls_sample::TlsSampleDecision::Allow, TlsSampleDecision::TlsSampleDecision_Allow);
+    TLS_SAMPLE_ASSERT_ENUM(tls_sample::HostIoStatus::Ok, HostIoStatus::HostIoStatus_Ok);
+    TLS_SAMPLE_ASSERT_ENUM(tls_sample::HostIoStatus::WouldBlock, HostIoStatus::HostIoStatus_WouldBlock);
+    TLS_SAMPLE_ASSERT_ENUM(tls_sample::HostIoStatus::Closed, HostIoStatus::HostIoStatus_Closed);
+    TLS_SAMPLE_ASSERT_ENUM(tls_sample::HostIoStatus::Failed, HostIoStatus::HostIoStatus_Failed);
+#undef TLS_SAMPLE_ASSERT_ENUM
 
     template <typename To, typename From>
     To CastEnum(From value)
@@ -100,34 +117,35 @@ namespace
         return nullptr;
     }
 
-    // Session-handle table. Handles are monotonic and never reused, so a stale
-    // handle can never alias a live session.
+    // Single active session.
     //
     // The untrusted host controls call threading and the enclave is initialised
     // with more than one thread, so the trusted entrypoints must not assume
-    // single-threaded entry. A small enclave-compatible spinlock (std::atomic_flag
-    // — the enclave CRT has no std::mutex) guards the table and handle counter,
-    // and sessions are held by shared_ptr so DriveConnection can keep its session
-    // alive across the (VTL0-re-entering) Drive() call even if another thread
-    // concurrently closes the same handle.
-    std::unordered_map<uint64_t, std::shared_ptr<tls_sample::TlsSession>> g_sessions;
+    // single-threaded entry. Rather than a concurrent-safe session table, the
+    // sample enforces the simplest contract that keeps the enclave safe: at most
+    // one TLS session exists at a time (a second StartScenario is rejected), and
+    // all access to it is serialised.
+    //
+    // A small enclave-compatible spinlock (std::atomic_flag — the enclave CRT has
+    // no std::mutex) guards the slot for SHORT critical sections only; it is never
+    // held across TlsSession::Drive() (which re-enters VTL0). A `driving` flag
+    // rejects concurrent Drive/read of the same session, and a close requested
+    // while a drive is in flight is deferred so the session is never destroyed
+    // (and its VTL0 close callback never runs) under the lock or beneath a drive.
+    std::unique_ptr<tls_sample::TlsSession> g_session;
+    uint64_t g_sessionHandle = 0;
+    bool g_driving = false;
+    bool g_closeRequested = false;
     uint64_t g_nextSessionHandle = 1;
-    std::atomic_flag g_sessionsLock = ATOMIC_FLAG_INIT;
+    std::atomic_flag g_sessionLock = ATOMIC_FLAG_INIT;
 
     struct SpinGuard
     {
-        SpinGuard() { while (g_sessionsLock.test_and_set(std::memory_order_acquire)) {} }
-        ~SpinGuard() { g_sessionsLock.clear(std::memory_order_release); }
+        SpinGuard() { while (g_sessionLock.test_and_set(std::memory_order_acquire)) {} }
+        ~SpinGuard() { g_sessionLock.clear(std::memory_order_release); }
         SpinGuard(const SpinGuard&) = delete;
         SpinGuard& operator=(const SpinGuard&) = delete;
     };
-
-    std::shared_ptr<tls_sample::TlsSession> FindSession(uint64_t handle)
-    {
-        SpinGuard guard;
-        auto it = g_sessions.find(handle);
-        return it == g_sessions.end() ? nullptr : it->second;
-    }
 }
 
 HRESULT TlsSample::Trusted::Implementation::TlsSample_GetScenarioMetadata(
@@ -171,13 +189,22 @@ HRESULT TlsSample::Trusted::Implementation::TlsSample_StartScenario(
         return S_OK;
     }
 
-    auto session = std::make_shared<tls_sample::TlsSession>(*scenario, request.input_value, MakeCallbacks());
+    auto session = std::make_unique<tls_sample::TlsSession>(*scenario, request.input_value, MakeCallbacks());
 
     SpinGuard guard;
-    const uint64_t handle = g_nextSessionHandle++;
-    g_sessions.emplace(handle, std::move(session));
+    if (g_session)
+    {
+        // Only one session at a time: reject rather than run two mbedTLS/PSA
+        // sessions concurrently against shared global crypto state.
+        result.status = TlsSampleStatus::TlsSampleStatus_AccessDenied;
+        return S_OK;
+    }
+    g_session = std::move(session);
+    g_sessionHandle = g_nextSessionHandle++;
+    g_driving = false;
+    g_closeRequested = false;
     result.status = TlsSampleStatus::TlsSampleStatus_Ok;
-    result.session_handle = handle;
+    result.session_handle = g_sessionHandle;
     return S_OK;
 }
 
@@ -187,19 +214,47 @@ HRESULT TlsSample::Trusted::Implementation::TlsSample_DriveConnection(
 {
     result = {};
 
-    // Hold a shared_ptr for the duration of Drive() (which re-enters VTL0), so a
-    // concurrent CloseScenario cannot free the session out from under us.
-    auto session = FindSession(session_handle);
-    if (!session)
+    tls_sample::TlsSession* session = nullptr;
     {
-        result.progress = TlsSampleProgress::TlsSampleProgress_Failed;
-        result.status = TlsSampleStatus::TlsSampleStatus_InvalidHandle;
-        return S_OK;
+        SpinGuard guard;
+        if (!g_session || session_handle != g_sessionHandle)
+        {
+            result.progress = TlsSampleProgress::TlsSampleProgress_Failed;
+            result.status = TlsSampleStatus::TlsSampleStatus_InvalidHandle;
+            return S_OK;
+        }
+        if (g_driving)
+        {
+            // Another thread is already driving this session; reject the
+            // concurrent re-entry rather than race the mbedTLS state machine.
+            result.progress = TlsSampleProgress::TlsSampleProgress_Failed;
+            result.status = TlsSampleStatus::TlsSampleStatus_InvalidState;
+            return S_OK;
+        }
+        g_driving = true;
+        session = g_session.get();  // stays alive: close is deferred while driving
     }
 
+    // Drive() re-enters VTL0 via transport callbacks — run it outside the lock.
     const auto progress = session->Drive();
+    const auto status = session->Result().status;
+
+    std::unique_ptr<tls_sample::TlsSession> expired;
+    {
+        SpinGuard guard;
+        g_driving = false;
+        if (g_closeRequested)
+        {
+            // A close arrived mid-drive; complete it now by moving the session
+            // out so it destructs (and runs its VTL0 close) outside the lock.
+            expired = std::move(g_session);
+            g_sessionHandle = 0;
+            g_closeRequested = false;
+        }
+    }
+
     result.progress = CastEnum<TlsSampleProgress>(progress);
-    result.status = CastEnum<TlsSampleStatus>(session->Result().status);
+    result.status = CastEnum<TlsSampleStatus>(status);
     return S_OK;
 }
 
@@ -209,15 +264,22 @@ HRESULT TlsSample::Trusted::Implementation::TlsSample_GetDerivedResult(
 {
     result = {};
 
-    auto session = FindSession(session_handle);
-    if (!session)
+    SpinGuard guard;
+    if (!g_session || session_handle != g_sessionHandle)
     {
         result.status = TlsSampleStatus::TlsSampleStatus_InvalidHandle;
         result.failure_reason = TlsSampleStatus::TlsSampleStatus_InvalidHandle;
         return S_OK;
     }
+    if (g_driving)
+    {
+        // A drive is writing the result concurrently; refuse to read a torn value.
+        result.status = TlsSampleStatus::TlsSampleStatus_InvalidState;
+        result.failure_reason = TlsSampleStatus::TlsSampleStatus_InvalidState;
+        return S_OK;
+    }
 
-    const auto& driverResult = session->Result();
+    const auto& driverResult = g_session->Result();
     result.status = CastEnum<TlsSampleStatus>(driverResult.status);
     result.decision = CastEnum<TlsSampleDecision>(driverResult.decision);
     result.output_value = driverResult.outputValue;
@@ -229,7 +291,22 @@ HRESULT TlsSample::Trusted::Implementation::TlsSample_GetDerivedResult(
 
 HRESULT TlsSample::Trusted::Implementation::TlsSample_CloseScenario(_In_ std::uint64_t session_handle)
 {
-    SpinGuard guard;
-    g_sessions.erase(session_handle);
+    std::unique_ptr<tls_sample::TlsSession> expired;
+    {
+        SpinGuard guard;
+        if (!g_session || session_handle != g_sessionHandle)
+        {
+            return S_OK;
+        }
+        if (g_driving)
+        {
+            // Cannot destroy a session that is mid-drive; defer to the drive's
+            // completion so its VTL0 close callback never runs under a drive.
+            g_closeRequested = true;
+            return S_OK;
+        }
+        expired = std::move(g_session);  // destructs below, after the lock is released
+        g_sessionHandle = 0;
+    }
     return S_OK;
 }

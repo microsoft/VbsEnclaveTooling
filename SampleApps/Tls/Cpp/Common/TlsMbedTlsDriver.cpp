@@ -335,6 +335,18 @@ namespace tls_sample
 
         TlsSampleProgress Drive()
         {
+            // A terminal session does no further work: return its settled result
+            // without consuming budget (so repeated polling of a Failed/Done
+            // session cannot overwrite its real failureReason with BudgetExceeded).
+            if (state == State::Done)
+            {
+                return TlsSampleProgress::Completed;
+            }
+            if (state == State::Failed)
+            {
+                return TlsSampleProgress::Failed;
+            }
+
             for (int step = 0; step < StepsPerDrive; ++step)
             {
                 if (++totalSteps > MaxTotalSteps)

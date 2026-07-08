@@ -15,6 +15,7 @@
 #include <filesystem>
 #include <iostream>
 #include <map>
+#include <mutex>
 #include <string>
 #include <thread>
 
@@ -26,6 +27,10 @@
 
 namespace
 {
+    // The enclave serialises its single active session, so these callbacks are
+    // not driven concurrently through the normal flow; the mutex keeps the host
+    // sound even if a caller drives the enclave from multiple threads.
+    std::mutex g_socketsMutex;
     std::map<uint64_t, SOCKET> g_sockets;
     uint64_t g_nextHandle = 1;
 
@@ -112,6 +117,7 @@ TlsSample::Types::HostTcpConnectResult TlsSample::Untrusted::Implementation::Tls
     u_long nonBlocking = 1;
     ioctlsocket(socketHandle, FIONBIO, &nonBlocking);
 
+    std::lock_guard<std::mutex> lock(g_socketsMutex);
     result.transport_handle = g_nextHandle++;
     g_sockets.emplace(result.transport_handle, socketHandle);
     result.status = TlsSample::Types::HostIoStatus::HostIoStatus_Ok;
@@ -123,6 +129,7 @@ TlsSample::Types::HostTcpRecvResult TlsSample::Untrusted::Implementation::TlsSam
     _In_ std::uint32_t max_bytes)
 {
     TlsSample::Types::HostTcpRecvResult result;
+    std::lock_guard<std::mutex> lock(g_socketsMutex);
     auto it = g_sockets.find(transport_handle);
     if (it == g_sockets.end())
     {
@@ -159,6 +166,7 @@ TlsSample::Types::HostIoResult TlsSample::Untrusted::Implementation::TlsSample_H
     _In_ const std::vector<std::uint8_t>& bytes)
 {
     TlsSample::Types::HostIoResult result;
+    std::lock_guard<std::mutex> lock(g_socketsMutex);
     auto it = g_sockets.find(transport_handle);
     if (it == g_sockets.end())
     {
@@ -184,6 +192,7 @@ TlsSample::Types::HostIoResult TlsSample::Untrusted::Implementation::TlsSample_H
 
 TlsSample::Types::HostIoResult TlsSample::Untrusted::Implementation::TlsSample_HostTcpClose(_In_ std::uint64_t transport_handle)
 {
+    std::lock_guard<std::mutex> lock(g_socketsMutex);
     auto it = g_sockets.find(transport_handle);
     if (it != g_sockets.end())
     {
@@ -235,6 +244,11 @@ try
         return 1;
     }
 
+    // Always close the session, even if a drive/result call throws.
+    auto closeSession = wil::scope_exit([&] {
+        (void)enclaveInterface.TlsSample_CloseScenario(started.session_handle);
+    });
+
     // Blocking-for-demo loop: drive the enclave until it completes or fails.
     const auto deadline = std::chrono::steady_clock::now() + std::chrono::seconds(30);
     DriveConnectionResult drive{};
@@ -264,7 +278,7 @@ try
 
     TlsSampleResult result{};
     THROW_IF_FAILED(enclaveInterface.TlsSample_GetDerivedResult(started.session_handle, result));
-    THROW_IF_FAILED(enclaveInterface.TlsSample_CloseScenario(started.session_handle));
+    // closeSession (scope_exit) closes the session on the way out.
 
     std::cout << "status=" << static_cast<uint32_t>(result.status) << "\n";
     std::cout << "decision=" << (result.decision == TlsSampleDecision::TlsSampleDecision_Allow ? "Allow" : "Deny") << "\n";
