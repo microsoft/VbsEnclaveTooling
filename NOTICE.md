@@ -71,3 +71,13 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ```
+
+## Mbed TLS
+
+The C++ TLS enclave samples (`SampleApps/Tls`) build and statically link Mbed TLS
+to terminate TLS inside the enclave. It is fetched at build time by
+`SampleApps/Tls/Fetch-MbedTls.ps1` and is not redistributed in this repository.
+
+**Source**: [https://github.com/Mbed-TLS/mbedtls](https://github.com/Mbed-TLS/mbedtls)
+
+**License**: Apache-2.0 (see `LICENSE` in the upstream repository).
