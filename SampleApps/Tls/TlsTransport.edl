@@ -1,0 +1,155 @@
+// Copyright (c) Microsoft Corporation.
+// Licensed under the MIT License.
+
+// Host<->enclave ABI for the TLS enclave samples.
+//
+// Trust model: VTL1 owns all server-identity policy (target, SNI, HTTP path,
+// certificate pin, response limits). VTL0 selects an enclave-defined scenario
+// by id and drives a bounded state machine; it never supplies security policy
+// and only ferries opaque transport bytes. Only a derived, bounded result
+// crosses back to VTL0.
+
+enclave
+{
+    enum TlsSampleAbiVersion
+    {
+        // Bumped to 2: the trusted surface collapsed from the StartScenario/
+        // DriveConnection/GetDerivedResult/CloseScenario pump to a single
+        // run-to-completion TlsSample_RunScenario export.
+        TlsSampleAbiVersion_Current = 2,
+    };
+
+    enum TlsSampleStatus
+    {
+        TlsSampleStatus_Ok = 0,
+        TlsSampleStatus_Closed = 1,
+        TlsSampleStatus_Truncated = 2,
+        TlsSampleStatus_ValidationFailed = 3,
+        TlsSampleStatus_TransportFailed = 4,
+        TlsSampleStatus_ProtocolFailed = 5,
+        TlsSampleStatus_AccessDenied = 6,
+        TlsSampleStatus_BudgetExceeded = 7,
+        TlsSampleStatus_InvalidState = 8,
+        TlsSampleStatus_UnknownScenario = 9,
+    };
+
+    enum TlsSampleDecision
+    {
+        TlsSampleDecision_Deny = 0,
+        TlsSampleDecision_Allow = 1,
+    };
+
+    enum TlsSampleProfile
+    {
+        TlsSampleProfile_ServerAuth = 0,
+    };
+
+    enum HostIoStatus
+    {
+        HostIoStatus_Ok = 0,
+        HostIoStatus_WouldBlock = 1,
+        HostIoStatus_Closed = 2,
+        HostIoStatus_Failed = 3,
+    };
+
+    // VTL0 selects an enclave-owned scenario by id and supplies only a
+    // non-security application input. All server-identity policy is owned by
+    // VTL1 and keyed by scenario_id.
+    struct TlsSampleRequest
+    {
+        uint32_t scenario_id;
+        uint32_t input_value;
+    };
+
+    // Enclave-authored, non-secret description of a scenario so a reader/host
+    // can see the policy without being able to influence it. The pinned
+    // certificate hash is public information (it identifies the server), not a
+    // secret. This sample pins the leaf certificate (SHA-256 of its DER).
+    struct TlsSampleScenarioMetadata
+    {
+        TlsSampleStatus status;
+        uint32_t scenario_id;
+        TlsSampleProfile profile;
+        string connect_host;
+        uint16_t connect_port;
+        string tls_server_name;
+        string http_path;
+        uint32_t max_response_bytes;
+        uint8_t pinned_certificate_sha256[32];
+    };
+
+    // Only derived, bounded, non-secret facts cross back to VTL0. failure_reason
+    // is deliberately coarse so it cannot become an oracle for decrypted content.
+    struct TlsSampleResult
+    {
+        TlsSampleStatus status;
+        TlsSampleDecision decision;
+        uint32_t output_value;
+        uint32_t tls_version;
+        uint16_t cipher_suite;
+        TlsSampleStatus failure_reason;
+    };
+
+    struct HostTcpConnectResult
+    {
+        HostIoStatus status;
+        uint64_t transport_handle;
+        uint32_t host_error;
+    };
+
+    // bytes.size() must not exceed the max_bytes the enclave requested; the
+    // enclave rejects any oversized response before consuming it.
+    struct HostTcpRecvResult
+    {
+        HostIoStatus status;
+        vector<uint8_t> bytes;
+        uint32_t host_error;
+    };
+
+    struct HostIoResult
+    {
+        HostIoStatus status;
+        uint32_t bytes_transferred;
+        uint32_t host_error;
+    };
+
+    trusted
+    {
+        HRESULT TlsSample_GetScenarioMetadata(
+            uint32_t scenario_id,
+            [out] TlsSampleScenarioMetadata metadata
+        );
+
+        // Runs the whole server-auth TLS exchange to completion inside one
+        // enclave call: the enclave connects (via the untrusted transport
+        // callbacks below), negotiates TLS 1.3, validates the pinned server
+        // certificate, fetches the scenario's response, and returns only a
+        // derived, bounded result. VTL0 supplies no security policy.
+        HRESULT TlsSample_RunScenario(
+            TlsSampleRequest request,
+            [out] TlsSampleResult result
+        );
+    };
+
+    untrusted
+    {
+        HostTcpConnectResult TlsSample_HostTcpConnect(
+            string server_name,
+            uint16_t server_port
+        );
+
+        HostTcpRecvResult TlsSample_HostTcpRecv(
+            uint64_t transport_handle,
+            uint32_t max_bytes
+        );
+
+        HostIoResult TlsSample_HostTcpSend(
+            uint64_t transport_handle,
+            vector<uint8_t> bytes
+        );
+
+        HostIoResult TlsSample_HostTcpClose(
+            uint64_t transport_handle
+        );
+    };
+};
