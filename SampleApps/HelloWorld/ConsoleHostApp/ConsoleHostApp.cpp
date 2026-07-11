@@ -1,4 +1,5 @@
 // ConsoleHostApp.cpp : This file contains the 'main' function. Program execution begins and ends there.
+// (No-op CI probe: sample-only comment change to check CI status independence.)
 //
 
 #include <conio.h>
