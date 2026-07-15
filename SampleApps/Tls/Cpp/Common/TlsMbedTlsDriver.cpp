@@ -448,6 +448,11 @@ namespace tls_sample
                 return Fail(TlsSampleStatus::ProtocolFailed);
             }
 
+            if (multiplier != 0 && inputValue > UINT32_MAX / multiplier)
+            {
+                return Fail(TlsSampleStatus::ProtocolFailed);  // reject rather than silently wrap
+            }
+
             result.outputValue = inputValue * multiplier;
             result.decision = (inputValue % 2 == 0) ? TlsSampleDecision::Allow : TlsSampleDecision::Deny;
             result.status = TlsSampleStatus::Ok;

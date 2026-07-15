@@ -27,7 +27,11 @@ if (-not (Test-Path $CertPath)) {
 
 $pem = Get-Content -Raw -Path $CertPath
 $cert = [System.Security.Cryptography.X509Certificates.X509Certificate2]::CreateFromPem($pem)
-$digest = [System.Security.Cryptography.SHA256]::HashData($cert.RawData)
+try {
+    $digest = [System.Security.Cryptography.SHA256]::HashData($cert.RawData)
+} finally {
+    $cert.Dispose()
+}
 
 $bytes = ($digest | ForEach-Object { "0x{0:x2}" -f $_ }) -join ", "
 
