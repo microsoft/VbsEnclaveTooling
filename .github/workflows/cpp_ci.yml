@@ -11,7 +11,11 @@ on:
 jobs:
   build-edl-code-gen:
     name: Build EdlCodeGen
-    runs-on: windows-latest
+    # Pinned to windows-2022 (Visual Studio 2022 / v143 toolset). The
+    # windows-latest image migrated to Visual Studio 2026 (v18) in June 2026,
+    # which does not reliably provide the v143 build tools these projects pin
+    # (MSB8020) and whose LTCG backend intermittently crashed with LNK1257.
+    runs-on: windows-2022
 
     strategy:
       matrix:
@@ -53,7 +57,8 @@ jobs:
             _build/${{ matrix.platform }}/${{ matrix.configuration }}/
   run-edl-code-gen-tests:
     name: Test EdlCodeGen
-    runs-on: windows-latest
+    # See note on the build-edl-code-gen job: pinned to VS2022 / v143.
+    runs-on: windows-2022
     needs: build-edl-code-gen
 
     strategy:
@@ -80,7 +85,8 @@ jobs:
 
   build-sdk:
     name: Build Veil SDK
-    runs-on: windows-latest
+    # See note on the build-edl-code-gen job: pinned to VS2022 / v143.
+    runs-on: windows-2022
 
     strategy:
       matrix:
