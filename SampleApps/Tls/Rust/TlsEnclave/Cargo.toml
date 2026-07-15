@@ -1,0 +1,24 @@
+# Copyright (c) Microsoft Corporation.
+# Licensed under the MIT License.
+
+[package]
+name = "tls-sample-enclave"
+version = "0.1.0"
+edition = "2024"
+publish = false
+
+[lib]
+# Build a DLL (VBS enclave image), not a static lib.
+crate-type = ["cdylib"]
+
+[build-dependencies]
+edlcodegen-tools = "0.1"
+
+[dependencies]
+# Generated from ..\..\TlsTransport.edl (run Generate-And-Build.ps1). Not checked in.
+tls_sample_enclave_gen = { path = "generated/tls_sample_gen" }
+# Shared no_std TLS driver + BCrypt rustls provider.
+rustls-feasibility = { path = "../RustlsFeasibility" }
+# SDK enclave services and enclave configuration constants.
+vbsenclave-sdk-enclave = { path = "../../../../rust/sdk/crates/libs/sdk-enclave" }
+windows-enclave = { path = "../../../../rust/sdk/crates/libs/windows-enclave" }

@@ -1,0 +1,10 @@
+[package]
+name = "rustls-feasibility"
+version = "0.1.0"
+edition = "2024"
+publish = false
+
+[dependencies]
+rustls = { version = "0.23", default-features = false }
+webpki = { package = "rustls-webpki", version = "0.103", default-features = false, features = ["alloc"] }
+windows-enclave = { path = "../../../../rust/sdk/crates/libs/windows-enclave" }

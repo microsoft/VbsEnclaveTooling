@@ -1,0 +1,10 @@
+[package]
+name = "rustls-host-harness"
+version = "0.1.0"
+edition = "2024"
+publish = false
+
+[dependencies]
+rustls = { version = "0.23", default-features = false, features = ["std"] }
+rustls-feasibility = { path = "../RustlsFeasibility" }
+rustls-pemfile = "2"

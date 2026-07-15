@@ -1,0 +1,13 @@
+# Copyright (c) Microsoft Corporation.
+# Licensed under the MIT License.
+
+[package]
+name = "tls-sample-host"
+version = "0.1.0"
+edition = "2024"
+publish = false
+
+[dependencies]
+# Generated from ..\..\TlsTransport.edl (run Generate-And-Build.ps1). Not checked in.
+tls_sample_host_gen = { path = "generated/tls_sample_gen" }
+vbsenclave-sdk-host = { path = "../../../../rust/sdk/crates/libs/sdk-host" }

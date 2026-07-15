@@ -1,0 +1,9 @@
+# Copyright (c) Microsoft Corporation.
+# Licensed under the MIT License.
+
+# A VBS enclave cannot unwind, so both profiles abort on panic.
+[profile.dev]
+panic = "abort"
+
+[profile.release]
+panic = "abort"

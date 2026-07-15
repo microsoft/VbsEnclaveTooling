@@ -444,6 +444,9 @@ target/
 SampleApps/Tls/TestServer/test-certs/
 SampleApps/Tls/external/
 SampleApps/Tls/Cpp/TlsEnclave/ScenarioPolicy.g.h
+SampleApps/Tls/Rust/TlsEnclave/generated/
+SampleApps/Tls/Rust/TlsHost/generated/
+SampleApps/Tls/Rust/TlsEnclave/src/scenario_policy.g.rs
 *.lock
 obj
 bin
