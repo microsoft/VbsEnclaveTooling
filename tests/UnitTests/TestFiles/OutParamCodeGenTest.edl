@@ -1,0 +1,33 @@
+// Copyright (c) Microsoft Corporation.
+// Licensed under the MIT License.
+// File used for testing purposes.
+//
+// Exercises the Rust codegen paths for out-only, non-array struct and wstring
+// parameters (the shapes represented as Option<T> in the ABI). An [in, out]
+// struct is included as a contrast case that must NOT take those paths.
+
+enclave
+{
+    struct OutStruct
+    {
+        int32_t v;
+    };
+
+    trusted
+    {
+        HRESULT TrustedOutParams(
+            [out] OutStruct struct_out,
+            [out] wstring wstring_out,
+            [in, out] OutStruct struct_inout
+        );
+    };
+
+    untrusted
+    {
+        HRESULT UntrustedOutParams(
+            [out] OutStruct struct_out,
+            [out] wstring wstring_out,
+            [in, out] OutStruct struct_inout
+        );
+    };
+};
