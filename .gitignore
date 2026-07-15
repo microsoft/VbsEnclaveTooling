@@ -441,6 +441,9 @@ o/
 LocalSettings.gdn.json
 
 target/
+SampleApps/Tls/TestServer/test-certs/
+SampleApps/Tls/external/
+SampleApps/Tls/Cpp/TlsEnclave/ScenarioPolicy.g.h
 *.lock
 obj
 bin
