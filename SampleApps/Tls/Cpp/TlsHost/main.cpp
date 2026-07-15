@@ -12,9 +12,11 @@
 
 #include <array>
 #include <chrono>
+#include <cstring>
 #include <filesystem>
 #include <iostream>
 #include <map>
+#include <memory>
 #include <mutex>
 #include <string>
 #include <thread>
