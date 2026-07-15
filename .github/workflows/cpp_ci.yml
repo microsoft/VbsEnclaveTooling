@@ -48,6 +48,21 @@ jobs:
       - name: Build EdlCodeGen solution
         run: msbuild VbsEnclaveTooling.sln /m /p:Configuration=${{ matrix.configuration }} /p:Platform=${{ matrix.platform }}
 
+      # Building the ToolingExecutable regenerates src/ToolingSharedLibrary/CurrentCodeGenerationState.
+      # If the checked-in baselines differ from what the freshly-built generator produces, either a
+      # generator change was not regenerated, or the generated output changed unexpectedly. Fail so it
+      # is caught in review rather than shipping silently. x64 only: the generator only runs on x64.
+      - name: Verify generated code baselines are up to date
+        if: matrix.platform == 'x64'
+        shell: pwsh
+        run: |
+          git add src/ToolingSharedLibrary/CurrentCodeGenerationState
+          git diff --cached --exit-code -- src/ToolingSharedLibrary/CurrentCodeGenerationState
+          if ($LASTEXITCODE -ne 0) {
+            Write-Error "Generated code baselines in src/ToolingSharedLibrary/CurrentCodeGenerationState are out of date. Rebuild the ToolingExecutable project and commit the regenerated files."
+            exit 1
+          }
+
       # Upload build outputs so the test job can use them.
       - name: Upload EdlCodeGen artifacts
         uses: actions/upload-artifact@v4
