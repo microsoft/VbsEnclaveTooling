@@ -20,6 +20,8 @@ namespace CodeGenTest::Abi::Types
         std::vector<TestStruct2> m_arg7 {};
         std::vector<std::int16_t> m_arg8 {};
         std::array<std::wstring, 2> m_arg9 {};
+        TestStruct1 m_arg10 {};
+        std::wstring m_arg11 {};
         HRESULT m__return_value_ {};
     };
 
@@ -34,6 +36,8 @@ namespace CodeGenTest::Abi::Types
         std::vector<TestStruct2> m_arg7 {};
         std::vector<std::int16_t> m_arg8 {};
         std::array<std::wstring, 2> m_arg9 {};
+        TestStruct1 m_arg10 {};
+        std::wstring m_arg11 {};
         HRESULT m__return_value_ {};
     };
 
