@@ -328,17 +328,21 @@ namespace CodeGeneration::Rust
             // For struct and wstring out-parameters, the ABI uses Option<T> because
             // FlatBuffers represents non-required table fields that way. Even though the .edl
             // signature declares an out parameter of type T, we must unwrap the
-            // Option<T> here to satisfy the ABI contract. This value is expected to
-            // always be present; encountering None indicates a bug in the flatbuffer to ABI type
-            // layer.
+            // Option<T> here to satisfy the ABI contract. The value is expected to be
+            // present, but the response is produced by the other side of the ABI
+            // (an untrusted host when the enclave unpacks a callback result), so a
+            // missing field is surfaced as an AbiError rather than unwrapped, which
+            // would fault the caller (in a no_std enclave this would not be
+            // recoverable). 0x80070057 is E_INVALIDARG, written as a u32 cast to
+            // i32 because the value does not fit in an i32.
             if (!is_array && param.IsOutParameterOnly() && IsStructOrWStringType(param))
             {
                 param_update_statements << std::format(
-                    "{}*{} = result.m_{}.expect(\"Unexpected empty Option: m_{}\");\n",
+                    "{}*{} = result.m_{}.ok_or({}::AbiError::Hresult(0x80070057u32 as i32))?;\n",
                     tabs,
                     param.m_name,
                     param.m_name,
-                    param.m_name);
+                    parent_crate);
             }
             // For optional out and inout parameters, we need to use the assign_if_some helper
             // to only update the parameter if the ABI provided a value.
@@ -378,13 +382,17 @@ namespace CodeGeneration::Rust
 
             bool is_array = !param.m_array_dimensions.empty();
 
-            // Out-only struct / wstring params are Option<T> in the ABI; unwrap to get &mut T.
-            // None here indicates an ABI-layer bug.
+            // Out-only struct / wstring params are Option<T> in the ABI and are
+            // None on entry (the caller never sends an out value). Unconditionally
+            // insert a default so the developer implementation can be handed a
+            // &mut T to write into. insert (rather than get_or_insert_with) also
+            // discards any value the other side of the ABI supplied for this
+            // out-only parameter, so caller-provided contents never reach the
+            // implementation.
             if (!is_array && param.IsOutParameterOnly() && IsStructOrWStringType(param))
             {
                 abi_struct_fields << std::format(
-                    "abi_type.m_{}.as_mut().expect(\"Unexpected empty Option: m_{}\")",
-                    param.m_name,
+                    "abi_type.m_{}.insert(Default::default())",
                     param.m_name);
             }
             // Optional<T>: project to the appropriate borrowed form based on direction and inner type.

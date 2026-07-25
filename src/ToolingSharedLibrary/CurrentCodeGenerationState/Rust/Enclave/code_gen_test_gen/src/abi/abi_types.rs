@@ -31,6 +31,12 @@ pub struct FuncWithAllArgs_0_Args {
     pub m_arg7: Vec<TestStruct2>,
     pub m_arg8: Vec<i16>,
     pub m_arg9: [U16String;2],
+
+    #[boxed_inner_target]
+    pub m_arg10: Option<TestStruct1>,
+
+    #[boxed_inner_target]
+    pub m_arg11: Option<U16String>,
     pub m__return_value_: i32,
 }
 
@@ -51,6 +57,12 @@ pub struct FuncWithAllArgs_1_Args {
     pub m_arg7: Vec<TestStruct2>,
     pub m_arg8: Vec<i16>,
     pub m_arg9: [U16String;2],
+
+    #[boxed_inner_target]
+    pub m_arg10: Option<TestStruct1>,
+
+    #[boxed_inner_target]
+    pub m_arg11: Option<U16String>,
     pub m__return_value_: i32,
 }
 

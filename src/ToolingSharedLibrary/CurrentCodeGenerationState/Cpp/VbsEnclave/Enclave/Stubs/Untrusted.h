@@ -11,7 +11,7 @@ namespace CodeGenTest
     {
         using namespace CodeGenTest::Types;
         
-        inline HRESULT FuncWithAllArgs(_In_  bool arg1, _In_ const std::optional<std::uint32_t>& arg2, _Inout_  std::optional<std::int32_t>& arg3, _Out_  std::optional<std::uint64_t>& arg4, _Inout_  TestStruct1& arg5, _Out_  std::optional<TestStruct2>& arg6, _Inout_  std::vector<TestStruct2>& arg7, _Out_  std::vector<std::int16_t>& arg8, _Out_  std::array<std::wstring, 2>& arg9)
+        inline HRESULT FuncWithAllArgs(_In_  bool arg1, _In_ const std::optional<std::uint32_t>& arg2, _Inout_  std::optional<std::int32_t>& arg3, _Out_  std::optional<std::uint64_t>& arg4, _Inout_  TestStruct1& arg5, _Out_  std::optional<TestStruct2>& arg6, _Inout_  std::vector<TestStruct2>& arg7, _Out_  std::vector<std::int16_t>& arg8, _Out_  std::array<std::wstring, 2>& arg9, _Out_  TestStruct1& arg10, _Out_  std::wstring& arg11)
         {
             FlatbufferTypes::FuncWithAllArgs_1_ArgsT in_flatbufferT {};
             in_flatbufferT.m_arg1 = VbsEnclaveABI::Shared::Converters::ConvertType<decltype(in_flatbufferT.m_arg1)>(arg1);
@@ -28,6 +28,8 @@ namespace CodeGenTest
             VbsEnclaveABI::Shared::Converters::UpdateParameterValue(return_params.m_arg7, arg7);
             VbsEnclaveABI::Shared::Converters::UpdateParameterValue(return_params.m_arg8, arg8);
             VbsEnclaveABI::Shared::Converters::UpdateParameterValue(return_params.m_arg9, arg9);
+            VbsEnclaveABI::Shared::Converters::UpdateParameterValue(return_params.m_arg10, arg10);
+            VbsEnclaveABI::Shared::Converters::UpdateParameterValue(return_params.m_arg11, arg11);
             return std::move(return_params.m__return_value_);
         }
 

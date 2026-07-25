@@ -24,7 +24,7 @@ impl CodeGenTestClass {
         Self { enclave_handle : EnclaveHandle(enclave_ptr) }
     }
 
-    pub fn FuncWithAllArgs(&self, arg1 : bool, arg2 : Option<&u32>, arg3 : Option<&mut i32>, arg4 : Option<&mut u64>, arg5 : &mut TestStruct1, arg6 : Option<&mut TestStruct2>, arg7 : &mut Vec<TestStruct2>, arg8 : &mut Vec<i16>, arg9 : &mut [U16String;2]) -> Result<i32, edlcodegen_host::AbiError>
+    pub fn FuncWithAllArgs(&self, arg1 : bool, arg2 : Option<&u32>, arg3 : Option<&mut i32>, arg4 : Option<&mut u64>, arg5 : &mut TestStruct1, arg6 : Option<&mut TestStruct2>, arg7 : &mut Vec<TestStruct2>, arg8 : &mut Vec<i16>, arg9 : &mut [U16String;2], arg10 : &mut TestStruct1, arg11 : &mut U16String) -> Result<i32, edlcodegen_host::AbiError>
     {
         use abi_types::FuncWithAllArgs_0_Args as AbiTypeT;
         use flatbuffer_types::FuncWithAllArgs_0_ArgsT as FlatBufferT;
@@ -44,6 +44,8 @@ impl CodeGenTestClass {
         *arg7 = result.m_arg7;
         *arg8 = result.m_arg8;
         *arg9 = result.m_arg9;
+        *arg10 = result.m_arg10.ok_or(edlcodegen_host::AbiError::Hresult(0x80070057u32 as i32))?;
+        *arg11 = result.m_arg11.ok_or(edlcodegen_host::AbiError::Hresult(0x80070057u32 as i32))?;
 
         Ok(result.m__return_value_)
     }

@@ -35,7 +35,13 @@ enclave
             [out] optional<TestStruct2> arg6,
             [in, out] vector<TestStruct2> arg7,
             [out] vector<int16_t> arg8,
-            [out] wstring arg9[2]
+            [out] wstring arg9[2],
+            // Out-only, non-array struct and wstring params are Option<T> in the
+            // ABI and are None on entry, so the enclave closure stub must insert
+            // a default before it can borrow a &mut T. This is regression
+            // coverage for that codegen path.
+            [out] TestStruct1 arg10,
+            [out] wstring arg11
         );
 	};
 
@@ -50,7 +56,13 @@ enclave
             [out] optional<TestStruct2> arg6,
             [in, out] vector<TestStruct2> arg7,
             [out] vector<int16_t> arg8,
-            [out] wstring arg9[2]
+            [out] wstring arg9[2],
+            // Out-only, non-array struct and wstring params are Option<T> in the
+            // ABI and are None on entry, so the host callback closure stub must
+            // insert a default before it can borrow a &mut T. This is regression
+            // coverage for that codegen path.
+            [out] TestStruct1 arg10,
+            [out] wstring arg11
         );
 	};
 };

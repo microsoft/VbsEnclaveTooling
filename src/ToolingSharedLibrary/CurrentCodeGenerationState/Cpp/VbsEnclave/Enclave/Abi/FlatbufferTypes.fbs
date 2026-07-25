@@ -31,6 +31,8 @@ table FuncWithAllArgs_0_Args {
     m_arg7 : [TestStruct2] (native_inline, required);
     m_arg8 : [int16] (required);
     m_arg9 : [edl.WString] (native_inline, required);
+    m_arg10 : TestStruct1 ;
+    m_arg11 : edl.WString ;
     m__return_value_ : int32;
  }
 
@@ -44,6 +46,8 @@ table FuncWithAllArgs_1_Args {
     m_arg7 : [TestStruct2] (native_inline, required);
     m_arg8 : [int16] (required);
     m_arg9 : [edl.WString] (native_inline, required);
+    m_arg10 : TestStruct1 ;
+    m_arg11 : edl.WString ;
     m__return_value_ : int32;
  }
 
