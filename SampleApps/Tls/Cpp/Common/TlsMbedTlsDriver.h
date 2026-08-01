@@ -118,6 +118,8 @@ namespace tls_sample
         const TlsResult& Result() const noexcept;
 
     private:
+        // Hides the mbedTLS/PSA contexts from consumers of this header and
+        // keeps their lifetime tied to the out-of-line session destructor.
         struct Impl;
         std::unique_ptr<Impl> m_impl;
     };

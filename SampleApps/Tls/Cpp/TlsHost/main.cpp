@@ -12,7 +12,6 @@
 
 #include <array>
 #include <chrono>
-#include <cstring>
 #include <filesystem>
 #include <iostream>
 #include <map>
@@ -23,6 +22,8 @@
 
 #include <wil/resource.h>
 #include <wil/result_macros.h>
+
+#include <veil/host/enclave_api.vtl0.h>
 
 #include <VbsEnclave\HostApp\Implementation\Untrusted.h>
 #include <VbsEnclave\HostApp\Stubs\Trusted.h>
@@ -36,37 +37,25 @@ namespace
     std::map<uint64_t, SOCKET> g_sockets;
     uint64_t g_nextHandle = 1;
 
-    wil::unique_any<void*, decltype(&DeleteEnclave), DeleteEnclave> CreateAndLoadEnclave(const std::filesystem::path& enclavePath)
+    veil::vtl0::unique_enclave CreateAndLoadEnclave(const std::filesystem::path& enclavePath)
     {
         std::array<uint8_t, IMAGE_ENCLAVE_LONG_ID_LENGTH> ownerId{};
-        ENCLAVE_CREATE_INFO_VBS createInfo{};
+        DWORD flags = 0;
         // The debug flag lets the (untrusted) containing process inspect enclave
         // memory, so only enable it for debug builds; a release build creates a
         // production enclave that preserves the VTL0/VTL1 isolation boundary.
 #ifdef _DEBUG
-        createInfo.Flags = ENCLAVE_VBS_FLAG_DEBUG;
+        flags = ENCLAVE_VBS_FLAG_DEBUG;
 #endif
-        std::memcpy(createInfo.OwnerID, ownerId.data(), ownerId.size());
 
-        void* enclave = CreateEnclave(
-            GetCurrentProcess(),
-            nullptr,
-            512ull * 1024 * 1024,
-            0,
+        auto enclave = veil::vtl0::enclave::create(
             ENCLAVE_TYPE_VBS,
-            &createInfo,
-            sizeof(createInfo),
-            nullptr);
-        THROW_LAST_ERROR_IF_NULL(enclave);
-        wil::unique_any<void*, decltype(&DeleteEnclave), DeleteEnclave> holder(enclave);
-
-        THROW_IF_WIN32_BOOL_FALSE(LoadEnclaveImageW(enclave, enclavePath.c_str()));
-
-        ENCLAVE_INIT_INFO_VBS initInfo{};
-        initInfo.Length = sizeof(initInfo);
-        initInfo.ThreadCount = 2;
-        THROW_IF_WIN32_BOOL_FALSE(InitializeEnclave(GetCurrentProcess(), enclave, &initInfo, sizeof(initInfo), nullptr));
-        return holder;
+            ownerId,
+            flags,
+            veil::vtl0::enclave::megabytes(512));
+        veil::vtl0::enclave::load_image(enclave.get(), enclavePath.c_str());
+        veil::vtl0::enclave::initialize(enclave.get(), 2);
+        return enclave;
     }
 }
 
