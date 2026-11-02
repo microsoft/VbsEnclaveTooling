@@ -199,19 +199,19 @@ HRESULT VbsEnclave::Trusted::Implementation::MyEnclaveLoadUserBoundKeyAndEncrypt
         // Use the global key for encryption
         debug_print(L"Encrypting input data");
         auto keyHandle = GetEncryptionKeyHandle();
+        auto nonce = veil::vtl1::crypto::generate_random<veil::vtl1::crypto::NONCE_SIZE>();
         auto [encryptedText, encryptionTag] = veil::vtl1::crypto::encrypt(
             keyHandle, 
             veil::vtl1::as_data_span(inputData.c_str()), 
-            veil::vtl1::crypto::zero_nonce);
+            nonce);
 
         debug_print(L"Encryption completed, encrypted size: %d, tag size: %d", 
             encryptedText.size(), encryptionTag.size());
 
-        // Combine tag and encrypted data into single output
-        // Format: [tag_size (4 bytes)][tag_data][encrypted_data]
+        // Format: [tag_size (4 bytes)][tag_data][nonce][encrypted_data]
         uint32_t tagSize = static_cast<uint32_t>(encryptionTag.size());
         combinedOutputData.clear();
-        combinedOutputData.reserve(sizeof(tagSize) + encryptionTag.size() + encryptedText.size());
+        combinedOutputData.reserve(sizeof(tagSize) + encryptionTag.size() + nonce.size() + encryptedText.size());
   
         // Append tag size (4 bytes) at the beginning
         const uint8_t* tagSizeBytes = reinterpret_cast<const uint8_t*>(&tagSize);
@@ -219,14 +219,17 @@ HRESULT VbsEnclave::Trusted::Implementation::MyEnclaveLoadUserBoundKeyAndEncrypt
   
         // Append tag data
         combinedOutputData.insert(combinedOutputData.end(), encryptionTag.begin(), encryptionTag.end());
+
+        combinedOutputData.insert(combinedOutputData.end(), nonce.begin(), nonce.end());
  
         // Append encrypted data
         combinedOutputData.insert(combinedOutputData.end(), encryptedText.begin(), encryptedText.end());
 
-        debug_print(L"Combined data created, total size: %u (tag_size: %u, tag: %u, encrypted: %u)", 
+        debug_print(L"Combined data created, total size: %u (tag_size: %u, tag: %u, nonce: %u, encrypted: %u)",
             static_cast<uint32_t>(combinedOutputData.size()), 
             static_cast<uint32_t>(sizeof(tagSize)),
-            static_cast<uint32_t>(encryptionTag.size()), 
+            static_cast<uint32_t>(encryptionTag.size()),
+            static_cast<uint32_t>(nonce.size()),
             static_cast<uint32_t>(encryptedText.size()));
     }
     CATCH_RETURN();
@@ -255,9 +258,8 @@ HRESULT VbsEnclave::Trusted::Implementation::MyEnclaveLoadUserBoundKeyAndDecrypt
     {
         debug_print(L"Start MyEnclaveLoadUserBoundKeyAndDecryptData");
 
-        // Extract tag from the combined input data
-        // Format: [tag_size (4 bytes)][tag_data][encrypted_data]
-        if (combinedInputData.size() < sizeof(uint32_t))
+        // Format: [tag_size (4 bytes)][tag_data][nonce][encrypted_data]
+        if (combinedInputData.size() < sizeof(uint32_t) + veil::vtl1::crypto::TAG_SIZE + veil::vtl1::crypto::NONCE_SIZE)
         {
             debug_print(L"ERROR: Combined input data too small, size: %u", static_cast<uint32_t>(combinedInputData.size()));
             return E_INVALIDARG;
@@ -270,7 +272,7 @@ HRESULT VbsEnclave::Trusted::Implementation::MyEnclaveLoadUserBoundKeyAndDecrypt
         debug_print(L"Extracted tag size: %d", tagSize);
 
         // Validate tag size
-        if (tagSize > combinedInputData.size() - sizeof(uint32_t) || tagSize == 0)
+        if (tagSize != veil::vtl1::crypto::TAG_SIZE)
         {  
             debug_print(L"ERROR: Invalid tag size: %u, combined data size: %u", tagSize, static_cast<uint32_t>(combinedInputData.size()));
             return E_INVALIDARG;
@@ -285,7 +287,11 @@ HRESULT VbsEnclave::Trusted::Implementation::MyEnclaveLoadUserBoundKeyAndDecrypt
         );
         it += tagSize;
 
-        // Extract encrypted data (everything after tag size and tag data)
+        auto nonce = std::span<const uint8_t>(combinedInputData).subspan(
+            sizeof(uint32_t) + tagSize, veil::vtl1::crypto::NONCE_SIZE);
+        it += nonce.size();
+
+        // Extract encrypted data after the nonce
         std::vector<uint8_t> encryptedInputBytes(
             it,
             combinedInputData.end()
@@ -313,7 +319,7 @@ HRESULT VbsEnclave::Trusted::Implementation::MyEnclaveLoadUserBoundKeyAndDecrypt
         auto decryptedBytes = veil::vtl1::crypto::decrypt(
             keyHandle, 
             encryptedInputBytes, 
-            veil::vtl1::crypto::zero_nonce, 
+            nonce,
             tag);
 
         // Convert decrypted bytes to wstring
