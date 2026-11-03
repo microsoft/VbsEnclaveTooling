@@ -10,7 +10,7 @@ enclave
     // Result from encrypt operation
     struct EncryptResult
     {
-        // Combined output: [tag_size(4 bytes)][tag][encrypted_data]
+        // Combined output: [tag_size(4 bytes)][tag(16 bytes)][nonce(12 bytes)][encrypted_data]
         vector<uint8_t> combinedOutputData;
         bool needsReseal;
         vector<uint8_t> resealedEncryptionKeyBytes;

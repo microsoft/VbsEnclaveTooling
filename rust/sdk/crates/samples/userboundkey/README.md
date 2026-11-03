@@ -31,6 +31,17 @@ The sample consists of:
 - Windows Hello biometric/PIN is required to access the key
 - The cache configuration is set securely in VTL1 (VTL0 cannot influence it)
 - Key material never leaves the enclave in plaintext
+- Each AES-GCM encryption uses a fresh, cryptographically random 12-byte nonce
+
+### Encrypted Data Format
+
+The `encrypted_userbound` file contains
+`[tag_size (4 bytes, little-endian)][tag (16 bytes)][nonce (12 bytes)][ciphertext]`.
+Decryption authenticates the ciphertext using the stored nonce and tag.
+Files without a stored nonce are not supported; recreate the sample's encrypted
+data with this format rather than falling back to a fixed nonce.
+Create a new user-bound key before re-encrypting data if the existing key has
+been used with fixed nonces.
 
 ## Building
 

@@ -295,6 +295,8 @@ namespace veil::vtl1::crypto
     {
         // In AES-GCM ciphertext and plaintext lengths are the same
         wil::secure_vector<uint8_t> ciphertext(plaintext.size());
+        // A null output buffer makes BCrypt perform a size query instead of authentication.
+        uint8_t emptyOutput {};
 
         ULONG ciphertextSize {};
         NTSTATUS status = BCryptEncrypt(
@@ -304,7 +306,7 @@ namespace veil::vtl1::crypto
             const_cast<BCRYPT_AUTHENTICATED_CIPHER_MODE_INFO*>(cipherInfo),
             nullptr,
             0,
-            ciphertext.data(),
+            ciphertext.empty() ? &emptyOutput : ciphertext.data(),
             veil::vtl1::narrow_cast<ULONG>(ciphertext.size()),
             &ciphertextSize,
             0);
@@ -318,6 +320,7 @@ namespace veil::vtl1::crypto
     {
         // In AES-GCM ciphertext and plaintext lengths are the same
         wil::secure_vector<uint8_t> plaintext(ciphertext.size());
+        uint8_t emptyOutput {};
         ULONG plaintextSize {};
         NTSTATUS status = BCryptDecrypt(
             symmetricKey,
@@ -326,7 +329,7 @@ namespace veil::vtl1::crypto
             const_cast<BCRYPT_AUTHENTICATED_CIPHER_MODE_INFO*>(cipherInfo),
             nullptr,
             0,
-            plaintext.data(),
+            plaintext.empty() ? &emptyOutput : plaintext.data(),
             static_cast<ULONG>(plaintext.size()),
             &plaintextSize,
             0);

@@ -111,6 +111,21 @@ Sample demonstrating user-bound encryption using Windows Hello:
 - **File I/O**: Secure storage and retrieval of encrypted data and keys
 - **Debug Support**: Compatible with Visual Studio debugger and WinDbg for enclave debugging
 
+## Encrypted Data Formats
+
+Each AES-GCM encryption uses a fresh, cryptographically random 12-byte nonce,
+including each message encrypted by the threadpool.
+
+- `HostApp` and `HostAppEncryptDecryptThreadpool` store `[nonce (12 bytes)][ciphertext]`
+  in the `encrypted` or `encrypted1`/`encrypted2` files. The corresponding `tag`
+  or `tag1`/`tag2` file contains the 16-byte authentication tag.
+- `HostAppUserBound` stores
+  `[tag_size (4 bytes, little-endian)][tag (16 bytes)][nonce (12 bytes)][ciphertext]`
+  in `encrypted_userbound`.
+
+Ciphertext without a stored nonce is not supported. Recreate encrypted data in
+this format, using new keys if the existing keys were used with fixed nonces.
+
 ## Developer Flow: Create a Host App, Encrypt and Decrypt Data in Enclave
 
 ### Steps
@@ -208,4 +223,3 @@ Or add it to your project's preprocessor definitions.
 - **Host Applications**: Use `_DEBUG` flag for standard debug builds
 - **VEIL Framework**: Use `_VEIL_INTERNAL_DEBUG` for framework-level debugging
 - **Production**: Ensure all debug flags are disabled for production builds to maintain security
-
