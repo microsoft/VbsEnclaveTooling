@@ -61,7 +61,7 @@ namespace veil::vtl0
                 THROW_HR_MSG(E_ACCESSDENIED, "VBS enclave type not supported");
             }
 
-            ENCLAVE_CREATE_INFO_VBS createInfo;
+            ENCLAVE_CREATE_INFO_VBS createInfo{};
             createInfo.Flags = flags;
             std::memcpy(
                 createInfo.OwnerID, ownerId.data(),

@@ -1,11 +1,13 @@
 <#
 .SYNOPSIS
 Copies signed sample binaries and the validation script to a Hyper-V VM.
+.DESCRIPTION
+The VM must have a compatible x64 Microsoft Visual C++ Redistributable installed.
+MSVC runtime DLLs are not included in the bundle.
 .EXAMPLE
 .\Deploy-SampleNonceValidation.ps1 -VMName MyVM -Credential (Get-Credential) `
     -CppOutputDirectory C:\repo\SampleApps\SampleApps\_build\x64\Release `
-    -RustOutputDirectory C:\repo\rust\sdk\crates\samples\userboundkey\target\debug `
-    -RuntimeDirectory 'C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Redist\MSVC\14.44.35112\x64\Microsoft.VC143.CRT'
+    -RustOutputDirectory C:\repo\rust\sdk\crates\samples\userboundkey\target\debug
 #>
 [CmdletBinding()]
 param(
@@ -17,8 +19,6 @@ param(
     [string]$CppOutputDirectory,
     [Parameter(Mandatory = $true)]
     [string]$RustOutputDirectory,
-    [Parameter(Mandatory = $true)]
-    [string]$RuntimeDirectory,
     [string]$Destination = ('C:\VbsEnclaveNonceValidation-' + (Get-Date -Format 'yyyyMMdd-HHmmss'))
 )
 
@@ -41,15 +41,8 @@ try {
     foreach ($file in @('userboundkey-sample.exe', 'userboundkey_sample_enclave.dll')) {
         Copy-Item -LiteralPath (Join-Path $RustOutputDirectory $file) -Destination $rust.FullName
     }
-    foreach ($file in @('vcruntime140.dll', 'vcruntime140_1.dll', 'msvcp140.dll', 'msvcp140_1.dll', 'msvcp140_2.dll', 'msvcp140_atomic_wait.dll')) {
-        $path = Join-Path $RuntimeDirectory $file
-        if ((Get-AuthenticodeSignature -LiteralPath $path).Status -ne 'Valid') {
-            throw "Runtime DLL does not have a valid signature: $path"
-        }
-        Copy-Item -LiteralPath $path -Destination $cpp.FullName
-        Copy-Item -LiteralPath $path -Destination $rust.FullName
-    }
     Copy-Item -LiteralPath (Join-Path $PSScriptRoot 'Invoke-SampleNonceValidation.ps1') -Destination $stage.FullName
+    Copy-Item -LiteralPath (Join-Path $repoRoot 'SampleApps\SampleApps\README.md') -Destination (Join-Path $stage.FullName 'README.md')
     $files = @(Get-ChildItem -LiteralPath $stage.FullName -File -Recurse | ForEach-Object {
         [pscustomobject]@{
             Path = $_.FullName.Substring($stage.FullName.Length + 1)

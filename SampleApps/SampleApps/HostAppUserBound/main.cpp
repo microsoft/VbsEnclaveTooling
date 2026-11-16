@@ -1,7 +1,6 @@
 #include <iostream>
 #include <fstream>
 #include <string>
-#include <conio.h>
 #include <filesystem>
 #include <limits>
 
@@ -176,7 +175,7 @@ int main(int argc, char* argv[])
     {
         wchar_t message[1024];
         wil::GetFailureLogString(message, ARRAYSIZE(message), failure);
-        wprintf(L"Diagnostic message: %ls\n", message);
+        fwprintf(stderr, L"Diagnostic message: %ls\n", message);
     });
 
     if (argc > 2)
@@ -202,8 +201,6 @@ int main(int argc, char* argv[])
 
     if (!EnsureUserBindingApisAvailable(areUserBindingApisAvailable))
     {
-        std::cout << "\nPress any key to exit..." << std::endl;
-        _getch();
         return 1;
     }
 
@@ -223,9 +220,7 @@ int main(int argc, char* argv[])
     catch (...)
     {
         std::wcout << L"Cannot proceed without a valid secure ID for user-bound encryption." << std::endl;
-        std::cout << "\nPress any key to exit..." << std::endl;
-        _getch();
-        return -1;
+        return 1;
     }
 
     auto flags = ENCLAVE_VBS_FLAG_DEBUG;

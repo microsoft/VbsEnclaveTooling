@@ -103,7 +103,7 @@ int main(int argc, char* argv[])
     {
         wchar_t message[1024];
         wil::GetFailureLogString(message, ARRAYSIZE(message), failure);
-        wprintf(L"Diagnostic message: %ls\n", message);
+        fwprintf(stderr, L"Diagnostic message: %ls\n", message);
     });
 
     if (argc > 2)
