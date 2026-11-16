@@ -19,9 +19,11 @@ use userboundkey_sample_enclave_gen::stubs::untrusted::debug_print;
 use userboundkey_sample_enclave_gen::{U16Str, U16String};
 
 // Import SDK functions and types
+use vbsenclave_sdk_enclave::common::crypto::generate_random;
 use vbsenclave_sdk_enclave::userboundkey::{
-    EnclaveSealingIdentityPolicy, SymmetricKeyHandle, TAG_SIZE, ZERO_NONCE, create_user_bound_key,
-    decrypt, encrypt, keyCredentialCacheConfig, load_user_bound_key, reseal_user_bound_key,
+    EnclaveSealingIdentityPolicy, NONCE_SIZE, SymmetricKeyHandle, TAG_SIZE, UserBoundKeyError,
+    create_user_bound_key, decrypt, encrypt, keyCredentialCacheConfig, load_user_bound_key,
+    reseal_user_bound_key,
 };
 
 /// Runtime policy: no dynamic debug allowed
@@ -211,16 +213,20 @@ impl Trusted for EnclaveImpl {
             .flat_map(|c| c.to_le_bytes())
             .collect();
 
-        // Encrypt using AES-GCM with zero nonce
-        let (encrypted, tag) = encrypt(key, &input_bytes, &ZERO_NONCE)
-            .map_err(|e| AbiError::Hresult(e.to_hresult()))?;
+        // A cached key requires a fresh nonce for every encryption.
+        let mut nonce = [0u8; NONCE_SIZE];
+        generate_random(&mut nonce)
+            .map_err(|e| AbiError::Hresult(UserBoundKeyError::from(e).to_hresult()))?;
+        let (encrypted, tag) =
+            encrypt(key, &input_bytes, &nonce).map_err(|e| AbiError::Hresult(e.to_hresult()))?;
 
         // Combine tag and encrypted data into single output
-        // Format: [tag_size (4 bytes)][tag_data][encrypted_data]
+        // Format: [tag_size (4 bytes)][tag_data][nonce][encrypted_data]
         let tag_size = tag.len() as u32;
-        let mut combined = Vec::with_capacity(4 + tag.len() + encrypted.len());
+        let mut combined = Vec::with_capacity(4 + tag.len() + nonce.len() + encrypted.len());
         combined.extend_from_slice(&tag_size.to_le_bytes());
         combined.extend_from_slice(&tag);
+        combined.extend_from_slice(&nonce);
         combined.extend(encrypted);
 
         Ok(EncryptResult {
@@ -241,8 +247,8 @@ impl Trusted for EnclaveImpl {
         let mut needs_reseal = false;
         let mut resealed_bytes = Vec::new();
 
-        // Parse combined input: [tag_size (4 bytes)][tag_data][encrypted_data]
-        if combinedInputData.len() < 4 {
+        // Parse combined input: [tag_size (4 bytes)][tag_data][nonce][encrypted_data]
+        if combinedInputData.len() < 4 + TAG_SIZE + NONCE_SIZE {
             return Err(AbiError::Hresult(-2147024809)); // E_INVALIDARG
         }
 
@@ -255,13 +261,14 @@ impl Trusted for EnclaveImpl {
         ]) as usize;
 
         // Validate tag size
-        if tag_size == 0 || tag_size > combinedInputData.len() - 4 {
+        if tag_size != TAG_SIZE {
             return Err(AbiError::Hresult(-2147024809)); // E_INVALIDARG
         }
 
-        // Extract tag and encrypted data
+        // Extract tag, nonce, and encrypted data
         let tag = &combinedInputData[4..4 + tag_size];
-        let encrypted = &combinedInputData[4 + tag_size..];
+        let nonce = &combinedInputData[4 + tag_size..4 + tag_size + NONCE_SIZE];
+        let encrypted = &combinedInputData[4 + tag_size + NONCE_SIZE..];
 
         // Ensure key is loaded
         ensure_user_bound_key_loaded(
@@ -276,16 +283,8 @@ impl Trusted for EnclaveImpl {
         // Get the key and decrypt
         let key = get_encryption_key().ok_or(AbiError::Hresult(-2147024809))?;
 
-        // Convert tag slice to fixed-size array
-        let mut tag_array = [0u8; TAG_SIZE];
-        if tag.len() != TAG_SIZE {
-            return Err(AbiError::Hresult(-2147024809)); // E_INVALIDARG
-        }
-        tag_array.copy_from_slice(tag);
-
-        // Decrypt using AES-GCM with zero nonce
-        let decrypted_bytes = decrypt(key, encrypted, &ZERO_NONCE, &tag_array)
-            .map_err(|e| AbiError::Hresult(e.to_hresult()))?;
+        let decrypted_bytes =
+            decrypt(key, encrypted, nonce, tag).map_err(|e| AbiError::Hresult(e.to_hresult()))?;
 
         // Convert decrypted bytes to WString (UTF-16 LE)
         let utf16: Vec<u16> = decrypted_bytes

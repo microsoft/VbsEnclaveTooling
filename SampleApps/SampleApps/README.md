@@ -80,11 +80,23 @@ Sample demonstrating user-bound encryption using Windows Hello:
 
 ## Getting Started
 
-### Prerequisites
+### Build Machine Prerequisites
+1. Visual Studio 2022 with C++ development tools
+2. Windows SDK version 10.0.26100.2454 (minimum)
+3. For HostAppUserBound: Windows SDK version 10.0.26100.7175 or later
+
+### Target Machine or VM Prerequisites
 1. Windows 10/11 with VBS support enabled
-2. Visual Studio 2022 with C++ development tools
-3. Windows SDK version 10.0.26100.2454 (minimum)
-4. For HostAppUserBound: Windows SDK version 10.0.26100.7175 or later
+2. The [x64 Microsoft Visual C++ Redistributable](https://learn.microsoft.com/cpp/windows/latest-supported-vc-redist),
+   installed once on the target machine. Use a version at least as recent as the
+   MSVC build tools used to compile the samples.
+3. Trust the enclave signing certificate on the target machine.
+4. For user-bound samples, configure Windows Hello for the account running them.
+
+The Windows SDK and C++ build tools are build-machine dependencies; they are not
+required on a VM used only to run the compiled samples. Deploy the sample
+executables and their enclave/SDK DLLs. The deployment helper relies on the
+installed Visual C++ Redistributable rather than copying MSVC runtime DLLs.
 
 ### Build Instructions
 1. Build both the `Microsoft.Windows.VbsEnclave.CodeGenerator` and the `Microsoft.Windows.VbsEnclave.SDK` NuGet packages by running the build script [here](../../buildScripts/build.ps1).
@@ -102,6 +114,95 @@ Sample demonstrating user-bound encryption using Windows Hello:
 7. You should be able to set breakpoints in host and debug. You can use debug_print commands in the Enclave code to help debug.
 8. You could also launch the host app and use Windbg → Attach to process to debug code inside the enclave.
 
+## Scripted Encryption Sample Validation
+
+`buildScripts\Invoke-SampleNonceValidation.ps1` exercises Basic, Threadpool,
+C++ user-bound, and Rust user-bound encryption. It does not run
+`HostAppExploreThreadpool` or test every sample feature.
+
+### Prepare a VM bundle
+
+On the build machine, run `buildScripts\Deploy-SampleNonceValidation.ps1` with
+the target Hyper-V VM name, credentials, and C++ and Rust output directories:
+
+```powershell
+.\buildScripts\Deploy-SampleNonceValidation.ps1 `
+    -VMName MyTestVM -Credential (Get-Credential) `
+    -CppOutputDirectory C:\build\cpp `
+    -RustOutputDirectory C:\build\rust
+```
+
+The helper creates a new VM directory containing the binaries, validation script,
+this README, and a SHA-256 manifest. It prints the destination. It does not
+install the Visual C++ Redistributable, configure VBS, install the enclave signing
+certificate, or enroll Windows Hello; prepare those separately before testing.
+
+### Run one sample and test group at a time
+
+Open 64-bit PowerShell in the VM's basic console session and change to the
+deployed bundle directory. Check file hashes and VBS readiness without creating
+keys or launching samples:
+
+```powershell
+.\Invoke-SampleNonceValidation.ps1 -PreflightOnly
+```
+
+Preflight does not verify Visual C++ Redistributable installation or Windows
+Hello readiness. Install the runtime first; user-bound tests also require Hello
+configured for the account running the script.
+
+| `-Sample` | Application | Windows Hello |
+|---|---|---|
+| `Basic` (default) | `HostApp.exe` | No |
+| `Threadpool` | `HostAppEncryptDecryptThreadpool.exe` | No |
+| `CppUserBound` | `HostAppUserBound.exe` | Yes |
+| `RustUserBound` | `userboundkey-sample.exe` | Yes |
+| `All` | All four applications above | Yes |
+
+| `-TestGroup` | Checks |
+|---|---|
+| `Nonce` (default) | Valid round trips; parallel nonce uniqueness for Threadpool; restarted-key and live cached-key nonce uniqueness for user-bound samples, including decryption of both cached-key outputs |
+| `Tampering` | A valid baseline round trip, followed by nonce, tag, ciphertext, and truncation rejection; Threadpool checks worker 1, worker 2, and both |
+| `All` | Both groups |
+
+For example, run each of these separately:
+
+```powershell
+.\Invoke-SampleNonceValidation.ps1 -Sample CppUserBound -TestGroup Nonce
+.\Invoke-SampleNonceValidation.ps1 -Sample RustUserBound -TestGroup Nonce
+.\Invoke-SampleNonceValidation.ps1 -Sample Threadpool -TestGroup Tampering
+```
+
+By default, each run uses one nonempty input. Add `-IncludeEmptyInput` to repeat
+the selected checks with empty input; ciphertext corruption is skipped for empty
+ciphertext. To request the full matrix explicitly:
+
+```powershell
+.\Invoke-SampleNonceValidation.ps1 -Sample All -TestGroup All -IncludeEmptyInput
+```
+
+### Windows Hello prompts and results
+
+**Use a disposable test account.** User-bound tests replace the Windows Hello
+sample credential `MyEncryptionKey-001`, which can invalidate existing sample
+keys and data. Enter the exact confirmation `RUN TESTS` to proceed.
+
+Each test step prints its sample, purpose, log path, and any expected Hello
+approval before launching the sample. Most steps start a fresh enclave and need
+to unlock the key again. A user-bound `Nonce` run starts four sample processes per
+input; initial key creation can require an additional approval. The cached-key
+step performs two encryptions and decrypts both outputs within one process.
+Selecting both user-bound samples or adding empty input requires more approvals.
+
+Tampering cases are labeled `EXPECTED FAILURE`: sample authentication or format
+errors are intentional. The script must still verify the expected rejection.
+A final exception or a `FAIL` result is not a successful run.
+
+Each run creates a fresh `results\<timestamp>-<id>` directory containing
+`results.csv`, sample logs, and test key/data files. Only manifest-listed
+executables and DLLs are copied into test directories, not files from manual
+sample runs. Preserve the logs when reporting a failure.
+
 ## Common Features Across All Samples
 
 - **Enclave Creation**: All samples create VBS enclaves with debug flags enabled
@@ -110,6 +211,24 @@ Sample demonstrating user-bound encryption using Windows Hello:
 - **Interactive Menus**: User-friendly console interfaces for testing different scenarios
 - **File I/O**: Secure storage and retrieval of encrypted data and keys
 - **Debug Support**: Compatible with Visual Studio debugger and WinDbg for enclave debugging
+
+## Encrypted Data Formats
+
+Each AES-GCM encryption uses a fresh, cryptographically random 12-byte nonce,
+including each message encrypted by the threadpool.
+
+The x64 C++ samples store binary files with an 8-byte little-endian payload length
+before the payload. The layouts below describe the payload, excluding that prefix.
+
+- `HostApp` and `HostAppEncryptDecryptThreadpool` store `[nonce (12 bytes)][ciphertext]`
+  in the `encrypted` or `encrypted1`/`encrypted2` files. The corresponding `tag`
+  or `tag1`/`tag2` file contains the 16-byte authentication tag.
+- `HostAppUserBound` stores
+  `[tag_size (4 bytes, little-endian)][tag (16 bytes)][nonce (12 bytes)][ciphertext]`
+  in `encrypted_userbound`.
+
+Ciphertext without a stored nonce is not supported. Recreate encrypted data in
+this format, using new keys if the existing keys were used with fixed nonces.
 
 ## Developer Flow: Create a Host App, Encrypt and Decrypt Data in Enclave
 
@@ -163,7 +282,11 @@ Thumbprint                                Subject
 ```
 
 ### Windows Hello Issues (HostAppUserBound)
-- Ensure Windows Hello is set up with PIN or biometric authentication
+- Set up Windows Hello PIN or biometric authentication for the account running
+  the sample inside the VM, under **Settings > Accounts > Sign-in options**.
+- Run from the VM's basic console session. An empty `GetSecureId` result prevents
+  the user-bound sample from starting; a Windows Hello prompt is not shown at this stage.
+- Basic and threadpool encryption do not use Windows Hello and do not show authentication prompts.
 - Verify TPM 2.0 is available and enabled
 - Check that the required Windows SDK version (10.0.26100.7175) is installed
 - Confirm hardware supports Windows Hello features
@@ -208,4 +331,3 @@ Or add it to your project's preprocessor definitions.
 - **Host Applications**: Use `_DEBUG` flag for standard debug builds
 - **VEIL Framework**: Use `_VEIL_INTERNAL_DEBUG` for framework-level debugging
 - **Production**: Ensure all debug flags are disabled for production builds to maintain security
-

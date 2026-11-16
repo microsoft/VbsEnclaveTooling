@@ -15,6 +15,31 @@
 
 using namespace veil::vtl1::vtl0_functions;
 
+namespace
+{
+    HRESULT WaitForTasks(std::vector<veil::vtl1::future<void>>& tasks)
+    {
+        HRESULT result = S_OK;
+        // Consume every future so multiple task failures cannot escape their destructors.
+        for (auto& task : tasks)
+        {
+            try
+            {
+                task.get();
+            }
+            catch (...)
+            {
+                const auto taskResult = wil::ResultFromCaughtException();
+                if (SUCCEEDED(result))
+                {
+                    result = taskResult;
+                }
+            }
+        }
+        return result;
+    }
+}
+
 //
 // Load encryption key and encrypt data using threadpool
 //
@@ -55,7 +80,7 @@ HRESULT VbsEnclave::Trusted::Implementation::RunEncryptionKeyExample_LoadEncrypt
                 auto b = std::vector<uint8_t> {};
                 auto c = std::vector<uint8_t> {};
                 auto d = std::wstring {};
-                if (FAILED(RunEncryptionKeyExample_LoadEncryptionKeyImpl(
+                THROW_IF_FAILED(RunEncryptionKeyExample_LoadEncryptionKeyImpl(
                         securedEncryptionKeyBytes,
                         (i == 0) ? dataToEncrypt1 : dataToEncrypt2,
                         true, // isToBeEncrypted = true for encryption
@@ -68,8 +93,7 @@ HRESULT VbsEnclave::Trusted::Implementation::RunEncryptionKeyExample_LoadEncrypt
                         true /* called from threadPool */,
                         logPrefix,
                         (i == 0) ? &encryptedInputBytes1 : &encryptedInputBytes2,
-                        (i == 0) ? &tag1 : &tag2)))
-                {}
+                        (i == 0) ? &tag1 : &tag2));
             });
             tasks.push_back(std::move(task));
         }
@@ -83,6 +107,8 @@ HRESULT VbsEnclave::Trusted::Implementation::RunEncryptionKeyExample_LoadEncrypt
 
         debug_print(L"Waiting for taskpool to destruct...");
     }
+
+    RETURN_IF_FAILED(WaitForTasks(tasks));
 
     if (!ranLastTask)
     {
@@ -138,7 +164,7 @@ HRESULT VbsEnclave::Trusted::Implementation::RunEncryptionKeyExample_LoadEncrypt
 
                 auto a = std::vector<uint8_t> {};
                 auto b = std::wstring {};
-                if (FAILED(RunEncryptionKeyExample_LoadEncryptionKeyImpl(
+                THROW_IF_FAILED(RunEncryptionKeyExample_LoadEncryptionKeyImpl(
                     securedEncryptionKeyBytes,
                     {}, // dataToEncrypt unused in decryption
                     false, // isToBeEncrypted = false for decryption
@@ -152,9 +178,7 @@ HRESULT VbsEnclave::Trusted::Implementation::RunEncryptionKeyExample_LoadEncrypt
                     L"[THREAD " + std::to_wstring(i) + L"]",
                     nullptr,
                     nullptr,
-                    (i == 0) ? &decryptedInputBytes1 : &decryptedInputBytes2)))
-                {
-                }
+                    (i == 0) ? &decryptedInputBytes1 : &decryptedInputBytes2));
             });
             tasks.push_back(std::move(task));
         }
@@ -168,6 +192,8 @@ HRESULT VbsEnclave::Trusted::Implementation::RunEncryptionKeyExample_LoadEncrypt
 
         debug_print(L"Waiting for taskpool to destruct...");
     }
+
+    RETURN_IF_FAILED(WaitForTasks(tasks));
 
     if (!ranLastTask)
     {

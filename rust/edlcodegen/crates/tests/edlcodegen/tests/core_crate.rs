@@ -2,6 +2,7 @@
 // Licensed under the MIT License.
 
 mod common;
+mod mocks;
 use common::test_helpers::*;
 use common::test_types::*;
 

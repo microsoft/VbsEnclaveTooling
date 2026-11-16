@@ -131,7 +131,9 @@ HRESULT RunEncryptionKeyExample_LoadEncryptionKeyImpl(
 
        debug_print("%ws", logPrefix.c_str());
        debug_print(L"2. Encrypting input text.");
-       auto [encryptedText, encryptionTag] = veil::vtl1::crypto::encrypt(encryptionKey.get(), veil::vtl1::as_data_span(SOME_PLAIN_TEXT), veil::vtl1::crypto::zero_nonce);
+       auto nonce = veil::vtl1::crypto::generate_random<veil::vtl1::crypto::NONCE_SIZE>();
+       auto [encryptedText, encryptionTag] = veil::vtl1::crypto::encrypt(encryptionKey.get(), veil::vtl1::as_data_span(SOME_PLAIN_TEXT), nonce);
+       encryptedText.insert(encryptedText.begin(), nonce.begin(), nonce.end());
        debug_print("%ws", logPrefix.c_str());
        debug_print(L" ...CHECKPOINT: encrypted text's byte count: = %d", encryptedText.size());
        debug_print("");
@@ -154,7 +156,11 @@ HRESULT RunEncryptionKeyExample_LoadEncryptionKeyImpl(
        // Decrypt the stored encrypted input
        debug_print("%ws", logPrefix.c_str());
        debug_print(L"3. Decrypting text...");
-       auto decryptedText = veil::vtl1::crypto::decrypt(encryptionKey.get(), encryptedInputBytes, veil::vtl1::crypto::zero_nonce, tag);
+       RETURN_HR_IF(E_INVALIDARG, encryptedInputBytes.size() < veil::vtl1::crypto::NONCE_SIZE);
+       RETURN_HR_IF(E_INVALIDARG, tag.size() != veil::vtl1::crypto::TAG_SIZE);
+       auto encryptedData = std::span<const uint8_t>(encryptedInputBytes);
+       auto nonce = encryptedData.first(veil::vtl1::crypto::NONCE_SIZE);
+       auto decryptedText = veil::vtl1::crypto::decrypt(encryptionKey.get(), encryptedData.subspan(nonce.size()), nonce, tag);
        std::wstring decryptedString = veil::vtl1::to_wstring(decryptedText);
        debug_print("%ws", logPrefix.c_str());
        debug_print(L" ...CHECKPOINT: decrypted text: = %ws", decryptedString.c_str());

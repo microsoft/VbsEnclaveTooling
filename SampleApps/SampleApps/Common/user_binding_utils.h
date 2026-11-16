@@ -99,7 +99,9 @@ inline std::vector<uint8_t> GetSecureIdFromWindowsHello()
         }
         else
         {
-            std::wcout << L"Warning: GetSecureId returned empty buffer." << std::endl;
+            std::wcerr << L"Error: KeyCredentialManager::GetSecureId returned no secure ID for the current account. "
+                L"This can occur even when Windows Hello is configured. "
+                L"The user-bound sample cannot continue without a secure ID." << std::endl;
             THROW_HR(E_UNEXPECTED);
         }
     }

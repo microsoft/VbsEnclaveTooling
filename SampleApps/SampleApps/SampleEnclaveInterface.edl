@@ -14,6 +14,7 @@ enclave
             [out] vector<uint8_t> secured_encryption_key_bytes
             );
 
+        // Encrypted byte vectors contain [nonce(12 bytes)][ciphertext]; tags are separate.
         HRESULT RunEncryptionKeyExample_LoadEncryptionKeyAndEncrypt(
             vector<uint8_t> secured_encryption_key_bytes,
             wstring data_to_encrypt,
@@ -68,6 +69,7 @@ enclave
             [out] vector<uint8_t> securedEncryptionKeyBytes
             );
 
+        // Combined output: [tag_size(4 bytes)][tag(16 bytes)][nonce(12 bytes)][ciphertext].
         HRESULT MyEnclaveLoadUserBoundKeyAndEncryptData(
             wstring helloKeyName,
             wstring pinMessage,
